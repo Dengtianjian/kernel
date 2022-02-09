@@ -162,8 +162,8 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "";
     }
-    $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root") . "/Views/", "", $viewDirOfViewData);
-    $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/$viewDirOfViewData";
+    // $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root") . "/Views/", "", $viewDirOfViewData);
+    // $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/$viewDirOfViewData";
     return self::render($viewFile, $viewDirOfViewData, $viewData, $templateId);
   }
   /**
