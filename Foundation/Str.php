@@ -15,11 +15,11 @@ class Str
     $ar = $r[0];
     foreach ($ar as $k => $v) {
       if (substr($v, 0, 2) == "%u")
-        $ar[$k] = iconv("UCS-2", \strtoupper(CHARSET), pack("H4", substr($v, -4)));
+        $ar[$k] = iconv("UCS-2", \strtoupper("UTF-8"), pack("H4", substr($v, -4)));
       elseif (substr($v, 0, 3) == "&#x")
-        $ar[$k] = iconv("UCS-2", \strtoupper(CHARSET), pack("H4", substr($v, 3, -1)));
+        $ar[$k] = iconv("UCS-2", \strtoupper("UTF-8"), pack("H4", substr($v, 3, -1)));
       elseif (substr($v, 0, 2) == "&#") {
-        $ar[$k] = iconv("UCS-2", \strtoupper(CHARSET), pack("n", substr($v, 2, -1)));
+        $ar[$k] = iconv("UCS-2", \strtoupper("UTF-8"), pack("n", substr($v, 2, -1)));
       }
     }
     return join("", $ar);

@@ -90,7 +90,7 @@ class File
       if (!$saveResult) {
         Response::error(500, "File:500001", "保存文件失败", [], error_get_last());
       }
-      $relativePath = str_replace(GlobalVariables::getApp("root"), "", $savePath);
+      $relativePath = str_replace(\F_APP_ROOT, "", $savePath);
       $fileInfo = [
         "path" => $savePath,
         "extension" => $fileExtension,

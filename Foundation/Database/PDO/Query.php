@@ -19,7 +19,8 @@ class Query
   }
   function generateSql(): string
   {
-    $sql = "";
+
+    $this->sql = $sql = "";
     switch ($this->executeType) {
       case "insert":
       case "replace":

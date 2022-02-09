@@ -8,7 +8,7 @@ class View
 {
   private static $viewData = [];
   private static $outputHeaderHTML = [];
-  private static $outputFooterHTML = ["<script>const FORMHASH=\"" . FORMHASH . "\";</script>"];
+  private static $outputFooterHTML = [];
 
   /**
    * 渲染模板文件

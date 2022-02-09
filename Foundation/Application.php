@@ -6,8 +6,6 @@ use kernel\Model\ExtensionsModel;
 
 class Application
 {
-  protected $pluginId = null; //* 当前插件ID
-  protected $pluginPath = ""; //* 当前插件路径
   protected $uri = null; //* 请求的URI
   protected $globalMiddlware = []; //*全局中间件
   protected $router = null; //* 路由相关
@@ -40,10 +38,19 @@ class Application
     if (\is_callable($controller)) {
       return $controller($this->request);
     } else {
-      $instance = new $controller();
+      $instance = new $controller($this->request);
       $result = $instance->data($this->request);
       if ($this->request->ajax() === NULL) {
         View::outputFooter();
+      } else {
+        if (gettype($instance->serialization) === "string" || (is_array($instance->serialization) && count($instance->serialization) > 0)) {
+          if (gettype($instance->serialization) === "array") {
+            $ruleName = "serializer_" . time();
+            Serializer::addRule($ruleName, $instance->serialization);
+            $instance->serialization = $ruleName;
+          }
+          $result = Serializer::use($instance->serialization, $result);
+        }
       }
       return $result;
     }
