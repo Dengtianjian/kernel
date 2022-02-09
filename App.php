@@ -28,7 +28,7 @@ class App extends Application
     //* 检查是否已经初始化了
     if (!file_exists(F_APP_ROOT . "/Iuu/.version")) {
       //* 如果请求的URL 不等于 初始接口就返回错误
-      if ($_SERVER['REQUEST_URI'] !== "/system/init") {
+      if (strpos("system/init", $_SERVER['REQUEST_URI']) !== false) {
         header("Access-Control-Allow-Origin:*");
         header('Access-Control-Allow-Methods:*');
         header('Access-Control-Allow-Headers:*');
