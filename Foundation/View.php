@@ -249,7 +249,7 @@ class View
   static function title($titleSourceString, $params = [])
   {
     self::addData([
-      "navtitle" => Str::replaceParams($titleSourceString, $params),
+      "navTitle" => Str::replaceParams($titleSourceString, $params),
       "pageTitle" => Str::replaceParams($titleSourceString, $params),
     ]);
   }
