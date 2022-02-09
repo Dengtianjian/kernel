@@ -17,10 +17,6 @@ if ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] === 'on') {
 $url .= $_SERVER['HTTP_HOST'] . ":" . $_SERVER['SERVER_PORT'];
 define("F_BASE_URL", $url);
 
-// TODO 后续去掉
-define("CHARSET", "utf-8");
-define("FORMHASH", 123456);
-
 include_once("../kernel/Autoload.php");
 
 //* 错误处理：系统错误、编码错误、编译错误、PHP内核错误、编译Warning级别、Warning级别都写入日志

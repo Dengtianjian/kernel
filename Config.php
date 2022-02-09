@@ -8,6 +8,5 @@ if (!defined("F_KERNEL")) {
 
 $Config = [
   "mode" => "development", //* production development
-  "multipleEncode" => false,
   "extensions" => false
 ];
