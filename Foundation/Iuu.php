@@ -25,7 +25,7 @@ class Iuu
     $installFile = $this->IuuPath . "/Install/install.php";
     if (\file_exists($installFile)) {
       include_once($installFile);
-      $className = "\\" . AppId . "\Iuu\Install\Install";
+      $className = "\\" . \F_APP_ID . "\Iuu\Install\Install";
       $installInstance = new $className();
       $installInstance->handle();
     }
@@ -50,7 +50,7 @@ class Iuu
       }
       $version = substr($dirItem, 8);
       $version = str_replace("_", ".", $version);
-      if (version_compare($this->version, $version, "<") === true) {
+      if (version_compare($this->version, $version, "<=") === true) {
         $callBack($version, $dirItem);
       }
     }
@@ -60,15 +60,15 @@ class Iuu
     $upgradeDirPath = $this->IuuPath . "/Upgrade";
     $this->scanDirAndVersionCompare($this->IuuPath . "/Upgrade", function ($version, $fileName) use ($upgradeDirPath) {
       $versionRootPath = $upgradeDirPath . "/$fileName";
-      $filePath = $versionRootPath . "/$fileName.php";
+      $filePath = $versionRootPath . "/Upgrade.php";
 
       if (\file_exists($filePath)) {
-        $className = AppId . "\\Iuu\Upgrade\\$fileName\\$fileName";
+        $className = F_APP_ID . "\\Iuu\Upgrade\\$fileName\\Upgrade";
         $upgradeItemInstance = new $className();
         $upgradeItemInstance->handle();
       }
 
-      $sqlFilePath = $versionRootPath . "/$fileName.sql";
+      $sqlFilePath = $versionRootPath . "/Upgrade.sql";
       if (!\file_exists($sqlFilePath)) {
         return $this;
       }
@@ -77,22 +77,22 @@ class Iuu
     });
     $versionFilePath = $this->IuuPath . "/.version";
     file_put_contents($versionFilePath, Config::get("version"));
-    Log::record("系统升级：" . Config::get("version"));
+    Log::record("系统升级到：" . Config::get("version"));
     return $this;
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return File::deleteDirectory($this->pluginPath . "/Iuu");
+    return File::deleteDirectory($this->IuuPath . "/Iuu");
   }
   public function cleanInstall()
   {
-    return File::deleteDirectory($this->pluginPath . "/Install");
+    return File::deleteDirectory($this->IuuPath . "/Install");
   }
   public function cleanUpgrade()
   {
-    return File::deleteDirectory($this->pluginPath . "/Upgrade");
+    return File::deleteDirectory($this->IuuPath . "/Upgrade");
   }
   public static function verificationKey(string $key)
   {

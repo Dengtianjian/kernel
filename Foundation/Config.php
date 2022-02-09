@@ -8,21 +8,20 @@ class Config
   /**
    * 读取应用Config文件
    *
-   * @param string $pluginId 应用Id
    * @param string $filePath 应用配置文件所在路径
    * @return array
    */
-  static function read($pluginId, $filePath = null)
+  static function read($filePath = null)
   {
     if (!$filePath) {
-      $filePath = F_ROOT . "/$pluginId/Config.php";
+      $filePath = F_ROOT . "/" . F_APP_ID . "/Config.php";
     }
     if (!\file_exists($filePath)) {
       return false;
     }
     include_once($filePath);
     if (isset($Config)) {
-      self::$configs[$pluginId] = Arr::merge(self::$configs, $Config);
+      self::$configs[F_APP_ID] = Arr::merge(self::$configs, $Config);
       return self::$configs;
     }
     return false;
@@ -31,22 +30,18 @@ class Config
    * 获取配置项
    *
    * @param string $key 配置项数组路径字符串，用 / 分隔
-   * @param string $pluginId 配置文件应用Id
    * @return array|string|integer|boolean
    */
-  static function get($key, $appId = null)
+  static function get($key)
   {
     $configs = [];
-    if ($appId === null) {
-      $appId = GlobalVariables::get("_GG/id");
-    }
 
-    if (!isset(self::$configs[$appId])) {
-      if (self::read($appId) === false) {
+    if (!isset(self::$configs[F_APP_ID])) {
+      if (self::read() === false) {
         return null;
       }
     }
-    $configs = self::$configs[$appId];
+    $configs = self::$configs[F_APP_ID];
     if (!$key) {
       return $configs;
     }
@@ -75,15 +70,10 @@ class Config
    * 修改后的值只会在当前运行中有效，并不会修改到文件的实际值
    *
    * @param any $value 新值
-   * @param string $pluginId 应用Id
    * @return void
    */
-  static function set($value, $pluginId = null)
+  static function set($value)
   {
-    if ($pluginId === null) {
-      $pluginId = GlobalVariables::get("_GG/id");
-    }
-
-    self::$configs[$pluginId] = Arr::merge(self::$configs[$pluginId], $value);
+    self::$configs[F_APP_ID] = Arr::merge(self::$configs[F_APP_ID], $value);
   }
 }

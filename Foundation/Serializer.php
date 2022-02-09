@@ -8,7 +8,7 @@ class Serializer
 {
   static $rules = [];
   private static $ruleName = "";
-  private static function getRule(string $name, $upperLevel = null)
+  static function getRule(string $name, $upperLevel = null)
   {
     if (!$upperLevel) $upperLevel = self::$rules;
     $names = explode(".", $name);
@@ -29,10 +29,14 @@ class Serializer
     $firstName = $names[0];
 
     if (count($names) === 1) {
+      if ($upperLevel === null) {
+        $upperLevel = &self::$rules;
+      }
       if ($upperLevel[$firstName]) {
         throw new \Error($firstName . " 序列化规则已经存在");
       }
       $upperLevel[$firstName] = $rule;
+
       return true;
     }
 

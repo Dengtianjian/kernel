@@ -14,7 +14,7 @@ use kernel\Foundation\Response;
 class GetGSetController extends Controller
 {
   private $whiteListOfKeys = [
-    "uid", "username", "adminid", "groupid", "formhash", "charset", "setting/accessemail"
+    "uid", "username", "adminid", "groupid", "setting/accessemail"
   ];
   public function data(Request $request)
   {
@@ -36,7 +36,7 @@ class GetGSetController extends Controller
           $newKey = \implode("/", $ex);
         }
 
-        $sets[$newKey] = \getglobal($key);
+        // $sets[$newKey] = \getglobal($key);
       }
     }
     return $sets;

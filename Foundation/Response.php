@@ -10,10 +10,10 @@ use kernel\Foundation\Exception\ErrorCode;
 
 class Response
 {
-  private static $resultData = [];
-  private static $responseData = [];
-  private static $headers = [];
-  private static $responseIntercept = null;
+  private static $resultData = []; //* 增加到响应结果数据体里的数据
+  private static $responseData = []; //* 增加到响应结果里的数据
+  private static $headers = []; //* 响应头
+  private static $responseIntercept = null; //* 响应拦截回调函数
   static function header(string $key, string $value, bool $replace = true)
   {
     array_push(self::$headers, [
@@ -21,6 +21,10 @@ class Response
       "value" => $value,
       "replace" => $replace
     ]);
+  }
+  static function intercept($callback = null)
+  {
+    self::$responseIntercept = $callback;
   }
   static function error($statusCode, $code = 500, $message = "", $data = [], $details = [])
   {
@@ -85,11 +89,7 @@ class Response
       return false;
     }
 
-    if (CHARSET === "gbk") {
-      \print_r(GJson::encode($result));
-    } else {
-      \print_r(\json_encode($result));
-    }
+    \print_r(\json_encode($result));
     exit();
   }
   static function addData(array $data)
@@ -118,9 +118,5 @@ class Response
 
       exit();
     }
-  }
-  static function intercept($callback = null)
-  {
-    self::$responseIntercept = $callback;
   }
 }

@@ -37,9 +37,6 @@ class Request
     }
     $body = \array_merge($body, $_POST);
     $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
-    $this->pluginId = GlobalVariables::get("id");
-    unset($body['id']);
-    unset($body['uri']);
     $this->body = $body;
   }
   private function getArrayData($arr, $keys)

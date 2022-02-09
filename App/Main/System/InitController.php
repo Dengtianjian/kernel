@@ -3,10 +3,10 @@
 namespace kernel\App\Main\System;
 
 use kernel\Foundation\Config;
+use kernel\Foundation\Controller;
 use kernel\Foundation\Iuu;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
-use official\Foundation\Controller;
 
 class InitController extends Controller
 {
@@ -29,6 +29,14 @@ class InitController extends Controller
     if ($key !== $keyContent) {
       Response::error(400, "WrongKey:400001", "密钥错误");
     }
+    $initTagFile = F_APP_ROOT . "/Iuu/.init";
+    if (file_exists($initTagFile)) {
+      Response::error(400, "Initing:400000", "已经在初始化中了");
+    }
+    file_put_contents($initTagFile, time());
+    Response::intercept(function () use ($initTagFile) {
+      unlink($initTagFile);
+    });
     $IUU = new Iuu();
     $IUU->install();
     file_put_contents($versionFilePath, Config::get("version"));
