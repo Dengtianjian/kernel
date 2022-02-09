@@ -46,18 +46,17 @@ class Response
     if (!$routerType) {
       $routerType = "view";
     }
-    // if ($routerType === "view") {
-    //   $currentUrl = F_BASE_URL;
-    //   $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
-    //   $redirectUrl = $_SERVER['HTTP_REFERER'];
-    //   if ($redirectUrl == $currentUrl || !$redirectUrl) {
-    //     $redirectUrl = F_BASE_URL;
-    //   }
-    //   \showmessage($message, $redirectUrl, [], [
-    //     "alert" => "error"
-    //   ]);
-    //   exit();
-    // }
+    if ($routerType === "view") {
+      $currentUrl = F_BASE_URL;
+      $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
+      $redirectUrl = $_SERVER['HTTP_REFERER'];
+      if ($redirectUrl === $currentUrl || !$redirectUrl) {
+        $redirectUrl = F_BASE_URL;
+      }
+      // echo $message;
+      // header("Location $redirectUrl");
+      exit();
+    }
 
     header("Content-Type:application/json", true, $statusCode);
     for ($i = 0; $i < count(self::$headers); $i++) {
