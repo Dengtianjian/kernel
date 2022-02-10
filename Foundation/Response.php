@@ -87,8 +87,11 @@ class Response
     if ($interceptResult === false) {
       return false;
     }
-
-    \print_r(\json_encode($result));
+    self::output($result);
+  }
+  static function output($data)
+  {
+    \print_r(\json_encode($data));
     exit();
   }
   static function addData(array $data)
