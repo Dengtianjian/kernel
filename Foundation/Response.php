@@ -53,8 +53,14 @@ class Response
       if ($redirectUrl === $currentUrl || !$redirectUrl) {
         $redirectUrl = F_BASE_URL;
       }
-      // echo $message;
-      // header("Location $redirectUrl");
+      if ($statusCode > 299) {
+        if (Config::get("mode") === "development") {
+          Output::debug($data, $details);
+        } else {
+          Output::print($message);
+        }
+        // header("Refresh: 3; url=$redirectUrl");
+      }
       exit();
     }
 
