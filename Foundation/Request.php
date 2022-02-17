@@ -15,6 +15,7 @@ class Request
     "page" => 1,
   ];
   public $router = null;
+  public $method = "";
   public function __construct()
   {
     $this->serializationBody();
@@ -23,6 +24,11 @@ class Request
       "limit" => $_REQUEST["limit"] ? intval($_REQUEST["limit"]) : intval($_REQUEST["perPage"]),
       "skip" => $_REQUEST["skip"] ? intval($_REQUEST["skip"]) : null
     ];
+    $this->method = $_SERVER['REQUEST_METHOD'];
+    if (isset($_REQUEST['_method'])) {
+      $this->method = $_REQUEST['_method'];
+    }
+    $this->method = strtoupper($this->method);
   }
   private function serializationBody()
   {
