@@ -37,8 +37,6 @@ class AttachmentService
       "saveFileName" => $saveFileName,
       "fileName" => $sourceFileName,
       "fileId" => $attachmentFileId,
-      "userId" => $user ? $user['id'] : "",
-      "organizationId" => "",
       "fileSize" => $fileSize,
       "remote" => 0,
       "remoteId" => "",
