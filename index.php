@@ -9,7 +9,7 @@ define("F_KERNEL", true);
 
 //* 获取URL地址
 $url = "";
-if ($_SERVER['HTTPS'] && $_SERVER['HTTPS'] === 'on') {
+if (strtolower($_SERVER['REQUEST_SCHEME']) === 'https' && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] === 'on') {
   $url .= "https://";
 } else {
   $url .= "http://";
