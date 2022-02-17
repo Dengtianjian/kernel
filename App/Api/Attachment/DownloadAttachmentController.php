@@ -2,11 +2,9 @@
 
 namespace kernel\App\Api\Attachment;
 
-use kernel\Foundation\File;
-use kernel\Foundation\Output;
+use kernel\Foundation\Controller;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
-use official\Foundation\Controller;
 
 class DownloadAttachmentController extends Controller
 {

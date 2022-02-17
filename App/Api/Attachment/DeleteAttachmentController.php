@@ -2,13 +2,12 @@
 
 namespace kernel\App\Api\Attachment;
 
-use kernel\Foundation\File;
+use kernel\Foundation\Controller;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\Str;
-use official\Foundation\Controller;
-use official\Model\AttachmentModel;
-use official\Service\AttachmentService;
+use kernel\Model\AttachmentModel;
+use kernel\Service\AttachmentService;
 
 class DeleteAttachmentController extends Controller
 {

@@ -2,9 +2,9 @@
 
 namespace kernel\App\Api\Attachment;
 
+use kernel\Foundation\Controller;
 use kernel\Foundation\Response;
-use official\Service\AttachmentService;
-use official\Foundation\Controller;
+use kernel\Service\AttachmentService;
 
 class UploadAttachmentController extends Controller
 {
