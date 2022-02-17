@@ -5,6 +5,7 @@ namespace kernel;
 use kernel\Foundation\Router;
 use kernel\App\Api\GetGSetController;
 use kernel\App\Main as Main;
+use kernel\Foundation\Attachment;
 
 Router::get("_gset", GetGSetController::class);
 
@@ -18,3 +19,9 @@ Router::post("_extension/openClose", Main\Extensions\OpenCloseExtensionControlle
 //* IUU相关 I=install U=upgrade U=uninstall
 Router::post("/system/init", Main\System\InitController::class);
 Router::post("/system/upgrade", Main\System\UpgradeController::class);
+
+//* 附件
+Router::post("/attachment", Attachment\UploadAttachmentController::class);
+Router::get("/attachment", Attachment\GetAttachmentController::class);
+Router::delete("/attachment", Attachment\DeleteAttachmentController::class);
+Router::view("/downloadAttachment", Attachment\DownloadAttachmentController::class);
