@@ -2,10 +2,10 @@
 
 namespace kernel;
 
+use kernel\App\Api\Attachment as Attachment;
 use kernel\Foundation\Router;
 use kernel\App\Api\GetGSetController;
 use kernel\App\Main as Main;
-use kernel\Foundation\Attachment;
 
 Router::get("_gset", GetGSetController::class);
 
