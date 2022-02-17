@@ -6,6 +6,7 @@ if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
+use Error;
 use kernel\Foundation\Exception\ErrorCode;
 
 class Response
@@ -55,7 +56,7 @@ class Response
       }
       if ($statusCode > 299) {
         if (Config::get("mode") === "development") {
-          Output::debug($data, $details);
+          Output::debug($message, $statusCode, $code, $data, $details);
         } else {
           Output::print($message);
         }

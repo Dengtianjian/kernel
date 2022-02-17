@@ -16,7 +16,7 @@ $AuthCodes = [];
 
 $RouteCodes = [
   "ROUTE_DOES_NOT_EXIST" => [404, "Route_404001", "资源不存在"],
-  "METHOD_NOT_ALLOWED" => [400, "Route_400001", "无效的请求方式"]
+  "METHOD_NOT_ALLOWED" => [405, "MethodNotAllowed", "不支持的请求方法"]
 ];
 
 $MiddlwareCodes = [
