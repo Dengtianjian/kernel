@@ -115,15 +115,33 @@ class Response
   {
     $fileinfo = pathinfo($filePath);
 
+    $range = $GLOBALS['App']->request->headers("Range") ?: false;
+    $range=200000;
+
+    $remainingLength = 0;
+    header('Accept-Ranges: bytes');
     header('Content-Length: ' . $fileSize);
-    if (File::isImage($filePath)) {
+    if (isset($range)) {
+      $remainingLength = $fileSize - $range;
+      header("Content-Range: bytes $range-$remainingLength/$fileSize");
+      header('Content-Length: ' . $fileSize - $range);
+    }
+
+    if (File::isImage($filePath) && $range === false) {
       header('Content-type: image/png;', true);
       $content = file_get_contents($filePath);
       echo $content;
     } else {
       header('Content-type: application/x-' . $fileinfo['extension'], true);
       header('Content-Disposition: attachment; filename=' . urlencode($fileName));
-      readfile($filePath);
+
+      if (isset($range)) {
+        header("HTTP/1.1 206 Partial Content");
+        $content = file_get_contents($filePath, false, null, $range, $fileSize);
+        echo $content;
+      } else {
+        readfile($filePath);
+      }
 
       exit();
     }
