@@ -25,3 +25,4 @@ Router::post("/attachment", Attachment\UploadAttachmentController::class);
 Router::get("/attachment", Attachment\GetAttachmentController::class);
 Router::delete("/attachment", Attachment\DeleteAttachmentController::class);
 Router::view("/downloadAttachment", Attachment\DownloadAttachmentController::class);
+Router::view("/thumbnail", Attachment\GetImageThumbnailViewController::class);

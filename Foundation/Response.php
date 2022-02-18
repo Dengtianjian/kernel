@@ -121,7 +121,7 @@ class Response
     $remainingLength = 0;
     header('Accept-Ranges: bytes');
     header('Content-Length: ' . $fileSize);
-    if (isset($range)) {
+    if ($range) {
       $remainingLength = $fileSize - $range;
       header("Content-Range: bytes $range-$remainingLength/$fileSize");
       header('Content-Length: ' . $fileSize - $range);
@@ -129,13 +129,14 @@ class Response
 
     if (File::isImage($filePath) && $range === false) {
       header('Content-type: image/png;', true);
+      header('Content-Disposition: inline; filename=' . urlencode($fileName));
       $content = file_get_contents($filePath);
       echo $content;
     } else {
       header('Content-type: application/x-' . $fileinfo['extension'], true);
       header('Content-Disposition: attachment; filename=' . urlencode($fileName));
 
-      if (isset($range)) {
+      if ($range) {
         header("HTTP/1.1 206 Partial Content");
         $content = file_get_contents($filePath, false, null, $range, $fileSize);
         echo $content;

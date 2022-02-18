@@ -15,6 +15,5 @@ class DownloadAttachmentController extends Controller
     $fullPath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
 
     Response::download($fullPath, $attachment['fileName'], $attachment['fileSize']);
-    exit();
   }
 }
