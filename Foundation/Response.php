@@ -116,7 +116,7 @@ class Response
     $fileinfo = pathinfo($filePath);
 
     $range = $GLOBALS['App']->request->headers("Range") ?: false;
-    $range=200000;
+    // $range=200000;
 
     $remainingLength = 0;
     header('Accept-Ranges: bytes');
