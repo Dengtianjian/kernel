@@ -115,6 +115,7 @@ class Response
   {
     $fileinfo = pathinfo($filePath);
 
+    header('Content-Length: ' . $fileSize);
     if (File::isImage($filePath)) {
       header('Content-type: image/png;', true);
       $content = file_get_contents($filePath);
@@ -122,7 +123,6 @@ class Response
     } else {
       header('Content-type: application/x-' . $fileinfo['extension'], true);
       header('Content-Disposition: attachment; filename=' . urlencode($fileName));
-      header('Content-Length: ' . $fileSize);
       readfile($filePath);
 
       exit();
