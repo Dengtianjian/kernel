@@ -9,6 +9,10 @@ use kernel\Foundation\Response;
 
 class GetImageThumbnailViewController extends Controller
 {
+  public $query = [
+    "width" => "integer",
+    "height" => "integer",
+  ];
   private function createThumb($attachment, $targetWdith, $targetHeight)
   {
     $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
@@ -29,16 +33,18 @@ class GetImageThumbnailViewController extends Controller
   {
     $GetAttachment = new GetAttachmentController($R);
     $attachment = $GetAttachment->data($R);
-    $fullPath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
+    $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
+    $imageInfo = getimagesize($filePath);
+    $sourceWidth = $imageInfo[0];
+    $sourceHeight = $imageInfo[1];
+    $targetWdith = $this->query['width'] ?: $sourceWidth;
+    $targetHeight = $this->query['height'] ?: $sourceHeight;
 
     header('Accept-Ranges: bytes');
     header('Content-Length: ' . $attachment['fileSize']);
     header('Content-type: image/webp;', true);
     header('Content-Disposition: inline; filename=' . urlencode($attachment['fileName']));
-    $this->createThumb($attachment, 500, 300);
-    // Output::debug($attachment);
-    // return 1;
 
-    // Response::download($fullPath, $attachment['fileName'], $attachment['fileSize']);
+    $this->createThumb($attachment, $targetWdith, $targetHeight);
   }
 }
