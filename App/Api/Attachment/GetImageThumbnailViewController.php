@@ -3,6 +3,7 @@
 namespace kernel\App\Api\Attachment;
 
 use kernel\Foundation\Controller;
+use kernel\Foundation\File;
 use kernel\Foundation\Output;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
@@ -17,7 +18,32 @@ class GetImageThumbnailViewController extends Controller
   private function createThumb($attachment, $targetWdith, $targetHeight, $targetRatio)
   {
     $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
-    $sourceImage = imagecreatefromjpeg($filePath);
+    switch (exif_imagetype($filePath)) {
+      case IMAGETYPE_GIF:
+        $sourceImage = imagecreatefromgif($filePath);
+        break;
+      case IMAGETYPE_JPEG:
+      case IMAGETYPE_JPEG2000:
+        $sourceImage = imagecreatefromjpeg($filePath);
+        break;
+      case IMAGETYPE_PNG:
+        $sourceImage = imagecreatefrompng($filePath);
+        break;
+      case IMAGETYPE_BMP:
+      case IMAGETYPE_WEBP:
+        $sourceImage = imagecreatefromwbmp($filePath);
+        break;
+      case IMAGETYPE_XBM:
+        $sourceImage = imagecreatefromxbm($filePath);
+        break;
+      case IMAGETYPE_WEBP:
+        $sourceImage = imagecreatefromwebp($filePath);
+        break;
+      default:
+        Response::download($filePath, $attachment['fileName'], $attachment['fileSize']);
+        break;
+    }
+
     $imageInfo = getimagesize($filePath);
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
