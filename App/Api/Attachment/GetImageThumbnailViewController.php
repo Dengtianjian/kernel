@@ -12,8 +12,9 @@ class GetImageThumbnailViewController extends Controller
   public $query = [
     "width" => "integer",
     "height" => "integer",
+    "ratio" => "double"
   ];
-  private function createThumb($attachment, $targetWdith, $targetHeight)
+  private function createThumb($attachment, $targetWdith, $targetHeight, $targetRatio)
   {
     $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
     $sourceImage = imagecreatefromjpeg($filePath);
@@ -21,13 +22,21 @@ class GetImageThumbnailViewController extends Controller
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
 
+    if ($targetRatio !== false) {
+      $targetWdith = $targetWdith * $targetRatio;
+      $targetHeight = $targetHeight * $targetRatio;
+    }
     $targetImage = imagecreatetruecolor($targetWdith, $targetHeight);
-    $bg = imagecolorallocate($targetImage, 250, 250, 250);
+    $bg = imagecolorallocate($targetImage, 255, 255, 255);
     imagefill($targetImage, 0, 0, $bg);
 
     imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
 
+    $fileName = substr($attachment['fileName'], 0, strrpos($attachment['fileName'], ".")) . ".webp";
+    header('content-type:image/webp');
+    header('Content-Disposition: inline; filename=' . urlencode($fileName));
     imagewebp($targetImage);
+    imagedestroy($targetImage);
   }
   public function data(Request $R)
   {
@@ -39,12 +48,8 @@ class GetImageThumbnailViewController extends Controller
     $sourceHeight = $imageInfo[1];
     $targetWdith = $this->query['width'] ?: $sourceWidth;
     $targetHeight = $this->query['height'] ?: $sourceHeight;
+    $targetRatio = $this->query['ratio'] ?: false;
 
-    header('Accept-Ranges: bytes');
-    header('Content-Length: ' . $attachment['fileSize']);
-    header('Content-type: image/webp;', true);
-    header('Content-Disposition: inline; filename=' . urlencode($attachment['fileName']));
-
-    $this->createThumb($attachment, $targetWdith, $targetHeight);
+    $this->createThumb($attachment, $targetWdith, $targetHeight, $targetRatio);
   }
 }
