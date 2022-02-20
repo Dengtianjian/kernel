@@ -209,6 +209,6 @@ class SQL
   }
   static function count(string $tableName, $field = "*", $extraStatement = "")
   {
-    return "SELECT COUNT($field) FROM `$tableName` $extraStatement";
+    return "SELECT COUNT('$field') FROM `$tableName` $extraStatement";
   }
 }
