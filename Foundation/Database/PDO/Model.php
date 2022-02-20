@@ -101,7 +101,7 @@ class Model
     if ($this->returnSql) return $sql;
     $countResult = DB::query($sql);
     if (!empty($countResult)) {
-      return (int)$countResult['0']["COUNT($field)"];
+      return (int)$countResult['0']["COUNT('$field')"];
     }
     return null;
   }
