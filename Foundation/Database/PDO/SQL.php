@@ -18,7 +18,7 @@ class SQL
    * @param boolean $addQuote 是否跳过添加引号
    * @return string[] 优化后的字符串
    */
-  static function addQuote(array $strings, string $quote = "`", bool $addQuote = false)
+  static function addQuote(array $strings, string $quote = "`", bool $addQuote = true)
   {
     foreach ($strings as &$item) {
       if (empty($item)) {
@@ -32,8 +32,9 @@ class SQL
       if (\is_bool($item)) {
         $item = $item ? 1 : 0;
       }
-      if (!$addQuote) continue;
-      $item = $quote . $item . $quote;
+      if ($addQuote) {
+        $item = $quote . $item . $quote;
+      }
     }
     return $strings;
   }
