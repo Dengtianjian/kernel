@@ -15,23 +15,24 @@ class SQL
    *
    * @param array $strings 字符串数组
    * @param string $quote 添加的引号
-   * @param boolean $judgeType 是否判断类型
+   * @param boolean $addQuote 是否跳过添加引号
    * @return string[] 优化后的字符串
    */
-  static function addQuote(array $strings, string $quote = "`", bool $judgeType = false)
+  static function addQuote(array $strings, string $quote = "`", bool $addQuote = false)
   {
     foreach ($strings as &$item) {
-      if ($judgeType) {
-        if (!is_string($item) && !empty($item)) {
-          continue;
-        }
-        if (empty($item)) {
+      if (empty($item)) {
+        if (is_string($item)) {
           $item = NULL;
+        }
+        if ($item == "") {
+          $item = intval($item);
         }
       }
       if (\is_bool($item)) {
         $item = $item ? 1 : 0;
       }
+      if (!$addQuote) continue;
       $item = $quote . $item . $quote;
     }
     return $strings;
