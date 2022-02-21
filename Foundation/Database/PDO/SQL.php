@@ -2,18 +2,31 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Output;
+
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
 class SQL
 {
+  /**
+   * 优化字符串
+   *
+   * @param array $strings 字符串数组
+   * @param string $quote 添加的引号
+   * @param boolean $judgeType 是否判断类型
+   * @return string[] 优化后的字符串
+   */
   static function addQuote(array $strings, string $quote = "`", bool $judgeType = false)
   {
     foreach ($strings as &$item) {
       if ($judgeType) {
-        if (!is_string($item)) {
+        if (!is_string($item) && !empty($item)) {
           continue;
+        }
+        if (empty($item)) {
+          $item = NULL;
         }
       }
       if (\is_bool($item)) {
@@ -186,6 +199,7 @@ class SQL
       if ($value === null) $value = "null";
       $value = "`$field` = $value";
     }
+    Output::debug($data);
     $data = implode(",", $data);
     $sql = "UPDATE `$tableName` SET $data $extraStatement";
     return $sql;
