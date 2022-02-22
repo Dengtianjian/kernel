@@ -56,6 +56,7 @@ class Response
       }
       if ($statusCode > 299) {
         if (Config::get("mode") === "development") {
+          echo "error";
           Output::debug($message, $statusCode, $code, $data, $details);
         } else {
           Output::print($message);

@@ -201,7 +201,6 @@ class SQL
       if ($value === null) $value = "null";
       $value = "`$field` = $value";
     }
-    Output::debug($data);
     $data = implode(",", $data);
     $sql = "UPDATE `$tableName` SET $data $extraStatement";
     return $sql;
