@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Output;
+
 class Query
 {
   private string $executeType = "";
@@ -19,7 +21,6 @@ class Query
   }
   function generateSql(): string
   {
-
     $this->sql = $sql = "";
     switch ($this->executeType) {
       case "insert":
@@ -39,12 +40,20 @@ class Query
       case "delete":
         $sql = SQL::delete($this->tableName, $this->sql);
         break;
-        // TODO 软删除实现
+        // DONE 软删除实现
+      case "softDelete":
+        $sql = SQL::update($this->tableName, [
+          "deletedAt" => time()
+        ]);
+        break;
       case "get":
         $sql = SQL::select($this->tableName, isset($this->options['fields']) ? $this->options['fields'] : "*", $this->sql);
         break;
       case "count":
         $sql = SQL::count($this->tableName, $this->options['count']['field']);
+        break;
+      case "exist":
+        $sql = SQL::exist($this->tableName, $this->sql);
         break;
     }
 
@@ -240,6 +249,13 @@ class Query
     $this->options["count"] = [
       "field" => $field
     ];
+    $this->sql = $this->generateSql();
+    $this->reset();
+    return $this;
+  }
+  function exist()
+  {
+    $this->executeType = "exist";
     $this->sql = $this->generateSql();
     $this->reset();
     return $this;

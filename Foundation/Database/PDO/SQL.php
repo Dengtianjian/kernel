@@ -226,4 +226,8 @@ class SQL
   {
     return "SELECT COUNT('$field') FROM `$tableName` $extraStatement";
   }
+  static function exist(string $tableName, $extraStatement = "")
+  {
+    return "SELECT 1 FROM `$tableName` $extraStatement";
+  }
 }

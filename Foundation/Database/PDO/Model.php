@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Output;
 use kernel\Foundation\Str;
 
 class Model
@@ -109,5 +110,15 @@ class Model
   {
     $nowTime = time();
     return $nowTime . substr(md5($prefix . time() . Str::generateRandomString(8) . $suffix), 0, 24 - strlen($nowTime));
+  }
+  function exist()
+  {
+    $sql = $this->query->exist()->sql();
+    if ($this->returnSql) return $sql;
+    $exist = DB::query($sql);
+    if (empty($exist)) {
+      return 0;
+    }
+    return intval($exist[0]["1"]);
   }
 }
