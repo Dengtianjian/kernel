@@ -48,7 +48,7 @@ class GetImageThumbnailViewController extends Controller
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
 
-    if ($targetRatio !== false) {
+    if ($targetRatio) {
       $targetWdith = $targetWdith * $targetRatio;
       $targetHeight = $targetHeight * $targetRatio;
     }
@@ -74,7 +74,21 @@ class GetImageThumbnailViewController extends Controller
     $sourceHeight = $imageInfo[1];
     $targetWdith = $this->query['width'] ?: $sourceWidth;
     $targetHeight = $this->query['height'] ?: $sourceHeight;
-    $targetRatio = $this->query['ratio'] ?: false;
+    $targetRatio = $this->query['ratio'] ?: 0;
+
+    $fileTag = $R->fileId . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
+    $fileTag = md5($fileTag);
+
+    if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
+      $etag = $_SERVER['HTTP_IF_NONE_MATCH'];
+      if ($fileTag === $etag) {
+        header("HTTP/1.1 304 Not Modified");
+        exit;
+      }
+    }
+    header("Last-modified:" . date("D, d M Y H:i:s", time()));
+    header("etag: " . $fileTag);
+    header("cache-control:no-cache");
 
     $this->createThumb($attachment, $targetWdith, $targetHeight, $targetRatio);
   }
