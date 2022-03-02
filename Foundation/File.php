@@ -71,11 +71,11 @@ class File
   {
     $uploadResult = [];
     $onlyOne = false;
-    if (Arr::isAssoc($files)) {
+    if (is_array($files)) {
+      $files = array_values($files);
+    } else {
       $onlyOne = true;
       $files = [$files];
-    } else {
-      $files = array_values($files);
     }
     foreach ($files as $fileItem) {
       $filePath = "";
