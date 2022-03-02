@@ -78,15 +78,34 @@ class File
       $files = array_values($files);
     }
     foreach ($files as $fileItem) {
-      if ($fileItem['error'] > 0) {
-        $uploadResult[] = $fileItem['error'];
-        continue;
+      $filePath = "";
+      $fileSize = 0;
+      $fileSourceName = "";
+      if (is_string($fileItem)) {
+        $filePath = $fileItem;
+        $fileSize = filesize($filePath);
+        $fileSourceName = $filePath;
+      } else {
+        if ($fileItem['error'] > 0) {
+          $uploadResult[] = $fileItem['error'];
+          continue;
+        }
+        $fileSourceName = $filePath = $fileItem['name'];
+        $fileSize = $fileItem['size'];
       }
-      $fileExtension = \pathinfo($fileItem['name'], \PATHINFO_EXTENSION);
+
+      $fileExtension = \pathinfo($filePath, \PATHINFO_EXTENSION);
       $fileCode = \mt_rand(1000, 9999) . time();
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
-      $saveResult = @\move_uploaded_file($fileItem['tmp_name'], $saveFullPath);
+      if (is_string($fileItem)) {
+        if (!file_exists($fileItem)) return false;
+        $saveResult = copy($filePath, $saveFullPath);
+        unlink($filePath);
+      } else {
+        $saveResult = @\move_uploaded_file($filePath, $saveFullPath);
+      }
+
       if (!$saveResult) {
         Response::error(500, "File:500001", "保存文件失败", [], error_get_last());
       }
@@ -94,9 +113,9 @@ class File
       $fileInfo = [
         "path" => $savePath,
         "extension" => $fileExtension,
-        "sourceFileName" => $fileItem['name'],
+        "sourceFileName" => $fileSourceName,
         "saveFileName" => $saveFullFileName,
-        "size" => $fileItem['size'],
+        "size" => $fileSize,
         "fullPath" => $saveFullPath,
         "relativePath" => $relativePath
       ];
