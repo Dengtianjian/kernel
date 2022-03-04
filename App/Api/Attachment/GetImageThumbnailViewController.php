@@ -47,14 +47,27 @@ class GetImageThumbnailViewController extends Controller
     $imageInfo = getimagesize($filePath);
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
-
+    //* 2832 4240
+    //* 480 290
+    // Output::debug($sourceWidth, $sourceHeight);
     if ($targetRatio) {
       $targetWdith = $targetWdith * $targetRatio;
       $targetHeight = $targetHeight * $targetRatio;
+    } else {
+      if ($targetWdith === false && $targetHeight === false) {
+        $targetWdith = $sourceWidth;
+        $targetHeight = $sourceHeight;
+      } else {
+        if ($targetWdith && $targetHeight) {
+        } else if ($targetWdith) {
+          $targetHeight = $sourceHeight / ($sourceWidth / $targetWdith);
+        } else if ($targetHeight) {
+          $targetWdith = $sourceWidth / ($sourceHeight / $targetHeight);
+        }
+      }
     }
     $targetImage = imagecreatetruecolor($targetWdith, $targetHeight);
-    $bg = imagecolorallocate($targetImage, 255, 255, 255);
-    imagefill($targetImage, 0, 0, $bg);
+    $copyImage = imagecreatetruecolor($targetWdith, $targetHeight);
 
     imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
 
@@ -62,7 +75,10 @@ class GetImageThumbnailViewController extends Controller
     header('content-type:image/webp');
     header('Content-Disposition: inline; filename=' . urlencode($fileName));
     imagewebp($targetImage);
+
+    imagedestroy($copyImage);
     imagedestroy($targetImage);
+    imagedestroy($sourceImage);
   }
   public function data(Request $R)
   {
@@ -72,19 +88,19 @@ class GetImageThumbnailViewController extends Controller
     $imageInfo = getimagesize($filePath);
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
-    $targetWdith = $this->query['width'] ?: $sourceWidth;
-    $targetHeight = $this->query['height'] ?: $sourceHeight;
-    $targetRatio = $this->query['ratio'] ?: 0;
+    $targetWdith = $this->query['width'] ?: false;
+    $targetHeight = $this->query['height'] ?: false;
+    $targetRatio = $this->query['ratio'] ?: false;
 
     $fileTag = $R->fileId . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
     $fileTag = md5($fileTag);
 
     if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
       $etag = $_SERVER['HTTP_IF_NONE_MATCH'];
-      if ($fileTag === $etag) {
-        header("HTTP/1.1 304 Not Modified");
-        exit;
-      }
+      // if ($fileTag === $etag) {
+      //   header("HTTP/1.1 304 Not Modified");
+      //   exit;
+      // }
     }
     header("Last-modified:" . date("D, d M Y H:i:s", time()));
     header("etag: " . $fileTag);
