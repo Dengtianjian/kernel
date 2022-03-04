@@ -47,9 +47,6 @@ class GetImageThumbnailViewController extends Controller
     $imageInfo = getimagesize($filePath);
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
-    //* 2832 4240
-    //* 480 290
-    // Output::debug($sourceWidth, $sourceHeight);
     if ($targetRatio) {
       $targetWdith = $targetWdith * $targetRatio;
       $targetHeight = $targetHeight * $targetRatio;
@@ -97,10 +94,10 @@ class GetImageThumbnailViewController extends Controller
 
     if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
       $etag = $_SERVER['HTTP_IF_NONE_MATCH'];
-      // if ($fileTag === $etag) {
-      //   header("HTTP/1.1 304 Not Modified");
-      //   exit;
-      // }
+      if ($fileTag === $etag) {
+        header("HTTP/1.1 304 Not Modified");
+        exit;
+      }
     }
     header("Last-modified:" . date("D, d M Y H:i:s", time()));
     header("etag: " . $fileTag);
