@@ -2,24 +2,39 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Output;
+
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
 class SQL
 {
-  static function addQuote(array $strings, string $quote = "`", bool $judgeType = false)
+  /**
+   * 优化字符串
+   *
+   * @param array $strings 字符串数组
+   * @param string $quote 添加的引号
+   * @param boolean $addQuote 是否跳过添加引号
+   * @return string[] 优化后的字符串
+   */
+  static function addQuote(array $strings, string $quote = "`", bool $addQuote = true)
   {
     foreach ($strings as &$item) {
-      if ($judgeType) {
-        if (!is_string($item)) {
-          continue;
+      if (empty($item)) {
+        if (is_string($item)) {
+          $item = NULL;
+        }
+        if ($item == "") {
+          $item = intval($item);
         }
       }
       if (\is_bool($item)) {
         $item = $item ? 1 : 0;
       }
-      $item = $quote . $item . $quote;
+      if ($addQuote) {
+        $item = $quote . $item . $quote;
+      }
     }
     return $strings;
   }
@@ -62,8 +77,10 @@ class SQL
   }
   static function field($fieldName, $value, $glue = "=")
   {
+    $glue = strtolower($glue);
     $fieldName = self::addQuote([$fieldName])[0];
     $addQuote = true;
+
     if ($value === null) {
       $addQuote = false;
       switch ($glue) {
@@ -79,7 +96,8 @@ class SQL
     if (is_numeric($value)) {
       $addQuote = false;
     }
-    if ($addQuote) {
+
+    if ($addQuote && !is_array($value)) {
       $value = self::addQuote([$value], "'")[0];
     }
 
@@ -112,6 +130,7 @@ class SQL
         break;
       case 'in':
       case 'notin':
+        $value = self::addQuote(array_values($value), "'");
         $val = $value ? implode(',', $value) : '\'\'';
         return $fieldName . ($glue == 'notin' ? ' NOT' : '') . ' IN(' . $val . ')';
         break;
@@ -209,6 +228,10 @@ class SQL
   }
   static function count(string $tableName, $field = "*", $extraStatement = "")
   {
-    return "SELECT COUNT($field) FROM `$tableName` $extraStatement";
+    return "SELECT COUNT('$field') FROM `$tableName` $extraStatement";
+  }
+  static function exist(string $tableName, $extraStatement = "")
+  {
+    return "SELECT 1 FROM `$tableName` $extraStatement";
   }
 }

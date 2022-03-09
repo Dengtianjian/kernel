@@ -23,7 +23,7 @@ class View
    */
   static private function renderPage($fileName, $fileDir = "", $viewData = [], $templateId = "", $hook = false)
   {
-    global  $_GG;
+    global $_GG;
     $View = self::class;
 
     $viewData = \array_merge(self::$viewData, $viewData);
@@ -33,7 +33,7 @@ class View
 
     $blocks = [];
 
-    $baseDir = GlobalVariables::getApp("root") . "/Views/$fileDir";
+    $baseDir = F_APP_ROOT . "/Views/$fileDir";
     self::outputHeader();
     if (\is_array($fileName)) {
       if (Arr::isAssoc($fileName)) {
@@ -97,7 +97,7 @@ class View
       }
     }
 
-    $baseDir = GlobalVariables::getApp("root") . "/Views/$viewDirOfViewData";
+    $baseDir = F_APP_ROOT . "/Views/$viewDirOfViewData";
     if (\is_array($viewFile)) {
       if (Arr::isAssoc($viewFile)) {
         foreach ($viewFile as $dir => $name) {
@@ -142,8 +142,8 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "/";
     }
-    $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/addon/root") . "/Views", "", $viewDirOfViewData);
-    $viewDirOfViewData = GlobalVariables::get("_GG/addon/root") . "/Views/$viewDirOfViewData";
+    // $viewDirOfViewData = \str_replace(F_APP_ROOT . "/Views", "", $viewDirOfViewData);
+    // $viewDirOfViewData = F_APP_ROOT . "/Views/$viewDirOfViewData";
     return self::render($viewFile, $viewDirOfViewData, $viewData, $templateId);
   }
 
@@ -162,8 +162,8 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "";
     }
-    $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root") . "/Views/", "", $viewDirOfViewData);
-    $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/$viewDirOfViewData";
+    // $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root") . "/Views/", "", $viewDirOfViewData);
+    // $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/$viewDirOfViewData";
     return self::render($viewFile, $viewDirOfViewData, $viewData, $templateId);
   }
   /**
@@ -180,8 +180,8 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "";
     }
-    $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/addon/root") . "/Views", "", $viewDirOfViewData);
-    $viewDirOfViewData = GlobalVariables::get("_GG/addon/root") . "/Views/$viewDirOfViewData";
+    // $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/addon/root") . "/Views", "", $viewDirOfViewData);
+    // $viewDirOfViewData = GlobalVariables::get("_GG/addon/root") . "/Views/$viewDirOfViewData";
     return self::render($viewFile, $viewDirOfViewData, $viewData, "hook", true);
   }
   /**
@@ -198,8 +198,8 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "Dashboard";
     }
-    $realTemplateDir = GlobalVariables::get("_GG/addon/root") . "/Views/" . $viewDirOfViewData;
-    $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/Dashboard";
+    $realTemplateDir = F_APP_ROOT . "/Views/" . $viewDirOfViewData;
+    // $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/Dashboard";
     return self::render("container", $viewDirOfViewData, [
       "_fileName" => $viewFile,
       "_templateDir" => $realTemplateDir,
@@ -220,9 +220,9 @@ class View
       $viewData = $viewDirOfViewData;
       $viewDirOfViewData = "Dashboard";
     }
-    $realTemplateDir = GlobalVariables::get("_GG/kernel/root") . "/Views/" . $viewDirOfViewData;
-    $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root"), "", $viewDirOfViewData);
-    $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/Dashboard";
+    $realTemplateDir = F_APP_ROOT . "/Views/" . $viewDirOfViewData;
+    // $viewDirOfViewData = \str_replace(GlobalVariables::get("_GG/kernel/root"), "", $viewDirOfViewData);
+    // $viewDirOfViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/Dashboard";
     return self::render("systemContainer", $viewDirOfViewData, [
       "_fileName" => $viewFile,
       "_templateDir" => $realTemplateDir,
@@ -249,7 +249,7 @@ class View
   static function title($titleSourceString, $params = [])
   {
     self::addData([
-      "navtitle" => Str::replaceParams($titleSourceString, $params),
+      "navTitle" => Str::replaceParams($titleSourceString, $params),
       "pageTitle" => Str::replaceParams($titleSourceString, $params),
     ]);
   }

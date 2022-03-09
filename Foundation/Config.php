@@ -54,12 +54,18 @@ class Config
       foreach ($keyItem as $kkItem) {
         if (isset($value[$kkItem])) {
           $value = $value[$kkItem];
+        } else {
+          $lastKey = null;
+          break;
         }
 
         $lastKey = $kkItem;
       }
-      $values[$lastKey] = $value;
+      if ($lastKey !== null) {
+        $values[$lastKey] = $value;
+      }
     }
+
     if (count($key) === 1) {
       return \array_pop($values);
     }

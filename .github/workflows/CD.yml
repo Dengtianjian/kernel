@@ -1,0 +1,21 @@
+name: Deploy to TencentCloud CVM
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@main
+      - name: SSH Deploy
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOYSSHKEY }}
+          ARGS: "-rltgoDzvO --delete"
+          SOURCE: ""
+          REMOTE_HOST: "cooocc.com"
+          REMOTE_USER: "root"
+          TARGET: "/datadisk/projects/official/api/official"
+          EXCLUDE: "/official/Iuu/.version"

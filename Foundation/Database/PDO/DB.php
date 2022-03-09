@@ -63,4 +63,12 @@ class DB
   {
     return self::query($query->sql());
   }
+  static function exist(Query $query)
+  {
+    $queryResult = self::query($query->exist()->sql());
+    if (empty($queryResult)) {
+      return 0;
+    }
+    return $query[0]["1"];
+  }
 }

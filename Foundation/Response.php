@@ -6,6 +6,7 @@ if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
+use Error;
 use kernel\Foundation\Exception\ErrorCode;
 
 class Response
@@ -46,18 +47,24 @@ class Response
     if (!$routerType) {
       $routerType = "view";
     }
-    // if ($routerType === "view") {
-    //   $currentUrl = F_BASE_URL;
-    //   $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
-    //   $redirectUrl = $_SERVER['HTTP_REFERER'];
-    //   if ($redirectUrl == $currentUrl || !$redirectUrl) {
-    //     $redirectUrl = F_BASE_URL;
-    //   }
-    //   \showmessage($message, $redirectUrl, [], [
-    //     "alert" => "error"
-    //   ]);
-    //   exit();
-    // }
+    if ($routerType === "view") {
+      $currentUrl = F_BASE_URL;
+      $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
+      $redirectUrl = $_SERVER['HTTP_REFERER'];
+      if ($redirectUrl === $currentUrl || !$redirectUrl) {
+        $redirectUrl = F_BASE_URL;
+      }
+      if ($statusCode > 299) {
+        if (Config::get("mode") === "development") {
+          echo "error";
+          Output::debug($message, $statusCode, $code, $data, $details);
+        } else {
+          Output::print($message);
+        }
+        // header("Refresh: 3; url=$redirectUrl");
+      }
+      exit();
+    }
 
     header("Content-Type:application/json", true, $statusCode);
     for ($i = 0; $i < count(self::$headers); $i++) {
@@ -88,8 +95,11 @@ class Response
     if ($interceptResult === false) {
       return false;
     }
-
-    \print_r(\json_encode($result));
+    self::output($result);
+  }
+  static function output($data)
+  {
+    \print_r(\json_encode($data));
     exit();
   }
   static function addData(array $data)
@@ -106,15 +116,34 @@ class Response
   {
     $fileinfo = pathinfo($filePath);
 
-    if (File::isImage($filePath)) {
+    $range = $GLOBALS['App']->request->headers("Range") ?: false;
+    // $range=200000;
+
+    $remainingLength = 0;
+    header('Accept-Ranges: bytes');
+    header('Content-Length: ' . $fileSize);
+    if ($range) {
+      $remainingLength = $fileSize - $range;
+      header("Content-Range: bytes $range-$remainingLength/$fileSize");
+      header('Content-Length: ' . $fileSize - $range);
+    }
+
+    if (File::isImage($filePath) && $range === false) {
       header('Content-type: image/png;', true);
+      header('Content-Disposition: inline; filename=' . urlencode($fileName));
       $content = file_get_contents($filePath);
       echo $content;
     } else {
       header('Content-type: application/x-' . $fileinfo['extension'], true);
       header('Content-Disposition: attachment; filename=' . urlencode($fileName));
-      header('Content-Length: ' . $fileSize);
-      readfile($filePath);
+
+      if ($range) {
+        header("HTTP/1.1 206 Partial Content");
+        $content = file_get_contents($filePath, false, null, $range, $fileSize);
+        echo $content;
+      } else {
+        readfile($filePath);
+      }
 
       exit();
     }
