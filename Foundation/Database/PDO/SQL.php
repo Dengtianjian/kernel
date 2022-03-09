@@ -77,8 +77,10 @@ class SQL
   }
   static function field($fieldName, $value, $glue = "=")
   {
+    $glue = strtolower($glue);
     $fieldName = self::addQuote([$fieldName])[0];
     $addQuote = true;
+
     if ($value === null) {
       $addQuote = false;
       switch ($glue) {
@@ -94,7 +96,8 @@ class SQL
     if (is_numeric($value)) {
       $addQuote = false;
     }
-    if ($addQuote) {
+
+    if ($addQuote && !is_array($value)) {
       $value = self::addQuote([$value], "'")[0];
     }
 
@@ -127,6 +130,7 @@ class SQL
         break;
       case 'in':
       case 'notin':
+        $value = self::addQuote(array_values($value), "'");
         $val = $value ? implode(',', $value) : '\'\'';
         return $fieldName . ($glue == 'notin' ? ' NOT' : '') . ' IN(' . $val . ')';
         break;
