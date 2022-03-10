@@ -71,7 +71,7 @@ class File
   {
     $uploadResult = [];
     $onlyOne = false;
-    if (!Arr::isAssoc($files)) {
+    if (is_array($files) || Arr::isAssoc($files)) {
       $files = array_values($files);
     } else {
       $onlyOne = true;

@@ -16,7 +16,10 @@ class Arr
    */
   static function isAssoc($array)
   {
-    return is_array($array) && array_keys($array) !== range(0, count($array) - 1);
+    if (is_array($array)) {
+      return array_keys($array) !== range(0, count($array) - 1);
+    }
+    return false;
   }
   /**
    * 抽取元素的指定键值为当前元素的键
