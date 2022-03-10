@@ -17,5 +17,5 @@ jobs:
           SOURCE: ""
           REMOTE_HOST: "cooocc.com"
           REMOTE_USER: "root"
-          TARGET: "/datadisk/projects/official/api/official"
+          TARGET: "/datadisk/projects/apps/kernel"
           EXCLUDE: "/official/Iuu/.version"
