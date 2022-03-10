@@ -4,6 +4,7 @@ namespace kernel\Service;
 
 use kernel\Foundation\File;
 use kernel\Foundation\GlobalVariables;
+use kernel\Foundation\Output;
 use kernel\Model\AttachmentModel;
 
 class AttachmentService
@@ -28,8 +29,8 @@ class AttachmentService
   {
     $AM = new AttachmentModel();
     $attachmentId = $AM->genId();
+
     $attachmentFileId = self::genFileId($attachmentId, $saveDir, $saveFileName);
-    $user = GlobalVariables::getGG("user");
     $nowTime = time();
     $insertData = [
       "id" => $attachmentId,

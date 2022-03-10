@@ -71,12 +71,13 @@ class File
   {
     $uploadResult = [];
     $onlyOne = false;
-    if (is_array($files)) {
+    if (!Arr::isAssoc($files)) {
       $files = array_values($files);
     } else {
       $onlyOne = true;
       $files = [$files];
     }
+
     foreach ($files as $fileItem) {
       $filePath = "";
       $fileSize = 0;
@@ -84,17 +85,21 @@ class File
       if (is_string($fileItem)) {
         $filePath = $fileItem;
         $fileSize = filesize($filePath);
+        if (!$fileSize) {
+          Response::error(500, "File:500002", "保存文件失败", [], error_get_last());
+        }
         $fileSourceName = $filePath;
       } else {
         if ($fileItem['error'] > 0) {
           $uploadResult[] = $fileItem['error'];
           continue;
         }
-        $fileSourceName = $filePath = $fileItem['name'];
+        $fileSourceName = $fileItem['name'];
         $fileSize = $fileItem['size'];
+        $filePath = $fileItem['tmp_name'];
       }
 
-      $fileExtension = \pathinfo($filePath, \PATHINFO_EXTENSION);
+      $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
       $fileCode = \mt_rand(1000, 9999) . time();
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
