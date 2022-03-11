@@ -22,11 +22,9 @@ class SQL
   {
     foreach ($strings as &$item) {
       if (empty($item)) {
-        if (is_string($item)) {
-          $item = NULL;
-        }
-        if ($item == "") {
-          $item = intval($item);
+        if ($item === null) {
+          $item = null;
+          continue;
         }
       }
       if (\is_bool($item)) {
