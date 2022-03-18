@@ -1,0 +1,14 @@
+{
+	"name": "tianjian/kernel",
+	"authors": [
+		{
+			"name": "Tianjian",
+			"email": "mail@isdtj.com"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"kernel\\": ""
+		}
+	}
+}

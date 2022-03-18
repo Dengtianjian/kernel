@@ -1,5 +1,6 @@
 <?php
 
+use kernel\App;
 use kernel\Foundation\Log;
 use kernel\Foundation\Response;
 
@@ -7,7 +8,7 @@ define("F_ROOT",  str_replace("\\", "/", realpath(dirname(__DIR__))));
 define("F_KERNEL_ROOT", str_replace("\\", "/", __DIR__));
 define("F_KERNEL", true);
 
-//* 获取URL地址
+// //* 获取URL地址
 $url = "";
 if (strtolower($_SERVER['REQUEST_SCHEME']) === 'https' && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] === 'on') {
   $url .= "https://";
@@ -17,9 +18,9 @@ if (strtolower($_SERVER['REQUEST_SCHEME']) === 'https' && $_SERVER['HTTPS'] && $
 $url .= $_SERVER['HTTP_HOST'] . ":" . $_SERVER['SERVER_PORT'];
 define("F_BASE_URL", $url);
 
-include_once("../kernel/Autoload.php");
+include_once("../kernel/vendor/autoload.php");
 
-//* 错误处理：系统错误、编码错误、编译错误、PHP内核错误、编译Warning级别、Warning级别都写入日志
+// //* 错误处理：系统错误、编码错误、编译错误、PHP内核错误、编译Warning级别、Warning级别都写入日志
 function errorHandler(
   int $errno,
   string $errstr,
@@ -48,3 +49,6 @@ function errorHandler(
 }
 
 \set_error_handler("errorHandler", \E_ALL);
+
+// $App = new App("kernel");
+// $App->init();
