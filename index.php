@@ -50,5 +50,9 @@ function errorHandler(
 
 \set_error_handler("errorHandler", \E_ALL);
 
+if (file_exists("./vendor/autoload.php")) {
+  include_once("./vendor/autoload.php");
+}
+
 // $App = new App("kernel");
 // $App->init();
