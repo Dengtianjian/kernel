@@ -28,6 +28,13 @@ class Curl
   private $curlErrorNo = NULL; //* 错误码
   private $responseHeadersData = null; //* 响应头
   private $responseStatusCode = 200; //* 相应状态码
+  private $proxy = [ //* 代理相关
+    "open" => false, //* 是否开启
+    "url" => "", //* 代理URL地址
+    "port" => "", //* 代理的URL端口
+    "username" => "", //* 代理用户
+    "password" => "" //* 代理用户密码
+  ];
   /**
    * 实例化当前类
    *
@@ -232,6 +239,15 @@ class Curl
     $this->curlTimeout = $seconds;
     return $this;
   }
+  public function proxy($url, $port, $username = "", $password = "")
+  {
+    $this->proxy["open"] = true;
+    $this->proxy["url"] = $url;
+    $this->proxy["port"] = $port;
+    $this->proxy["username"] = $username;
+    $this->proxy["password"] = $password;
+    return $this;
+  }
   /**
    * 开启https。协议头是https情况下默认验证https
    * 传true是验证https，否则就绕过https
@@ -314,6 +330,14 @@ class Curl
     if ($this->bypasSSLVerification === true) {
       $options[CURLOPT_SSL_VERIFYPEER] = false;
       $options[CURLOPT_SSL_VERIFYHOST] = false;
+    }
+    //* 开启代理
+    if ($this->proxy['open']) {
+      $options[CURLOPT_PROXY] = $this->proxy['url'];
+      $options[CURLOPT_PROXYPORT] =  $this->proxy['port'];
+      if ($this->proxy['username']) {
+        $options[CURLOPT_PROXYUSERPWD] =  $this->proxy['username'] . ":" . $this->proxy['password'];
+      }
     }
 
     foreach ($this->curlOptions as $key => $value) {
