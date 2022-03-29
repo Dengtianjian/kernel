@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use Error;
+
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
@@ -63,7 +65,7 @@ class File
   /**
    * 上传文件，并且保存在服务器
    *
-   * @param array|file $files 文件或者多个文件数组
+   * @param array|string $files 文件或者多个文件数组
    * @param string $savePath 保存的完整路径
    * @return array
    */
@@ -71,11 +73,11 @@ class File
   {
     $uploadResult = [];
     $onlyOne = false;
-    if (is_array($files) || Arr::isAssoc($files)) {
-      $files = array_values($files);
-    } else {
+    if (is_array($files) && Arr::isAssoc($files) || is_string($files)) {
       $onlyOne = true;
       $files = [$files];
+    } else {
+      $files = array_values($files);
     }
 
     foreach ($files as $fileItem) {

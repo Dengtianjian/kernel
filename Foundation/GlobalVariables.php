@@ -16,20 +16,16 @@ class GlobalVariables
    */
   static function set($value)
   {
-    if (Arr::isAssoc($value)) {
-      foreach ($value as $key => $valueItem) {
-        if ($GLOBALS[$key]) {
-          if (\is_array($valueItem)) {
-            $GLOBALS[$key] = Arr::merge($GLOBALS[$key], $valueItem);
-          } else {
-            $GLOBALS[$key] = $valueItem;
-          }
+    foreach ($value as $key => $valueItem) {
+      if ($GLOBALS[$key]) {
+        if (\is_array($valueItem)) {
+          $GLOBALS[$key] = Arr::merge($GLOBALS[$key], $valueItem);
         } else {
           $GLOBALS[$key] = $valueItem;
         }
+      } else {
+        $GLOBALS[$key] = $valueItem;
       }
-    } else {
-      $GLOBALS = \array_merge($GLOBALS, $value);
     }
     return true;
   }
@@ -42,7 +38,7 @@ class GlobalVariables
   static function remove($path = "_GG")
   {
     $paths = explode("/", $path);
-    $last = &$GLOBALS;
+    $last = $GLOBALS;
     $lastKey = \array_values($paths);
     $lastKey = $lastKey[count($lastKey) - 1];
     foreach ($paths as $pathItem) {
@@ -92,6 +88,6 @@ class GlobalVariables
   static function getApp($path = "")
   {
     $path = $path === "" ? "" : "/$path";
-    return self::getGG(self::getGG("id").$path);
+    return self::getGG(self::getGG("id") . $path);
   }
 }

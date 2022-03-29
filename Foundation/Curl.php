@@ -49,7 +49,7 @@ class Curl
    *
    * @param string $url 请求的url
    * @param array[$key=>$value] $query query参数和参数值
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function url($url, $query = [])
   {
@@ -64,7 +64,7 @@ class Curl
    * 设置为json请求数据和格式化响应的json数据
    *
    * @param boolean $yes 是否是json格式
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function json($yes)
   {
@@ -75,7 +75,7 @@ class Curl
    * 设置curl选项
    *
    * @param array[$key=>$value] $options 选项和选项值。$key是CURL的常量值
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function options($options)
   {
@@ -88,7 +88,7 @@ class Curl
    * 设置header
    *
    * @param array[$key=>$value] $params 参数和参数值
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function headers($params)
   {
@@ -118,7 +118,7 @@ class Curl
    * 每调用就会递增增加数据
    *
    * @param array[$key=>$value] $datas 数据
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function data($datas)
   {
@@ -140,7 +140,7 @@ class Curl
   /**
    * 设置请求方法为 post
    *
-   * @return void
+   * @return Curl
    */
   public function post()
   {
@@ -232,7 +232,7 @@ class Curl
    * 设置请求超时时间
    *
    * @param integer $seconds 超时秒数
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function timeout($seconds)
   {
@@ -253,7 +253,7 @@ class Curl
    * 传true是验证https，否则就绕过https
    *
    * @param boolean $yes 是否开启
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function https($yes = true)
   {
@@ -264,7 +264,7 @@ class Curl
    * 设置cookie
    *
    * @param array[$key=>$value] $datas 数据
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function cookie($datas)
   {
@@ -293,7 +293,7 @@ class Curl
    * 这个函数包含实例化cur，设置headers、options、cookies
    * 有错调error或者erron，不然就getData
    *
-   * @return object 当前实例
+   * @return Curl 当前实例
    */
   public function send()
   {
