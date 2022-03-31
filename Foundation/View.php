@@ -166,18 +166,24 @@ class View
     // $viewDirOrViewData = GlobalVariables::get("_GG/kernel/root") . "/Views/$viewDirOrViewData";
     return self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
   }
-  static function layout($layout = null, $viewFile = "", $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
+  static function layout($layout = null, $viewFile = null, $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
   {
-    if ($layout) {
+    if ($layout || !$viewFile) {
       if (is_array($viewDirOrViewData)) {
         $viewData = $viewDirOrViewData;
         $viewDirOrViewData = "";
       }
 
-      return self::render($layout, "Layout", [
-        "__pageFile" => $viewFile,
-        "__pageData" => $viewData
-      ], $templateId);
+      $layoutData = $viewData;
+      if ($viewFile) {
+        $layoutData = [
+          "__pageFile" => $viewFile,
+          "__pageData" => $viewData
+        ];
+        return self::render($layout, "Layout", $layoutData, $templateId);
+      } else {
+        return self::page($layout, "Layout", $layoutData,  $templateId);
+      }
     } else {
       return self::page($GLOBALS['__pageFile'], $GLOBALS['__pageData'], [], "page");
     }
