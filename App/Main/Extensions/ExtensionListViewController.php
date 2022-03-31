@@ -55,9 +55,9 @@ class ExtensionListViewController extends Controller
     }
 
     View::title(Lang::value("extension_list"));
-    View::systemDashboard("extensions/list", [
-      "extensions" => $extensions,
-      "extensionCount" => count($extensions)
-    ]);
+    // View::systemDashboard("extensions/list", [
+    //   "extensions" => $extensions,
+    //   "extensionCount" => count($extensions)
+    // ]);
   }
 }

@@ -44,11 +44,11 @@ class Exception
     return;
     if (false || $app->router === NULL || $app->router['type'] === "view") {
       if (Config::get("mode") === "production") {
-        View::systemPage("error", [
+        View::kernelPage("error", [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
         ]);
       } else {
-        View::systemPage("error", [
+        View::kernelPage("error", [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
         ]);
       }
