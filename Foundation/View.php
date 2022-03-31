@@ -168,10 +168,14 @@ class View
   }
   static function layout($layout = null, $viewFile = null, $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
   {
-    if ($layout || !$viewFile) {
+    if ($layout || ($layout && !$viewFile) || ($layout && is_array($viewFile))) {
       if (is_array($viewDirOrViewData)) {
         $viewData = $viewDirOrViewData;
         $viewDirOrViewData = "";
+      }
+      if (is_array($viewFile)) {
+        $viewData = $viewFile;
+        $viewFile = null;
       }
 
       $layoutData = $viewData;
