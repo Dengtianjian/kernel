@@ -13,9 +13,8 @@ jobs:
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOYSSHKEY }}
-          # ARGS: "-rltgoDzvO --delete"
-          ARGS: "-urlptgoD"
+          ARGS: "-rltgoDzvO"
           SOURCE: ""
-          REMOTE_HOST: "cooocc.com"
-          REMOTE_USER: "root"
-          TARGET: "/datadisk/projects/apps/kernel"
+          REMOTE_HOST: "${{ secrets.REMOTEHOST }}"
+          REMOTE_USER: "${{ secrets.REMOTEUSER }}"
+          TARGET: "${{ secrets.REMOTETARGETPATH }}"
