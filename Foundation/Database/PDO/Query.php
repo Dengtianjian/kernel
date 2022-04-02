@@ -67,7 +67,7 @@ class Query
 
       $sql .= " $limitSql";
     }
-    if ($this->options['limit']) {
+    if (isset($this->options['limit'])) {
       if (isset($this->options['limit']['start']) && $this->executeType != "delete") {
         $limitSql = SQL::limit($this->options['limit']['start'], $this->options['limit']['number']);
       } else {

@@ -6,6 +6,7 @@ use kernel\Foundation\Response;
 define("F_ROOT",  str_replace("\\", "/", realpath(dirname(__DIR__))));
 define("F_KERNEL_ROOT", str_replace("\\", "/", __DIR__));
 define("F_KERNEL", true);
+define("F_CACHE_KEY", time());
 
 // //* 获取URL地址
 $url = "";

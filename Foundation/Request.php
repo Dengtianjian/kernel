@@ -20,10 +20,17 @@ class Request
   {
     $this->serializationBody();
     $this->paginationParams = [
-      "page" => $_REQUEST["page"] ? intval($_REQUEST["page"]) : 1,
-      "limit" => $_REQUEST["limit"] ? intval($_REQUEST["limit"]) : intval($_REQUEST["perPage"]),
-      "skip" => $_REQUEST["skip"] ? intval($_REQUEST["skip"]) : null
+      "page" => isset($_REQUEST["page"]) ? intval($_REQUEST["page"]) : 1,
+      "limit" => 10,
+      "skip" => isset($_REQUEST["skip"]) ? intval($_REQUEST["skip"]) : null
     ];
+
+    if (isset($_REQUEST["limit"])) {
+      $this->paginationParams['limit'] = intval($_REQUEST["limit"]);
+    } else if (isset($_REQUEST["perPage"])) {
+      $this->paginationParams['limit'] = intval($_REQUEST["perPage"]);
+    }
+
     $this->method = $_SERVER['REQUEST_METHOD'];
     if (isset($_REQUEST['_method'])) {
       $this->method = $_REQUEST['_method'];
@@ -81,7 +88,7 @@ class Request
   public function headers($key = null)
   {
     if (\function_exists("getallheaders")) {
-      if ($key) {
+      if (isset($key)) {
         return \getallheaders()[$key];
       }
       return \getallheaders();

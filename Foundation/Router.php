@@ -67,7 +67,7 @@ class Router
   static function match($uri, Request $R)
   {
     $method = \strtolower($_SERVER['REQUEST_METHOD']);
-    if ($_GET['_method']) {
+    if (isset($_GET['_method'])) {
       $method = \addslashes(\strtolower($_GET['_method']));
     }
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配

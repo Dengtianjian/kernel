@@ -43,7 +43,9 @@ class App extends Application
 
     //* 初始化全局数据
     // self::initGlobalVariables();
-    $this->uri = \addslashes($_GET['uri']);
+    if(isset($_GET['uri'])){
+      $this->uri = \addslashes($_GET['uri']);
+    }
 
     ErrorCode::load(F_KERNEL_ROOT . "/Foundation/Exception/ErrorCodes.php"); //* 加载错误码
 
@@ -69,7 +71,9 @@ class App extends Application
     if ($router && $router['type'] === "api" && $router['method'] !== 'any' && $this->request->ajax() === null) {
       Response::error("METHOD_NOT_ALLOWED");
     }
-    $request->setParams($router['params']);
+    if(isset($router['params'])){
+      $request->setParams($router['params']);
+    }
     header("Access-Control-Allow-Origin:*");
     header('Access-Control-Allow-Methods:*');
     header('Access-Control-Allow-Headers:*');
