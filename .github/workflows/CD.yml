@@ -1,7 +1,7 @@
 name: Deploy to TencentCloud CVM
 on:
   push:
-    branches: [main]
+    branches: [develop]
 
 jobs:
   build:
@@ -13,7 +13,8 @@ jobs:
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOYSSHKEY }}
-          ARGS: "-rltgoDzvO --delete"
+          # ARGS: "-rltgoDzvO --delete"
+          ARGS: "-rlptgoD --delete"
           SOURCE: ""
           REMOTE_HOST: "cooocc.com"
           REMOTE_USER: "root"
