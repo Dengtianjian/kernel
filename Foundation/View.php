@@ -97,7 +97,11 @@ class View
       }
     }
 
-    $baseDir = F_APP_ROOT . "/Views/$viewDirOrViewData";
+    $baseDir = F_APP_ROOT . "/Views";
+    if ($viewDirOrViewData) {
+      $baseDir .= "/$viewDirOrViewData";
+    }
+
     if (\is_array($viewFile)) {
       if (Arr::isAssoc($viewFile)) {
         foreach ($viewFile as $dir => $name) {
@@ -140,7 +144,7 @@ class View
   {
     if (is_array($viewDirOrViewData)) {
       $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "/";
+      $viewDirOrViewData = "";
     }
     // $viewDirOrViewData = \str_replace(F_APP_ROOT . "/Views", "", $viewDirOrViewData);
     // $viewDirOrViewData = F_APP_ROOT . "/Views/$viewDirOrViewData";
