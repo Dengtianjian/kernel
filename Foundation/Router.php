@@ -166,4 +166,8 @@ class Router
     $C->url($url)->headers($headers)->timeout($timeout)->https(false)->data($data)->post();
     return $C->getData();
   }
+  static function redirect($targetUrl, $statusCode = 302)
+  {
+    header("Location: $targetUrl", true, $statusCode);
+  }
 }
