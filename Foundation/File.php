@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation;
 
-use Error;
+use kernel\Foundation\Data\Arr;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');

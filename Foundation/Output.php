@@ -6,12 +6,7 @@ class Output
 {
   static function debug(...$data)
   {
-    echo "<pre>";
-    foreach ($data as $dataItem) {
-      print_r($dataItem);
-      echo "<br/>";
-    }
-    echo "</pre>";
+    self::format(...$data);
     exit;
   }
   static function backtrace(int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0)
@@ -26,5 +21,14 @@ class Output
     } else {
       print_r($outputString);
     }
+  }
+  static function format(...$data)
+  {
+    echo "<pre>";
+    foreach ($data as $dataItem) {
+      print_r($dataItem);
+      echo "<br/>";
+    }
+    echo "</pre>";
   }
 }

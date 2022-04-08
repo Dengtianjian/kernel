@@ -4,12 +4,7 @@ namespace kernel\Foundation;
 
 use kernel\Foundation\Data\Arr;
 
-/**
- * 全局变量类
- * 用于设置、移除、获取全局变量
- * ! 废弃
- */
-class GlobalVariables
+class Store
 {
   /**
    * 设置全局变量
@@ -19,18 +14,28 @@ class GlobalVariables
    */
   static function set($value)
   {
+    if (!$GLOBALS['_STORE']) {
+      $GLOBALS['_STORE'] = [];
+    }
+    $store = &$GLOBALS['_STORE'];
     foreach ($value as $key => $valueItem) {
-      if ($GLOBALS[$key]) {
+      if ($store[$key]) {
         if (\is_array($valueItem)) {
-          $GLOBALS[$key] = Arr::merge($GLOBALS[$key], $valueItem);
+          $store[$key] = Arr::merge($store[$key], $valueItem);
         } else {
-          $GLOBALS[$key] = $valueItem;
+          $store[$key] = $valueItem;
         }
       } else {
-        $GLOBALS[$key] = $valueItem;
+        $store[$key] = $valueItem;
       }
     }
     return true;
+  }
+  static function setApp($value)
+  {
+    return self::set([
+      "__App" => $value
+    ]);
   }
   /**
    * 根据传入的字符串数组路径删除全局变量的值
@@ -38,10 +43,14 @@ class GlobalVariables
    * @param string $path 字符串数组路径，/分隔。例如： a/b/c。
    * @return void
    */
-  static function remove($path = "_GG")
+  static function remove(string|null $path = null)
   {
+    if (empty($path)) {
+      $GLOBALS['_STORE'] = [];
+      return true;
+    }
     $paths = explode("/", $path);
-    $last = $GLOBALS;
+    $last = $GLOBALS['_STORE'];
     $lastKey = \array_values($paths);
     $lastKey = $lastKey[count($lastKey) - 1];
     foreach ($paths as $pathItem) {
@@ -52,45 +61,32 @@ class GlobalVariables
       $last = &$last[$pathItem];
     }
   }
+  static function removeApp(string|null $path = null)
+  {
+    $path = empty($path) ? "__App" : "__App/$path";
+    return self::remove($path);
+  }
   /**
    * 根据传入的数组路径字符串获取全局变量值
    *
-   * @param string $path 数组路径字符串，用/分隔。
+   * @param string|null $path 数组路径字符串，用/分隔。
    * @return array|string|integer|boolean 获取到的值
    */
-  static function get($path = "_GG")
+  static function get(string|null $path = null)
   {
+    if (empty($path)) {
+      return $GLOBALS['_STORE'];
+    }
     $paths = explode("/", $path);
-    $last = $GLOBALS;
+    $last = $GLOBALS['_STORE'];
     foreach ($paths as $pathItem) {
       $last = $last[$pathItem];
     }
     return $last;
   }
-  /**
-   * 获取_GG下的属性
-   *
-   * @param string $path 数组路径字符串
-   * @return array|string|integer|boolean
-   */
-  static function getGG($path = "")
+  static function getApp(string|null $path = null)
   {
-    if ($path) {
-      $path = "_GG/$path";
-    } else {
-      $path = "_GG";
-    }
+    $path = empty($path) ? "__App" : "__App/$path";
     return self::get($path);
-  }
-  /**
-   * 获取当前运行下的app全局属性
-   *
-   * @param string $path 斜杠分隔
-   * @return array 属性
-   */
-  static function getApp($path = "")
-  {
-    $path = $path === "" ? "" : "/$path";
-    return self::getGG(self::getGG("id") . $path);
   }
 }

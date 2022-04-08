@@ -8,6 +8,7 @@ if (!defined("F_KERNEL")) {
 
 use kernel\Foundation\Arr;
 use kernel\Foundation\Config;
+use kernel\Foundation\Data\Arr as DataArr;
 use kernel\Foundation\Database\Model as DatabaseModel;
 use kernel\Foundation\File;
 use kernel\Foundation\Model;
@@ -26,7 +27,7 @@ class Attachment
     $upload = new \discuz_upload();
     $uploadResult = [];
     $onlyOny = false;
-    if (Arr::isAssoc($files)) {
+    if (DataArr::isAssoc($files)) {
       $onlyOny = true;
       $files = [$files];
     } else {

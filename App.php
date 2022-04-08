@@ -7,7 +7,6 @@ if (!defined("F_KERNEL")) {
 }
 
 use kernel\Foundation\Application;
-use kernel\Middleware as Middleware;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\Router;
@@ -42,22 +41,18 @@ class App extends Application
     }
 
     //* 初始化全局数据
-    // self::initGlobalVariables();
-    if(isset($_GET['uri'])){
-      $this->uri = \addslashes($_GET['uri']);
-    }
+    $this->initAppStore();
+    // if (isset($_GET['uri'])) {
+    //   $this->uri = \addslashes($_GET['uri']);
+    // }
 
     ErrorCode::load(F_KERNEL_ROOT . "/Foundation/Exception/ErrorCodes.php"); //* 加载错误码
 
     include_once(F_KERNEL_ROOT . "/Routes.php"); //* 载入kernel用到的路由
     include_once(F_APP_ROOT . "/Routes.php"); //* 载入路由
-
-    $GLOBALS['app'] = $this;
   }
   function init()
   {
-    $this->setMiddlware(Middleware\GlobalSetsMiddleware::class);
-
     $request = new Request();
     $this->request = $request;
 
@@ -71,7 +66,7 @@ class App extends Application
     if ($router && $router['type'] === "api" && $router['method'] !== 'any' && $this->request->ajax() === null) {
       Response::error("METHOD_NOT_ALLOWED");
     }
-    if(isset($router['params'])){
+    if (isset($router['params'])) {
       $request->setParams($router['params']);
     }
     header("Access-Control-Allow-Origin:*");

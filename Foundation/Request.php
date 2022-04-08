@@ -14,6 +14,7 @@ class Request
   private $paginationParams = [
     "page" => 1,
   ];
+  public $uri = "";
   public $router = null;
   public $method = "";
   public function __construct()
@@ -36,6 +37,7 @@ class Request
       $this->method = $_REQUEST['_method'];
     }
     $this->method = strtoupper($this->method);
+    $this->uri=$_SERVER['REQUEST_URI'];
   }
   private function serializationBody()
   {

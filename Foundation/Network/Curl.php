@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Network;
 
 use CURLFile;
-use kernel\Foundation\Arr;
+use kernel\Foundation\Data\Arr;
 
 /**
  * 二次封装的CURL类

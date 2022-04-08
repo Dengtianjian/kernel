@@ -2,9 +2,8 @@
 
 namespace kernel\App\Main\Extensions;
 
-use kernel\Foundation\Arr;
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Controller;
-use kernel\Foundation\Extension\ExtensionIuu;
 use kernel\Foundation\Extension\Extensions;
 use kernel\Foundation\GlobalVariables;
 use kernel\Foundation\Lang;
@@ -24,7 +23,7 @@ class ExtensionListViewController extends Controller
     $extensionIds = array_keys($extensions);
     $EM = new ExtensionsModel();
     $DBExtensions = $EM->getByExtensionId($extensionIds);
-    $DBExtensions = Arr::valueToKey($DBExtensions, "extension_id");
+    $DBExtensions = Arr::indexToAssoc($DBExtensions, "extension_id");
     $insertNewData = [];
     $now = time();
     $pluginId = GlobalVariables::getGG("id");

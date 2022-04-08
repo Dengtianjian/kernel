@@ -5,7 +5,7 @@ namespace kernel\App\Api\Attachment;
 use kernel\Foundation\Controller;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
-use kernel\Foundation\Str;
+use kernel\Foundation\Data\Str;
 use kernel\Model\AttachmentModel;
 use kernel\Service\AttachmentService;
 

@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Output;
-use kernel\Foundation\Str;
+use kernel\Foundation\Data\Str;
 
 class Model
 {

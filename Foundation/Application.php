@@ -26,7 +26,7 @@ class Application
    */
   public static function ins()
   {
-    return $GLOBALS['app'];
+    return $GLOBALS['App'];
   }
   function setMiddlware($middlwareNameOfFunction)
   {
@@ -116,28 +116,25 @@ class Application
       $MainInstance->handle();
     }
   }
-  protected static function initGlobalVariables($appId)
+  protected function initAppStore()
   {
     //* 存放全局用到的数据
-    $GlobalVariables = [
-      "id" => $appId, //* 当前运行中的应用ID
-      "sets" => [], //* 设置项，包含配置项里设置的全局设置项
+    $__App = [
+      "id" => F_APP_ID, //* 当前运行中的应用ID
       "rewriteURL" => [], //* 重写的URL
-      "mode" => Config::get("mode", $appId), //* 当前运行模式
+      "mode" => Config::get("mode", F_APP_ID), //* 当前运行模式
       "langs" => [], //* 字典
       "kernel" => [ //* 内核
         "root" => F_KERNEL_ROOT,
-        "assets" => F_BASE_URL . "/kernel/Assets",
-        "views" => F_BASE_URL . "/kernel/Views",
+        "assets" => F_ROOT . "/kernel/Assets",
+        "views" => F_ROOT . "/kernel/Views",
       ],
-      "$appId" => [
-        "root" => F_ROOT . "/$appId",
-        "assets" => F_ROOT . "/$appId/Assets",
-        "views" => F_ROOT . "/$appId/Views",
+      F_APP_ID => [
+        "root" => F_ROOT . "/" . F_APP_ID,
+        "assets" => F_ROOT . "/" . F_APP_ID . "/Assets",
+        "views" => F_ROOT . "/" . F_APP_ID . "/Views"
       ]
     ];
-    GlobalVariables::set([
-      "_GG" => $GlobalVariables
-    ]);
+    Store::setApp($__App);
   }
 }

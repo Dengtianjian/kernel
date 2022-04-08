@@ -2,6 +2,9 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Str;
+
 /**
  * 伪静态类
  * 替换参数、加入页面链接到全局global等
@@ -44,11 +47,10 @@ class PseudoStatic
       $previous = $item;
     }
 
-    $urls = Arr::merge(GlobalVariables::getGG("rewriteURL"), $mergeData);
-    GlobalVariables::set([
-      "_GG" => [
-        "rewriteURL" => $urls
-      ]
+
+    $urls = Arr::merge(Store::getApp("rewriteURL"), $mergeData);
+    Store::setApp([
+      "rewriteURL" => $urls
     ]);
   }
 }

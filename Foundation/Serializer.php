@@ -3,6 +3,7 @@
 namespace kernel\Foundation;
 
 use Error;
+use kernel\Foundation\Data\Arr;
 
 class Serializer
 {

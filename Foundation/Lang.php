@@ -9,7 +9,7 @@ if (!defined("F_KERNEL")) {
 class Lang
 {
   private static $langs = [];
-    /**
+  /**
    * 加载语言包
    *
    * @return void
@@ -21,10 +21,8 @@ class Lang
     } else {
       Response::error(500, "Lang:500001", "Server error");
     }
-    GlobalVariables::set([
-      "_GG" => [
-        "langs" => Lang::all()
-      ]
+    Store::setApp([
+      "langs" => Lang::all()
     ]);
   }
   public static function add($langs, $key = null)

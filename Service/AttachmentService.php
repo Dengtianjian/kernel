@@ -3,8 +3,6 @@
 namespace kernel\Service;
 
 use kernel\Foundation\File;
-use kernel\Foundation\GlobalVariables;
-use kernel\Foundation\Output;
 use kernel\Model\AttachmentModel;
 
 class AttachmentService

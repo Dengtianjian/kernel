@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\Data\Arr;
+
 class Config
 {
   private static $configs = [];

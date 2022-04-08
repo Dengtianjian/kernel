@@ -4,12 +4,7 @@ namespace kernel;
 
 use kernel\App\Api\Attachment as Attachment;
 use kernel\Foundation\Router;
-use kernel\App\Api\GetGSetController;
 use kernel\App\Main as Main;
-use kernel\App\Main\TestViewController;
-
-Router::get("_gset", GetGSetController::class);
-Router::view("/test", TestViewController::class);
 
 //* 扩展相关
 Router::view("_extensions", Main\Extensions\ExtensionListViewController::class);
