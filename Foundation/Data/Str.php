@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation;
+namespace kernel\Foundation\Data;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -8,7 +8,7 @@ if (!defined("F_KERNEL")) {
 
 class Str
 {
-  static function unescape($str)
+  static function unescape(string $str): string
   {
     $str = rawurldecode($str);
     preg_match_all("/%u.{4}|&#x.{4};|&#\d+;|.+/U", $str, $r);
@@ -24,7 +24,7 @@ class Str
     }
     return join("", $ar);
   }
-  static function replaceParams($string, $params = [])
+  static function replaceParams($string, $params = []): string
   {
     \preg_match_all("/(?<=\{)\w+(?=\})/i", $string, $paramKeys);
     if (count($paramKeys) > 0) {
