@@ -1,8 +1,9 @@
 <?php
 
-namespace kernel\Foundation;
+namespace kernel\Foundation\Network;
 
 use CURLFile;
+use kernel\Foundation\Arr;
 
 /**
  * 二次封装的CURL类
