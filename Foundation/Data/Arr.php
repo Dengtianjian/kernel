@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation;
+namespace kernel\Foundation\Data;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -20,17 +20,6 @@ class Arr
       return array_keys($array) !== range(0, count($array) - 1);
     }
     return false;
-  }
-  /**
-   * 抽取元素的指定键值为当前元素的键
-    //! 准废弃
-   * @param array $array 原数组 索引数组
-   * @param string $key 键名
-   * @return array
-   */
-  static function valueToKey($array, $key)
-  {
-    return self::indexToAssoc($array, $key);
   }
   /**
    * 索引数组转关联数组
@@ -57,7 +46,7 @@ class Arr
    */
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
-    $arr = self::valueToKey($arr, $dataPrimaryKey);
+    $arr = self::indexToAssoc($arr, $dataPrimaryKey);
     $result = [];
     foreach ($arr as &$arrItem) {
       if (!$arrItem[$relatedParentKey]) { //* 最高级
