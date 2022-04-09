@@ -62,7 +62,7 @@ class App extends Application
       $this->setMiddlware(GlobalExtensionsMiddleware::class);
     }
 
-    $router = Router::match($request->uri, $request);
+    $router = Router::match($request);
     if ($router && $router['type'] === "api" && $router['method'] !== 'any' && $this->request->ajax() === null) {
       Response::error("METHOD_NOT_ALLOWED");
     }

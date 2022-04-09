@@ -37,7 +37,8 @@ class Request
       $this->method = $_REQUEST['_method'];
     }
     $this->method = strtoupper($this->method);
-    $this->uri=$_SERVER['REQUEST_URI'];
+
+    $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
   }
   private function serializationBody()
   {
@@ -50,9 +51,7 @@ class Request
     } else {
       $body = [];
     }
-    $body = \array_merge($body, $_POST);
-    $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
-    $this->body = $body;
+    $this->body = \array_merge($body, $_POST);
   }
   private function getArrayData($arr, $keys)
   {

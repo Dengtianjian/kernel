@@ -65,9 +65,10 @@ class Router
   {
     self::register("api", "any", $uri, $controllerNameOfFunction, $middlewareName);
   }
-  static function match($uri, Request $R)
+  static function match(Request $R)
   {
-    $method = \strtolower($_SERVER['REQUEST_METHOD']);
+    $method = \strtolower($R->method);
+    $uri = $R->uri;
     if (isset($_GET['_method'])) {
       $method = \addslashes(\strtolower($_GET['_method']));
     }
