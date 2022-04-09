@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation;
 
+use Error;
 use kernel\Model\ExtensionsModel;
 
 class Application
@@ -34,12 +35,36 @@ class Application
   }
   protected function executiveController()
   {
-    $controller = $this->router['controller'];
+    $controllerParams = $this->router['controller'];
+    $executeFunName = null;
+    if (is_array($controllerParams)) {
+      $length = count($controllerParams);
+      $controller = $controllerParams[0];
+      if ($length === 2) {
+        $executeFunName = $controllerParams[1];
+      }
+    } else {
+      $controller = $controllerParams;
+    }
+
     if (\is_callable($controller)) {
       return $controller($this->request);
     } else {
       $instance = new $controller($this->request);
-      $result = $instance->data($this->request);
+
+      if (empty($executeFunName)) {
+        if (method_exists($instance, $this->request->method)) {
+          $executeFunName = $this->request->method;
+        } else {
+          if(!method_exists($instance,"data")){
+            throw new Error("执行的控制器缺少data方法");
+          }
+          $executeFunName = "data";
+        }
+      }
+
+      $result = $instance->{$executeFunName}($this->request);
+
       if ($this->request->ajax() === NULL) {
         View::outputFooter();
       } else {
