@@ -39,6 +39,8 @@ class Request
     $this->method = strtoupper($this->method);
 
     $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
+
+    Output::debug($this->headers("x-requested-with"));
   }
   private function serializationBody()
   {
