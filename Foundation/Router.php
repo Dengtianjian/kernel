@@ -41,6 +41,7 @@ class Router
   {
     self::register("async", "post", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function view($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "get", $uri, $controllerNameOfFunction, $middlewareName);
@@ -73,7 +74,7 @@ class Router
   {
     $method = \strtolower($R->method);
     $uri = $R->uri;
-    
+
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
     if (!self::$staticRoutes[$method][$uri]) {
       if (self::$staticRoutes['any'][$uri]) {
