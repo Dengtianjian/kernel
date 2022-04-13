@@ -42,11 +42,12 @@ class Response
   }
   static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [])
   {
-    global $app;
-    $routerType = $app->router['type'];
+    global $App;
+    $routerType = $App->router['type'];
     if (!$routerType) {
       $routerType = "view";
     }
+
     if ($routerType === "view") {
       $currentUrl = F_BASE_URL;
       $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
