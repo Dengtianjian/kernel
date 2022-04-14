@@ -41,6 +41,11 @@ class Response
   {
     self::result($statusCode, $code, $data, $message);
   }
+  static function null($statusCode = 200)
+  {
+    http_response_code($statusCode);
+    exit;
+  }
   static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [])
   {
     $isAjax = RequestService::request()->ajax();
