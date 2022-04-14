@@ -71,4 +71,17 @@ class DB
     }
     return $query[0]["1"];
   }
+  //* 事务相关
+  static function begin()
+  {
+    self::query("BEGIN");
+  }
+  static function commit()
+  {
+    self::query("commit");
+  }
+  static function rollback()
+  {
+    self::query("ROLLBACK");
+  }
 }
