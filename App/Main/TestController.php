@@ -4,6 +4,7 @@ namespace kernel\App\Main;
 
 use kernel\Foundation\Controller;
 use kernel\Foundation\Output;
+use kernel\Foundation\Response;
 use kernel\Foundation\Validator;
 
 class TestController extends Controller
@@ -19,21 +20,6 @@ class TestController extends Controller
   ];
   public function get()
   {
-    // $v = new Validator([
-    //   "user" => [
-    //     "name" => [
-    //       "type" => [
-    //         "integer"
-    //       ],
-    //       "message" => "用户名只允许是数字类型",
-    //       "code" => 400001
-    //     ]
-    //   ]
-    // ], [
-    //   "user" => [
-    //     "name" => "aaa"
-    //   ]
-    // ]);
-    // return $v->output(false)->validate();
+    Response::null(203);
   }
 }

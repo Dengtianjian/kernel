@@ -131,8 +131,24 @@ class View
       $viewData = $viewDirOrViewData;
       $viewDirOrViewData = "";
     }
-    // $viewDirOrViewData = \str_replace(F_APP_ROOT . "/Views", "", $viewDirOrViewData);
-    // $viewDirOrViewData = F_APP_ROOT . "/Views/$viewDirOrViewData";
+    self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    exit;
+  }
+  /**
+   * 渲染块
+   *
+   * @param [type] $viewFile $viewFile 模板的文件名称。可数组或单一字符串
+   * @param string $viewDirOrViewData? 文件的路径或者渲染的数据。传入的如果是数组就是渲染的数据，否则就是模板路径。基于根路径也就是当前插件的根目录下的Views文件夹
+   * @param array $viewData? 渲染的数据
+   * @param string $templateId? 模板Id
+   * @return void
+   */
+  static function section($viewFile, $viewDirOrViewData = "/", $viewData = [], $templateId = "page")
+  {
+    if (is_array($viewDirOrViewData)) {
+      $viewData = $viewDirOrViewData;
+      $viewDirOrViewData = "";
+    }
     return self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
   }
 
@@ -151,7 +167,8 @@ class View
       $viewData = $viewDirOrViewData;
       $viewDirOrViewData = "";
     }
-    return self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    exit;
   }
   static function layout($layout = null, $viewFile = null, $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
   {
@@ -171,7 +188,8 @@ class View
           "__pageFile" => $viewFile,
           "__pageData" => $viewData
         ];
-        return self::render($layout, "Layout", $layoutData, $templateId);
+        self::render($layout, "Layout", $layoutData, $templateId);
+        exit;
       } else {
         return self::page($layout, "Layout", $layoutData,  $templateId);
       }
