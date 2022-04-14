@@ -41,22 +41,27 @@ class Router
   {
     self::register("async", "post", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function view($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "get", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function postView($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "post", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function putView($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "put", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function patchView($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "patch", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  // ! 待废弃
   static function deleteView($uri, $controllerNameOfFunction, $middlewareName = null)
   {
     self::register("view", "delete", $uri, $controllerNameOfFunction, $middlewareName);
@@ -69,9 +74,7 @@ class Router
   {
     $method = \strtolower($R->method);
     $uri = $R->uri;
-    if (isset($_GET['_method'])) {
-      $method = \addslashes(\strtolower($_GET['_method']));
-    }
+
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
     if (!self::$staticRoutes[$method][$uri]) {
       if (self::$staticRoutes['any'][$uri]) {

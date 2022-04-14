@@ -5,6 +5,8 @@ namespace kernel;
 use kernel\App\Api\Attachment as Attachment;
 use kernel\Foundation\Router;
 use kernel\App\Main as Main;
+use kernel\App\Main\TestController;
+use kernel\Foundation\Config;
 
 //* 扩展相关
 Router::view("_extensions", Main\Extensions\ExtensionListViewController::class);
@@ -23,3 +25,8 @@ Router::get("/attachment", Attachment\GetAttachmentController::class);
 Router::delete("/attachment", Attachment\DeleteAttachmentController::class);
 Router::view("/downloadAttachment", Attachment\DownloadAttachmentController::class);
 Router::view("/thumbnail", Attachment\GetImageThumbnailViewController::class);
+
+//* 测试专用
+if (Config::get("mode") === "development") {
+  Router::any("/test", TestController::class);
+}

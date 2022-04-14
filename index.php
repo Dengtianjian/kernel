@@ -1,5 +1,6 @@
 <?php
 
+use kernel\App;
 use kernel\Foundation\Log;
 use kernel\Foundation\Response;
 

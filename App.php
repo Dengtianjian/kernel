@@ -63,7 +63,7 @@ class App extends Application
     }
 
     $router = Router::match($request);
-    if ($router && $router['type'] === "api" && $router['method'] !== 'any' && $this->request->ajax() === null) {
+    if (!$router) {
       Response::error("METHOD_NOT_ALLOWED");
     }
     if (isset($router['params'])) {

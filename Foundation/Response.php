@@ -8,6 +8,7 @@ if (!defined("F_KERNEL")) {
 
 use Error;
 use kernel\Foundation\Exception\ErrorCode;
+use kernel\Service\RequestService;
 
 class Response
 {
@@ -40,15 +41,16 @@ class Response
   {
     self::result($statusCode, $code, $data, $message);
   }
+  static function null($statusCode = 200)
+  {
+    http_response_code($statusCode);
+    exit;
+  }
   static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [])
   {
-    global $App;
-    $routerType = $App->router['type'];
-    if (!$routerType) {
-      $routerType = "view";
-    }
+    $isAjax = RequestService::request()->ajax();
 
-    if ($routerType === "view") {
+    if (!$isAjax) {
       $currentUrl = F_BASE_URL;
       $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
       $redirectUrl = $_SERVER['HTTP_REFERER'];

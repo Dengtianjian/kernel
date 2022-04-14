@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\Data\Arr;
+
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
@@ -11,16 +13,21 @@ class Controller
   public $query = [];
   public $body = [];
   public $serialization = [];
+  public $rules = [];
   function __construct(Request $R)
   {
-    $this->getQuery($R->query());
+    $this->queryInit($R->query());
     $this->body = $this->recursionGetBody($this->body, $R->body());
+    if (count($this->rules) > 0) {
+      $V = new Validator($this->rules, Arr::merge($this->query, $this->body));
+      $V->validate();
+    }
   }
   public function __get($name)
   {
     return $this->$name;
   }
-  private function getQuery($requestQuery)
+  private function queryInit($requestQuery)
   {
     $needQuery = $this->query;
     $query = [];
