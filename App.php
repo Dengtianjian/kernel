@@ -42,9 +42,6 @@ class App extends Application
 
     //* 初始化全局数据
     $this->initAppStore();
-    // if (isset($_GET['uri'])) {
-    //   $this->uri = \addslashes($_GET['uri']);
-    // }
 
     ErrorCode::load(F_KERNEL_ROOT . "/Foundation/Exception/ErrorCodes.php"); //* 加载错误码
 
@@ -67,7 +64,7 @@ class App extends Application
     header('Access-Control-Allow-Headers:*');
     header('Access-Control-Max-Age:86400');
     header('Access-Control-Allow-Credentials: true');
-    
+
     $router = Router::match($request);
     if (!$router) {
       Response::error("METHOD_NOT_ALLOWED");

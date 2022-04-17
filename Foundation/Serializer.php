@@ -33,7 +33,7 @@ class Serializer
       if ($upperLevel === null) {
         $upperLevel = &self::$rules;
       }
-      if ($upperLevel[$firstName]) {
+      if (isset($upperLevel[$firstName])) {
         throw new \Error($firstName . " 序列化规则已经存在");
       }
       $upperLevel[$firstName] = $rule;

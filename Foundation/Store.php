@@ -14,12 +14,12 @@ class Store
    */
   static function set($value)
   {
-    if (!$GLOBALS['_STORE']) {
+    if (!isset($GLOBALS['_STORE'])) {
       $GLOBALS['_STORE'] = [];
     }
     $store = &$GLOBALS['_STORE'];
     foreach ($value as $key => $valueItem) {
-      if ($store[$key]) {
+      if (isset($store[$key])) {
         if (\is_array($valueItem)) {
           $store[$key] = Arr::merge($store[$key], $valueItem);
         } else {
