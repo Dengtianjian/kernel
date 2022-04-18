@@ -62,6 +62,12 @@ class App extends Application
       $this->setMiddlware(GlobalExtensionsMiddleware::class);
     }
 
+    header("Access-Control-Allow-Origin:*");
+    header('Access-Control-Allow-Methods:*');
+    header('Access-Control-Allow-Headers:*');
+    header('Access-Control-Max-Age:86400');
+    header('Access-Control-Allow-Credentials: true');
+    
     $router = Router::match($request);
     if (!$router) {
       Response::error("METHOD_NOT_ALLOWED");
@@ -69,11 +75,6 @@ class App extends Application
     if (isset($router['params'])) {
       $request->setParams($router['params']);
     }
-    header("Access-Control-Allow-Origin:*");
-    header('Access-Control-Allow-Methods:*');
-    header('Access-Control-Allow-Headers:*');
-    header('Access-Control-Max-Age:86400');
-    header('Access-Control-Allow-Credentials: true');
     $request->router = $router;
     $executeMiddlewareResult = $this->executiveMiddleware();
     $this->router = $router;
