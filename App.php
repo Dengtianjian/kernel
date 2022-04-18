@@ -24,27 +24,8 @@ class App extends Application
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\Exception::receive");
 
-    //* 检查是否已经初始化了
-    if (!file_exists(F_APP_ROOT . "/Iuu/.version")) {
-      //* 如果请求的URL 不等于 初始接口就返回错误
-      if (strpos("system/init", $_SERVER['REQUEST_URI']) !== false) {
-        header("Access-Control-Allow-Origin:*");
-        header('Access-Control-Allow-Methods:*');
-        header('Access-Control-Allow-Headers:*');
-        header('Access-Control-Max-Age:86400');
-        header('Access-Control-Allow-Credentials: false');
-        Log::record("接收到请求，无法处理，还未初始化程序");
-        Response::error(500, "SystemNotInitialized:500000", "服务器错误", [], [
-          "content" => "还未初始化系统"
-        ]);
-      }
-    }
-
     //* 初始化全局数据
     $this->initAppStore();
-    // if (isset($_GET['uri'])) {
-    //   $this->uri = \addslashes($_GET['uri']);
-    // }
 
     ErrorCode::load(F_KERNEL_ROOT . "/Foundation/Exception/ErrorCodes.php"); //* 加载错误码
 
