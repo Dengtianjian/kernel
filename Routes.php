@@ -15,10 +15,6 @@ Router::post("_extension/upgrade", Main\Extensions\UpgradeExtensionController::c
 Router::post("_extension/uninstall", Main\Extensions\UninstallExtensionController::class);
 Router::post("_extension/openClose", Main\Extensions\OpenCloseExtensionController::class);
 
-//* IUU相关 I=install U=upgrade U=uninstall
-Router::post("/system/init", Main\System\InitController::class);
-Router::post("/system/upgrade", Main\System\UpgradeController::class);
-
 //* 附件
 Router::post("/attachment", Attachment\UploadAttachmentController::class);
 Router::get("/attachment", Attachment\GetAttachmentController::class);

@@ -170,32 +170,48 @@ class View
     self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
     exit;
   }
+  /**
+   * 渲染布局
+   *
+   * @param [string] $layout 布局文件名称
+   * @param [string|array] $viewFile 页面文件名称或者布局文件所需要渲染的数据
+   * @param string $viewDirOrViewData 
+   * @param array $viewData 页面文件所需要渲染的数据
+   * @param string $templateId 模板ID
+   * @return void
+   */
   static function layout($layout = null, $viewFile = null, $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
   {
-    if ($layout || ($layout && !$viewFile) || ($layout && is_array($viewFile))) {
-      if (is_array($viewDirOrViewData)) {
-        $viewData = $viewDirOrViewData;
-        $viewDirOrViewData = "";
-      }
-      if (is_array($viewFile)) {
-        $viewData = $viewFile;
-        $viewFile = null;
-      }
-
-      $layoutData = $viewData;
-      if ($viewFile) {
-        $layoutData = [
-          "__pageFile" => $viewFile,
-          "__pageData" => $viewData
-        ];
-        self::render($layout, "Layout", $layoutData, $templateId);
-        exit;
-      } else {
-        return self::page($layout, "Layout", $layoutData,  $templateId);
-      }
-    } else {
-      return self::page($GLOBALS['__pageFile'], $GLOBALS['__pageData'], [], "page");
+    if (is_array($viewDirOrViewData)) {
+      $viewData = $viewDirOrViewData;
+      $viewDirOrViewData = "";
     }
+    if (is_array($viewFile)) {
+      $viewData = $viewFile;
+      $viewFile = null;
+    }
+
+    $layoutData = $viewData;
+    if ($viewFile) {
+      $layoutData = [
+        "__pageFile" => $viewFile,
+        "__pageData" => $viewData
+      ];
+      self::render($layout, "Layout", $layoutData, $templateId);
+      exit;
+    } else {
+      return self::page($layout, "Layout", $layoutData,  $templateId);
+    }
+  }
+  /**
+   * 注入页面到layout里
+   * 用在layout的文件里，当该文件是被layout所使用，就需要注入页面文件到layou里
+   *
+   * @return void
+   */
+  static function inject()
+  {
+    return self::section($GLOBALS['__pageFile'], $GLOBALS['__pageData'], [], "page");
   }
   /**
    * 添加渲染的数据到渲染的模板中
