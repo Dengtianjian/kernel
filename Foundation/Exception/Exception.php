@@ -7,6 +7,7 @@ if (!defined("F_KERNEL")) {
 }
 
 use kernel\Foundation\Config as Config;
+use kernel\Foundation\Output;
 use kernel\Foundation\Response;
 use kernel\Foundation\View;
 
@@ -31,18 +32,9 @@ class Exception
    */
   public static function handle($code = 0, $message = "", $file = "", $line = null, $trace = "", $traceString = NULL, $previous = null)
   {
-    global $app;
+    global $App;
     $traceString = \explode(\PHP_EOL, $traceString);
-    Response::error(500, "ServerExceptionError:500000", "服务器错误", [], [
-      "code" => $code,
-      "message" => $message,
-      "file" => $file,
-      "line" => $line,
-      "trace" => $trace,
-      "previous" => $previous
-    ]);
-    return;
-    if (false || $app->router === NULL || $app->router['type'] === "view") {
+    if ($App->router === NULL || $App->router['type'] === "view") {
       if (Config::get("mode") === "production") {
         View::kernelPage("error", [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
@@ -52,8 +44,16 @@ class Exception
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
         ]);
       }
+    } else {
+      Response::error(500, "ServerExceptionError:500000", "服务器错误", [], [
+        "code" => $code,
+        "message" => $message,
+        "file" => $file,
+        "line" => $line,
+        "trace" => $trace,
+        "previous" => $previous
+      ]);
     }
-    exit();
   }
   /**
    * 接收Exception类的参数

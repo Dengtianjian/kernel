@@ -31,12 +31,12 @@ class App extends Application
 
     include_once(F_KERNEL_ROOT . "/Routes.php"); //* 载入kernel用到的路由
     include_once(F_APP_ROOT . "/Routes.php"); //* 载入路由
+
+    $request = new Request();
+    $this->request = $request;
   }
   function init()
   {
-    $request = new Request();
-    $this->request = $request;
-
     //* 载入扩展
     if (Config::get("extensions")) {
       $this->loadExtensions();
@@ -49,14 +49,14 @@ class App extends Application
     header('Access-Control-Max-Age:86400');
     header('Access-Control-Allow-Credentials: true');
 
-    $router = Router::match($request);
+    $router = Router::match($this->request);
     if (!$router) {
       Response::error("METHOD_NOT_ALLOWED");
     }
     if (isset($router['params'])) {
-      $request->setParams($router['params']);
+      $this->request->setParams($router['params']);
     }
-    $request->router = $router;
+    $this->request->router = $router;
     $executeMiddlewareResult = $this->executiveMiddleware();
     $this->router = $router;
     if (!$router) {
