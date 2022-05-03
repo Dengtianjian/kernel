@@ -8,6 +8,6 @@ if (!defined("F_KERNEL")) {
 
 $Config = [
   "mode" => "development", //* production development
-  "version" => "0.1.1",
+  "version" => "0.1.1.20220503",
   "extensions" => false
 ];
