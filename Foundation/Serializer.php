@@ -87,12 +87,24 @@ class Serializer
         if ($ruleItem === Serializer::class && self::$ruleName) {
           $data[$fieldName] = self::use(self::$ruleName, $data[$fieldName]);
           self::$ruleName = null;
+        } else if ($ruleItem === "json") {
+          if ($data[$fieldName]) {
+            $data[$fieldName] = json_decode($data[$fieldName], true);
+          } else {
+            $data[$fieldName] = [];
+          }
         } else if (is_callable($ruleItem)) {
           $data[$fieldName] = $ruleItem($data[$fieldName], $data);
         }
       } else {
         if ($ruleItem === Serializer::class) {
           $data[$fieldName] = null;
+        } else if ($ruleItem === "json") {
+          if ($data[$fieldName]) {
+            $data[$fieldName] = json_decode($data[$fieldName], true);
+          } else {
+            $data[$fieldName] = [];
+          }
         } elseif (is_callable($ruleItem)) {
           $data[$fieldName] = $ruleItem($data);
         } else {
