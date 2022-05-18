@@ -9,6 +9,7 @@ class AttachmentService
 {
   private static function genFileId($attachmentId, string $savePath, string $fileName): string
   {
+    $savePath = substr($savePath, stripos($savePath, "/") + 1);
     return "attachment:" . time() . "." . $attachmentId . "/" . $savePath . "/" . $fileName;
   }
   public static function getAttachmentInfo($fileId)
