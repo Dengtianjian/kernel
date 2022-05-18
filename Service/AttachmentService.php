@@ -45,7 +45,7 @@ class AttachmentService
     $AM->sql(false)->insert($insertData);
     return $insertData;
   }
-  public static function upload($file, $saveDir = "Attachments")
+  public static function upload($file, $saveDir = "Data/Attachments")
   {
     if (!is_dir($saveDir)) {
       File::mkdir(explode("/", $saveDir), F_APP_ROOT);
