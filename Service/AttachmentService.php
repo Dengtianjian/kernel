@@ -46,12 +46,16 @@ class AttachmentService
     $AM->sql(false)->insert($insertData);
     return $insertData;
   }
-  public static function upload($file, $saveDir = "Data/Attachments")
+  public static function upload($file, $saveDir = "Data/Attachments", $baseProject = true)
   {
-    if (!is_dir($saveDir)) {
-      File::mkdir(explode("/", $saveDir), F_APP_ROOT);
+    if ($baseProject) {
+      if (!is_dir($saveDir)) {
+        File::mkdir(explode("/", $saveDir), F_APP_ROOT);
+      }
+      $saveDir = F_APP_ROOT . "/" . $saveDir;
     }
-    $saveFileResult = File::upload($file, F_APP_ROOT . "/" . $saveDir);
+
+    $saveFileResult = File::upload($file, $saveDir);
     return self::addRecord($saveDir, $saveFileResult['sourceFileName'], $saveFileResult['relativePath'], $saveFileResult['saveFileName'], $saveFileResult['size']);
   }
   static function getUrl(string $attachmentFileId)
