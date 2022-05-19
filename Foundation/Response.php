@@ -16,7 +16,7 @@ class Response
   private static $responseData = []; //* 增加到响应结果里的数据
   private static $headers = []; //* 响应头
   private static $responseIntercept = null; //* 响应拦截回调函数
-  private static $statusCode = 200; //* 响应状态码
+  private static $statusCode = null; //* 响应状态码
   static function header(string $key, string $value, bool $replace = true)
   {
     array_push(self::$headers, [
@@ -54,6 +54,9 @@ class Response
   static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [])
   {
     $isAjax = RequestService::request()->ajax();
+    if (self::$statusCode !== null) {
+      $statusCode = self::$statusCode;
+    }
 
     if (!$isAjax) {
       $currentUrl = F_BASE_URL;
@@ -69,7 +72,6 @@ class Response
         } else {
           Output::print($message);
         }
-        // header("Refresh: 3; url=$redirectUrl");
       }
       exit();
     }
