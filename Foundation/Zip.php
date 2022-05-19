@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use ZipArchive;
+
 class Zip
 {
   public $packageFileBlackList = [
@@ -49,5 +51,21 @@ class Zip
     $this->folderToZip($zip, $sourcePath,  \strlen($pathInfo['dirname']), $localRootPath);
 
     $zip->close();
+  }
+  public function unzip(string $filePath, string $dest)
+  {
+    if (!is_file($filePath)) {
+      return false;
+    }
+    if (!is_dir($dest)) {
+      mkdir($dest, 0777, true);
+    }
+    $zip = new ZipArchive();
+    if ($zip->open($filePath)) {
+      $zip->extractTo($dest);
+      $zip->close();
+      return true;
+    }
+    return false;
   }
 }
