@@ -46,17 +46,29 @@ class AttachmentService
     $AM->sql(false)->insert($insertData);
     return $insertData;
   }
-  public static function upload($file, $saveDir = "Data/Attachments", $baseProject = true)
+  /**
+   * 上传文件并且写入到Attachment表
+   *
+   * @param File $file 文件
+   * @param string $realSaveDir 真实保存的地址，该文件会被存放在这个路径
+   * @param boolean $baseProject 保存的地址是否基于项目路径
+   * @param string|null $saveDir 存入附件表的的路径。场景：存放附件的路径可能不在当前项目的文件夹下，而是动态的，那存进去的用相对地址，获取的时候用配置的路径再拼上数据表的路径即可
+   * @return Array 附件数据
+   */
+  public static function upload($file, $realSaveDir = "Data/Attachments", $baseProject = true, $saveDir = null)
   {
     if ($baseProject) {
-      if (!is_dir($saveDir)) {
-        File::mkdir(explode("/", $saveDir), F_APP_ROOT);
+      if (!is_dir($realSaveDir)) {
+        File::mkdir(explode("/", $realSaveDir), F_APP_ROOT);
       }
-      $saveDir = F_APP_ROOT . "/" . $saveDir;
+      $realSaveDir = F_APP_ROOT . "/" . $realSaveDir;
     }
 
-    $saveFileResult = File::upload($file, $saveDir);
-    return self::addRecord($saveDir, $saveFileResult['sourceFileName'], $saveFileResult['relativePath'], $saveFileResult['saveFileName'], $saveFileResult['size']);
+    $saveFileResult = File::upload($file, $realSaveDir);
+    if (!$saveDir) {
+      $saveDir = $saveFileResult['relativePath'];
+    }
+    return self::addRecord($realSaveDir, $saveFileResult['sourceFileName'], $saveDir, $saveFileResult['saveFileName'], $saveFileResult['size']);
   }
   static function getUrl(string $attachmentFileId)
   {
