@@ -10,7 +10,7 @@ use kernel\Foundation\Application;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\Router;
-use kernel\Foundation\Config as Config;
+use kernel\Foundation\Config;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Log;
 use kernel\Middleware\GlobalExtensionsMiddleware;
@@ -26,6 +26,8 @@ class App extends Application
 
     //* 初始化全局数据
     $this->initAppStore();
+    //* 初始化配置
+    $this->initConfig();
 
     ErrorCode::load(F_KERNEL_ROOT . "/Foundation/Exception/ErrorCodes.php"); //* 加载错误码
 

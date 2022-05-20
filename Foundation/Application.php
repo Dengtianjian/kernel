@@ -56,7 +56,7 @@ class Application
         if (method_exists($instance, $this->request->method)) {
           $executeFunName = $this->request->method;
         } else {
-          if(!method_exists($instance,"data")){
+          if (!method_exists($instance, "data")) {
             throw new Error("执行的控制器缺少data方法");
           }
           $executeFunName = "data";
@@ -161,5 +161,27 @@ class Application
       ]
     ];
     Store::setApp($__App);
+  }
+  protected function initConfig()
+  {
+    $fileBase = F_APP_ROOT;
+    $configFilePath = F_APP_ROOT . "/Config.php";
+    if (!file_exists($configFilePath)) {
+      $fileBase .= "/Configs";
+      $configFilePath = "$fileBase/Config.php";
+    }
+    Config::read($configFilePath);
+
+    //* 模式下的配置文件
+    $modeConfigFilePath = "$fileBase/Config." . Config::get("mode") . ".php";
+    if (file_exists($modeConfigFilePath)) {
+      Config::read($modeConfigFilePath);
+    }
+
+    //* 本地下的配置文件
+    $localConfigFilePath = "$fileBase/Config.local.php";
+    if (file_exists($localConfigFilePath)) {
+      Config::read($localConfigFilePath);
+    }
   }
 }
