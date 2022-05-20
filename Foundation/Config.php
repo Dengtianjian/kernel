@@ -13,7 +13,7 @@ class Config
    * @param string $filePath 应用配置文件所在路径
    * @return array
    */
-  static function read($filePath = null)
+  static function read(?string $filePath = null, ?string $appId = F_APP_ID)
   {
     if (!$filePath) {
       $filePath = F_APP_ROOT . "/Config.php";
@@ -23,7 +23,7 @@ class Config
     }
     include_once($filePath);
     if (isset($Config)) {
-      self::$configs[F_APP_ID] = Arr::merge(self::$configs, $Config);
+      self::$configs[$appId] = Arr::merge(self::$configs[$appId], $Config);
       return self::$configs;
     }
     return false;
@@ -34,7 +34,7 @@ class Config
    * @param string $key 配置项数组路径字符串，用 / 分隔
    * @return array|string|integer|boolean
    */
-  static function get($key)
+  static function get(?string $key = null)
   {
     $configs = [];
 
@@ -77,10 +77,10 @@ class Config
    * 覆盖式设置Config的值
    * 修改后的值只会在当前运行中有效，并不会修改到文件的实际值
    *
-   * @param any $value 新值
+   * @param array $value 新值
    * @return void
    */
-  static function set($value)
+  static function set(array $value)
   {
     self::$configs[F_APP_ID] = Arr::merge(self::$configs[F_APP_ID], $value);
   }

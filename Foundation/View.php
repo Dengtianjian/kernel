@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation;
 
-use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Response;
 
@@ -14,41 +13,41 @@ class View
 
   /**
    * 渲染模板文件
-   * global渲染的数据，载入渲染的模板文件，并且删除掉$GLOBALS中渲染的数据
    *
-   * @param string|array $fileName 模板的文件名称。可数组或单一字符串
-   * @param string $fileDir 文件的路径或者渲染的数据。传入的如果是数组就是渲染的数据，否则就是模板路径。
-   * @param array $viewData渲染的数据
+   * @param string|array $viewFiles 模板的文件名称。可数组或单一字符串
+   * @param array $viewData? 渲染的数据
    * @param string $templateId? 模板唯一标识符
-   * @return boolean 一直都是 true
+   * @param boolean $hook?=false 是否是hook插槽
+   * @return void
    */
-  static private function renderPage($fileName, $fileDir = "", $viewData = [], $templateId = "")
+  static function render($viewFiles, $viewData = [], $templateId = "", $hook = false)
   {
-    $viewData = \array_merge(self::$viewData, $viewData);
-    foreach ($viewData as $key => $value) {
-      global ${$key};
-    }
-
-    $baseDir = F_APP_ROOT . "/Views/$fileDir";
-    self::outputHeader();
-    if (\is_array($fileName)) {
-      if (Arr::isAssoc($fileName)) {
-        foreach ($fileName as $dir => $name) {
-          if (is_array($name)) {
-            foreach ($name as $fileNameItem) {
-              include_once $baseDir . "/$dir/$fileNameItem.php";
-            }
-          } else {
-            include_once $baseDir . "/$dir/$name.php";
-          }
-        }
-      } else {
-        foreach ($fileName as $name) {
-          include_once $baseDir . "/$name.php";
+    if (is_array($viewFiles)) {
+      foreach ($viewFiles as $file) {
+        if (!\file_exists($file)) {
+          Response::error("VIEW_TEMPLATE_NOT_EXIST");
         }
       }
     } else {
-      include_once $baseDir . "/$fileName.php";
+      if (!\file_exists($viewFiles)) {
+        Response::error("VIEW_TEMPLATE_NOT_EXIST");
+      }
+    }
+
+    $viewData = \array_merge(self::$viewData, $viewData);
+
+    foreach ($viewData as $key => $value) {
+      $GLOBALS[$key] = $value;
+      global ${$key};
+    }
+
+    self::outputHeader();
+    if (\is_array($viewFiles)) {
+      foreach ($viewFiles as $file) {
+        include_once "/$file";
+      }
+    } else {
+      include_once "/$viewFiles";
     }
 
     foreach ($viewData as $key => $value) {
@@ -57,81 +56,28 @@ class View
 
     return true;
   }
-  /**
-   * 渲染前做的事情
-   * 主要是检查模板文件是否存在以及把渲染的数据加入到全局($GLOBALS)里
-   *
-   * @param string|array $viewFile 模板的文件名称。可数组或单一字符串
-   * @param string $viewDirOrViewData? 文件的路径或者渲染的数据。传入的如果是数组就是渲染的数据，否则就是模板路径。
-   * @param array $viewData? 渲染的数据
-   * @param string $templateId? 模板唯一标识符
-   * @param boolean $hook?=false 是否是hook插槽
-   * @return void
-   */
-  static function render($viewFile, $viewDirOrViewData = "", $viewData = [], $templateId = "", $hook = false)
+  static private function renderAppPage($viewFile, $viewFileBaseDir = "", $viewData = [], $templateId = "page")
   {
-    if (is_array($viewDirOrViewData)) {
-      $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "";
-    }
-
-    $viewData = \array_merge(self::$viewData, $viewData);
-    if (count($viewData) > 0) {
-      foreach ($viewData as $key => $value) {
-        $GLOBALS[$key] = $value;
-      }
-    }
-
-    $baseDir = F_APP_ROOT . "/Views";
-    if ($viewDirOrViewData) {
-      $baseDir .= "/$viewDirOrViewData";
-    }
-
-    if (\is_array($viewFile)) {
-      if (Arr::isAssoc($viewFile)) {
-        foreach ($viewFile as $dir => $name) {
-          if (is_array($name)) {
-            foreach ($name as $fileNameItem) {
-              if (!\file_exists("$baseDir/$dir/$fileNameItem.php")) {
-                Response::error("VIEW_TEMPLATE_NOT_EXIST");
-              }
-            }
-          } else if (!\file_exists("$baseDir/$dir/$name.php")) {
-            Response::error("VIEW_TEMPLATE_NOT_EXIST");
-          }
-        }
-      } else {
-        foreach ($viewFile as $name) {
-          if (!\file_exists("$baseDir/$name.php")) {
-            Response::error("VIEW_TEMPLATE_NOT_EXIST");
-          }
-        }
+    if (is_array($viewFile)) {
+      foreach ($viewFile as &$fileItem) {
+        $fileItem = F_APP_ROOT . "/$viewFileBaseDir/$fileItem.php";
       }
     } else {
-      if (!\file_exists("$baseDir/$viewFile.php")) {
-        Output::print("$baseDir/$viewFile.php");
-        Response::error("VIEW_TEMPLATE_NOT_EXIST");
-      }
+      $viewFile = F_APP_ROOT . "/$viewFileBaseDir/$viewFile.php";
     }
-
-    return self::renderPage($viewFile, $viewDirOrViewData, $viewData, $templateId, $hook);
+    return self::render($viewFile, $viewData, $templateId);
   }
   /**
    * 渲染页面
    *
    * @param [type] $viewFile $viewFile 模板的文件名称。可数组或单一字符串
-   * @param string $viewDirOrViewData? 文件的路径或者渲染的数据。传入的如果是数组就是渲染的数据，否则就是模板路径。基于根路径也就是当前插件的根目录下的Views文件夹
    * @param array $viewData? 渲染的数据
    * @param string $templateId? 模板Id
    * @return void
    */
-  static function page($viewFile, $viewDirOrViewData = "/", $viewData = [], $templateId = "page")
+  static function page($viewFile, $viewData = [], $templateId = "page")
   {
-    if (is_array($viewDirOrViewData)) {
-      $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "";
-    }
-    self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    self::renderAppPage($viewFile, "Views", $viewData, $templateId);
     exit;
   }
   /**
@@ -143,13 +89,9 @@ class View
    * @param string $templateId? 模板Id
    * @return void
    */
-  static function section($viewFile, $viewDirOrViewData = "/", $viewData = [], $templateId = "page")
+  static function section($viewFile, $viewData = [], $templateId = "section")
   {
-    if (is_array($viewDirOrViewData)) {
-      $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "";
-    }
-    return self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    return self::renderAppPage($viewFile, "Views", $viewData, $templateId);
   }
 
   /**
@@ -161,13 +103,10 @@ class View
    * @param string $templateId? 模板Id
    * @return void
    */
-  static function kernelPage($viewFile, $viewDirOrViewData = "", $viewData = [], $templateId = "system_page")
+  static function kernelPage($viewFile, $viewData = [], $templateId = "kernel_page")
   {
-    if (is_array($viewDirOrViewData)) {
-      $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "";
-    }
-    self::render($viewFile, $viewDirOrViewData, $viewData, $templateId);
+    $viewFile = F_KERNEL_ROOT . "/Views/$viewFile.php";
+    self::render($viewFile, $viewData, $templateId);
     exit;
   }
   /**
@@ -180,12 +119,8 @@ class View
    * @param string $templateId 模板ID
    * @return void
    */
-  static function layout($layout = null, $viewFile = null, $viewDirOrViewData = "", $viewData = [], $templateId = "layout")
+  static function layout($layout = null, $viewFile = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
-    if (is_array($viewDirOrViewData)) {
-      $viewData = $viewDirOrViewData;
-      $viewDirOrViewData = "";
-    }
     if (is_array($viewFile)) {
       $viewData = $viewFile;
       $viewFile = null;
@@ -197,11 +132,11 @@ class View
         "__pageFile" => $viewFile,
         "__pageData" => $viewData
       ];
-      self::render($layout, "Layout", $layoutData, $templateId);
-      exit;
+      self::renderAppPage($layout, $fileBaseDir, $layoutData, $templateId);
     } else {
-      return self::page($layout, "Layout", $layoutData,  $templateId);
+      self::renderAppPage($layout, $fileBaseDir, $layoutData, $templateId);
     }
+    exit;
   }
   /**
    * 注入页面到layout里
@@ -211,7 +146,11 @@ class View
    */
   static function inject()
   {
-    return self::section($GLOBALS['__pageFile'], $GLOBALS['__pageData'], [], "page");
+    $pageFile = $GLOBALS['__pageFile'];
+    $viewData = $GLOBALS['__pageData'];
+    unset($GLOBALS['__pageFile']);
+    unset($GLOBALS['__pageData']);
+    return self::renderAppPage($pageFile, "Views",  $viewData, "inject");
   }
   /**
    * 添加渲染的数据到渲染的模板中
