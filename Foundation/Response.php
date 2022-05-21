@@ -92,7 +92,7 @@ class Response
     if (!$isAjax) {
       $currentUrl = F_BASE_URL;
       $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
-      $redirectUrl = $_SERVER['HTTP_REFERER'];
+      $redirectUrl = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
       if ($redirectUrl === $currentUrl || !$redirectUrl) {
         $redirectUrl = F_BASE_URL;
       }
