@@ -76,7 +76,7 @@ class Router
     $uri = $R->uri;
 
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
-    if (!self::$staticRoutes[$method][$uri]) {
+    if (!isset(self::$staticRoutes[$method][$uri])) {
       if (self::$staticRoutes['any'][$uri]) {
         return self::$staticRoutes['any'][$uri];
       }

@@ -39,7 +39,6 @@ class Request
     $this->method = strtoupper($this->method);
 
     $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
-
   }
   private function serializationBody()
   {
@@ -57,6 +56,7 @@ class Request
   private function getArrayData($arr, $keys)
   {
     if (\is_string($keys)) {
+      if (!isset($arr[$keys])) return null;
       return $arr[$keys];
     } else if (\is_array($keys)) {
       $returns = [];
@@ -91,7 +91,10 @@ class Request
   {
     if (\function_exists("getallheaders")) {
       if (isset($key)) {
-        return \getallheaders()[$key];
+        if (isset(\getallheaders()[$key])) {
+          return \getallheaders()[$key];
+        }
+        return null;
       }
       return \getallheaders();
     }
