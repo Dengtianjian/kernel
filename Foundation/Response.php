@@ -15,7 +15,7 @@ class Response
   private static $resultData = []; //* 增加到响应结果数据体里的数据
   private static $responseData = []; //* 增加到响应结果里的数据
   private static $headers = []; //* 响应头
-  private static $responseIntercept = null; //* 响应拦截回调函数
+  private static $responseIntercept = []; //* 响应拦截回调函数
   private static $statusCode = null; //* 响应状态码
   static function header(string $key, string $value, bool $replace = true)
   {
@@ -25,9 +25,13 @@ class Response
       "replace" => $replace
     ]);
   }
-  static function intercept($callback = null)
+  static function intercept(callable $callback = null)
   {
-    self::$responseIntercept = $callback;
+    $key = microtime();
+    self::$responseIntercept[$key] = $callback;
+    return function () use ($key) {
+      unset(self::$responseIntercept[$key]);
+    };
   }
   static function error($statusCode, $code = 500, $message = "", $data = [], $details = [])
   {
