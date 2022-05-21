@@ -25,7 +25,7 @@ class Response
       "replace" => $replace
     ]);
   }
-  static function intercept(callable $callback, ?string $responseType = null, ?int $statusCode = null, ?string $responseCode = null): callable
+  static function intercept(callable $callback, ?string $responseType = null, $statusCode = null, $responseCode = null): callable
   {
     $key = microtime();
     self::$responseInterceptors[$key] = [
@@ -68,11 +68,23 @@ class Response
         if (isset($intercrptor['responseType']) && $intercrptor['responseType'] !== $type) {
           continue;
         }
-        if (isset($intercrptor['statusCode']) && $intercrptor['statusCode'] !== $statusCode) {
-          continue;
+        if (isset($intercrptor['statusCode'])) {
+          if (is_array($intercrptor['statusCode'])) {
+            if (!in_array($statusCode, $intercrptor['statusCode'])) {
+              continue;
+            }
+          } else if ($intercrptor['statusCode'] !== $statusCode) {
+            continue;
+          }
         }
         if (isset($intercrptor['responseCode']) && $intercrptor['responseCode'] !== $code) {
-          continue;
+          if (is_array($intercrptor['responseCode'])) {
+            if (!in_array($code, $intercrptor['responseCode'])) {
+              continue;
+            }
+          } else if ($intercrptor['responseCode'] !== $code) {
+            continue;
+          }
         }
         $interceptResult = call_user_func($intercrptor['callback'], $statusCode, $code, $data, $message, $details);
         if ($interceptResult === false) {
