@@ -62,6 +62,28 @@ class Response
   }
   static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [], string $type = "success")
   {
+    $interceptResult = true;
+    if (count(self::$responseInterceptors) > 0) {
+      foreach (Response::$responseInterceptors as $intercrptor) {
+        if (isset($intercrptor['responseType']) && $intercrptor['responseType'] !== $type) {
+          continue;
+        }
+        if (isset($intercrptor['statusCode']) && $intercrptor['statusCode'] !== $statusCode) {
+          continue;
+        }
+        if (isset($intercrptor['responseCode']) && $intercrptor['responseCode'] !== $code) {
+          continue;
+        }
+        $interceptResult = call_user_func($intercrptor['callback'], $statusCode, $code, $data, $message, $details);
+        if ($interceptResult === false) {
+          break;
+        }
+      }
+    }
+    if ($interceptResult === false) {
+      return false;
+    }
+
     $isAjax = RequestService::request()->ajax();
     if (self::$statusCode !== null) {
       $statusCode = self::$statusCode;
@@ -104,27 +126,6 @@ class Response
     }
     if (!empty(self::$responseData)) {
       $result = array_merge($result, self::$responseData);
-    }
-    $interceptResult = true;
-    if (count(self::$responseInterceptors) > 0) {
-      foreach (Response::$responseInterceptors as $intercrptor) {
-        if (isset($intercrptor['responseType']) && $intercrptor['responseType'] !== $type) {
-          continue;
-        }
-        if (isset($intercrptor['statusCode']) && $intercrptor['statusCode'] !== $statusCode) {
-          continue;
-        }
-        if (isset($intercrptor['responseCode']) && $intercrptor['responseCode'] !== $code) {
-          continue;
-        }
-        $interceptResult = call_user_func($intercrptor['callback'], $result, $statusCode, $code, $data, $message, $details);
-        if ($interceptResult === false) {
-          break;
-        }
-      }
-    }
-    if ($interceptResult === false) {
-      return false;
     }
     self::output($result);
   }
