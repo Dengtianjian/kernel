@@ -6,8 +6,8 @@ use kernel\Foundation\Output;
 
 class Driver
 {
-  private $instance = null;
-  private $bulk = null;
+  private ?\MongoDB\Driver\Manager $instance = null;
+  private ?\MongoDB\Driver\BulkWrite $bulk = null;
   private $config = [
     "host" => "localhost",
     "port" => 27017,
@@ -44,7 +44,7 @@ class Driver
 
     $result = [];
     foreach ($rows as $row) {
-      if (isset($row->_id)) {
+      if (isset($row->_id) && $row->_id instanceof \MongoDB\BSON\ObjectId) {
         $row->_id = $row->_id->__toString();
       }
       array_push($result, $row);
@@ -65,5 +65,25 @@ class Driver
   {
     $this->bulk->update($query, $updateData);
     return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options);
+  }
+  public function delete()
+  {
+  }
+  public function commamd(array $commands = [], ?array $options = []): \MongoDB\Driver\Command
+  {
+    return new \MongoDB\Driver\Command($commands, $options);
+  }
+  public function execCommand(string $databaseName, \MongoDB\Driver\Command $command, array $options = [])
+  {
+    $cursor = $this->instance->executeCommand($databaseName, $command, $options);
+    $rows = $cursor->toArray();
+    $result = [];
+    foreach ($rows as $row) {
+      if (isset($row->_id) && $row->_id instanceof \MongoDB\BSON\ObjectId) {
+        $row->_id = $row->_id->__toString();
+      }
+      array_push($result, $row);
+    }
+    return $result;
   }
 }
