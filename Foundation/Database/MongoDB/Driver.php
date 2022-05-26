@@ -2,8 +2,6 @@
 
 namespace kernel\Foundation\Database\MongoDB;
 
-use kernel\Foundation\Output;
-
 class Driver
 {
   private ?\MongoDB\Driver\Manager $instance = null;
@@ -37,7 +35,7 @@ class Driver
   {
     return $this->config['databaseName'] . ".$extra";
   }
-  public function query(string $setName, array $filter = [], array $options = [])
+  public function query(string $setName, array $filter = [], array $options = []): array
   {
     $query = new \MongoDB\Driver\Query($filter, $options);
     $rows = $this->instance->executeQuery($this->genNamespace($setName), $query);
@@ -52,28 +50,33 @@ class Driver
 
     return $result;
   }
-  public function id()
+  public function id(string $id = ""): \MongoDB\BSON\ObjectId
   {
-    return new \MongoDB\BSON\ObjectId();
+    if (empty($id)) {
+      return new \MongoDB\BSON\ObjectId();
+    }
+    return new \MongoDB\BSON\ObjectId($id);
   }
-  public function insert(string $setName, array $doc, array $options = [])
+  public function insert(string $setName, array $doc, array $options = []): int
   {
     $this->bulk->insert($doc);
-    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options);
+    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options)->getInsertedCount();
   }
-  public function update(string $setName, array $query = [], array $updateData = [], array $options = [])
+  public function update(string $setName, array $query = [], array $updateData = [], array $options = []): \MongoDB\Driver\WriteResult
   {
     $this->bulk->update($query, $updateData);
     return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options);
   }
-  public function delete()
+  public function delete(string $setName, array $query, array $options = []): int
   {
+    $this->bulk->delete($query, $options);
+    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options)->getDeletedCount();
   }
   public function commamd(array $commands = [], ?array $options = []): \MongoDB\Driver\Command
   {
     return new \MongoDB\Driver\Command($commands, $options);
   }
-  public function execCommand(string $databaseName, \MongoDB\Driver\Command $command, array $options = [])
+  public function execCommand(string $databaseName, \MongoDB\Driver\Command $command, array $options = []): array
   {
     $cursor = $this->instance->executeCommand($databaseName, $command, $options);
     $rows = $cursor->toArray();

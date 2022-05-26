@@ -11,9 +11,14 @@ class Mongo
   {
     self::$driver = $driver;
   }
-  public static function id(): string
+  public static function realId(string $id = ""): string
   {
-    return self::$driver->id();
+    $objId = self::id($id);
+    return $objId->__toString();
+  }
+  public static function id(string $id = ""): \MongoDB\BSON\ObjectId
+  {
+    return self::$driver->id($id);
   }
   public static function find(string $setName, array $filter = [], array $options = [])
   {
@@ -32,6 +37,14 @@ class Mongo
   public static function update(string $setName, array $query = [], array $updateData, array $options = [])
   {
     return self::$driver->update($setName, $query, $updateData, $options);
+  }
+  public static function delete(string $setName, array $query = [], array $options = [])
+  {
+    return self::$driver->delete($setName, $query, $options);
+  }
+  public static function command(array $commands): \MongoDB\Driver\Command
+  {
+    return self::$driver->commamd($commands);
   }
   public static function execCommand(string $databaseName, array $commands, array $options = [])
   {
