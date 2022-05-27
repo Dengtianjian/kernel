@@ -49,6 +49,10 @@ class Collection
     $query = Mongo::optimParams($query);
     return Mongo::delete($this->collectionName, $query, $options);
   }
+  public function exist(array $filter): bool
+  {
+    return $this->findOne($filter) !== null;
+  }
   public function command(array $commands): \MongoDB\Driver\Command
   {
     return Mongo::command($commands);
