@@ -2,9 +2,19 @@
 
 namespace kernel\Foundation\Database\MongoDB;
 
+use kernel\Foundation\Output;
+
 class Collection
 {
   public string $collectionName = "";
+  public static ?\kernel\Foundation\Database\MongoDB\Collection $instance = null;
+  public static function instance()
+  {
+    if (!self::$instance) {
+      self::$instance = new static();
+    }
+    return self::$instance;
+  }
   public function find(array $filter = [], array $options = []): array
   {
     return Mongo::find($this->collectionName, $filter, $options);
