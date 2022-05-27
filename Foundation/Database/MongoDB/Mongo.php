@@ -28,7 +28,7 @@ class Mongo
   {
     $result = self::find($setName, $filter, $options);
     if (!empty($result)) return $result[0];
-    return [];
+    return null;
   }
   public static function insert(string $setName, array $doc, array $options = [])
   {

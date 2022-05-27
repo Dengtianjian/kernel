@@ -27,9 +27,9 @@ class Collection
   {
     return Mongo::find($this->collectionName, $filter, $options);
   }
-  public function findOne(array $filter = [], array $options = []): array
+  public function findOne(array $filter = [], array $options = []): array|null
   {
-    return Mongo::find($this->collectionName, $filter, $options);
+    return Mongo::findOne($this->collectionName, $filter, $options);
   }
   public function insert(array $doc = [], array $options = []): int
   {
