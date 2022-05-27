@@ -56,4 +56,13 @@ class Mongo
     $command = self::$driver->commamd($commands);
     return self::$driver->execCommand($databaseName, $command, $options);
   }
+  public static function optimParams(array $params): array
+  {
+    if (isset($params['_id'])) {
+      if (!$params['_id'] instanceof \MongoDB\BSON\ObjectId) {
+        $params['_id'] = self::id($params['_id']);
+      }
+    }
+    return $params;
+  }
 }

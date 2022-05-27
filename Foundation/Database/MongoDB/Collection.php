@@ -33,14 +33,17 @@ class Collection
   }
   public function insert(array $doc = [], array $options = []): int
   {
+    $doc = Mongo::optimParams($doc);
     return Mongo::insert($this->collectionName, $doc, $options);
   }
   public function update(array $query = [], array $updateData, array $options = []): \MongoDB\Driver\WriteResult
   {
+    $query = Mongo::optimParams($query);
     return Mongo::update($this->collectionName, $query, $updateData, $options);
   }
   public function delete(array $query = [], array $options = [])
   {
+    $query = Mongo::optimParams($query);
     return Mongo::delete($this->collectionName, $query, $options);
   }
   public function command(array $commands): \MongoDB\Driver\Command
