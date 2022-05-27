@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Database\MongoDB;
 
 use kernel\Foundation\Output;
+use stdClass;
 
 class Collection
 {
@@ -25,10 +26,12 @@ class Collection
   }
   public function find(array $filter = [], array $options = []): array
   {
+    $filter = Mongo::optimParams($filter);
     return Mongo::find($this->collectionName, $filter, $options);
   }
-  public function findOne(array $filter = [], array $options = []): array|null
+  public function findOne(array $filter = [], array $options = []): stdClass|null
   {
+    $filter = Mongo::optimParams($filter);
     return Mongo::findOne($this->collectionName, $filter, $options);
   }
   public function insert(array $doc = [], array $options = []): int
