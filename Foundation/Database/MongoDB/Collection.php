@@ -15,6 +15,14 @@ class Collection
     }
     return self::$instance;
   }
+  public function id(string $id = ""): \MongoDB\BSON\ObjectId
+  {
+    return Mongo::id($id);
+  }
+  public function realId(string $id): string
+  {
+    return Mongo::realId($id);
+  }
   public function find(array $filter = [], array $options = []): array
   {
     return Mongo::find($this->collectionName, $filter, $options);
