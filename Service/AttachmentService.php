@@ -85,4 +85,17 @@ class AttachmentService
     }
     return true;
   }
+  static function getAttachment(string $attachmentId)
+  {
+    $AM = new AttachmentModel();
+    $attachment = $AM->where("id", $attachmentId)->getOne();
+    if (!$attachment) return null;
+    return $attachment;
+  }
+  static function getUrlById(string $attachmentId)
+  {
+    $attachment = self::getAttachment($attachmentId);
+    if (!$attachment) return false;
+    return F_BASE_URL . "/downloadAttachment?fileId=" . urlencode($attachment['fileId']);
+  }
 }
