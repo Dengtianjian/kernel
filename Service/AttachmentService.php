@@ -24,7 +24,7 @@ class AttachmentService
       return $get->getOne();
     }
   }
-  public static function addRecord($saveDir, $sourceFileName, $relativePath, $saveFileName, $fileSize)
+  public static function addRecord($saveDir, $sourceFileName, $relativePath, $saveFileName, $fileSize, string|int $used = 1)
   {
     $AM = new AttachmentModel();
     $attachmentId = $AM->genId();
@@ -40,6 +40,7 @@ class AttachmentService
       "fileSize" => $fileSize,
       "remote" => 0,
       "remoteId" => "",
+      "used" => (string)$used,
       "createdAt" => $nowTime,
       "updatedAt" => $nowTime
     ];
@@ -55,7 +56,7 @@ class AttachmentService
    * @param string|null $saveDir 存入附件表的的路径。场景：存放附件的路径可能不在当前项目的文件夹下，而是动态的，那存进去的用相对地址，获取的时候用配置的路径再拼上数据表的路径即可
    * @return Array 附件数据
    */
-  public static function upload($file, $realSaveDir = "Data/Attachments", $baseProject = true, $saveDir = null)
+  public static function upload($file, $realSaveDir = "Data/Attachments", $baseProject = true, $saveDir = null, string|int $used = 1)
   {
     if ($baseProject) {
       if (!is_dir($realSaveDir)) {
@@ -68,7 +69,7 @@ class AttachmentService
     if (!$saveDir) {
       $saveDir = $saveFileResult['relativePath'];
     }
-    return self::addRecord($realSaveDir, $saveFileResult['sourceFileName'], $saveDir, $saveFileResult['saveFileName'], $saveFileResult['size']);
+    return self::addRecord($realSaveDir, $saveFileResult['sourceFileName'], $saveDir, $saveFileResult['saveFileName'], $saveFileResult['size'], $used);
   }
   static function getUrl(string $attachmentFileId)
   {
