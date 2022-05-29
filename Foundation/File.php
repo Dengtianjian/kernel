@@ -198,7 +198,7 @@ class File
    * @param string $path 目录
    * @return boolean 删除结果
    */
-  public static function deleteDirectory($path)
+  public static function deleteDirectory($path): bool
   {
     if (is_dir($path)) {
       $directorys = @\scandir($path);
