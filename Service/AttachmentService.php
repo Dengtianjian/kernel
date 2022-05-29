@@ -98,4 +98,19 @@ class AttachmentService
     if (!$attachment) return false;
     return F_BASE_URL . "/downloadAttachment?fileId=" . urlencode($attachment['fileId']);
   }
+  static function updateAttachmentUseState(?string $fileId = null, ?string $attachmentId = null, string|int $state = 0): bool
+  {
+    $AM = new AttachmentModel();
+    $query = [];
+    if ($fileId) {
+      $query['fileId'] = $fileId;
+    }
+    if ($attachmentId) {
+      $query['id'] = $attachmentId;
+    }
+
+    return $AM->where($query)->update([
+      "used" => (string)$state
+    ]);
+  }
 }
