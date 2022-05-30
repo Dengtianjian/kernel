@@ -5,7 +5,6 @@ namespace kernel\Foundation\Database\MongoDB;
 class Driver
 {
   private ?\MongoDB\Driver\Manager $instance = null;
-  private ?\MongoDB\Driver\BulkWrite $bulk = null;
   private $config = [
     "host" => "localhost",
     "port" => 27017,
@@ -29,7 +28,6 @@ class Driver
     }
     $optionStrings = implode(";", $optionStrings);
     $this->instance = new \MongoDB\Driver\Manager("mongodb://$username:$password@$host:$port/$databaseName?$optionStrings");
-    $this->bulk = new \MongoDB\Driver\BulkWrite;
   }
   private function genNamespace(string $extra): string
   {
@@ -59,18 +57,21 @@ class Driver
   }
   public function insert(string $setName, array $doc, array $options = []): int
   {
-    $this->bulk->insert($doc);
-    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options)->getInsertedCount();
+    $bulk = new \MongoDB\Driver\BulkWrite();
+    $bulk->insert($doc);
+    return $this->instance->executeBulkWrite($this->genNamespace($setName), $bulk, $options)->getInsertedCount();
   }
   public function update(string $setName, array $query = [], array $updateData = [], array $options = []): \MongoDB\Driver\WriteResult
   {
-    $this->bulk->update($query, $updateData);
-    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options);
+    $bulk = new \MongoDB\Driver\BulkWrite();
+    $bulk->update($query, $updateData);
+    return $this->instance->executeBulkWrite($this->genNamespace($setName), $bulk, $options);
   }
   public function delete(string $setName, array $query, array $options = []): int
   {
-    $this->bulk->delete($query, $options);
-    return $this->instance->executeBulkWrite($this->genNamespace($setName), $this->bulk, $options)->getDeletedCount();
+    $bulk = new \MongoDB\Driver\BulkWrite();
+    $bulk->delete($query, $options);
+    return $this->instance->executeBulkWrite($this->genNamespace($setName), $bulk, $options)->getDeletedCount();
   }
   public function commamd(array $commands = [], ?array $options = []): \MongoDB\Driver\Command
   {
