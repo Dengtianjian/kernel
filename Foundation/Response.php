@@ -42,7 +42,11 @@ class Response
   {
     if (\is_string($statusCode)) {
       $error = ErrorCode::match($statusCode);
-      self::result($error[0], $error[1], $data, $error[2], $details, "error");
+      if ($error) {
+        self::result($error[0], $error[1], $data, $error[2], $details, "error");
+      } else {
+        self::result($statusCode, $code, $data, $message, $details, "error");
+      }
     } else {
       self::result($statusCode, $code, $data, $message, $details, "error");
     }
@@ -60,7 +64,7 @@ class Response
   {
     self::$statusCode = $statusCode;
   }
-  static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [], string $type = "success")
+  static function result($statusCode = 200, $code = 200000,  $data = null, string|null $message = "", $details = [], string $type = "success")
   {
     $interceptResult = true;
     if (count(self::$responseInterceptors) > 0) {
