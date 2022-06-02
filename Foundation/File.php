@@ -235,4 +235,72 @@ class File
     array_splice($dirs, 0, 1);
     return self::mkdir($dirs, $baseDir);
   }
+  public static function genPath(...$els): string
+  {
+    return implode(DIRECTORY_SEPARATOR, $els);
+  }
+  public static function scandir(string $targetPath, ?int $sorting_order = 0, $context = null): array|false
+  {
+    $dirs = scandir($targetPath, $sorting_order, $context);
+    if (!$dirs) return false;
+    return array_values(array_filter(scandir($targetPath, $sorting_order, $context), function ($item) {
+      return !in_array($item, [".", ".."]);
+    }));
+  }
+  public static function clearFolder(string $targetPath, array $whiteList = []): bool
+  {
+    if (!is_dir($targetPath)) return false;
+
+    $files = self::scandir($targetPath);
+    if (count($files) === 0) return 0;
+    foreach ($files as $fileItem) {
+      $path = self::genPath($targetPath, $fileItem);
+      if (in_array($path, $whiteList)) continue;
+
+      if (is_dir($path)) {
+        self::clearFolder($path, $whiteList);
+        self::deleteDirectory($path);
+      } else {
+        unlink($path);
+      }
+    }
+
+    return true;
+  }
+  public static function copyFolder(string $targetPath, string $destPath, array $whiteList = []): bool
+  {
+    if (!is_dir($targetPath)) {
+      return false;
+    }
+    if (!is_dir($destPath)) {
+      mkdir($destPath, 0757, true);
+    }
+
+    $files = self::scandir($targetPath);
+    if (count($files) === false) return false;
+
+    $result = true;
+    foreach ($files as $fileItem) {
+      $path = self::genPath($targetPath, $fileItem);
+      $destPath = self::genPath($destPath, $fileItem);
+      if (in_array($destPath, $whiteList)) continue;
+
+      if (is_dir($path)) {
+        $operationResult = self::copyFolder($path, $destPath);
+        if ($operationResult === false) {
+          if (is_dir($destPath)) {
+            self::deleteDirectory($destPath);
+          }
+        }
+      } else {
+        $operationResult = copy($path, $destPath);
+      }
+      if (!$operationResult) {
+        $result = false;
+        break;
+      }
+    }
+
+    return $result;
+  }
 }
