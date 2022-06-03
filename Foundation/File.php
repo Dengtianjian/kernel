@@ -307,19 +307,19 @@ class File
 
     $result = true;
     foreach ($files as $fileItem) {
-      $path = self::genPath($targetPath, $fileItem);
-      $destPath = self::genPath($destPath, $fileItem);
+      $pathItem = self::genPath($targetPath, $fileItem);
+      $destPathItem = self::genPath($destPath, $fileItem);
       if (in_array($destPath, $whiteList)) continue;
 
-      if (is_dir($path)) {
-        $operationResult = self::copyFolder($path, $destPath);
-        if ($operationResult === false) {
-          if (is_dir($destPath)) {
-            self::deleteDirectory($destPath);
-          }
-        }
+      if (is_dir($pathItem)) {
+        $operationResult = self::copyFolder($pathItem, $destPathItem);
+        // if ($operationResult === false) {
+        //   if (is_dir($destPath)) {
+        //     self::deleteDirectory($destPath);
+        //   }
+        // }
       } else {
-        $operationResult = copy($path, $destPath);
+        $operationResult = copy($pathItem, $destPathItem);
       }
       if (!$operationResult) {
         $result = false;
