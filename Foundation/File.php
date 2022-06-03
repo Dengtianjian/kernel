@@ -313,11 +313,11 @@ class File
 
       if (is_dir($pathItem)) {
         $operationResult = self::copyFolder($pathItem, $destPathItem);
-        // if ($operationResult === false) {
-        //   if (is_dir($destPath)) {
-        //     self::deleteDirectory($destPath);
-        //   }
-        // }
+        if ($operationResult === false) {
+          if (is_dir($destPath)) {
+            self::deleteDirectory($destPath);
+          }
+        }
       } else {
         $operationResult = copy($pathItem, $destPathItem);
       }
