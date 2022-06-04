@@ -103,8 +103,11 @@ class Router
 
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
     if (!isset(self::$staticRoutes[$method][$uri])) {
-      if (self::$staticRoutes['any'][$uri]) {
+      if (isset(self::$staticRoutes['any'][$uri])) {
         return self::$staticRoutes['any'][$uri];
+      }
+      if (isset(self::$staticRoutes['resource'][$uri])) {
+        return self::$staticRoutes['resource'][$uri];
       }
 
       //* 匹配动态路由
