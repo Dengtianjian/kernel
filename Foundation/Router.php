@@ -70,6 +70,10 @@ class Router
   {
     self::register("api", "any", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  static function resource($uri, $controllerNameOfFunction, $middlewareName = null)
+  {
+    self::register("resource", "resource", $uri, $controllerNameOfFunction, $middlewareName);
+  }
   static function match(Request $R)
   {
     $method = \strtolower($R->method);
@@ -82,10 +86,14 @@ class Router
       }
 
       //* 匹配动态路由
-      $dynamicRoutes = self::$dynamicRoutes[$method];
+      $dynamicRoutes = self::$dynamicRoutes["resource"];
+      if (!$dynamicRoutes) {
+        $dynamicRoutes = self::$dynamicRoutes[$method];
+      }
       if (!$dynamicRoutes) return null;
       $params = [];
       $matchRoute = null;
+
       foreach ($dynamicRoutes as $uriRegexp => $route) {
         if (preg_match($uriRegexp, $uri, $params)) {
           preg_match_all($uriRegexp, $uri, $pg);
@@ -100,7 +108,7 @@ class Router
       }
       return $matchRoute;
     }
-    $matchRoute = self::$staticRoutes[$method][$uri];;
+    $matchRoute = self::$staticRoutes[$method][$uri];
     if ($matchRoute['type'] === "async") {
       if ($method !== "post" || !$R->headers("X-Async")) {
         return null;
@@ -123,8 +131,10 @@ class Router
               $uriParts[$uriItem] = $uriItem;
               continue;
             } else {
-              $params[$key] = "";
-              $uriItem = "(.+?)";
+              if (!$uriItem) {
+                $params[$key] = "";
+                $uriItem = "(.+?)";
+              }
             }
           } else {
             $params[$key] = "";
@@ -134,10 +144,13 @@ class Router
         }
       } else {
         foreach ($uriParts as &$uriItem) {
-          $params[$uriItem] = "";
-          $uriItem = "(.+?)";
+          if (!$uriItem) {
+            $params[$uriItem] = "";
+            $uriItem = "(.+?)";
+          }
         }
       }
+
       $regexp = "/^\/" . implode("\/", $uriParts) . "$/";
       self::$dynamicRoutes[$method][$regexp] = [
         "controller" => $controllerNameOfFunction,
