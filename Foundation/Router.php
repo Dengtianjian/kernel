@@ -74,6 +74,28 @@ class Router
   {
     self::register("resource", "resource", $uri, $controllerNameOfFunction, $middlewareName);
   }
+  static private function matchDynamicRoute(Request $R, $routes)
+  {
+    $uri = $R->uri;
+
+    $params = [];
+    $matchRoute = null;
+
+    foreach ($routes as $uriRegexp => $route) {
+      if (preg_match($uriRegexp, $uri, $params)) {
+        preg_match_all($uriRegexp, $uri, $pg);
+        $params = array_slice($params, 1);
+        $matchRoute = $route;
+        $paramKeys = array_keys($route['params']);
+        foreach ($params as $index => $value) {
+          $matchRoute['params'][$paramKeys[$index]] = $value;
+        }
+        break;
+      }
+    }
+
+    return $matchRoute;
+  }
   static function match(Request $R)
   {
     $method = \strtolower($R->method);
@@ -86,26 +108,14 @@ class Router
       }
 
       //* 匹配动态路由
-      $dynamicRoutes = self::$dynamicRoutes["resource"];
-      if (!$dynamicRoutes) {
-        $dynamicRoutes = self::$dynamicRoutes[$method];
-      }
-      if (!$dynamicRoutes) return null;
-      $params = [];
       $matchRoute = null;
-
-      foreach ($dynamicRoutes as $uriRegexp => $route) {
-        if (preg_match($uriRegexp, $uri, $params)) {
-          preg_match_all($uriRegexp, $uri, $pg);
-          $params = array_slice($params, 1);
-          $matchRoute = $route;
-          $paramKeys = array_keys($route['params']);
-          foreach ($params as $index => $value) {
-            $matchRoute['params'][$paramKeys[$index]] = $value;
-          }
-          break;
-        }
+      if (isset(self::$dynamicRoutes["resource"])) {
+        $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes["resource"]);
       }
+      if (!$matchRoute && isset(self::$dynamicRoutes[$method])) {
+        $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes[$method]);
+      }
+
       return $matchRoute;
     }
     $matchRoute = self::$staticRoutes[$method][$uri];
@@ -151,7 +161,7 @@ class Router
         }
       }
 
-      $regexp = "/^\/" . implode("\/", $uriParts) . "$/";
+      $regexp = "/^\/?" . implode("\/", $uriParts) . "$/";
       self::$dynamicRoutes[$method][$regexp] = [
         "controller" => $controllerNameOfFunction,
         "middleware" => $middlewareName,
