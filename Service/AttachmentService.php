@@ -89,6 +89,7 @@ SQL;
    */
   public static function upload($file, string $realSaveDir = "Data/Attachments", bool $baseProject = true, string|null $saveDir = null, string|int $used = 0, array $extraFields = [])
   {
+    if (!$file) return false;
     if ($baseProject) {
       if (!is_dir($realSaveDir)) {
         File::mkdir(explode("/", $realSaveDir), F_APP_ROOT);
@@ -97,6 +98,7 @@ SQL;
     }
 
     $saveFileResult = File::upload($file, $realSaveDir);
+    if (!$saveFileResult) return $saveFileResult;
     if (!$saveDir) {
       $saveDir = $saveFileResult['relativePath'];
     }

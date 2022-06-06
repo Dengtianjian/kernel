@@ -71,6 +71,7 @@ class File
    */
   public static function upload($files, $savePath)
   {
+    if (!$files || is_array($files) && empty($files)) return false;
     $uploadResult = [];
     $onlyOne = false;
     if (is_array($files) && Arr::isAssoc($files) || is_string($files)) {
