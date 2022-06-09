@@ -24,15 +24,24 @@ class Collection
   {
     return Mongo::realId($id);
   }
-  public function find(array $filter = [], array $options = []): array
+  public function find(array $filter = [], array $options = [], bool $associative = false): array|stdClass
   {
     $filter = Mongo::optimParams($filter);
-    return Mongo::find($this->collectionName, $filter, $options);
+    $result = Mongo::find($this->collectionName, $filter, $options);
+    if ($result && is_array($result) && !empty($result) && $associative) {
+      return json_decode(json_encode($result), true);
+    }
+    return $result;
   }
-  public function findOne(array $filter = [], array $options = []): stdClass|null
+  public function findOne(array $filter = [], array $options = [], bool $associative = false): stdClass|null|array
   {
     $filter = Mongo::optimParams($filter);
-    return Mongo::findOne($this->collectionName, $filter, $options);
+    $result = Mongo::findOne($this->collectionName, $filter, $options);
+
+    if ($result && is_array($result) && !empty($result) && $associative) {
+      return json_decode(json_encode($result), true);
+    }
+    return $result;
   }
   public function insert(array $doc = [], array $options = []): int
   {
