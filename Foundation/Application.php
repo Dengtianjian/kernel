@@ -61,10 +61,12 @@ class Application
             Response::error(500, "500:ControllerMissingAsyncFunction", "服务器错误", [], "控制器缺失async函数");
           }
           if (!method_exists($instance, "data") && $this->router['type'] === "async") {
-            Response::error(500, "500:ControllerMissingDataHandlerFunction","服务器错误",[],"控制器缺少data函数");
+            Response::error(500, "500:ControllerMissingDataHandlerFunction", "服务器错误", [], "控制器缺少data函数");
           }
         }
-        if (method_exists($instance, $this->request->method)) {
+        if ($this->router['type'] === "async" || $this->request->async()) {
+          $executeFunName = "async";
+        } else if (method_exists($instance, $this->request->method)) {
           $executeFunName = $this->request->method;
         } else {
           if (!method_exists($instance, "data")) {
