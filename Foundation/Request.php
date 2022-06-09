@@ -142,7 +142,7 @@ class Request
     }
     return $this->getArrayData($this->paramsData, $key);
   }
-  public function pagination(string $key = null)
+  public function pagination(string $key = null): int|array
   {
     if ($key) {
       return $this->paginationParams[$key];
