@@ -120,6 +120,13 @@ class Request
     }
     return $this->headers("X-Ajax");
   }
+  public function async()
+  {
+    if (isset($_GET['isAsync'])) {
+      return true;
+    }
+    return $this->headers("X-Async");
+  }
   public function setParams($params = [])
   {
     $params = $params ?: [];

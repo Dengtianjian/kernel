@@ -104,31 +104,31 @@ class Router
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
     if (!isset(self::$staticRoutes[$method][$uri])) {
       if (isset(self::$staticRoutes['any'][$uri])) {
-        return self::$staticRoutes['any'][$uri];
+        $matchRoute = self::$staticRoutes['any'][$uri];
+      } else if (isset(self::$staticRoutes['resource'][$uri])) {
+        $matchRoute = self::$staticRoutes['resource'][$uri];
+      } else if (isset(self::$staticRoutes['async'][$uri])) {
+        $matchRoute = self::$staticRoutes['async'][$uri];
+      } else {
+        //* 匹配动态路由
+        $matchRoute = null;
+        if (isset(self::$dynamicRoutes["resource"])) {
+          $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes["resource"]);
+        }
+        if (!$matchRoute && isset(self::$dynamicRoutes[$method])) {
+          $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes[$method]);
+        }
       }
-      if (isset(self::$staticRoutes['resource'][$uri])) {
-        return self::$staticRoutes['resource'][$uri];
-      }
-
-      //* 匹配动态路由
-      $matchRoute = null;
-      if (isset(self::$dynamicRoutes["resource"])) {
-        $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes["resource"]);
-      }
-      if (!$matchRoute && isset(self::$dynamicRoutes[$method])) {
-        $matchRoute = self::matchDynamicRoute($R, self::$dynamicRoutes[$method]);
-      }
-
-      return $matchRoute;
+    } else {
+      $matchRoute = self::$staticRoutes[$method][$uri];
     }
-    $matchRoute = self::$staticRoutes[$method][$uri];
-    if ($matchRoute['type'] === "async") {
-      if ($method !== "post" || !$R->headers("X-Async")) {
-        return null;
+    if ($matchRoute['type'] === "async" || $R->headers("X-Async")) {
+      if ($method === "get" || !$R->headers("X-Async") || !in_array($matchRoute['type'], ["async", "resource"])) {
+        $matchRoute = null;
       }
     }
 
-    return self::$staticRoutes[$method][$uri];
+    return $matchRoute;
   }
   static function register($type, $method, $uri, $controllerNameOfFunction, $middlewareName = null)
   {

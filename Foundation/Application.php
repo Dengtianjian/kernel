@@ -53,11 +53,22 @@ class Application
       $instance = new $controller($this->request);
 
       if (empty($executeFunName)) {
+        if ($this->router['type'] === "async" || $this->request->async()) {
+          if (strtolower($this->request->method) === "get") {
+            Response::error(500, "500:AsyncControlerNotAllowGetMethodRequest", "禁止Get请求");
+          }
+          if (!method_exists($instance, "async") && $this->router['type'] === "resource") {
+            Response::error(500, "500:ControllerMissingAsyncFunction", "服务器错误", [], "控制器缺失async函数");
+          }
+          if (!method_exists($instance, "data") && $this->router['type'] === "async") {
+            Response::error(500, "500:ControllerMissingDataHandlerFunction","服务器错误",[],"控制器缺少data函数");
+          }
+        }
         if (method_exists($instance, $this->request->method)) {
           $executeFunName = $this->request->method;
         } else {
           if (!method_exists($instance, "data")) {
-            throw new Error("执行的控制器缺少data方法");
+            throw new Error("执行的控制器缺少data函数");
           }
           $executeFunName = "data";
         }
