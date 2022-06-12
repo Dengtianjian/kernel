@@ -22,6 +22,12 @@ class Controller
       $V = new Validator($this->rules, Arr::merge($this->query, $this->body));
       $V->validate();
     }
+
+    if (count($R->pipes)) {
+      Response::intercept(function () use ($R) {
+        $this->pipeFill($R->pipes);
+      }, "success");
+    }
   }
   public function __get($name)
   {
@@ -97,5 +103,12 @@ class Controller
     }
 
     return $data;
+  }
+  protected function pipeFill(array $pipes): mixed
+  {
+    //* 洋葱模型
+    if (!method_exists($this, $pipeName)) return true;
+
+    return call_user_func([$this, $pipeName], $params);
   }
 }

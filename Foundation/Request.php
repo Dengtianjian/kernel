@@ -14,6 +14,7 @@ class Request
   private $paginationParams = [
     "page" => 1,
   ];
+  public $pipes = [];
   public $uri = "";
   public $router = null;
   public $method = "";
@@ -51,6 +52,14 @@ class Request
     } else {
       $body = [];
     }
+    if (isset($_GET["_pipes"])) {
+      $this->pipes = array_merge($this->pipes, explode(",", $_GET['_pipes']));
+    }
+    if (isset($body["_pipes"])) {
+      $this->pipes = array_merge($this->pipes, $body['_pipes']);
+    }
+    $this->pipes = array_map(fn ($item) => addslashes($item), $this->pipes);
+
     $this->body = \array_merge($body, $_POST);
   }
   private function getArrayData($arr, $keys)
