@@ -120,6 +120,13 @@ class Request
     }
     return $this->headers("X-Ajax");
   }
+  public function async()
+  {
+    if (isset($_GET['isAsync'])) {
+      return true;
+    }
+    return $this->headers("X-Async");
+  }
   public function setParams($params = [])
   {
     $params = $params ?: [];
@@ -135,7 +142,7 @@ class Request
     }
     return $this->getArrayData($this->paramsData, $key);
   }
-  public function pagination(string $key = null)
+  public function pagination(string $key = null): int|array
   {
     if ($key) {
       return $this->paginationParams[$key];

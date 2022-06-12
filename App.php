@@ -13,6 +13,7 @@ use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Log;
+use kernel\Foundation\Output;
 use kernel\Middleware\GlobalExtensionsMiddleware;
 
 class App extends Application

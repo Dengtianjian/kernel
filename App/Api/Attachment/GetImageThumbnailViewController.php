@@ -17,6 +17,7 @@ class GetImageThumbnailViewController extends Controller
   ];
   private function createThumb($attachment, $targetWdith, $targetHeight, $targetRatio)
   {
+    ini_set('memory_limit', '128M');
     $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
     switch (exif_imagetype($filePath)) {
       case IMAGETYPE_GIF:
@@ -88,6 +89,8 @@ class GetImageThumbnailViewController extends Controller
     $targetWdith = $this->query['width'] ?: false;
     $targetHeight = $this->query['height'] ?: false;
     $targetRatio = $this->query['ratio'] ?: false;
+    
+    // Response::download($filePath,"a.webp",)
 
     $fileTag = $R->fileId . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
     $fileTag = md5($fileTag);

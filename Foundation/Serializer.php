@@ -88,7 +88,7 @@ class Serializer
           $data[$fieldName] = self::use(self::$ruleName, $data[$fieldName]);
           self::$ruleName = null;
         } else if ($ruleItem === "json") {
-          if ($data[$fieldName]) {
+          if ($data[$fieldName] && is_string($data[$fieldName])) {
             $data[$fieldName] = json_decode($data[$fieldName], true);
           } else {
             $data[$fieldName] = [];
