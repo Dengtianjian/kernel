@@ -15,7 +15,7 @@ class Response
   private static $resultData = []; //* 增加到响应结果数据体里的数据
   private static $responseData = []; //* 增加到响应结果里的数据
   private static $headers = []; //* 响应头
-  private static $responseIntercept = null; //* 响应拦截回调函数
+  private static $responseInterceptors = []; //* 响应拦截回调函数
   private static $statusCode = null; //* 响应状态码
   static function header(string $key, string $value, bool $replace = true)
   {
@@ -25,17 +25,30 @@ class Response
       "replace" => $replace
     ]);
   }
-  static function intercept($callback = null)
+  static function intercept(callable $callback, ?string $responseType = null, $statusCode = null, $responseCode = null): callable
   {
-    self::$responseIntercept = $callback;
+    $key = microtime();
+    self::$responseInterceptors[$key] = [
+      "responseType" => $responseType,
+      "statusCode" => $statusCode,
+      "responseCode" => $responseCode,
+      "callback" => $callback
+    ];
+    return function () use ($key) {
+      unset(self::$responseInterceptors[$key]);
+    };
   }
   static function error($statusCode, $code = 500, $message = "", $data = [], $details = [])
   {
     if (\is_string($statusCode)) {
       $error = ErrorCode::match($statusCode);
-      self::result($error[0], $error[1], $data, $error[2], $details);
+      if ($error) {
+        self::result($error[0], $error[1], $data, $error[2], $details, "error");
+      } else {
+        self::result($statusCode, $code, $data, $message, $details, "error");
+      }
     } else {
-      self::result($statusCode, $code, $data, $message, $details);
+      self::result($statusCode, $code, $data, $message, $details, "error");
     }
   }
   static function success($data, $statusCode = 200, $code = 200000, $message = "ok")
@@ -51,8 +64,42 @@ class Response
   {
     self::$statusCode = $statusCode;
   }
-  static function result($statusCode = 200, $code = 200000,  $data = null, string $message = "", $details = [])
+  static function result($statusCode = 200, $code = 200000,  $data = null, string|null $message = "", $details = [], string $type = "success")
   {
+    $interceptResult = true;
+    if (count(self::$responseInterceptors) > 0) {
+      foreach (Response::$responseInterceptors as $intercrptor) {
+        if (isset($intercrptor['responseType']) && $intercrptor['responseType'] !== $type) {
+          continue;
+        }
+        if (isset($intercrptor['statusCode'])) {
+          if (is_array($intercrptor['statusCode'])) {
+            if (!in_array($statusCode, $intercrptor['statusCode'])) {
+              continue;
+            }
+          } else if ($intercrptor['statusCode'] !== $statusCode) {
+            continue;
+          }
+        }
+        if (isset($intercrptor['responseCode']) && $intercrptor['responseCode'] !== $code) {
+          if (is_array($intercrptor['responseCode'])) {
+            if (!in_array($code, $intercrptor['responseCode'])) {
+              continue;
+            }
+          } else if ($intercrptor['responseCode'] !== $code) {
+            continue;
+          }
+        }
+        $interceptResult = call_user_func($intercrptor['callback'], $statusCode, $code, $data, $message, $details);
+        if ($interceptResult === false) {
+          break;
+        }
+      }
+    }
+    if ($interceptResult === false) {
+      return false;
+    }
+
     $isAjax = RequestService::request()->ajax();
     if (self::$statusCode !== null) {
       $statusCode = self::$statusCode;
@@ -61,7 +108,7 @@ class Response
     if (!$isAjax) {
       $currentUrl = F_BASE_URL;
       $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
-      $redirectUrl = $_SERVER['HTTP_REFERER'];
+      $redirectUrl = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
       if ($redirectUrl === $currentUrl || !$redirectUrl) {
         $redirectUrl = F_BASE_URL;
       }
@@ -95,15 +142,6 @@ class Response
     }
     if (!empty(self::$responseData)) {
       $result = array_merge($result, self::$responseData);
-    }
-    $interceptResult = true;
-    if (self::$responseIntercept !== null) {
-      $callback = Response::$responseIntercept;
-      self::$responseIntercept = null;
-      $interceptResult = call_user_func($callback, $result, $statusCode, $code, $data, $message, $details);
-    }
-    if ($interceptResult === false) {
-      return false;
     }
     self::output($result);
   }

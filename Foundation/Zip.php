@@ -24,12 +24,12 @@ class Zip
   }
   public function folderToZip(&$zip, $folder,  $removedLength, $localRootPath = null)
   {
-    $dirs = \scandir($folder);
+    $dirs = File::scandir($folder);
     foreach ($dirs as $dirItem) {
-      if ($dirItem === "." || $dirItem === ".." || \in_array($dirItem, $this->packageFileBlackList)) {
+      if (\in_array($dirItem, $this->packageFileBlackList)) {
         continue;
       }
-      $sourceFilePath = $folder . "/$dirItem";
+      $sourceFilePath = File::genPath($folder, $dirItem);
       $localPath = \substr($sourceFilePath, $removedLength + 1);
       if (\is_file($sourceFilePath)) {
         $zip->addFile($sourceFilePath, $localPath);
@@ -48,7 +48,7 @@ class Zip
       $zip->open($outputPath, \ZipArchive::CREATE);
     }
     $pathInfo = \pathinfo($sourcePath);
-    $this->folderToZip($zip, $sourcePath,  \strlen($pathInfo['dirname']), $localRootPath);
+    $this->folderToZip($zip, $sourcePath,  \strlen(File::genPath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
 
     $zip->close();
   }

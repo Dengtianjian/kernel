@@ -11,24 +11,30 @@ use kernel\Service\AttachmentService;
 
 class DeleteAttachmentController extends Controller
 {
-  public function data(Request $request)
+  public $body = [
+    "fileId" => "string",
+    "id" => "string"
+  ];
+  public function data()
   {
-    $fileId = $request->body('fileId');
+    $fileId = $this->body['fileId'] ? Str::unescape($this->body['fileId']) : null;
+    $attachmentId = $this->body['id'];
     if (!$fileId) {
-      Response::error(400, "GetAttachment:400001", "附件不存在");
-    }
-    $fileId = Str::unescape($fileId);
-    $attachment = AttachmentService::getAttachmentInfo($fileId);
-    if (!$attachment) {
-      return [
-        "fileId" => $fileId
-      ];
+      if (!$attachmentId) {
+        Response::error(400, "GetAttachment:400001", "附件不存在");
+      }
     }
 
     $AM = new AttachmentModel();
-    $deleteResult = $AM->where([
-      "fileId" => $attachment['fileId']
-    ])->delete(true);
+    $query = [];
+    if ($fileId) {
+      $query['fileId'] = $fileId;
+    }
+    if ($attachmentId) {
+      $query['id'] = $attachmentId;
+    }
+    $attachment = $AM->where($query)->getOne();
+    $deleteResult = $AM->where($query)->delete(true);
     if ($deleteResult) {
       $filePath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
       if (file_exists($filePath)) {
@@ -37,6 +43,7 @@ class DeleteAttachmentController extends Controller
     }
 
     return [
+      "attachmentId" => $attachmentId,
       "fileId" => $fileId,
       "deleteCount" => $deleteResult
     ];

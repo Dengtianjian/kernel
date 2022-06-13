@@ -23,6 +23,9 @@ class Config
     }
     include_once($filePath);
     if (isset($Config)) {
+      if (!isset(self::$configs[$appId])) {
+        self::$configs[$appId] = [];
+      }
       self::$configs[$appId] = Arr::merge(self::$configs[$appId], $Config);
       return self::$configs;
     }

@@ -48,7 +48,10 @@ class Str
     );
     $string = "";
     for ($i = 0; $i < $stringLength; $i++) {
-      $string .= $charts[mt_rand(0, count($charts))];
+      $char = $charts[mt_rand(0, count($charts))];
+      if (isset($char)) {
+        $string .= $charts[mt_rand(0, count($charts))];
+      }
     }
     return $string;
   }

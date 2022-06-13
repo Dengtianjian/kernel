@@ -71,6 +71,7 @@ class File
    */
   public static function upload($files, $savePath)
   {
+    if (!$files || is_array($files) && empty($files)) return false;
     $uploadResult = [];
     $onlyOne = false;
     if (is_array($files) && Arr::isAssoc($files) || is_string($files)) {
@@ -198,7 +199,7 @@ class File
    * @param string $path 目录
    * @return boolean 删除结果
    */
-  public static function deleteDirectory($path)
+  public static function deleteDirectory($path): bool
   {
     if (is_dir($path)) {
       $directorys = @\scandir($path);
@@ -220,19 +221,155 @@ class File
       return false;
     }
   }
-  public static function mkdir(array $dirs, $baseDir = "")
+  /**
+   * 创建文件夹
+   *
+   * @param array $dirs 路径项数组
+   * @param string $baseDir 基目录，也就是基于该目录创建文件夹
+   * @return bool
+   */
+  public static function mkdir(array $dirs, $baseDir = "", int $permissions = 0757): bool
   {
-    if (count($dirs) === 0) {
-      return true;
+    return mkdir(self::genPath($baseDir, ...$dirs), $permissions, true);
+  }
+  /**
+   * 生成一个路径字符串
+   *
+   * @param string ...$els 路径项
+   * @return string 生成后的路径
+   */
+  public static function genPath(...$els): string
+  {
+    return implode(DIRECTORY_SEPARATOR, $els);
+  }
+  /**
+   * 扫描目录
+   *
+   * @param string $targetPath 被扫描的目录路径
+   * @param integer|null $sorting_order
+   * @param mixed $context
+   * @return array|false 扫描成功的话就返回扫描的数组，否则返回false
+   */
+  public static function scandir(string $targetPath, ?int $sorting_order = 0, $context = null): array|false
+  {
+    $dirs = scandir($targetPath, $sorting_order, $context);
+    if (!$dirs) return false;
+    return array_values(array_filter(scandir($targetPath, $sorting_order, $context), function ($item) {
+      return !in_array($item, [".", ".."]);
+    }));
+  }
+  /**
+   * 清除文件夹里面的全部内容
+   *
+   * @param string $targetPath 被清除的文件夹路径
+   * @param array $whiteList 清除是跳过的白名单。数组的元素必须是完整的目录，也就是包含$destPath，例如 $destPath = "a/b" 那么白名单的元素就是 a/b/c/d 就会跳过路径是 /a/b/c/d 的文件或者目录
+   * @return boolean 清除成功？
+   */
+  public static function clearFolder(string $targetPath, array $whiteList = []): bool
+  {
+    if (!is_dir($targetPath)) return false;
+
+    $files = self::scandir($targetPath);
+    if (count($files) === 0) return 0;
+    foreach ($files as $fileItem) {
+      $path = self::genPath($targetPath, $fileItem);
+      if (in_array($path, $whiteList)) continue;
+
+      if (is_dir($path)) {
+        self::clearFolder($path, $whiteList);
+        rmdir($path);
+        // self::deleteDirectory($path);
+      } else {
+        unlink($path);
+      }
     }
-    if (!is_dir($baseDir)) {
-      mkdir($baseDir);
+
+    return true;
+  }
+  /**
+   * 复制 targetPath 的文件、文件夹到 $destPath 目录
+   *
+   * @param string $targetPath 被复制的目录
+   * @param string $destPath 复制 到 的目录
+   * @param array $whiteList 路径白名单，会跳过数组里面的白名单。数组的元素必须是完整的目录，也就是包含$destPath，例如 $destPath = "a/b" 那么白名单的元素就是 a/b/c/d 就会跳过路径是 /a/b/c/d 的文件或者目录
+   * @return boolean 复制成功？
+   */
+  public static function copyFolder(string $targetPath, string $destPath, array $whiteList = []): bool
+  {
+    if (!is_dir($targetPath)) {
+      return false;
     }
-    $baseDir .= "/" . $dirs[0];
-    if (!is_dir($baseDir)) {
-      mkdir($baseDir);
+    if (!is_dir($destPath)) {
+      mkdir($destPath, 0757, true);
     }
-    array_splice($dirs, 0, 1);
-    return self::mkdir($dirs, $baseDir);
+
+    $files = self::scandir($targetPath);
+    if (count($files) === false) return false;
+
+    $result = true;
+    foreach ($files as $fileItem) {
+      $pathItem = self::genPath($targetPath, $fileItem);
+      $destPathItem = self::genPath($destPath, $fileItem);
+      if (in_array($destPath, $whiteList)) continue;
+
+      if (is_dir($pathItem)) {
+        $operationResult = self::copyFolder($pathItem, $destPathItem);
+        if ($operationResult === false) {
+          if (is_dir($destPath)) {
+            self::deleteDirectory($destPath);
+          }
+        }
+      } else {
+        $operationResult = copy($pathItem, $destPathItem);
+      }
+      if (!$operationResult) {
+        $result = false;
+        break;
+      }
+    }
+
+    if (!$result) {
+      self::deleteDirectory($destPath);
+    }
+
+    return $result;
+  }
+  /**
+   * 比较两个目录是否相等
+   * 会扫描两个目录深度比较
+   *
+   * @param string $targetPath 目录1
+   * @param string $sourcePath 目录2
+   * @return boolean 是否相等
+   */
+  public static function compareDirectories(string $targetPath, $sourcePath): bool
+  {
+    //* 如果任意一个路径是文件夹，而另外一个是文件，就返回false
+    if (!is_dir($targetPath) && is_dir($sourcePath) || !is_dir($sourcePath) && is_dir($targetPath)) {
+      return false;
+    }
+
+    $targetFiles = self::scandir($targetPath);
+    $sourceFiles = self::scandir($sourcePath);
+    if (count($targetFiles) !== count($sourceFiles)) {
+      return false;
+    }
+
+    $result = true;
+    foreach ($targetFiles as $index => $targetFileItem) {
+      if (is_dir($targetFileItem)) {
+        if (!self::compareDirectories(self::genPath($targetPath, $targetFileItem),  self::genPath($targetPath, $sourceFiles[$index]))) {
+          $result = false;
+          break;
+        }
+      } else {
+        if ($targetFileItem !== $sourceFiles[$index]) {
+          $result = false;
+          break;
+        }
+      }
+    }
+
+    return $result;
   }
 }

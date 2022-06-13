@@ -50,7 +50,7 @@ class Serializer
       return self::addRule($name, $rule, $upperLevel[$firstName]);
     }
   }
-  static function use(string $name, $data = [])
+  static function use(string|array $RuleName, $data)
   {
     if ($data === null || count($data) === 0) return $data;
     if (!Arr::isAssoc($data)) {
@@ -58,14 +58,14 @@ class Serializer
         if (array_key_exists("_serilizer", $dataItem)) {
           continue;
         }
-        $dataItem = self::use($name, $dataItem);
+        $dataItem = self::use($RuleName, $dataItem);
       }
       return $data;
     }
     if (array_key_exists("_serilizer", $data)) return $data;
-    $rule = self::getRule($name);
+    $rule = is_array($RuleName) ? $RuleName : self::getRule($RuleName);
     if (!$rule) {
-      throw new Error($name . " 序列化规则不存在");
+      throw new Error($RuleName . " 序列化规则不存在");
     }
     $dataKeys = array_keys($data);
 
@@ -88,7 +88,7 @@ class Serializer
           $data[$fieldName] = self::use(self::$ruleName, $data[$fieldName]);
           self::$ruleName = null;
         } else if ($ruleItem === "json") {
-          if ($data[$fieldName]) {
+          if ($data[$fieldName] && is_string($data[$fieldName])) {
             $data[$fieldName] = json_decode($data[$fieldName], true);
           } else {
             $data[$fieldName] = [];
@@ -115,7 +115,7 @@ class Serializer
     foreach ($removeKeys as $keyItem) {
       unset($data[$keyItem]);
     }
-    $data['_serilizer'] = $name;
+    $data['_serilizer'] = is_array($RuleName) ? "temp" : $RuleName;
 
     return $data;
   }
