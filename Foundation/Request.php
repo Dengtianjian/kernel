@@ -138,7 +138,7 @@ class Request
    *
    * @return bool|string
    */
-  public function ajax(): bool|string
+  public function ajax(): bool|string|null
   {
     if (isset($_GET['isAjax'])) {
       return true;
@@ -150,7 +150,7 @@ class Request
    *
    * @return bool|string
    */
-  public function async(): bool|string
+  public function async(): bool|string|null
   {
     if (isset($_GET['isAsync'])) {
       return true;
