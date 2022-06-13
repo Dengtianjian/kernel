@@ -24,8 +24,8 @@ class Controller
     }
 
     if (count($R->pipes)) {
-      Response::intercept(function () use ($R) {
-        $this->pipeFill($R->pipes);
+      Response::intercept(function ($statusCode, $code, $data) use ($R) {
+        $this->pipeFill($R->pipes, $data);
       }, "success");
     }
   }
@@ -104,11 +104,17 @@ class Controller
 
     return $data;
   }
-  protected function pipeFill(array $pipes): mixed
+  protected function pipeFill(array $pipes, mixed $data): void
   {
-    //* 洋葱模型
-    if (!method_exists($this, $pipeName)) return true;
-
-    return call_user_func([$this, $pipeName], $params);
+    $result = null;
+    foreach ($pipes as $pipeName) {
+      if (!method_exists($this, $pipeName)) {
+        continue;
+      }
+      $result = call_user_func([$this, $pipeName], $data);
+    }
+    Response::add([
+      "data" => $result
+    ]);
   }
 }
