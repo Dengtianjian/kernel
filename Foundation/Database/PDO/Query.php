@@ -86,7 +86,7 @@ class Query
   }
   function order(string $field, string $by = "ASC")
   {
-    if (!$this->options['order']) {
+    if (!isset($this->options['order'])) {
       $this->options['order'] = [
         [
           "field" => $field,
@@ -103,7 +103,7 @@ class Query
   }
   function field(array $fieldNames)
   {
-    if (!$this->options['fields']) {
+    if (!isset($this->options['fields'])) {
       $this->options['fields'] = $fieldNames;
     } else {
       $this->options['fields'] = \array_merge($this->options['fields'], $fieldNames);
