@@ -17,7 +17,7 @@ class DeleteAttachmentController extends Controller
   ];
   public function data()
   {
-    $fileId = $this->body['fileId'] ? Str::unescape($this->body['fileId']) : null;
+    $fileId = $this->body['fileId'] ? urldecode($this->body['fileId']) : null;
     $attachmentId = $this->body['id'];
     if (!$fileId) {
       if (!$attachmentId) {
