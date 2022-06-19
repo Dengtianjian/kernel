@@ -14,7 +14,7 @@ class UploadAttachmentController extends Controller
       Response::error(400, "Attachment:400001", "请上传文件", $_FILES);
     }
     $file = $_FILES['file'];
-    $uploadResult = AttachmentService::upload($file, "Attachments");
+    $uploadResult = AttachmentService::upload($file, "Data/Attachments");
     
     return $uploadResult;
   }
