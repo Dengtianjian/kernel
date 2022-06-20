@@ -134,6 +134,12 @@ SQL;
   }
   static function updateAttachmentUseState(?string $fileId = null, ?string $attachmentId = null, string|int $state = 0): bool
   {
+    return self::updateAttachment([
+      "used" => (string)$state
+    ], $fileId, $attachmentId);
+  }
+  static function updateAttachment(array $data, ?string $fileId = null, ?string $attachmentId = null): bool
+  {
     $AM = new AttachmentModel();
     $query = [];
     if ($fileId) {
@@ -143,8 +149,6 @@ SQL;
       $query['id'] = $attachmentId;
     }
 
-    return $AM->where($query)->update([
-      "used" => (string)$state
-    ]);
+    return $AM->where($query)->update($data);
   }
 }
