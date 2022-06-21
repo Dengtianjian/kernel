@@ -50,7 +50,7 @@ class Serializer
       return self::addRule($name, $rule, $upperLevel[$firstName]);
     }
   }
-  static function use(string|array $RuleName, $data)
+  static function use(string|array $RuleName, $data, $serializerName = "temp")
   {
     if ($data === null || count($data) === 0) return $data;
     if (!Arr::isAssoc($data)) {
@@ -58,7 +58,7 @@ class Serializer
         if (array_key_exists("_serilizer", $dataItem)) {
           continue;
         }
-        $dataItem = self::use($RuleName, $dataItem);
+        $dataItem = self::use($RuleName, $dataItem, $serializerName);
       }
       return $data;
     }
@@ -115,7 +115,7 @@ class Serializer
     foreach ($removeKeys as $keyItem) {
       unset($data[$keyItem]);
     }
-    $data['_serilizer'] = is_array($RuleName) ? "temp" : $RuleName;
+    $data['_serilizer'] = is_array($RuleName) ? $serializerName : $RuleName;
 
     return $data;
   }
