@@ -190,7 +190,11 @@ class Response
         $content = file_get_contents($filePath, false, null, $range, $fileSize);
         echo $content;
       } else {
-        readfile($filePath);
+        if (file_exists($filePath)) {
+          readfile($filePath);
+        } else {
+          echo "";
+        }
       }
 
       exit();

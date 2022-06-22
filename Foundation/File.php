@@ -48,6 +48,8 @@ class File
         return \strpos($fileName, $fileExtension) !== false;
       }
     } else {
+      if (!file_exists($fileName)) return false;
+      
       if (\function_exists("exif_imagetype")) {
         $info = \exif_imagetype($fileName);
         if ($info === false) {

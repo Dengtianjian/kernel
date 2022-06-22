@@ -50,7 +50,7 @@ class Arr
     $result = [];
     foreach ($arr as &$arrItem) {
       if (!$arrItem[$relatedParentKey]) { //* 最高级
-        if (!$result[$arrItem[$dataPrimaryKey]]) { //* 判断结果数组里是否存在，没有就加进去
+        if (!isset($result[$arrItem[$dataPrimaryKey]])) { //* 判断结果数组里是否存在，没有就加进去
           $result[$arrItem[$dataPrimaryKey]] = $arrItem;
           $arrItem['reference'] = &$result[$arrItem[$dataPrimaryKey]];
           $arrItem['reference'][$childArrayKeys] = [];
