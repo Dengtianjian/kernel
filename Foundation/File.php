@@ -106,12 +106,15 @@ class File
       $fileCode = \mt_rand(1000, 9999) . time();
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
+      if (!is_dir($savePath)) {
+        mkdir($savePath, 707, true);
+      }
       if (is_string($fileItem)) {
         if (!file_exists($fileItem)) return false;
         $saveResult = copy($filePath, $saveFullPath);
         unlink($filePath);
       } else {
-        $saveResult = @\move_uploaded_file($filePath, $saveFullPath);
+        $saveResult = \move_uploaded_file($filePath, $saveFullPath);
       }
 
       if (!$saveResult) {
