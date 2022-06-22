@@ -22,6 +22,12 @@ class Controller
       $V = new Validator($this->rules, Arr::merge($this->query, $this->body));
       $V->validate();
     }
+
+    if (count($R->pipes)) {
+      Response::intercept(function ($statusCode, $code, $data) use ($R) {
+        $this->pipeFill($R->pipes, $data);
+      }, "success");
+    }
   }
   public function __get($name)
   {
@@ -97,5 +103,18 @@ class Controller
     }
 
     return $data;
+  }
+  protected function pipeFill(array $pipes, mixed $data): void
+  {
+    $result = null;
+    foreach ($pipes as $pipeName) {
+      if (!method_exists($this, $pipeName)) {
+        continue;
+      }
+      $result = call_user_func([$this, $pipeName], $data);
+    }
+    Response::add([
+      "data" => $result
+    ]);
   }
 }

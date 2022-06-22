@@ -38,7 +38,7 @@ class Collection
     $filter = Mongo::optimParams($filter);
     $result = Mongo::findOne($this->collectionName, $filter, $options);
 
-    if ($result && is_array($result) && !empty($result) && $associative) {
+    if ($result && $associative && $result instanceof stdClass) {
       return json_decode(json_encode($result), true);
     }
     return $result;

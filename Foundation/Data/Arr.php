@@ -120,4 +120,12 @@ class Arr
     unset($previous);
     return $result;
   }
+  static function partial(array $target, array $keys): array
+  {
+    $result = [];
+    foreach ($keys as $key) {
+      $result[$key] = $target[$key];
+    }
+    return $result;
+  }
 }

@@ -122,6 +122,7 @@ class Router
     } else {
       $matchRoute = self::$staticRoutes[$method][$uri];
     }
+    if (!$matchRoute) return null;
     if ($matchRoute['type'] === "async" || $R->headers("X-Async")) {
       if ($method === "get" || !$R->headers("X-Async") || !in_array($matchRoute['type'], ["async", "resource"])) {
         $matchRoute = null;

@@ -14,12 +14,28 @@ class Request
   private $paginationParams = [
     "page" => 1,
   ];
+  public $pipes = [];
   public $uri = "";
   public $router = null;
   public $method = "";
   public function __construct()
   {
     $this->serializationBody();
+
+    //* 管道参数处理
+    if (isset($_GET["_pipes"])) {
+      $this->pipes = array_merge($this->pipes, explode(",", $_GET['_pipes']));
+      unset($_GET["_pipes"]);
+    }
+    if (isset($this->body["_pipes"])) {
+      $this->pipes = array_merge($this->pipes, $this->body['_pipes']);
+      unset($this->body["_pipes"]);
+      unset($_POST["_pipes"]);
+    }
+    unset($_REQUEST["_pipes"]);
+    $this->pipes = array_map(fn ($item) => addslashes($item), $this->pipes);
+
+    //* 分页参数
     $this->paginationParams = [
       "page" => isset($_REQUEST["page"]) ? intval($_REQUEST["page"]) : 1,
       "limit" => 10,
@@ -32,16 +48,19 @@ class Request
       $this->paginationParams['limit'] = intval($_REQUEST["perPage"]);
     }
 
+    //* 请求方式
     $this->method = $_SERVER['REQUEST_METHOD'];
     if (isset($_REQUEST['_method'])) {
       $this->method = $_REQUEST['_method'];
     }
     $this->method = strtoupper($this->method);
 
+    //* 请求的URI
     $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
   }
   private function serializationBody()
   {
+    //* 请求体处理
     $body = \file_get_contents("php://input");
     if ($body) {
       $body = \json_decode($body, true);
@@ -51,6 +70,7 @@ class Request
     } else {
       $body = [];
     }
+
     $this->body = \array_merge($body, $_POST);
   }
   private function getArrayData($arr, $keys)
@@ -113,14 +133,24 @@ class Request
     }
     return $this->headers;
   }
-  public function ajax()
+  /**
+   * 是否是AJAX异步请求，也就是非页面渲染
+   *
+   * @return bool|string
+   */
+  public function ajax(): bool|string|null
   {
     if (isset($_GET['isAjax'])) {
       return true;
     }
     return $this->headers("X-Ajax");
   }
-  public function async()
+  /**
+   * 是否是内部异步请求
+   *
+   * @return bool|string
+   */
+  public function async(): bool|string|null
   {
     if (isset($_GET['isAsync'])) {
       return true;
