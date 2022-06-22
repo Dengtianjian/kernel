@@ -70,7 +70,7 @@ class Controller
             $body[$key] = null;
           }
         } else {
-          if ($requestBody[$key]) {
+          if (isset($requestBody[$key])) {
             $body[$key] = $this->convertDataType($requestBody[$key], $type);
           } else {
             $body[$key] = null;

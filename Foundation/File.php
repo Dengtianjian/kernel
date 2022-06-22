@@ -213,7 +213,7 @@ class File
         $directoryItem = $path . "/" . $directoryItem;
         if (is_dir($directoryItem)) {
           self::deleteDirectory($directoryItem);
-          @rmdir($directoryItem);
+          // @rmdir($directoryItem);
         } else {
           @unlink($directoryItem);
         }
