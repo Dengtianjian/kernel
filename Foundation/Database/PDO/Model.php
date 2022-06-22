@@ -4,6 +4,7 @@ namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Output;
 use kernel\Foundation\Data\Str;
+use kernel\Foundation\Date;
 
 class Model
 {
@@ -108,7 +109,7 @@ class Model
   }
   function genId($prefix = "", $suffix = "")
   {
-    $nowTime = time();
+    $nowTime = Date::microseconds();
     return $nowTime . substr(md5($prefix . time() . Str::generateRandomString(8) . $suffix), 0, 24 - strlen($nowTime));
   }
   function exist()
