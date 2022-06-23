@@ -48,6 +48,8 @@ class File
         return \strpos($fileName, $fileExtension) !== false;
       }
     } else {
+      if (!file_exists($fileName)) return false;
+      
       if (\function_exists("exif_imagetype")) {
         $info = \exif_imagetype($fileName);
         if ($info === false) {
@@ -106,12 +108,15 @@ class File
       $fileCode = \mt_rand(1000, 9999) . time();
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
+      if (!is_dir($savePath)) {
+        mkdir($savePath, 707, true);
+      }
       if (is_string($fileItem)) {
         if (!file_exists($fileItem)) return false;
         $saveResult = copy($filePath, $saveFullPath);
         unlink($filePath);
       } else {
-        $saveResult = @\move_uploaded_file($filePath, $saveFullPath);
+        $saveResult = \move_uploaded_file($filePath, $saveFullPath);
       }
 
       if (!$saveResult) {
@@ -210,7 +215,7 @@ class File
         $directoryItem = $path . "/" . $directoryItem;
         if (is_dir($directoryItem)) {
           self::deleteDirectory($directoryItem);
-          @rmdir($directoryItem);
+          // @rmdir($directoryItem);
         } else {
           @unlink($directoryItem);
         }

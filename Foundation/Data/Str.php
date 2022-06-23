@@ -48,9 +48,9 @@ class Str
     );
     $string = "";
     for ($i = 0; $i < $stringLength; $i++) {
-      $char = $charts[mt_rand(0, count($charts))];
-      if (isset($char)) {
-        $string .= $charts[mt_rand(0, count($charts))];
+      $randomIndex = mt_rand(0, count($charts));
+      if (isset($charts[$randomIndex])) {
+        $char = $charts[$randomIndex];
       }
     }
     return $string;

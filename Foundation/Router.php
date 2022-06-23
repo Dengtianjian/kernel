@@ -196,6 +196,9 @@ class Router
       "X-Ajax" => 1
     ], $headers);
     $C->url($url)->headers($headers)->timeout($timeout)->https(false)->data($data)->post();
+    if ($C->errorNo()) {
+      return $C->error();
+    }
     return $C->getData();
   }
   static function redirect($targetUrl, $statusCode = 302)
