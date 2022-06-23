@@ -109,7 +109,7 @@ class Model
   }
   function genId($prefix = "", $suffix = "")
   {
-    $nowTime = Date::microseconds();
+    $nowTime = Date::milliseconds();
     return $nowTime . substr(md5($prefix . time() . Str::generateRandomString(8) . $suffix), 0, 24 - strlen($nowTime));
   }
   function exist()
