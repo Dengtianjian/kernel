@@ -196,4 +196,13 @@ class Response
       exit();
     }
   }
+  static function text(string|null $content, bool $format = false): void
+  {
+    if ($format) {
+      Output::format($content);
+    } else {
+      Output::print($content);
+    }
+    exit();
+  }
 }
