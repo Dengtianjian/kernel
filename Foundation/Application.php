@@ -59,13 +59,19 @@ class Application
           }
           if (!method_exists($instance, "async") && $this->router['type'] === "resource") {
             Response::error(500, "500:ControllerMissingAsyncFunction", "服务器错误", [], "控制器缺失async函数");
-          }
-          if (!method_exists($instance, "data") && $this->router['type'] === "async") {
-            Response::error(500, "500:ControllerMissingDataHandlerFunction", "服务器错误", [], "控制器缺少data函数");
+          } else if (!method_exists($instance, "data") && $this->router['type'] === "async") {
+            if (!method_exists($instance, "post")) {
+              Response::error(500, "500:ControllerMissingDataHandlerFunction", "服务器错误", [], "控制器缺少data|post函数");
+            }
           }
         }
-        if ($this->router['type'] === "async" || $this->request->async()) {
+        if ($this->router['type'] === "resource" && $this->request->async()) {
           $executeFunName = "async";
+        } else if ($this->router['type'] === "async") {
+          $executeFunName = "data";
+          if (!method_exists($instance, $executeFunName)) {
+            $executeFunName = "post";
+          }
         } else if (method_exists($instance, $this->request->method)) {
           $executeFunName = $this->request->method;
         } else {
