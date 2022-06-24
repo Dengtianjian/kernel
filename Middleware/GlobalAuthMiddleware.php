@@ -105,7 +105,7 @@ class GlobalAuthMiddleware
         }
       }
     } else {
-      if ($request->headers("token")) {
+      if ($request->headers("Authorization")) {
         $this->verifyToken($request);
       }
     }
