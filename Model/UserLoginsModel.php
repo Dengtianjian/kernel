@@ -9,7 +9,7 @@ class UserLoginsModel extends Model
   public $tableName = "user_logins";
   public function getByToken($token)
   {
-    return $this->where("token", $token)->getOne();
+    return $this->where("deletedAt", null)->where("token", $token)->getOne();
   }
   public function deleteByToken(string $token)
   {
