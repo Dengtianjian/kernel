@@ -75,11 +75,4 @@ class App extends Application
     $result = $this->executiveController();
     Response::success($result);
   }
-  function cron(string $uri, string $method): App
-  {
-    $this->scenes = "cron";
-    $this->request->set($uri, $method);
-
-    return $this;
-  }
 }
