@@ -90,7 +90,7 @@ class SQL
       }
       $glue = null;
     }
-    if (is_numeric($value)) {
+    if (is_numeric($value) && !is_string($value)) {
       $addQuote = false;
     }
 
