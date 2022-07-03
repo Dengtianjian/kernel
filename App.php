@@ -18,6 +18,7 @@ use kernel\Middleware\GlobalExtensionsMiddleware;
 
 class App extends Application
 {
+  public $scenes = "ending";
   function __construct(string $appId)
   {
     define("F_APP_ID", $appId);
@@ -73,5 +74,12 @@ class App extends Application
 
     $result = $this->executiveController();
     Response::success($result);
+  }
+  function cron(string $uri, string $method): App
+  {
+    $this->scenes = "cron";
+    $this->request->set($uri, $method);
+
+    return $this;
   }
 }
