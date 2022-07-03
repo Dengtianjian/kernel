@@ -135,7 +135,8 @@ class Response
       "statusCode" => $statusCode,
       "code" => $code,
       "data" => $data,
-      "message" => $message
+      "message" => $message,
+      "version" => Config::get("version")
     ];
     if (Config::get("mode") === "development") {
       $result['details'] = $details;
