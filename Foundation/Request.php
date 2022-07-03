@@ -179,4 +179,9 @@ class Request
     }
     return $this->paginationParams;
   }
+  public function set(string $uri, string $method)
+  {
+    $this->uri = $uri;
+    $this->method = $method;
+  }
 }
