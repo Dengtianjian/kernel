@@ -39,9 +39,9 @@ class Controller
     $query = [];
     foreach ($needQuery as $key => $type) {
       if (is_numeric($key)) {
-        $query[$type] = $requestQuery[$type] ?: null;
+        $query[$type] = $requestQuery[$type] ?? null;
       } else {
-        $query[$key] = $requestQuery[$key] ?: null;
+        $query[$key] = $requestQuery[$key] ?? null;
         if ($query[$key] !== null) {
           settype($query[$key], $type);
           if (gettype($query[$key]) === "string") {
