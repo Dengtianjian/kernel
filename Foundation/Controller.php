@@ -42,6 +42,9 @@ class Controller
         $query[$type] = $requestQuery[$type] ?? null;
       } else {
         $query[$key] = $requestQuery[$key] ?? null;
+        if (trim($query[$key]) === "") {
+          $query[$key] = null;
+        }
         if ($query[$key] !== null) {
           settype($query[$key], $type);
           if (gettype($query[$key]) === "string") {
