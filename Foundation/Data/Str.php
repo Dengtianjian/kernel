@@ -50,7 +50,7 @@ class Str
     for ($i = 0; $i < $stringLength; $i++) {
       $randomIndex = mt_rand(0, count($charts));
       if (isset($charts[$randomIndex])) {
-        $char = $charts[$randomIndex];
+        $string .= $charts[$randomIndex];
       }
     }
     return $string;
