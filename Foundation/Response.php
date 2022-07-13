@@ -90,7 +90,7 @@ class Response
             continue;
           }
         }
-        $interceptResult = call_user_func($intercrptor['callback'], $statusCode, $code, $data, $message, $details);
+        $interceptResult = call_user_func($intercrptor['callback'], $statusCode, $code, $data, $message, $details, $type);
         if ($interceptResult === false) {
           break;
         }
