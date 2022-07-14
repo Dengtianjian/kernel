@@ -42,9 +42,9 @@ class Command
       [
         "pipe", "w" // 标准输出，子进程向此管道中写入数
       ],
-      // [
-      //   "file", "Data/error-output.txt", "a" // 标准错误，写入到一个文件
-      // ]
+      [
+        "file", F_APP_ROOT . "/Data/proc_outpus.txt", "a" // 标准错误，写入到一个文件
+      ]
     ];
     $this->process = $process = proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd, $this->env, $this->options);
     $this->pipes = &$pipes;
@@ -64,10 +64,15 @@ class Command
     $this->init();
 
     $command = escapeshellcmd($command);
-    fwrite($this->pipes[0], "$command 2>&1;");
+    $execResult = fwrite($this->pipes[0], "$command 2>&1;");
     fclose($this->pipes[0]);
-    $result = stream_get_contents($this->pipes[1]);
-    fclose($this->pipes[1]);
+    if ($execResult !== 0) {
+      $result = false;
+      fclose($this->pipes[1]);
+    } else {
+      $result = stream_get_contents($this->pipes[1]);
+      fclose($this->pipes[1]);
+    }
 
     $this->env = $oldEnv;
     $this->options = $oldOptions;
