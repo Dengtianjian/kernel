@@ -27,7 +27,11 @@ class Driver
       array_push($optionStrings, "$itemKey=$optionItem");
     }
     $optionStrings = implode(";", $optionStrings);
-    $this->instance = new \MongoDB\Driver\Manager("mongodb://$username:$password@$host:$port/$databaseName?$optionStrings");
+    $user = "";
+    if ($username && $password) {
+      $user = "$username:$password";
+    }
+    $this->instance = new \MongoDB\Driver\Manager("mongodb://$user@$host:$port/$databaseName?$optionStrings");
   }
   private function genNamespace(string $extra): string
   {
