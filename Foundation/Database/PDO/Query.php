@@ -29,13 +29,13 @@ class Query
         break;
       case "batchInsert":
       case "batchReplace":
-        $sql .= SQL::batchInsert($this->tableName, $this->data['fields'], $this->data['datas'], $this->executeType === "batchReplace");
+        $sql .= SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['datas'], $this->executeType === "batchReplace");
         break;
       case "update":
         $sql = SQL::update($this->tableName, $this->options['updateData']);
         break;
       case "batchUpdate":
-        $sql = SQL::batchUpdate($this->tableName, $this->data['fields'], $this->options['batchuUpdateData']);
+        $sql = SQL::batchUpdate($this->tableName, $this->options['batchUpdateData']['fields'], $this->options['batchUpdateData']['values']);
         break;
       case "delete":
         $sql = SQL::delete($this->tableName, $this->sql);
@@ -198,7 +198,7 @@ class Query
       $this->executeType = "batchInsert";
     }
     $this->options['batchInsert'] = [
-      "fieldNames" => $fieldNames,
+      "fields" => $fieldNames,
       "values" => $values
     ];
 
@@ -216,9 +216,9 @@ class Query
   }
   function batchUpdate(array $fieldNames, array $values)
   {
-    $this->executeType = "batchuUpdate";
-    $this->options['batchuUpdateData'] = [
-      "fieldNames" => $fieldNames,
+    $this->executeType = "batchUpdate";
+    $this->options['batchUpdateData'] = [
+      "fields" => $fieldNames,
       "values" => $values
     ];
     $this->sql = $this->generateSql();

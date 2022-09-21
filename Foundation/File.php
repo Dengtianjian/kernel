@@ -49,7 +49,7 @@ class File
       }
     } else {
       if (!file_exists($fileName)) return false;
-      
+
       if (\function_exists("exif_imagetype")) {
         $info = \exif_imagetype($fileName);
         if ($info === false) {
@@ -245,7 +245,14 @@ class File
    */
   public static function genPath(...$els): string
   {
-    return implode(DIRECTORY_SEPARATOR, $els);
+    return implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
+      if (str_ends_with($item, "/") || str_ends_with($item, "\\")) {
+        $item = substr($item, 0, strlen($item) - 1);
+      }
+      return $item;
+    }, array_filter($els, function ($item) {
+      return !empty(trim($item));
+    })));
   }
   /**
    * 扫描目录
