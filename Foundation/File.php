@@ -249,6 +249,9 @@ class File
       if (str_ends_with($item, "/") || str_ends_with($item, "\\")) {
         $item = substr($item, 0, strlen($item) - 1);
       }
+      if (str_starts_with($item, "/") || str_starts_with($item, "\\")) {
+        $item = substr($item, 1, strlen($item));
+      }
       return $item;
     }, array_filter($els, function ($item) {
       return !empty(trim($item));
