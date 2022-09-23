@@ -129,6 +129,9 @@ class Request
       $this->headers = $headers;
     }
     if ($key) {
+      if (!isset($this->headers[$key])) {
+        return null;
+      }
       return $this->headers[$key];
     }
     return $this->headers;

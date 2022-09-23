@@ -42,6 +42,7 @@ class Config
     $configs = [];
 
     if (!isset(self::$configs[F_APP_ID])) {
+      self::$configs[F_APP_ID] = [];
       if (self::read() === false) {
         return null;
       }
