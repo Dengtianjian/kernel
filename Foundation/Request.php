@@ -170,7 +170,7 @@ class Request
   {
     if (empty($key) || !$key) return $this->paramsData;
     if (count($keys) > 0) {
-      array_push($paramsKeys, $key);
+      array_push($keys, $key);
       return $this->getArrayData($this->paramsData, $keys);
     }
     return $this->getArrayData($this->paramsData, $key);
