@@ -210,4 +210,15 @@ class Response
     }
     exit();
   }
+  static function pagination(mixed $mainData, Request $R, int $total, array $extraData = [])
+  {
+    return self::success([
+      "list" => $mainData,
+      "pagination" => [
+        ...$R->pagination(),
+        "total" => $total
+      ],
+      ...$extraData
+    ]);
+  }
 }
