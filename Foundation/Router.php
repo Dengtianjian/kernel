@@ -134,6 +134,10 @@ class Router
   static function register($type, $method, $uri, $controllerNameOfFunction, $middlewareName = null)
   {
     if (is_array($uri)) {
+      $uri = array_map(function ($item) {
+        return str_replace("/", "\/", trim($item));
+      }, $uri);
+
       $regexp = "";
       $params = [];
       $uriParts = $uri;
