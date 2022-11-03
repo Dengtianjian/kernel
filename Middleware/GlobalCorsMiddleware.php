@@ -16,14 +16,21 @@ class GlobalCorsMiddleware
     }
     $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
     $allowOrigin = Config::get("cors/allowOrigin");
-    if (is_array($allowOrigin)) {
+    if (!is_array($allowOrigin)) {
+      if ($allowOrigin !== "*") {
+        $allowOrigin = array_map(function ($item) {
+          return trim($item);
+        }, explode(",", $allowOrigin));
+      }
+    }
+    if ($allowOrigin === "*") {
+      Response::header("Access-Control-Allow-Origin", $origin);
+    } else {
       if (in_array($origin, $allowOrigin)) {
         Response::header("Access-Control-Allow-Origin", $origin);
       } else {
-        Response::header("Access-Control-Allow-Origin", "*");
+        Response::header("Access-Control-Allow-Origin", "");
       }
-    } else if ($allowOrigin !== "*" && $allowOrigin !== $origin) {
-      Response::header("Access-Control-Allow-Origin", "");
     }
 
     Response::header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?? []));

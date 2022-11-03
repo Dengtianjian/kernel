@@ -44,10 +44,10 @@ class View
     self::outputHeader();
     if (\is_array($viewFiles)) {
       foreach ($viewFiles as $file) {
-        include_once "/$file";
+        include_once $file;
       }
     } else {
-      include_once "/$viewFiles";
+      include_once $viewFiles;
     }
 
     foreach ($viewData as $key => $value) {
