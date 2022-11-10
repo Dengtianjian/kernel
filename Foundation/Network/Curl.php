@@ -318,7 +318,7 @@ class Curl
       $sendDatas = Arr::merge($sendDatas, $this->uploadFile);
     }
     if ($this->isJson) {
-      $defaultHeaders['Content-type'] = "Application/json";
+      $defaultHeaders['Content-type'] = "application/json; charset=utf-8";
       $sendDatas = \json_encode($sendDatas);
       if ($this->curlMethod === "get") {
         $sendDatas = \urlencode($sendDatas);
@@ -334,8 +334,13 @@ class Curl
       CURLOPT_CUSTOMREQUEST => \strtoupper($this->curlMethod), //* 请求方法
       CURLOPT_COOKIE => $this->buildCookie($this->curlCookie) //* cookies
     ];
+    if ($this->curlMethod === "file") {
+      $options[CURLOPT_PUT] = true;
+    }
     if ($this->curlMethod !== "get") {
+      $options[CURLOPT_POST] = true;
       $options[CURLOPT_POSTFIELDS] = $sendDatas;
+      $options[CURLOPT_HTTPGET] = false;
     }
     //* 绕过SSL验证
     if ($this->bypasSSLVerification === true) {
@@ -357,7 +362,9 @@ class Curl
     \curl_setopt_array($curl, $options);
     curl_setopt($curl, CURLOPT_HEADER, true);
     curl_setopt($curl, CURLOPT_NOBODY, false);
+
     $result = \curl_exec($curl);
+
     $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
     $header = substr($result, 0, $headerSize);
     $header = explode("\r\n", $header);
