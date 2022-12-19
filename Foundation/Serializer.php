@@ -1,15 +1,19 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
+
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
 use Error;
-use kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Data\Arr;
 
 class Serializer
 {
   static $rules = [];
   private static $ruleName = "";
-  static function getRule(string $name, $upperLevel = null)
+  static function getRule($name, $upperLevel = null)
   {
     if (!$upperLevel) $upperLevel = self::$rules;
     $names = explode(".", $name);
@@ -19,12 +23,12 @@ class Serializer
     $name = substr($name, strlen($names[0]) + 1);
     return self::getRule($name, $rule);
   }
-  static function useRule(string $name)
+  static function useRule($name)
   {
     self::$ruleName = $name;
     return self::class;
   }
-  static function addRule(string $name, $rule = [], &$upperLevel = null)
+  static function addRule($name, $rule = [], &$upperLevel = null)
   {
     $names = explode(".", $name);
     $firstName = $names[0];
@@ -34,7 +38,7 @@ class Serializer
         $upperLevel = &self::$rules;
       }
       if (isset($upperLevel[$firstName])) {
-        throw new \Error($firstName . " 序列化规则已经存在");
+        throw new \Error($firstName . " " . Lang::value("kernel/serializer/ruleExist"));
       }
       $upperLevel[$firstName] = $rule;
 
@@ -50,7 +54,7 @@ class Serializer
       return self::addRule($name, $rule, $upperLevel[$firstName]);
     }
   }
-  static function use(string|array $RuleName, $data, $serializerName = "temp")
+  static function serialization($RuleName, $data, $serializerName = "temp")
   {
     if ($data === null || count($data) === 0) return $data;
     if (!Arr::isAssoc($data)) {
@@ -58,14 +62,14 @@ class Serializer
         if (array_key_exists("_serilizer", $dataItem)) {
           continue;
         }
-        $dataItem = self::use($RuleName, $dataItem, $serializerName);
+        $dataItem = self::serialization($RuleName, $dataItem, $serializerName);
       }
       return $data;
     }
     if (array_key_exists("_serilizer", $data)) return $data;
     $rule = is_array($RuleName) ? $RuleName : self::getRule($RuleName);
     if (!$rule) {
-      throw new Error($RuleName . " 序列化规则不存在");
+      throw new Error($RuleName . " " . Lang::value("kernel/serializer/ruleNotExist"));
     }
     $dataKeys = array_keys($data);
 
@@ -85,7 +89,7 @@ class Serializer
       }
       if (array_key_exists($fieldName, $data)) {
         if ($ruleItem === Serializer::class && self::$ruleName) {
-          $data[$fieldName] = self::use(self::$ruleName, $data[$fieldName]);
+          $data[$fieldName] = self::serialization(self::$ruleName, $data[$fieldName]);
           self::$ruleName = null;
         } else if ($ruleItem === "json") {
           if ($data[$fieldName] && is_string($data[$fieldName])) {

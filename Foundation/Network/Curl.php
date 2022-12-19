@@ -1,10 +1,13 @@
 <?php
 
-namespace kernel\Foundation\Network;
+namespace gstudio_kernel\Foundation\Network;
+
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
 use CURLFile;
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Data\Arr;
 
 /**
  * 二次封装的CURL类
@@ -42,7 +45,7 @@ class Curl
    *
    * @return object Curl的实例
    */
-  public static function init(): Curl
+  public static function init()
   {
     return new Curl();
   }
@@ -53,7 +56,7 @@ class Curl
    * @param array[$key=>$value] $query query参数和参数值
    * @return Curl 当前实例
    */
-  public function url($url, $query = []): Curl
+  public function url($url, $query = [])
   {
     $query = \http_build_query($query);
     if (\strlen($query) > 0) {
@@ -68,7 +71,7 @@ class Curl
    * @param boolean $yes 是否是json格式
    * @return Curl 当前实例
    */
-  public function json($yes): Curl
+  public function json($yes)
   {
     $this->isJson = $yes;
     return $this;
@@ -79,7 +82,7 @@ class Curl
    * @param array[$key=>$value] $options 选项和选项值。$key是CURL的常量值
    * @return Curl 当前实例
    */
-  public function options($options): Curl
+  public function options($options)
   {
     foreach ($options as $key => $value) {
       $this->curlOptions[$key] = $value;
@@ -92,7 +95,7 @@ class Curl
    * @param array[$key=>$value] $params 参数和参数值
    * @return Curl 当前实例
    */
-  public function headers($params): Curl
+  public function headers($params)
   {
     foreach ($params as $key => $value) {
       $this->curlHeaders[$key] = $value;
@@ -103,9 +106,9 @@ class Curl
    * 把数组转换成字符串形式的数组
    *
    * @param array[$key=>$value] $params 参数和参数值
-   * @return array 准换后的字符串 [ "k1:v1", "k2:v2", ... ]
+   * @return string 准换后的字符串
    */
-  public function buildHeaders($params): array
+  public function buildHeaders($params)
   {
     if (Arr::isAssoc($params)) {
       foreach ($params as $key => &$value) {
@@ -122,7 +125,7 @@ class Curl
    * @param array[$key=>$value] $datas 数据
    * @return Curl 当前实例
    */
-  public function data($datas): Curl
+  public function data($datas)
   {
     foreach ($datas as $key => $value) {
       $this->curlDatas[$key] = $value;
@@ -134,7 +137,7 @@ class Curl
    *
    * @return Curl
    */
-  public function get(): Curl
+  public function get()
   {
     $this->curlMethod = "get";
     return $this->send();
@@ -144,7 +147,7 @@ class Curl
    *
    * @return Curl
    */
-  public function post(): Curl
+  public function post()
   {
     $this->curlMethod = "post";
     return $this->send();
@@ -154,7 +157,7 @@ class Curl
    *
    * @return Curl
    */
-  public function put(): Curl
+  public function put()
   {
     $this->curlMethod = "put";
     return $this->send();
@@ -164,7 +167,7 @@ class Curl
    *
    * @return Curl
    */
-  public function patch(): Curl
+  public function patch()
   {
     $this->curlMethod = "patch";
     return $this->send();
@@ -174,7 +177,7 @@ class Curl
    *
    * @return Curl
    */
-  public function delete(): Curl
+  public function delete()
   {
     $this->curlMethod = "delete";
     return $this->send();
@@ -184,7 +187,7 @@ class Curl
    *
    * @return Curl
    */
-  public function head(): Curl
+  public function head()
   {
     $this->curlMethod = "head";
     return $this->send();
@@ -194,7 +197,7 @@ class Curl
    *
    * @return Curl
    */
-  public function connect(): Curl
+  public function connect()
   {
     $this->curlMethod = "connect";
     return $this->send();
@@ -205,9 +208,9 @@ class Curl
    * @param string|array[filenames]|array[filename=>postName]|[filename=>[$postName,$mime]] $fileNames 文件名称，包含路径
    * @param string $postName 上传数据中的文件名称（默认为属性 name ）
    * @param string $mime 文件的 MIME type（默认是application/octet-stream）
-   * @return Curl
+   * @return void
    */
-  public function file($fileNames, $postName = "", $mime = ""): Curl
+  public function file($fileNames, $postName = "", $mime = "")
   {
     $this->curlMethod = "file";
     if (\is_array($fileNames)) {
@@ -236,7 +239,7 @@ class Curl
    * @param integer $seconds 超时秒数
    * @return Curl 当前实例
    */
-  public function timeout($seconds): Curl
+  public function timeout($seconds)
   {
     $this->curlTimeout = $seconds;
     return $this;
@@ -266,7 +269,7 @@ class Curl
    * @param boolean $yes 是否开启
    * @return Curl 当前实例
    */
-  public function https($yes = true): Curl
+  public function https($yes = true)
   {
     $this->bypasSSLVerification = !$yes;
     return $this;
@@ -277,7 +280,7 @@ class Curl
    * @param array[$key=>$value] $datas 数据
    * @return Curl 当前实例
    */
-  public function cookie($datas): Curl
+  public function cookie($datas)
   {
     $this->curlCookie = $datas;
     return $this;
@@ -288,7 +291,7 @@ class Curl
    * @param array[$key=>$value] $datas 数据
    * @return string 转换后的字符串
    */
-  public function buildCookie($datas): string
+  public function buildCookie($datas)
   {
     if (Arr::isAssoc($datas)) {
       foreach ($datas as $key => &$value) {
@@ -306,7 +309,7 @@ class Curl
    *
    * @return Curl 当前实例
    */
-  public function send(): Curl
+  public function send()
   {
     $curl = curl_init();
     $this->curlInstance = $curl;
@@ -318,8 +321,8 @@ class Curl
       $sendDatas = Arr::merge($sendDatas, $this->uploadFile);
     }
     if ($this->isJson) {
-      $defaultHeaders['Content-type'] = "application/json; charset=utf-8";
-      $sendDatas = \json_encode($sendDatas);
+      $defaultHeaders['Content-type'] = "Application/json";
+      $sendDatas = \json_encode($sendDatas, JSON_UNESCAPED_UNICODE);
       if ($this->curlMethod === "get") {
         $sendDatas = \urlencode($sendDatas);
       }
@@ -411,7 +414,7 @@ class Curl
    *
    * @return integer 暂停结果
    */
-  public function pause(): int
+  public function pause()
   {
     return \curl_pause($this->curlInstance, \CURLPAUSE_ALL);
   }
@@ -420,25 +423,25 @@ class Curl
    *
    * @return string error信息
    */
-  public function error(): string
+  public function error()
   {
-    return $this->curlErrorMsg ?? "";
+    return $this->curlErrorMsg;
   }
   /**
    * 获取error号
    *
    * @return integer|string error号
    */
-  public function errorNo(): int|string
+  public function errorNo()
   {
-    return intval($this->curlErrorNo);
+    return $this->curlErrorNo;
   }
   /**
    * 获取响应的数据
    *
    * @return array|integer|string|boolean 响应的数据
    */
-  public function getData(): array|int|string|bool
+  public function getData()
   {
     return $this->responseData;
   }

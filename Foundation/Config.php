@@ -1,8 +1,12 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Data\Arr;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
+
+use gstudio_kernel\Foundation\Data\Arr;
 
 class Config
 {
@@ -11,12 +15,12 @@ class Config
    * 读取应用Config文件
    *
    * @param string $filePath 应用配置文件所在路径
-   * @return array
+   * @return array|bool
    */
-  static function read(?string $filePath = null, ?string $appId = F_APP_ID)
+  static function read($filePath = null, $appId = F_APP_ID)
   {
     if (!$filePath) {
-      $filePath = F_APP_ROOT . "/Config.php";
+      $filePath = F_APP_BASE . "/Config.php";
     }
     if (!\file_exists($filePath)) {
       return false;
@@ -35,19 +39,20 @@ class Config
    * 获取配置项
    *
    * @param string $key 配置项数组路径字符串，用 / 分隔
+   * @param string $appId 读取指定APP的配置。为空即为读取当前APP的配置
    * @return array|string|integer|boolean
    */
-  static function get(?string $key = null)
+  static function get($key = null, $appId = F_APP_ID)
   {
     $configs = [];
 
-    if (!isset(self::$configs[F_APP_ID])) {
-      self::$configs[F_APP_ID] = [];
+    if (!isset(self::$configs[$appId])) {
+      self::$configs[$appId] = [];
       if (self::read() === false) {
         return null;
       }
     }
-    $configs = self::$configs[F_APP_ID];
+    $configs = self::$configs[$appId];
     if (!$key) {
       return $configs;
     }
@@ -84,8 +89,11 @@ class Config
    * @param array $value 新值
    * @return void
    */
-  static function set(array $value)
+  static function set($value)
   {
+    if (!isset(self::$configs[F_APP_ID])) {
+      self::$configs[F_APP_ID] = [];
+    }
     self::$configs[F_APP_ID] = Arr::merge(self::$configs[F_APP_ID], $value);
   }
 }

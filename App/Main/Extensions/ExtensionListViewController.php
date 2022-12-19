@@ -1,32 +1,37 @@
 <?php
 
-namespace kernel\App\Main\Extensions;
+namespace gstudio_kernel\App\Main\Extensions;
 
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Controller;
-use kernel\Foundation\Extension\Extensions;
-use kernel\Foundation\GlobalVariables;
-use kernel\Foundation\Lang;
-use kernel\Foundation\Request;
-use kernel\Foundation\View;
-use kernel\Model\ExtensionsModel;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
+
+use gstudio_kernel\Foundation\Controller\AuthController;
+use gstudio_kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Extension\Extensions;
+use gstudio_kernel\Foundation\Lang;
+use gstudio_kernel\Foundation\Request;
+use gstudio_kernel\Foundation\Response;
+use gstudio_kernel\Foundation\Store;
+use gstudio_kernel\Foundation\View;
+use gstudio_kernel\Model\ExtensionsModel;
 
 /**
  * 扩展列表页
  */
-class ExtensionListViewController extends Controller
+class ExtensionListViewController extends AuthController
 {
   protected $Admin = true;
-  public function data(Request $request)
+  public function data($request)
   {
-    $extensions = Extensions::scanDir("source/plugin/" . GlobalVariables::getGG("id"));
+    $extensions = Extensions::scanDir("source/plugin/" . Store::getApp("id"));
     $extensionIds = array_keys($extensions);
     $EM = new ExtensionsModel();
     $DBExtensions = $EM->getByExtensionId($extensionIds);
     $DBExtensions = Arr::indexToAssoc($DBExtensions, "extension_id");
     $insertNewData = [];
     $now = time();
-    $pluginId = GlobalVariables::getGG("id");
+    $pluginId = Store::getApp("id");
     foreach ($extensions as $id => &$extension) {
       if ($DBExtensions[$id]) {
         unset($extension['id']);
@@ -53,10 +58,10 @@ class ExtensionListViewController extends Controller
       $EM->batchInsert(array_keys($insertNewData[0]), $insertNewData)->save();
     }
 
-    View::title(Lang::value("extension_list"));
-    // View::systemDashboard("extensions/list", [
-    //   "extensions" => $extensions,
-    //   "extensionCount" => count($extensions)
-    // ]);
+    View::title(Lang::value("kernel/extension_list"));
+    Response::success([
+      "extensions" => $extensions,
+      "extensionCount" => count($extensions)
+    ]);
   }
 }

@@ -1,10 +1,14 @@
 <?php
 
-namespace kernel\Foundation\Extension;
+namespace gstudio_kernel\Foundation\Extension;
 
-use kernel\Foundation\Config;
-use kernel\Foundation\File;
-use kernel\Foundation\Iuu;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
+
+use gstudio_kernel\Foundation\Config;
+use gstudio_kernel\Foundation\File;
+use gstudio_kernel\Foundation\Iuu;
 
 include_once \libfile("function/plugin");
 

@@ -1,8 +1,10 @@
 <?php
 
-namespace kernel\Foundation\Data;
+namespace gstudio_kernel\Foundation\Data;
 
-if (!defined("F_KERNEL")) {
+use gstudio_kernel\Foundation\Output;
+
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
@@ -60,9 +62,10 @@ class Arr
           $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]] = $arrItem;
           $arrItem['reference'] = &$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]];
         }
+        $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = array_values($arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]);
       }
     }
-    return $result;
+    return array_values($result);
   }
   /**
    * 合并数组。支持多维数组合并
@@ -120,12 +123,86 @@ class Arr
     unset($previous);
     return $result;
   }
-  static function partial(array $target, array $keys): array
+  /**
+   * 从数组中抽取指定字段的值
+   *
+   * @param array $target 目标数组
+   * @param array $keys 要抽取的key值
+   * @return array
+   */
+  static function partial($target,  $keys)
   {
     $result = [];
     foreach ($keys as $key) {
-      $result[$key] = $target[$key];
+      if (isset($target[$key])) {
+        $result[$key] = $target[$key];
+      }
     }
     return $result;
+  }
+  /**
+   * 根据指定的key分组
+   *
+   * @param array $target 目标数组。需要时二维数组，每个二维数组里面都有一个共同的key
+   * @param string $byKey 每个数组共同的key，就是根据这个key来分组
+   * @return array
+   */
+  static function group($target,  $byKey)
+  {
+    $result = [];
+    foreach ($target as $item) {
+      if (!isset($item[$byKey])) {
+        continue;
+      }
+      if (!isset($result[$item[$byKey]])) {
+        $result[$item[$byKey]] = [];
+      }
+      array_push($result[$item[$byKey]], $item);
+    }
+    return $result;
+  }
+  /**
+   * 数组转换为XML字符串
+   *
+   * @param array $target 目标数组
+   * @param boolean $root 是否需要根标签
+   * @return string
+   */
+  static function toXML($target, $root = true, $rootName = "xml")
+  {
+    $res = "";
+    if ($root) {
+      $res .= "<$rootName>";
+    }
+
+    if (is_array($target)) {
+      foreach ($target as $key => $value) {
+        if (is_string($value)) {
+          $res .= "<$key><![CDATA[$value]]></$key>";
+        } else if (is_array($value)) {
+          if (self::isAssoc($value)) {
+            $res .= "<$key>" . self::toXML($value, false) . "</$key>";
+          } else {
+            $itemStr = "";
+            foreach ($value as $item) {
+              $itemStr .= "<$key>";
+              $itemStr .= self::toXML($item, false);
+              $itemStr .= "</$key>";
+            }
+            $res .= $itemStr;
+          }
+        } else {
+          $res .= "<$key>$value</$key>";
+        }
+      }
+    } else {
+      $res .= $target;
+    }
+
+    if ($root) {
+      $res .= "</$rootName>";
+    }
+
+    return $res;
   }
 }

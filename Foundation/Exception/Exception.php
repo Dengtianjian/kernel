@@ -1,15 +1,16 @@
 <?php
 
-namespace kernel\Foundation\Exception;
+namespace gstudio_kernel\Foundation\Exception;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Config as Config;
-use kernel\Foundation\Output;
-use kernel\Foundation\Response;
-use kernel\Foundation\View;
+use gstudio_kernel\Foundation\Config as Config;
+use gstudio_kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Response;
+use gstudio_kernel\Foundation\View;
+use gstudio_kernel\Service\RequestService;
 
 /**
  * 异常处理类
@@ -32,9 +33,21 @@ class Exception
    */
   public static function handle($code = 0, $message = "", $file = "", $line = null, $trace = "", $traceString = NULL, $previous = null)
   {
-    global $App;
     $traceString = \explode(\PHP_EOL, $traceString);
-    if ($App->router === NULL || $App->router['type'] === "view") {
+    if (RequestService::request()->ajax()) {
+      if (Config::get("mode") === "production") {
+        Response::error("SERVER_ERROR");
+      } else {
+        Response::error("SERVER_ERROR", null, "", [
+          "code" => $code,
+          "message" => $message,
+          "file" => $file,
+          "line" => $line,
+          "trace" => $trace,
+          "previous" => $previous
+        ]);
+      }
+    } else {
       if (Config::get("mode") === "production") {
         View::kernelPage("error", [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
@@ -44,16 +57,8 @@ class Exception
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous
         ]);
       }
-    } else {
-      Response::error(500, "ServerExceptionError:500000", "服务器错误", [], [
-        "code" => $code,
-        "message" => $message,
-        "file" => $file,
-        "line" => $line,
-        "trace" => $trace,
-        "previous" => $previous
-      ]);
     }
+    exit();
   }
   /**
    * 接收Exception类的参数

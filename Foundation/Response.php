@@ -1,14 +1,14 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
-use Error;
-use kernel\Foundation\Exception\ErrorCode;
-use kernel\Service\RequestService;
+use gstudio_kernel\Foundation\Exception\ErrorCode;
+use gstudio_kernel\Foundation\Output;
+use gstudio_kernel\Service\RequestService;
 
 class Response
 {
@@ -17,7 +17,7 @@ class Response
   private static $headers = []; //* 响应头
   private static $responseInterceptors = []; //* 响应拦截回调函数
   private static $statusCode = null; //* 响应状态码
-  static function header(string $key, string $value, bool $replace = true)
+  static function header($key,  $value,  $replace = true)
   {
     array_push(self::$headers, [
       "key" => $key,
@@ -25,7 +25,7 @@ class Response
       "replace" => $replace
     ]);
   }
-  static function intercept(callable $callback, ?string $responseType = null, $statusCode = null, $responseCode = null): callable
+  static function intercept($callback, $responseType = null, $statusCode = null, $responseCode = null)
   {
     $key = microtime();
     self::$responseInterceptors[$key] = [
@@ -64,7 +64,7 @@ class Response
   {
     self::$statusCode = $statusCode;
   }
-  static function result($statusCode = 200, $code = 200000,  $data = null, string|null $message = "", $details = [], string $type = "success")
+  static function result($statusCode = 200, $code = 200000,  $data = null, $message = "", $details = [], $type = "success")
   {
     $interceptResult = true;
     if (count(self::$responseInterceptors) > 0) {
@@ -115,9 +115,21 @@ class Response
       if ($statusCode > 299) {
         if (Config::get("mode") === "development") {
           echo "error";
+          if (is_array($details) && count($details) === 0) {
+            $details = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT);
+          }
           Output::debug($message, $statusCode, $code, $data, $details);
         } else {
-          Output::print($message);
+          $currentUrl = F_BASE_URL;
+          $currentUrl = substr($currentUrl, 0, \strlen($currentUrl) - 1) . $_SERVER['REQUEST_URI'];
+          $redirectUrl = $_SERVER['HTTP_REFERER'];
+          if ($redirectUrl == $currentUrl || !$redirectUrl) {
+            $redirectUrl = F_BASE_URL;
+          }
+          \showmessage($message, null, [], [
+            "alert" => "error"
+          ]);
+          // Output::print($message);
         }
       }
       exit();
@@ -148,20 +160,24 @@ class Response
   }
   static function output($data)
   {
-    \print_r(\json_encode($data));
+    if (CHARSET === "gbk") {
+      \print_r(GJson::encode($data));
+    } else {
+      \print_r(\json_encode($data));
+    }
     exit();
   }
-  static function addData(array $data)
+  static function addData($data)
   {
     self::$resultData = \array_merge(self::$resultData, $data);
     return self::$resultData;
   }
-  static function add(array $data)
+  static function add($data)
   {
     self::$responseData = \array_merge(self::$responseData, $data);
     return self::$responseData;
   }
-  static function download(string $filePath, string $fileName, $fileSize)
+  static function download($filePath,  $fileName, $fileSize)
   {
     $fileinfo = pathinfo($filePath);
 
@@ -201,16 +217,16 @@ class Response
       exit();
     }
   }
-  static function text(string|null $content, bool $format = false): void
+  static function text($content, $format = false)
   {
     if ($format) {
       Output::format($content);
     } else {
-      Output::print($content);
+      Output::printContent($content);
     }
     exit();
   }
-  static function pagination(mixed $mainData, Request $R, int $total, array $extraData = [])
+  static function pagination($mainData, Request $R, $total, $extraData = [])
   {
     return self::success([
       "list" => $mainData,

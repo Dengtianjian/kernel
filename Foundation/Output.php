@@ -1,6 +1,10 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
+
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
 class Output
 {
@@ -9,12 +13,12 @@ class Output
     self::format(...$data);
     exit;
   }
-  static function backtrace(int $options = DEBUG_BACKTRACE_PROVIDE_OBJECT, int $limit = 0)
+  static function backtrace($options = DEBUG_BACKTRACE_PROVIDE_OBJECT,  $limit = 0)
   {
     $stack = debug_backtrace($options, $limit);
     self::debug($stack);
   }
-  static function print($outputString, ...$value)
+  static function printContent($outputString, ...$value)
   {
     if (is_string($outputString)) {
       printf($outputString, ...$value);

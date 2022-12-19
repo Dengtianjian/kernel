@@ -1,11 +1,13 @@
 <?php
 
-namespace kernel\Middleware;
+namespace gstudio_kernel\Middleware;
 
-use kernel\Foundation\Config;
-use kernel\Foundation\Output;
-use kernel\Foundation\Request;
-use kernel\Foundation\Response;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
+
+use gstudio_kernel\Foundation\Config;
+use gstudio_kernel\Foundation\Response;
 
 class GlobalCorsMiddleware
 {
@@ -33,9 +35,9 @@ class GlobalCorsMiddleware
       }
     }
 
-    Response::header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?? []));
-    Response::header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?? []));
-    Response::header("Access-Control-Max-Age", Config::get("cors/maxAge") ?? 86400);
+    Response::header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?: []));
+    Response::header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?: []));
+    Response::header("Access-Control-Max-Age", Config::get("cors/maxAge") ?: 86400);
     $next();
   }
 }

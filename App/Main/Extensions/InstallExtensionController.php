@@ -1,36 +1,36 @@
 <?php
 
-namespace kernel\App\Main\Extensions;
+namespace gstudio_kernel\App\Main\Extensions;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Request;
-use kernel\Foundation\Controller;
-use kernel\Foundation\Extension\ExtensionIuu;
-use kernel\Foundation\Extension\Extensions;
-use kernel\Foundation\Lang;
-use kernel\Foundation\Response;
-use kernel\Model\ExtensionsModel;
+use gstudio_kernel\Foundation\Controller\AuthController;
+use gstudio_kernel\Foundation\Request;
+use gstudio_kernel\Foundation\Extension\ExtensionIuu;
+use gstudio_kernel\Foundation\Extension\Extensions;
+use gstudio_kernel\Foundation\Lang;
+use gstudio_kernel\Foundation\Response;
+use gstudio_kernel\Model\ExtensionsModel;
 
 /**
  * 安装扩展API
  */
-class InstallExtensionController extends Controller
+class InstallExtensionController extends AuthController
 {
   protected $Admin = true;
-  public function data(Request $request)
+  public function data($request)
   {
-    $extensionId = \addslashes($request->body("extension_id"));
+    $extensionId = \addslashes($request->params("extension_id"));
     $EM = new ExtensionsModel();
     $extension = $EM->getByExtensionId($extensionId);
     if (empty($extension)) {
-      Response::error(404, 404001, Lang::value("extensionNotExists"));
+      Response::error(404, 404001, Lang::value("kernel/extensionNotExists"));
     }
     $extension = $extension[0];
     if ($extension['installed'] && $extension['install_time']) {
-      Response::error(400, 400001, Lang::value("extensionDoNotInstall"));
+      Response::error(400, 400001, Lang::value("kernel/extensionDoNotInstall"));
     }
     $extensionConfig = Extensions::config($extension['extension_id'], $extension['path']);
 

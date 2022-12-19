@@ -1,0 +1,243 @@
+:root {
+  --primary-color: #409eff;
+  --success-color: #67c23a;
+  --info-color: #909399;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --border-radius: 8px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.ellipse1 {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.ellipsis1 {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.ellipsis2 {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ellipsis3 {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.c-inline-form .c-form-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.c-form-item {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  margin-bottom: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.c-form-label-text {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #666;
+  user-select: none;
+}
+.c-inline-form .c-form-label-text {
+  margin-right: 10px;
+}
+.c-form-label-text + * {
+  margin-left: 10px;
+}
+
+.c-form-el {
+  flex-grow: 1;
+  padding: 5px 8px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.c-form-el:hover {
+  border: 1px solid #666 !important;
+}
+.c-form-el + .c-form-el {
+  margin-left: 10px;
+}
+.c-inline-form .c-form-el {
+  flex-shrink: 1;
+}
+.c-form-el[type="text"],
+.c-form-el[type="number"],
+.c-form-el[type="url"] {
+  display: inline-block;
+  padding: 8px;
+  width: 100%;
+}
+.c-form-el[type="file"],
+input[type="file"]::-webkit-file-upload-button {
+  cursor: pointer;
+}
+.c-form-item select {
+  cursor: pointer;
+}
+.c-form-item select[multiple] {
+  resize: vertical;
+}
+.c-form-el[type="checkbox"] {
+  flex-grow: 0;
+}
+.c-form-el[type="radio"] {
+  flex-grow: 0;
+}
+textarea.c-form-el {
+  font-family: 微软雅黑, "Microsoft Yahei", 黑体;
+}
+.c-form-button-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.c-form-button-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 按钮样式 */
+.c-button {
+  display: inline-block;
+  padding: 10px 36px;
+  font-size: 14px;
+  text-decoration: none;
+  background: white;
+  border: 1px solid #dcdfe6;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s linear;
+  outline: none;
+}
+.c-button[size="mini"] {
+  padding: 5px 20px;
+  font-size: 12px;
+}
+.c-button[size="small"] {
+  padding: 9px 25px;
+  font-size: 12px;
+}
+.c-button[size="medium"] {
+  padding: 10px 32px;
+  font-size: 12px;
+}
+.c-button + .c-button {
+  margin-left: 5px;
+}
+.c-button:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+  border-color: #c6e2ff;
+  background: #ecf5ff;
+}
+.c-button[circle] {
+  border-radius: 42px;
+}
+.c-button[primary] {
+  color: white;
+  background-color: var(--primary-color);
+  border: none;
+}
+.c-button[primary]:hover {
+  color: white;
+  background-color: #66b1ff;
+  border: none;
+}
+.c-button[success] {
+  color: white;
+  background-color: #67c23a;
+  border: none;
+}
+.c-button[success]:hover {
+  color: white;
+  background-color: #85ce61;
+  border: none;
+}
+.c-button[info] {
+  color: white;
+  background-color: #909399;
+  border: none;
+}
+.c-button[info]:hover {
+  color: white;
+  background-color: #a6a9ad;
+  border: none;
+}
+.c-button[warning] {
+  color: white;
+  background-color: #e6a23c;
+  border: none;
+}
+.c-button[warning]:hover {
+  color: white;
+  background-color: #ebb563;
+  border: none;
+}
+.c-button[danger] {
+  color: white;
+  background-color: #f56c6c;
+  border: none;
+}
+.c-button[danger]:hover {
+  color: white;
+  background-color: #f78989;
+  border: none;
+}
+
+/* 空页面 */
+.c-empty {
+  text-align: center;
+  user-select: none;
+}
+.c-empty-description {
+  margin: 1em;
+  padding: 0;
+  font-size: 16px;
+}
+.c-empty-footer {
+  margin-top: 2em;
+}
+
+/* 动画 */
+/* 从-100%的顶部出现 */
+@keyframes CTopIn {
+  from {
+    transform: translateY(calc(-100% + 20px));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* 渐隐渐现 */
+@keyframes CFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

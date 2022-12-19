@@ -1,34 +1,34 @@
 <?php
 
-namespace kernel\Platform\Discuzx;
+namespace gstudio_kernel\Platform\Discuzx;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Arr;
-use kernel\Foundation\Config;
-use kernel\Foundation\Data\Arr as DataArr;
-use kernel\Foundation\Database\Model as DatabaseModel;
-use kernel\Foundation\File;
-use kernel\Foundation\Model;
+use gstudio_kernel\Foundation\Config;
+use gstudio_kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Database\Model as DatabaseModel;
+use gstudio_kernel\Foundation\File;
+use gstudio_kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Store;
 
 class Attachment
 {
   public static function save($files, $saveDir = "")
   {
-    $savePath = Config::get("attachmentPath") . "/$saveDir";
+    $savePath = File::genPath(Config::get("attachmentPath"), $saveDir);
+    if (!is_dir($savePath)) {
+      mkdir($savePath, 0777, true);
+    }
     return File::upload($files, $savePath);
   }
   public static function upload($files, $tableName = "", $tid = 0, $pid = 0, $price = 0, $remote = 0, $saveDir = "", $extid = 0, $forcename = "")
   {
-    global $app;
-    include_once \libfile("discuz/upload", "class");
-    $upload = new \discuz_upload();
     $uploadResult = [];
-    $onlyOny = false;
-    if (DataArr::isAssoc($files)) {
-      $onlyOny = true;
+    $onlyOne = false;
+    if (Arr::isAssoc($files)) {
+      $onlyOne = true;
       $files = [$files];
     } else {
       $files = array_values($files);
@@ -40,95 +40,78 @@ class Attachment
     if ($tableName) {
       $insertDatas[$tableName] = [];
     }
-    include_once \libfile("function/core");
     foreach ($files as $fileItem) {
-      $upload->init($fileItem, $saveDir, $extid, $forcename);
-      if ($upload->error()) {
-        $uploadResult[] =  [
-          "error" => $upload->error(),
-          "message" => $upload->errormessage()
-        ];
-        continue;
-      } else {
-        $upload->save(true);
-        $saveFileName = explode("/", $upload->attach['attachment']);
-        $path = Config::get("attachmentPath") . "/$saveDir/" . $upload->attach['attachment'];
-        $aid = getattachnewaid($uid);
-        $width = 0;
-        $fileInfo = [];
-        if ($upload->attach['isimage']) {
-          $fileInfo['width'] = $upload->attach['imageinfo'][0];
-          $fileInfo['height'] = $upload->attach['imageinfo'][1];
-          $width = $fileInfo['width'];
-          if (!$width) {
-            $width = 0;
-          }
-        }
-        $insertData = array(
-          'aid' => $aid,
-          "tid" => $tid,
-          "pid" => $pid,
-          'uid' => $uid,
-          'dateline' => $timestamp,
-          'filename' => dhtmlspecialchars(censor($upload->attach['name'])),
-          'filesize' => $upload->attach['size'],
-          'attachment' => $upload->attach['attachment'],
-          'remote' => $remote,
-          "description" => "",
-          "readperm" => 0,
-          "price" => $price,
-          'isimage' => $upload->attach['isimage'],
-          'width' => $width,
-          'thumb' => 0,
-          "picid" => 0
-        );
-        if (!$tableName) {
-          $tableId = null;
-          if ($tid) {
-            $tableId = getattachtableid($tid);
-          } else {
-            $tableId = getattachtableid(time());
-          }
-          $tableName = "forum_attachment_" . $tableId;
-          if (!$insertDatas[$tableName]) {
-            $insertDatas[$tableName] = [];
-          }
-          array_push($insertDatas[$tableName], $insertData);
+      $path = Config::get("attachmentPath") . $saveDir;
+      $updateResult = File::upload($fileItem, $path);
+      $aid = getattachnewaid($uid);
+      $width = 0;
+      $fileInfo = [];
+
+      $insertData = array(
+        'aid' => $aid,
+        "tid" => $tid,
+        "pid" => $pid,
+        'uid' => $uid,
+        'dateline' => $timestamp,
+        'filename' => dhtmlspecialchars(censor($updateResult['sourceFileName'])),
+        'filesize' => $updateResult['size'],
+        'attachment' => $updateResult['saveFileName'],
+        'remote' => $remote,
+        "description" => "",
+        "readperm" => 0,
+        "price" => $price,
+        'isimage' => (int)File::isImage($updateResult['sourceFileName']),
+        'width' => $width,
+        'thumb' => 0,
+        "picid" => 0
+      );
+      if (!$tableName) {
+        $tableId = null;
+        if ($tid) {
+          $tableId = getattachtableid($tid);
         } else {
-          array_push($insertDatas[$tableName], $insertData);
+          $tableId = getattachtableid(time());
         }
-        $fileInfo = [
-          "path" => $path,
-          "extension" => $upload->attach['extension'],
-          "sourceFileName" => $upload->attach['name'],
-          "saveFileName" => $saveFileName[count($saveFileName) - 1],
-          "size" => $upload->attach['size'],
-          "type" => $upload->attach['type'],
-          "fullPath" => $path,
-          "aid" => $aid,
-          "tableId" => $tableId,
-          "tableName" => $tableName,
-          "dzAidEncode" => \aidencode($aid, 0, $tid),
-          "downloadEncode" => self::aidencode($aid)
-        ];
-        $uploadResult[] = $fileInfo;
-        $updateDatas[] = [
-          $aid,
-          $tableId,
-          $uid
-        ];
+        $tableName = "forum_attachment_" . $tableId;
+        if (!$insertDatas[$tableName]) {
+          $insertDatas[$tableName] = [];
+        }
+        array_push($insertDatas[$tableName], $insertData);
+      } else {
+        array_push($insertDatas[$tableName], $insertData);
       }
+      $fileInfo = [
+        "path" => $updateResult['path'],
+        "extension" => $updateResult['extension'],
+        "sourceFileName" => $updateResult['sourceFileName'],
+        "saveFileName" => $updateResult['saveFileName'],
+        "size" => $updateResult['size'],
+        "fullPath" => $updateResult['fullPath'],
+        "aid" => $aid,
+        "tableId" => $tableId,
+        "tableName" => $tableName,
+        "dzAidEncode" => \aidencode($aid, 0, $tid),
+        "downloadEncode" => self::aidencode($aid, "plugin/" . Store::getApp('id') . "/attachments")
+      ];
+      $uploadResult[] = $fileInfo;
+      $updateDatas[] = [
+        $aid,
+        $tableId,
+        $uid
+      ];
     }
+
     foreach ($insertDatas as $tableName => $insertData) {
-      $attachmenModel = new Model($tableName);
-      $attachmenModel->batchInsertByMS($insertData)->save();
+      $attachmenModel = new DatabaseModel($tableName);
+      $fieldNames = array_keys($insertData[0]);
+      $attachmenModel->batchInsert($fieldNames, $insertData);
     }
     $ForumAttachmentModel = new DatabaseModel("forum_attachment");
     $ForumAttachmentModel->batchUpdate([
       "aid", "tableid", "uid"
-    ], $updateDatas)->save();
+    ], $updateDatas);
 
-    if ($onlyOny) {
+    if ($onlyOne) {
       return $uploadResult[0];
     }
 
@@ -136,9 +119,25 @@ class Attachment
   }
   public static function aidencode($aid, $dir = "plugin", $type = 0, $tid = 0)
   {
-    // global $_G;
-    // $s = !$type ? $aid . '|' . substr(md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP . $_G['uid']), 0, 8) . '|' . TIMESTAMP . '|' . $_G['uid'] . '|' . $tid : $aid . '|' . md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP) . '|' . TIMESTAMP;
-    // $s .= "|" . $dir;
-    // return rawurlencode(base64_encode($s));
+    global $_G;
+    $s = !$type ? $aid . '|' . substr(md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP . $_G['uid']), 0, 8) . '|' . TIMESTAMP . '|' . $_G['uid'] . '|' . $tid : $aid . '|' . md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP) . '|' . TIMESTAMP;
+    $s .= "|" . $dir;
+    return rawurlencode(base64_encode($s));
+  }
+  public static function getAttachment($AttachmentId)
+  {
+    $AM = new DatabaseModel("forum_attachment");
+    $attachment = $AM->where("aid", $AttachmentId)->getOne();
+    if (!$attachment) {
+      return null;
+    }
+    $TableId = $attachment['tableid'];
+    $SAM = new DatabaseModel("forum_attachment_$TableId");
+    $attachment = $SAM->where("aid", $AttachmentId)->getOne();
+    if (!$attachment) {
+      return null;
+    }
+
+    return $attachment;
   }
 }

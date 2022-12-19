@@ -1,0 +1,59 @@
+<style>
+  .error-title {
+    padding: 0;
+    margin: 0;
+    color: #c75a5a;
+  }
+  .message {
+    margin-top: 8px;
+    padding: 3px 10px;
+    line-height: 30px;
+    color: white;
+    font-size: 20px;
+    background: #c75a5a;
+    border-radius: 5px;
+  }
+  .message-details {
+    border-radius: 5px 5px 0 0;
+  }
+  .statement {
+    padding: 5px 10px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.808);
+    background: #bd6565;
+    border-radius: 0 0 5px 5px;
+  }
+  .error-trace {
+    padding: 0;
+    margin: 10px;
+    line-height: 30px;
+    list-style-type: none;
+  }
+  .error-trace-item {
+    padding: 3px 0;
+    border-bottom: 1px solid #bd6565;
+  }
+  .error-traces {
+    margin-top: 10px;
+    white-space: pre-wrap;
+  }
+</style>
+
+<div class="error">
+  <h2 class="error-title">!ERROR! CODE:{$code}</h2>
+  <div class="message {if $e->sql}message-details{/if}">{$message}</div>
+  <!-- {if $e->sql}
+  <div class="statement">{$e->sql}</div>
+  {/if} -->
+  <ul class="error-trace">
+    {loop $traceString $traceItem}
+    <li class="error-trace-item">{$traceItem}</li>
+    {/loop}
+  </ul>
+  {if $trace}
+  <details class="error-traces">
+    <summary>Trace details</summary>
+    {eval print_r($trace)}
+  </details>
+  {/if}
+</div>

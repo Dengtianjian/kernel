@@ -1,15 +1,18 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Data\Str;
-use kernel\Foundation\Response;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
+
+use gstudio_kernel\Foundation\Data\Str;
 
 class View
 {
   private static $viewData = [];
   private static $outputHeaderHTML = [];
-  private static $outputFooterHTML = [];
+  private static $outputFooterHTML = ["<script>const FORMHASH=\"" . FORMHASH . "\";</script>"];
 
   /**
    * 渲染模板文件
@@ -17,19 +20,22 @@ class View
    * @param string|array $viewFiles 模板的文件名称。可数组或单一字符串
    * @param array $viewData? 渲染的数据
    * @param string $templateId? 模板唯一标识符
-   * @param boolean $hook?=false 是否是hook插槽
+   * @param string $templateDir? 模板所在目录
+   * @param boolean|string $hook?=false 传入字符串就是hook模板返回的变量名称，否则就不是hook
    * @return void
    */
-  static function render($viewFiles, $viewData = [], $templateId = "", $hook = false)
+  static function render($viewFiles, $viewData = [], $templateId = "",  $templateDir = "", $hookName = false)
   {
     if (is_array($viewFiles)) {
       foreach ($viewFiles as $file) {
-        if (!\file_exists($file)) {
+        $filePath = File::genPath($templateDir, "$file.htm");
+        if (!\file_exists($filePath)) {
           Response::error("VIEW_TEMPLATE_NOT_EXIST");
         }
       }
     } else {
-      if (!\file_exists($viewFiles)) {
+      $filePath = File::genPath($templateDir, "$viewFiles.htm");
+      if (!\file_exists($filePath)) {
         Response::error("VIEW_TEMPLATE_NOT_EXIST");
       }
     }
@@ -40,37 +46,45 @@ class View
       $GLOBALS[$key] = $value;
       global ${$key};
     }
+    $GLOBALS["View"] = self::class;
+    global $View;
+    global $_STORE;
+    global $_G;
 
     self::outputHeader();
     if (\is_array($viewFiles)) {
       foreach ($viewFiles as $file) {
-        include_once $file;
+        include_once template($file, $templateId, $templateDir);
       }
     } else {
-      include_once $viewFiles;
+      include_once template($viewFiles, $templateId, $templateDir);
     }
 
     foreach ($viewData as $key => $value) {
       unset($GLOBALS[$key]);
     }
 
+    if ($hookName) {
+      return ${$hookName};
+    }
     return true;
   }
-  static private function renderAppPage($viewFile, $viewFileBaseDir = "", $viewData = [], $templateId = "page")
+  static private function renderAppPage($viewFile, $viewFileBaseDir = "", $viewData = [], $templateId = "page", $hookName = false)
   {
     if (is_array($viewFile)) {
       foreach ($viewFile as &$fileItem) {
-        $fileItem = F_APP_ROOT . "/$viewFileBaseDir/$fileItem.php";
+        $fileItem = "$viewFileBaseDir/$fileItem";
       }
     } else {
-      $viewFile = F_APP_ROOT . "/$viewFileBaseDir/$viewFile.php";
+      $viewFile = "$viewFileBaseDir/$viewFile";
     }
-    return self::render($viewFile, $viewData, $templateId);
+
+    return self::render($viewFile, $viewData, $templateId, File::genPath("source/plugin", F_APP_ID), $hookName);
   }
   /**
    * 渲染页面
    *
-   * @param [type] $viewFile $viewFile 模板的文件名称。可数组或单一字符串
+   * @param string $viewFile $viewFile 模板的文件名称。可数组或单一字符串
    * @param array $viewData? 渲染的数据
    * @param string $templateId? 模板Id
    * @return void
@@ -105,8 +119,7 @@ class View
    */
   static function kernelPage($viewFile, $viewData = [], $templateId = "kernel_page")
   {
-    $viewFile = F_KERNEL_ROOT . "/Views/$viewFile.php";
-    self::render($viewFile, $viewData, $templateId);
+    self::render("Views/$viewFile", $viewData, $templateId, F_KERNEL_ROOT);
     exit;
   }
   /**
@@ -239,5 +252,9 @@ class View
       self::$outputFooterHTML = [];
       print_r($outputFooter);
     }
+  }
+  static function hook($viewFile, $viewData = [], $hookName = "return")
+  {
+    return self::renderAppPage($viewFile, "Views", $viewData, "hook", $hookName);
   }
 }

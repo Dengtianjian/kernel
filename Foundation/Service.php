@@ -1,10 +1,14 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Database\PDO\Model;
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
-if (!defined("F_KERNEL")) {
+use gstudio_kernel\Foundation\Database\Model;
+
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
@@ -12,11 +16,11 @@ class Service
 {
   protected static $tableName = "";
   private static $ModelInstance = null;
-  protected static function Model(): Model
+  protected static function Model()
   {
     $callClass = \get_called_class();
     if (!$callClass::$tableName) {
-      Response::error(500, 500001, "缺失表名称");
+      Response::error(500, 500001, Lang::value("service_tablename_empty"));
     }
     self::$tableName = $callClass::$tableName;
     if (self::$ModelInstance === null) {

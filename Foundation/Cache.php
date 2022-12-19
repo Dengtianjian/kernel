@@ -1,12 +1,16 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Data\Arr;
+
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
 class Cache
 {
-  static private $SaveBasePath = F_APP_ROOT . "/Data/Cache"; //* 缓存存储的基路径
+  static private $SaveBasePath = F_APP_DATA . "/cache"; //* 缓存存储的基路径
   static private $readedCaches = []; //* 已经读取的缓存
   static private $readedCacheMetas = []; //* 已经读取的缓存元数据
   static private $DaySeconeds = 60 * 60 * 24; //* 一天有多少秒
@@ -16,7 +20,7 @@ class Cache
    * @param string $id 缓存ID，也是文件夹名称
    * @return array|bool|null
    */
-  static function read(string $id): array|bool|null
+  static function read($id)
   {
     $targetPath = self::$SaveBasePath . "/$id.txt";
     if (!file_exists($targetPath)) return false;
@@ -38,7 +42,7 @@ class Cache
    * @param string $id 缓存ID
    * @return array|boolean|null
    */
-  static function meta(string $id): array|bool|null
+  static function meta($id)
   {
     $result = self::read($id);
     if ($result === false) {
@@ -54,12 +58,13 @@ class Cache
    * @param int $expiresIn 有效期（天）
    * @return bool
    */
-  static function write(string $id, array $content, int $expiresIn = 30): bool
+  static function write($id,  $content,  $expiresIn = 30)
   {
     if (!is_dir(self::$SaveBasePath)) {
-      mkdir(self::$SaveBasePath, 757, true);
+      mkdir(self::$SaveBasePath, 0777, true);
     }
-    $targetPath = self::$SaveBasePath . "/$id.txt";
+    $targetPath = File::genPath(self::$SaveBasePath, "$id.txt");
+    $expired = round(time() + self::$DaySeconeds * $expiresIn);
     if (!in_array($id, self::$readedCaches)) {
       $cache = self::read($id);
     } else {
@@ -68,17 +73,18 @@ class Cache
         "meta" => [
           "updatedAt" => time(),
           "addedAt" => time(),
-          "expiredAt" => time() + self::$DaySeconeds * $expiresIn
+          "expiredAt" => $expired
         ]
       ];
     }
 
     $cache['meta']['updatedAt'] = time();
-    $cache['meta']['expiredAt'] = time() + self::$DaySeconeds * $expiresIn;
-    
+    $cache['meta']['expiredAt'] = $expired;
+
     $cache['content'] = Arr::merge($cache['content'], $content);
 
     $result = file_put_contents($targetPath, serialize($cache));
+    chmod($targetPath, 0700);
 
     return boolval($result);
   }
@@ -89,7 +95,7 @@ class Cache
    * @param array $content 覆盖的内容
    * @return bool
    */
-  static function overwrite(string $id, array $content, int $expiresIn = 30): bool
+  static function overwrite($id, $content, $expiresIn = 30)
   {
     if (!is_dir(self::$SaveBasePath)) {
       mkdir(self::$SaveBasePath, 757, true);
@@ -115,7 +121,7 @@ class Cache
    * @param string $id 缓存ID
    * @return bool
    */
-  static function clear(string $id): bool
+  static function clear($id)
   {
     $targetPath = self::$SaveBasePath . "/$id.txt";
     if (!file_exists($targetPath)) {
@@ -139,7 +145,7 @@ class Cache
    * @param string $id 缓存ID
    * @return bool
    */
-  static function remove(string $id): bool
+  static function remove($id)
   {
     $targetPath = self::$SaveBasePath . "/$id.txt";
     if (!file_exists($targetPath)) return true;

@@ -1,12 +1,16 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
+
+if (!defined('IN_DISCUZ')) {
+  exit('Access Denied');
+}
 
 class Log
 {
-  static private function genLogPath(...$path): string
+  static private function genLogPath(...$path)
   {
-    return File::genPath(F_APP_ROOT, "Data", "Logs", ...$path);
+    return File::genPath(F_APP_DATA, "Logs", ...$path);
   }
   static function record($content)
   {
@@ -27,7 +31,7 @@ $time: $content\n
 EOT;
     error_log($content, 3, $logFilePath);
   }
-  static function read(int $day = null, int $month = null, int $year = null)
+  static function read($day = null, $month = null, $year = null)
   {
     if ($year === null) {
       $year = date("Y");
@@ -43,7 +47,7 @@ EOT;
     if ($month === null) {
       $month = date("m");
       if ($day === null) {
-        $directoryPath = self::genLogPath($year,$month);
+        $directoryPath = self::genLogPath($year, $month);
         if (!is_dir($directoryPath)) {
           return [];
         }
@@ -76,7 +80,7 @@ EOT;
     return \yaml_parse(file_get_contents($directoryPath));
   }
   //* 待确认需求
-  static function readRange(int $start, int $end = null)
+  static function readRange($start, $end = null)
   {
     if ($end === null) {
       $end = time();

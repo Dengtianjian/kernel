@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
@@ -18,6 +18,7 @@ class Request
   public $uri = "";
   public $router = null;
   public $method = "";
+  public $client = "user";
   public function __construct()
   {
     $this->serializationBody();
@@ -33,7 +34,9 @@ class Request
       unset($_POST["_pipes"]);
     }
     unset($_REQUEST["_pipes"]);
-    $this->pipes = array_map(fn ($item) => addslashes($item), $this->pipes);
+    $this->pipes = array_map(function ($item) {
+      return addslashes($item);
+    }, $this->pipes);
 
     //* 分页参数
     $this->paginationParams = [
@@ -56,7 +59,10 @@ class Request
     $this->method = strtoupper($this->method);
 
     //* 请求的URI
-    $this->uri = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI']));
+    $this->uri = addslashes($_GET['uri']);
+
+    //* 客户端标识符
+    $this->client = $this->headers("X-Client");
   }
   private function serializationBody()
   {
@@ -141,7 +147,7 @@ class Request
    *
    * @return bool|string
    */
-  public function ajax(): bool|string|null
+  public function ajax()
   {
     if (isset($_GET['isAjax'])) {
       return true;
@@ -153,7 +159,7 @@ class Request
    *
    * @return bool|string
    */
-  public function async(): bool|string|null
+  public function async()
   {
     if (isset($_GET['isAsync'])) {
       return true;
@@ -175,14 +181,14 @@ class Request
     }
     return $this->getArrayData($this->paramsData, $key);
   }
-  public function pagination(string $key = null): int|array
+  public function pagination($key = null)
   {
     if ($key) {
       return $this->paginationParams[$key];
     }
     return $this->paginationParams;
   }
-  public function set(string $uri, string $method)
+  public function set($uri,  $method)
   {
     $this->uri = $uri;
     $this->method = $method;
