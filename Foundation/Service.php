@@ -1,14 +1,14 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Database\Model;
+use kernel\Foundation\Database\Model;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 

@@ -1,17 +1,18 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Controller;
+namespace kernel\Foundation\Controller;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Data\Arr;
-use gstudio_kernel\Foundation\Request;
-use gstudio_kernel\Foundation\Response;
-use gstudio_kernel\Foundation\Validator;
+use kernel\Foundation\Data\Arr;
+use kernel\Foundation\HTTP\Request as HTTPRequest;
+use kernel\Foundation\Request;
+use kernel\Foundation\Response;
+use kernel\Foundation\Validator;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
@@ -21,19 +22,13 @@ class BaseController
   public $body = [];
   public $serialization = [];
   public $rules = [];
-  function __construct($R)
+  function __construct(HTTPRequest $R)
   {
-    $this->queryInit($R->query());
-    $this->body = $this->recursionGetBody($this->body, $R->body());
+    $this->queryInit($R->query->some());
+    $this->body = $this->recursionGetBody($this->body, $R->body->some());
     if (count($this->rules) > 0) {
       $V = new Validator($this->rules, Arr::merge($this->query, $this->body));
       $V->validate();
-    }
-
-    if (count($R->pipes)) {
-      Response::intercept(function ($statusCode, $code, $data) use ($R) {
-        $this->pipeFill($R->pipes, $data);
-      }, "success");
     }
   }
   public function __get($name)
@@ -116,18 +111,5 @@ class BaseController
     }
 
     return $data;
-  }
-  protected function pipeFill($pipes,  $data)
-  {
-    $result = $data;
-    foreach ($pipes as $pipeName) {
-      if (!method_exists($this, $pipeName)) {
-        continue;
-      }
-      $result = call_user_func([$this, $pipeName], $result);
-    }
-    Response::add([
-      "data" => $result
-    ]);
   }
 }

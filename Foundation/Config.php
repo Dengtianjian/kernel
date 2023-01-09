@@ -1,12 +1,12 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Arr;
 
 class Config
 {
@@ -19,37 +19,36 @@ class Config
    */
   static function read($filePath = null, $appId = F_APP_ID)
   {
-    if (!$filePath) {
-      $filePath = F_APP_BASE . "/Config.php";
-    }
     if (!\file_exists($filePath)) {
       return false;
     }
-    include_once($filePath);
-    if (isset($Config)) {
-      if (!isset(self::$configs[$appId])) {
-        self::$configs[$appId] = [];
-      }
-      self::$configs[$appId] = Arr::merge(self::$configs[$appId], $Config);
+    $Configs = include_once($filePath);
+    if (!isset(self::$configs[$appId])) {
+      self::$configs[$appId] = [];
+    }
+    if (isset($Configs) || is_array($Configs)) {
+      self::$configs[$appId] = Arr::merge(self::$configs[$appId], $Configs);
       return self::$configs;
     }
+
     return false;
   }
   /**
    * 获取配置项
    *
    * @param string $key 配置项数组路径字符串，用 / 分隔
+   * @param mixed $defaultValue 缺省值，当没有该配置时会返回该值
    * @param string $appId 读取指定APP的配置。为空即为读取当前APP的配置
    * @return array|string|integer|boolean
    */
-  static function get($key = null, $appId = F_APP_ID)
+  static function get($key = null, $defaultValue = null, $appId = F_APP_ID)
   {
     $configs = [];
 
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
       if (self::read() === false) {
-        return null;
+        return $defaultValue;
       }
     }
     $configs = self::$configs[$appId];
@@ -80,7 +79,7 @@ class Config
     if (count($key) === 1) {
       return \array_pop($values);
     }
-    return $values;
+    return $values ? $values : $defaultValue;
   }
   /**
    * 覆盖式设置Config的值

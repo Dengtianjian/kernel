@@ -1,16 +1,16 @@
 <?php
 
-namespace gstudio_kernel\App\Main\Extensions;
+namespace kernel\App\Main\Extensions;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Controller\AuthController;
-use gstudio_kernel\Foundation\Request;
-use gstudio_kernel\Foundation\Lang;
-use gstudio_kernel\Foundation\Response;
-use gstudio_kernel\Model\ExtensionsModel;
+use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Request;
+use kernel\Foundation\Lang;
+use kernel\Foundation\Response;
+use kernel\Model\ExtensionsModel;
 
 /**
  * 开启和关闭扩展API

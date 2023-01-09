@@ -1,8 +1,8 @@
 <?php
 
-namespace gstudio_kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount;
 
-use gstudio_kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Arr;
 
 class ReplyMessage
 {

@@ -1,16 +1,16 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-use gstudio_kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Arr;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
 class Cache
 {
-  static private $SaveBasePath = F_APP_DATA . "/cache"; //* 缓存存储的基路径
+  static private $SaveBasePath = F_APP_ROOT . "/cache"; //* 缓存存储的基路径
   static private $readedCaches = []; //* 已经读取的缓存
   static private $readedCacheMetas = []; //* 已经读取的缓存元数据
   static private $DaySeconeds = 60 * 60 * 24; //* 一天有多少秒

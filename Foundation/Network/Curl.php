@@ -1,13 +1,13 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Network;
+namespace kernel\Foundation\Network;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
 use CURLFile;
-use gstudio_kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Arr;
 
 /**
  * 二次封装的CURL类

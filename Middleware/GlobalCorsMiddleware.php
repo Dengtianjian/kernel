@@ -1,13 +1,13 @@
 <?php
 
-namespace gstudio_kernel\Middleware;
+namespace kernel\Middleware;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Config;
-use gstudio_kernel\Foundation\Response;
+use kernel\Foundation\Config;
+use kernel\Foundation\Response;
 
 class GlobalCorsMiddleware
 {

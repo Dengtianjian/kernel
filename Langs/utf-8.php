@@ -1,8 +1,8 @@
 <?php
 
-use gstudio_kernel\Foundation\Lang;
+use kernel\Foundation\Lang;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 

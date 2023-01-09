@@ -29,10 +29,10 @@ class Application
   {
     return $GLOBALS['App'];
   }
-  function setMiddlware($middlwareNameOfFunction)
-  {
-    array_push($this->globalMiddlware, $middlwareNameOfFunction);
-  }
+  // function setMiddlware($middlwareNameOfFunction)
+  // {
+  //   array_push($this->globalMiddlware, $middlwareNameOfFunction);
+  // }
   protected function executiveController()
   {
     $controllerParams = $this->router['controller'];
@@ -93,7 +93,7 @@ class Application
             Serializer::addRule($ruleName, $instance->serialization);
             $instance->serialization = $ruleName;
           }
-          $result = Serializer::use($instance->serialization, $result);
+          // $result = Serializer::use($instance->serialization, $result);
         }
       }
       return $result;
@@ -180,27 +180,5 @@ class Application
       ]
     ];
     Store::setApp($__App);
-  }
-  protected function initConfig()
-  {
-    $fileBase = F_APP_ROOT;
-    $configFilePath = F_APP_ROOT . "/Config.php";
-    if (!file_exists($configFilePath)) {
-      $fileBase .= "/Configs";
-      $configFilePath = "$fileBase/Config.php";
-    }
-    Config::read($configFilePath);
-
-    //* 模式下的配置文件
-    $modeConfigFilePath = "$fileBase/Config." . Config::get("mode") . ".php";
-    if (file_exists($modeConfigFilePath)) {
-      Config::read($modeConfigFilePath);
-    }
-
-    //* 本地下的配置文件
-    $localConfigFilePath = "$fileBase/Config.local.php";
-    if (file_exists($localConfigFilePath)) {
-      Config::read($localConfigFilePath);
-    }
   }
 }

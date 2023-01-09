@@ -1,10 +1,10 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-use gstudio_kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Arr;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
@@ -262,8 +262,8 @@ class File
    * 扫描目录
    *
    * @param string $targetPath 被扫描的目录路径
-   * @param integer|null $sorting_order
-   * @param mixed $context
+   * @param integer|null $sorting_order 默认的排序顺序是按字母升序排列。如果使用了可选参数 sorting_order（设为 1），则排序顺序是按字母降序排列。
+   * @param mixed $context 参数的说明见手册中的 Streams API(https://www.php.net/manual/zh/ref.stream.php) 一章。
    * @return array|false 扫描成功的话就返回扫描的数组，否则返回false
    */
   public static function scandir($targetPath, $sorting_order = 0, $context = null)

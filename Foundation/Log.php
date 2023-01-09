@@ -1,8 +1,8 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
@@ -10,7 +10,7 @@ class Log
 {
   static private function genLogPath(...$path)
   {
-    return File::genPath(F_APP_DATA, "Logs", ...$path);
+    return File::genPath(F_APP_ROOT, "Logs", ...$path);
   }
   static function record($content)
   {

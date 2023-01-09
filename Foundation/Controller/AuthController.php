@@ -1,14 +1,14 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Controller;
+namespace kernel\Foundation\Controller;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Response;
+use kernel\Foundation\Response;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 

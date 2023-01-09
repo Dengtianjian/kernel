@@ -1,8 +1,8 @@
 <?php
 
-namespace gstudio_kernel\Model\DiscuzX;
+namespace kernel\Model\DiscuzX;
 
-use gstudio_kernel\Foundation\Database\Model;
+use kernel\Foundation\Database\Model;
 
 class DiscuzXModel extends Model
 {

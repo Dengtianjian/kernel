@@ -1,13 +1,13 @@
 <?php
 
-namespace gstudio_kernel\Middleware;
+namespace kernel\Middleware;
 
-use gstudio_kernel\Foundation\Request;
-use gstudio_kernel\Foundation\Response;
-use gstudio_kernel\Foundation\Store;
-use gstudio_kernel\Model\AccessTokenModel;
-use gstudio_kernel\Platform\Wechat\AccessToken;
-use gstudio_kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccount;
+use kernel\Foundation\Request;
+use kernel\Foundation\Response;
+use kernel\Foundation\Store;
+use kernel\Model\AccessTokenModel;
+use kernel\Platform\Wechat\AccessToken;
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccount;
 
 class GlobalWechatOfficialAccountMiddleware
 {

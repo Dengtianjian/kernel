@@ -1,14 +1,14 @@
 <?php
 
-namespace gstudio_kernel\Service;
+namespace kernel\Service;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Output;
-use gstudio_kernel\Foundation\Request;
-use gstudio_kernel\Foundation\Service;
+use kernel\Foundation\Output;
+use kernel\Foundation\Request;
+use kernel\Foundation\Service;
 
 class RequestService extends Service
 {

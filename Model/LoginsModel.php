@@ -1,17 +1,17 @@
 <?php
 
-namespace gstudio_kernel\Model;
+namespace kernel\Model;
 
-use gstudio_kernel\Foundation\Database\Model;
-use gstudio_kernel\Foundation\Output;
+use kernel\Foundation\Database\Model;
+use kernel\Foundation\Output;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
 class LoginsModel extends Model
 {
-  public $tableName = "gstudio_kernel_logins";
+  public $tableName = "kernel_logins";
   public function getByToken($token)
   {
     return $this->where([

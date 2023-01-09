@@ -1,22 +1,22 @@
 <?php
 
-namespace gstudio_kernel\Middleware;
+namespace kernel\Middleware;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
 use Error;
-use gstudio_kernel\Foundation\Config;
-use gstudio_kernel\Foundation\Controller\AuthController;
-use gstudio_kernel\Foundation\Lang;
-use gstudio_kernel\Foundation\Output;
-use gstudio_kernel\Foundation\Request;
-use gstudio_kernel\Foundation\Response;
-use gstudio_kernel\Foundation\Store;
-use gstudio_kernel\Model\LoginsModel;
-use gstudio_kernel\Platform\Discuzx\Member;
-use gstudio_kernel\Service\AuthService;
+use kernel\Foundation\Config;
+use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Lang;
+use kernel\Foundation\Output;
+use kernel\Foundation\Request;
+use kernel\Foundation\Response;
+use kernel\Foundation\Store;
+use kernel\Model\LoginsModel;
+use kernel\Platform\Discuzx\Member;
+use kernel\Service\AuthService;
 use ReflectionMethod;
 
 class GlobalAuthMiddleware
@@ -179,7 +179,7 @@ class GlobalAuthMiddleware
       throw new Error("Router controller(" . $router['controller'] . ") not exists");
     }
 
-    if (get_parent_class($router['controller']) === "gstudio_kernel\Foundation\Controller\AuthController") {
+    if (get_parent_class($router['controller']) === "kernel\Foundation\Controller\AuthController") {
 
       //* 验证Formhash
       $router['controller']::verifyFormhash();

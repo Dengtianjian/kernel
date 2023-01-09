@@ -1,15 +1,15 @@
 <?php
 
-namespace gstudio_kernel\App\Api\Attachments;
+namespace kernel\App\Api\Attachments;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Controller\AuthController;
-use gstudio_kernel\Foundation\Lang;
-use gstudio_kernel\Foundation\Response;
-use gstudio_kernel\Platform\Discuzx\Attachment;
+use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Lang;
+use kernel\Foundation\Response;
+use kernel\Platform\Discuzx\Attachment;
 
 class UploadAttachmentController extends AuthController
 {

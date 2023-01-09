@@ -1,14 +1,14 @@
 <?php
 
-use gstudio_kernel\Foundation\Iuu;
+use kernel\Foundation\Iuu;
 
-if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
+if (!defined("F_KERNEL") || !defined('IN_ADMINCP')) {
   exit('Access Denied');
 }
 
-include_once(DISCUZ_ROOT . "source/plugin/gstudio_kernel/Autoload.php");
+include_once(DISCUZ_ROOT . "source/plugin/kernel/Autoload.php");
 
-$Iuu = new Iuu("gstudio_kernel", $_GET['fromversion']);
+$Iuu = new Iuu("kernel", $_GET['fromversion']);
 $Iuu->install()->runInstallSql();
 
 $finish = TRUE;

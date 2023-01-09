@@ -1,14 +1,14 @@
 <?php
 
-namespace gstudio_kernel\Middleware;
+namespace kernel\Middleware;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Config;
-use gstudio_kernel\Foundation\Store;
-use gstudio_kernel\Foundation\View;
+use kernel\Foundation\Config;
+use kernel\Foundation\Store;
+use kernel\Foundation\View;
 
 class GlobalMultipleEncodeMiddleware
 {
@@ -22,7 +22,7 @@ class GlobalMultipleEncodeMiddleware
           $langJson = \serialize([]);
         }
         $multipleEncodeJSScript = "
-<script src='source/plugin/gstudio_kernel/Assets/js/unserialize.js'></script>
+<script src='source/plugin/kernel/Assets/js/unserialize.js'></script>
 <script>
   const GLANG=unserialize('$langJson');
 </script>

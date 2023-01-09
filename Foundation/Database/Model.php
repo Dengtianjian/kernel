@@ -1,16 +1,16 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Database;
+namespace kernel\Foundation\Database;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
 use DB;
-use gstudio_kernel\Foundation\Data\Str;
-use gstudio_kernel\Foundation\Database\Query;
-use gstudio_kernel\Foundation\Date;
-use gstudio_kernel\Foundation\Output;
+use kernel\Foundation\Data\Str;
+use kernel\Foundation\Database\Query;
+use kernel\Foundation\Date;
+use kernel\Foundation\Output;
 
 class Model
 {

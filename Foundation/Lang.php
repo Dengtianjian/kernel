@@ -1,8 +1,10 @@
 <?php
 
-namespace gstudio_kernel\Foundation;
+namespace kernel\Foundation;
 
-if (!defined("IN_DISCUZ")) {
+use kernel\Foundation\HTTP\Response;
+
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 

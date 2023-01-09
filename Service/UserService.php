@@ -1,14 +1,14 @@
 <?php
 
-namespace gstudio_kernel\Service;
+namespace kernel\Service;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Data\Arr;
-use gstudio_kernel\Foundation\Database\Model;
-use gstudio_kernel\Foundation\Service;
+use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Database\Model;
+use kernel\Foundation\Service;
 
 class UserService extends Service
 {

@@ -1,8 +1,8 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Network;
+namespace kernel\Foundation\Network;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 

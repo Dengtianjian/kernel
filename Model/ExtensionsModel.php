@@ -1,20 +1,20 @@
 <?php
 
-namespace gstudio_kernel\Model;
+namespace kernel\Model;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Database\Model;
+use kernel\Foundation\Database\Model;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit("Access Denied");
 }
 
 class ExtensionsModel extends Model
 {
-  public $tableName = "gstudio_kernel_extensions";
+  public $tableName = "kernel_extensions";
   public function getByExtensionId($extensionId)
   {
     return $this->where("extension_id", $extensionId)->getAll();

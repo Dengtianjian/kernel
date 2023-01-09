@@ -1,12 +1,12 @@
 <?php
 
-namespace gstudio_kernel\Foundation\Extension;
+namespace kernel\Foundation\Extension;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use gstudio_kernel\Foundation\Store;
+use kernel\Foundation\Store;
 
 class Extensions
 {

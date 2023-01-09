@@ -1,12 +1,12 @@
 <?php
 
-namespace gstudio_kernel\App\Api\Attachments;
+namespace kernel\App\Api\Attachments;
 
-use gstudio_kernel\Foundation\Config;
-use gstudio_kernel\Foundation\Controller\AuthController;
-use gstudio_kernel\Foundation\File;
+use kernel\Foundation\Config;
+use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\File;
 
-if (!defined('IN_DISCUZ')) {
+if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 

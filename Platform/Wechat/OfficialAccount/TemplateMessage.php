@@ -1,6 +1,6 @@
 <?php
 
-namespace gstudio_kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount;
 
 /**
  * 微信公众号模板消息

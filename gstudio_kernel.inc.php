@@ -1,15 +1,15 @@
 <?php
 
-use gstudio_kernel\App;
-use gstudio_kernel\Foundation\Output;
-use gstudio_kernel\Middleware\GlobalAuthMiddleware;
+use kernel\App;
+use kernel\Foundation\Output;
+use kernel\Middleware\GlobalAuthMiddleware;
 
-if (!defined("IN_DISCUZ")) {
+if (!defined("F_KERNEL")) {
   exit("Access Denied");
 }
 
-include_once(DISCUZ_ROOT . "source/plugin/gstudio_kernel/Autoload.php");
+include_once(DISCUZ_ROOT . "source/plugin/kernel/Autoload.php");
 
-$app = new App("gstudio_kernel");
+$app = new App("kernel");
 $app->setMiddlware(GlobalAuthMiddleware::class);
 $app->init();

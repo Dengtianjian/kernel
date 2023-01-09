@@ -1,6 +1,6 @@
 <?php
 
-namespace gstudio_kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount;
 
 class UserManagement extends WechatOfficialAccount
 {
