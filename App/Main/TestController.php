@@ -4,8 +4,10 @@ namespace kernel\App\Main;
 
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\DataConversion;
+use kernel\Foundation\Data\Serializer;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response\ResponseView;
+use kernel\Foundation\Output;
 use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Validate\ValidateArray;
 use kernel\Foundation\Validate\ValidateRules;
@@ -13,37 +15,46 @@ use kernel\Foundation\Validate\Validator;
 
 class TestController extends Controller
 {
-  public $query = null;
-  public $body = [
-    "uid" => "int",
-    "user" => [
-      "username" => "string",
-      "age" => "int",
-      "keys" => [
-        "one" => "int",
-        "three" => "string"
-      ]
-    ]
-  ];
-  protected $serializes = 1;
+  // public $query = null;
+  // public $body = [
+  //   "uid" => "int",
+  //   "user" => [
+  //     "username" => "string",
+  //     "age" => "int",
+  //     "keys" => [
+  //       "one" => "int",
+  //       "three" => "string"
+  //     ]
+  //   ]
+  // ];
   public function __construct(Request $R)
   {
+    $this->serializes = [
+      "uid" => "int",
+      "country",
+      "json",
+      "serialize" => "serialize",
+      "keys" => [
+        "one"
+      ],
+      "user"
+    ];
     // $this->query = new DataConversion([
     //   "username",
     //   "age" => "int"
     // ], true);
-    $this->body = new DataConversion([
-      "uid" => "int",
-      "age" => "int",
-      "user" => [
-        "username",
-        "age" => "int",
-        "keys" => new DataConversion([
-          "one" => "string",
-          "four"
-        ], true, true)
-      ]
-    ], true, true);
+    // $this->body = new DataConversion([
+    //   "uid" => "int",
+    //   "age" => "int",
+    //   "user" => [
+    //     "username",
+    //     "age" => "int",
+    //     "keys" => new DataConversion([
+    //       "one" => "string",
+    //       "four"
+    //     ], true, true)
+    //   ]
+    // ], true, true);
     // $this->body = new DataConversion([
     //   "keys" => new DataConversion([
     //     "one" => "string"
@@ -104,6 +115,7 @@ class TestController extends Controller
   }
   public function data(Request $R, $username)
   {
+    // Output::debug($this->body->some());
     return $this->body->some();
     // $VR->minLength(2, "数组的每个元素最少2个字符");
     // $VR->type(["int", "string"], "数组的每个元素必须是数值类型");

@@ -5,7 +5,7 @@ namespace kernel\Foundation\Controller;
 use kernel\Foundation\Data\DataConversion;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Output;
-use kernel\Foundation\Serializer;
+use kernel\Foundation\Data\Serializer;
 
 class Controller
 {
@@ -65,6 +65,9 @@ class Controller
     if ($this->serializes instanceof DataConversion) {
       $this->response->addData($this->serializes->data($this->response->getData())->convert(), true);
     } else if ($this->serializes instanceof Serializer) {
+      $this->response->addData(Serializer::serialization($this->serializes->useRuleName, $this->response->getData()), true);
+    } else if (is_array($this->serializes)) {
+      $this->response->addData(Serializer::serialization($this->serializes, $this->response->getData()), true);
     }
   }
 }
