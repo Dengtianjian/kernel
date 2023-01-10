@@ -43,6 +43,12 @@ class Controller
   protected $serializes = null;
 
   /**
+   * 请求实例
+   *
+   * @var \kernel\Foundation\HTTP\Request
+   */
+  public $request = null;
+  /**
    * 控制器执行完data方法后返回的响应实例
    *
    * @var \kernel\Foundation\HTTP\Response
@@ -51,6 +57,7 @@ class Controller
 
   function __construct(Request $request)
   {
+    $this->request = $request;
     $this->query = new ControllerQuery($request, $this->query, $this->queryValidator);
     $this->body = new ControllerBody($request, $this->body, $this->bodyValidator);
   }

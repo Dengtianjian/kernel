@@ -2,7 +2,7 @@
 
 namespace kernel\App\Api\Attachment;
 
-use kernel\Foundation\Controller;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\Data\Str;
