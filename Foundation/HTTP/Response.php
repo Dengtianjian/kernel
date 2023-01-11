@@ -136,7 +136,7 @@ class Response
    * @param mixed $details 错误详情
    * @return Response
    */
-  public function error($statusCode, $code = 500, $message = "error", $data = [], $details = [])
+  public function error($statusCode, $code = 500, $message = "error", $details = [], $data = [])
   {
     $this->error = true;
     $this->ResponseStatusCode = $statusCode;
@@ -284,13 +284,16 @@ class Response
    */
   public function getBody()
   {
-    return array_merge([
-      "statusCode" => $this->ResponseStatusCode,
-      "code" => $this->ResponseCode,
-      "data" => $this->ResponseData,
-      "message" => $this->ResponseMessage,
-      "details" => $this->ResponseDetails,
-    ], $this->ResponseAddBody);
+    if (is_array($this->ResponseAddBody)) {
+      return array_merge([
+        "statusCode" => $this->ResponseStatusCode,
+        "code" => $this->ResponseCode,
+        "data" => $this->ResponseData,
+        "message" => $this->ResponseMessage,
+        "details" => $this->ResponseDetails,
+      ], $this->ResponseAddBody);
+    }
+    return $this->ResponseAddBody;
   }
   /**
    * 获取输出的主体数据

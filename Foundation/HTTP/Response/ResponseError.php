@@ -19,6 +19,7 @@ class ResponseError extends Response
    */
   public function __construct($statusCode, $code = 500, $message = "error", $data = [], $details = [])
   {
+    $this->error = true;
     $this->ResponseStatusCode = $statusCode;
     $this->ResponseData = $data;
     $this->ResponseCode = $code;

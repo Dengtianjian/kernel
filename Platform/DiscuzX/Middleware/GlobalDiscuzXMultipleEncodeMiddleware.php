@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Middleware;
+namespace kernel\Platform\DiscuzX\Middleware;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
@@ -10,10 +10,11 @@ use kernel\Foundation\Config;
 use kernel\Foundation\Store;
 use kernel\Foundation\View;
 
-class GlobalMultipleEncodeMiddleware
+class GlobalDiscuzXMultipleEncodeMiddleware
 {
   public function handle($next)
   {
+    $res = $next();
     if (Config::get("multipleEncode")) {
       $multipleEncodeJSScript = "";
       if (CHARSET === "gbk") {
@@ -45,8 +46,8 @@ class GlobalMultipleEncodeMiddleware
 </script>
           ";
       }
-      View::footer($multipleEncodeJSScript);
+      print_r($multipleEncodeJSScript);
     }
-    $next();
+    return $res;
   }
 }

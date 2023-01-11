@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation;
 
-use Error;
 use Exception as GlobalException;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
@@ -257,27 +256,35 @@ class App extends Application
       "params" => $executeParams
     ]);
   }
-  private function executeMiddleware($Middlewares, \Closure $callback)
+  private $executedMiddlewareErrorResponse = null;
+  private function executeMiddleware($Middlewares, Controller $Controller, \Closure $callback)
   {
     if (!count($Middlewares) === 0) return $callback();
 
     $middleware = array_shift($Middlewares);
     $params = $middleware['params'] ?: [];
     array_unshift($params, $this->request);
+    array_unshift($params, $Controller);
     if (count($Middlewares) === 0) {
       array_unshift($params, $callback);
     } else {
-      array_unshift($params, function () use ($Middlewares, $callback) {
-        return $this->executeMiddleware($Middlewares, $callback);
+      array_unshift($params, function () use ($Middlewares, $callback, $Controller) {
+        return $this->executeMiddleware($Middlewares, $Controller, $callback);
       });
     }
 
+
     if (is_callable($middleware['target'])) {
-      return $middleware['target'](...$params);
+      $executedResponse = $middleware['target'](...$params);
     } else {
-      $MInstance = new $middleware['target']($this->request);
-      return $MInstance->handle(...$params);
+      $MInstance = new $middleware['target']($this->request, $Controller);
+      $executedResponse = $MInstance->handle(...$params);
     }
+    if ($executedResponse->error && is_null($this->executedMiddlewareErrorResponse)) {
+      $this->executedMiddlewareErrorResponse = $executedResponse;
+    }
+
+    return $executedResponse;
   }
   public function run()
   {
@@ -312,6 +319,7 @@ class App extends Application
     }
 
     $callTarget = [];
+    $Controller = null;
     if (is_callable($Route['controller'])) {
       $callTarget = $Route['controller'];
     } else {
@@ -327,12 +335,14 @@ class App extends Application
 
     //* 执行中间件
     if (count($Middlewares)) {
-      $controllerExecutedResult = $this->executeMiddleware($Middlewares, function () use ($callTarget, $callParams) {
+      $controllerExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($callTarget, $callParams) {
         try {
           $response = call_user_func_array($callTarget, $callParams);
         } catch (GlobalException $E) {
           if ($E instanceof Exception) {
-            $response = new Response(null, $E->statusCode, $E->errorCode, $E->getMessage(), $E->getTrace());
+            throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
+          } else {
+            throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
           }
         }
 
@@ -343,15 +353,21 @@ class App extends Application
         $controllerExecutedResult = call_user_func_array($callTarget, $callParams);
       } catch (GlobalException $E) {
         if ($E instanceof Exception) {
-          $controllerExecutedResult = new Response(null, $E->statusCode, $E->errorCode, $E->getMessage(), $E->getTrace());
+          throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
+        } else {
+          throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
         }
       }
     }
     if (!($controllerExecutedResult instanceof \kernel\Foundation\HTTP\Response)) {
       $controllerExecutedResult = new Response($controllerExecutedResult);
+      if (!$this->request->ajax()) {
+        $controllerExecutedResult->text();
+        $controllerExecutedResult->addBody($controllerExecutedResult->getData(), true);
+      }
     }
 
-    if ($Controller instanceof Controller) {
+    if ($Controller instanceof Controller && !$controllerExecutedResult->error) {
       $Controller->response = $controllerExecutedResult;
       $Controller->completed();
     }

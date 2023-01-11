@@ -40,7 +40,7 @@ use kernel\Middleware\RouteTestMiddleware;
 // },
 // RouteTestMiddleware::class
 // ]);
-Router::post("user/{username:\w+}", TestController::class, [
+Router::get("user/{username:\w+}", TestController::class, [
   // function ($next, Request $R) {
   //   print_r("r1");
   //   return $next();

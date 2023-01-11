@@ -9,22 +9,32 @@ if (!defined('F_KERNEL')) {
 use Error;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Lang;
 use kernel\Foundation\Output;
-use kernel\Foundation\Request;
+use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\Middleware;
 use kernel\Foundation\Response;
+use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Model\LoginsModel;
 use kernel\Platform\Discuzx\Member;
 use kernel\Service\AuthService;
+use LDAP\ResultEntry;
 use ReflectionMethod;
 
-class GlobalAuthMiddleware
+class GlobalAuthMiddleware extends Middleware
 {
-  private function sameOrigin(Request $request)
+  /**
+   * 判断当前请求是否同源
+   *
+   * @param Request $request 请求实例
+   * @return bool
+   */
+  protected function sameOrigin(Request $request)
   {
-    if ($request->headers("Sec-Fetch-Site")) {
-      return $request->headers("Sec-Fetch-Site") === "same-origin";
+    if ($request->header->has("Sec-Fetch-Site")) {
+      return $request->header->get("Sec-Fetch-Site") === "same-origin";
     } else {
       $Origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : null;
       if (!$Origin) {
@@ -49,42 +59,47 @@ class GlobalAuthMiddleware
       }
     }
   }
-  private function verifyToken($request, $strongCheck = true)
+  /**
+   * 验证token
+   *
+   * @param Request $request 请求体
+   * @param boolean $strongCheck 严格校验
+   * @return ReturnResult
+   */
+  protected function verifyToken(Request $request, $strongCheck = true)
   {
-    $token = $request->headers("Authorization") ?: $request->query("Authorization") ?: $request->body("Authorization");
-    if ($strongCheck && (empty($token) || !$token)) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
+    $RR = new ReturnResult(true);
+    $token = $request->header->get("Authorization") ?: $request->query->get("authToken") ?: $request->body->get("authToken");
+    if ($strongCheck && (empty($token) || is_null($token))) {
+      $RR->error(401, "Auth:401001", "请登录后重试", null, "空Token");
+      return $RR;
     }
     if (empty($token)) {
-      return;
+      return $RR;
     }
     if (!preg_match("/^Bearer (.+)$/", $token, $token)) {
-      Response::error(401, "Auth:40102", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/headerTOKENParamError"));
+      $RR->error(401, "Auth:401002", "请登录后重试", "头部缺少Token参数");
+      return $RR;
     }
     $token = $token[1];
-    if ($strongCheck) {
-      if (empty($token) || !$token)
-        Response::error(401, "Auth:40103", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/headerAuthorizationEmpty"));
-    }
-    if (empty($token)) {
-      return null;
-    }
     $ULM = new LoginsModel();
     $token = $ULM->getByToken($token);
     if ($token === null) {
       header("Authorization", "");
       if ($strongCheck) {
-        Response::error(401, "Auth:40104", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/invalidToken"));
+        $RR->error(401, "Auth:401003", "请登录后重试", "无效的Token");
+        return $RR;
       }
     }
     if (!$token) {
-      return null;
+      return $RR;
     }
     $expirationDate = $token['createdAt'] + $token['expiration'];
     $diffDay = round((time() - $token['createdAt']) / 86400);
     $expirationDay = round($token['expiration'] / 86400);
     if (time() > $expirationDate || $diffDay > $expirationDay) {
-      Response::error(401, "Auth:40105", Lang::value("kernel/auth/loginExpired"), [], Lang::value("kernel/auth/expiredToken"));
+      $RR->error(401, "Auth:401004", "登录已失效，请重新登录", "Token已过期");
+      return $RR;
     }
     header("Authorization:" . $token['token'] . "/" . $expirationDate, true);
     //* 如果token的有效期剩余20%，就自动刷新token
@@ -101,175 +116,48 @@ class GlobalAuthMiddleware
       "auth" => $token
     ]);
   }
-  public function verifyViewControllerAdmin($controller)
+  public function handle(\Closure $next, Request $request, $Controller = null)
   {
-    $Member = getglobal("member");
-    if ((int)$Member['uid'] === 0) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
-    }
-    if (is_array($controller::$Admin)) {
-      if (!in_array($Member['adminid'], $controller::$Admin)) {
-        Response::error(403, "Auth:40301", Lang::value("kernel/auth/noAccess"), [], Lang::value("kernel/auth/insufficientPermissions"));
+    if (!($Controller instanceof AuthController)) {
+      $Verified = $this->verifyToken($request);
+      if ($Verified->error) {
+        return $Verified;
       }
-    } else if (is_bool($controller::$Admin)) {
-      if ((int)$Member['adminid'] !== 1) {
-        Response::error(403, "Auth:40302", Lang::value("kernel/auth/noAccess"), [], Lang::value("kernel/auth/insufficientPermissions"));
-      }
-    } else if (is_numeric($controller::$Admin) || is_string($controller::$Admin)) {
-      if ((int)$Member['adminid'] !== (int)$controller::$Admin) {
-        Response::error(403, "Auth:40302", Lang::value("kernel/auth/noAccess"), [], Lang::value("kernel/auth/insufficientPermissions"));
-      }
-    }
-  }
-  public function verifyViewControllerAuth($controller)
-  {
-    $Member = getglobal("member");
-    // Output::debug($Member);
-    if ((int)$Member['uid'] === 0) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
-    }
-    if (is_array($controller::$Auth)) {
-      if (!in_array($Member['groupid'], $controller::$Auth)) {
-        Response::error(403, "Auth:40301", Lang::value("kernel/auth/noAccess"), [], Lang::value("kernel/auth/insufficientPermissions"));
-      }
-    } else if (is_numeric($controller::$Auth) || is_string($controller::$Auth)) {
-      if ((int)$Member['groupid'] !== (int)$controller::$Auth) {
-        Response::error(403, "Auth:40302", Lang::value("kernel/auth/noAccess"), [], Lang::value("kernel/auth/insufficientPermissions"));
-      }
-    }
-  }
-  public function verify(Request $request, $controller, $viewVerifyType, $strongCheck = false)
-  {
-    //* 如果是同源，那么来源就是视图页面发起的ajax请求，无需token，用verifyViewControllerAdmin和verifyViewControllerAuth去验证
-    $SameOrigin = $this->sameOrigin($request);
-    if ($request->ajax()) {
-      if ($SameOrigin) {
-        if ($viewVerifyType === "admin") {
-          $this->verifyViewControllerAdmin($controller);
-        } else {
-          $this->verifyViewControllerAuth($controller);
-        }
-      } else {
-        $this->verifyToken($request, $strongCheck);
-      }
-    } else {
-      if ($viewVerifyType === "admin") {
-        $this->verifyViewControllerAdmin($controller);
-      } else {
-        $this->verifyViewControllerAuth($controller);
-      }
-    }
-  }
-  public function handle($next, Request $request)
-  {
-    $router = $request->router;
-    $SameOrigin = $this->sameOrigin($request);
-    $isAdminVerify = false;
-    if (!$router) {
-      $next();
-      return;
+      return $next();
     }
 
-    if (is_callable($router['controller'])) {
-      $next();
-      return;
+    $adminChecked = false;
+    $authChecked = false;
+
+    if ($Controller->Admin) {
+      $adminChecked = true;
+      $Verified = $this->verifyToken($request, true);
+      if ($Verified->error) {
+        return $Verified;
+      }
+      $adminVerified = $Controller->verifyAdmin();
+      if ($adminVerified->error) {
+        return $adminVerified;
+      }
     }
-
-    if (!class_exists($router['controller'])) {
-      throw new Error("Router controller(" . $router['controller'] . ") not exists");
+    if (!$adminChecked && $Controller->Auth) {
+      $authChecked = true;
+      $Verified = $this->verifyToken($request, true);
+      if ($Verified->error) {
+        return $Verified;
+      }
+      $authVerified = $Controller->verifyAuth();
+      if ($authVerified->error) {
+        return $authVerified;
+      }
     }
-
-    if (get_parent_class($router['controller']) === "kernel\Foundation\Controller\AuthController") {
-
-      //* 验证Formhash
-      $router['controller']::verifyFormhash();
-
-      $needCheckAdmin = true;
-      $isAdminVerify = false;
-      $strongCheckAdmin = false;
-      if (is_array($router['controller']::$AdminMethods)) {
-        $methods = array_map(function ($item) {
-          return strtolower($item);
-        }, $router['controller']::$AdminMethods);
-        if (count($methods)) {
-          if (in_array(strtolower($request->method), $methods)) {
-            $strongCheckAdmin = true;
-          } else {
-            $needCheckAdmin = false;
-          }
-        }
-      }
-
-      if ($needCheckAdmin) {
-        if (method_exists($router['controller'], "Admin")) {
-          $adminMethodRM = new ReflectionMethod($router['controller'], "Admin");
-          if ($adminMethodRM->isStatic() && $router['controller']::Admin()) {
-            $isAdminVerify = true;
-            $this->verify($request, $router['controller'], "admin", true);
-            $router['controller']::verifyAdmin();
-          }
-        } else if ($router['controller']::$Admin || $strongCheckAdmin) {
-          $isAdminVerify = true;
-          $this->verify($request, $router['controller'], "admin", true);
-          $router['controller']::verifyAdmin();
-        }
-      }
-
-      if ($isAdminVerify === false) {
-        $needCheckAuth = true;
-        $strongCheckAuth = false;
-        if (is_array($router['controller']::$AuthMethods)) {
-          $methods = array_map(function ($item) {
-            return strtolower($item);
-          }, $router['controller']::$AuthMethods);
-          if (count($methods)) {
-            if (in_array(strtolower($request->method), $methods)) {
-              $strongCheckAuth = true;
-            } else {
-              $needCheckAuth = false;
-            }
-          }
-        }
-
-        if ($needCheckAuth) {
-          if (method_exists($router['controller'], "Auth")) {
-            $authMethodRM = new ReflectionMethod($router['controller'], "Auth");
-            if ($authMethodRM->isStatic() && $router['controller']::Auth()) {
-              $this->verify($request, $router['controller'], "auth", true);
-              $router['controller']::verifyAuth();
-            }
-          } else if ($router['controller']::$Auth || $strongCheckAuth) {
-            $this->verify($request, $router['controller'], "auth", true);
-            $router['controller']::verifyAuth();
-          }
-        } else {
-          $this->verify($request, $router['controller'], "auth");
-        }
-      }
-    } else {
-      if ($request->headers("Authorization")) {
-        $this->verifyToken($request);
+    if (!$authChecked) {
+      $Verified = $this->verifyToken($request, true);
+      if ($Verified->error) {
+        return $Verified;
       }
     }
 
-    $memberInfo = null;
-    if ($request->ajax() && !$SameOrigin) {
-      $Auth = Store::getApp("auth");
-      if ($Auth && isset($Auth['userId'])) {
-        $memberInfo = Member::get($Auth['userId']);
-        include_once libfile("function/member");
-        \setloginstatus($memberInfo, 0);
-      }
-      Store::setApp([
-        "member" => $memberInfo
-      ]);
-    } else {
-      $memberInfo = Member::get(getglobal("uid"));
-      Store::setApp([
-        "member" => $memberInfo
-      ]);
-    }
-
-    $next();
+    return $next();
   }
 }

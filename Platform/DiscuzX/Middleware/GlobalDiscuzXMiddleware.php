@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Middleware;
+namespace kernel\Platform\DiscuzX\Middleware;
 
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware;
@@ -11,10 +11,6 @@ class GlobalDiscuzXMiddleware extends Middleware
 {
   public function handle($next, Request $R)
   {
-    $res = $next();
-    if ($res->statusCode() > 299) {
-      $res = new DiscuzXViewResponse("section");
-    }
-    return $res;
+    return $next();
   }
 }

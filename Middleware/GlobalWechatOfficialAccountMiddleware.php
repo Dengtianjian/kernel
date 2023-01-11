@@ -2,16 +2,14 @@
 
 namespace kernel\Middleware;
 
-use kernel\Foundation\Request;
-use kernel\Foundation\Response;
+use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Store;
 use kernel\Model\AccessTokenModel;
 use kernel\Platform\Wechat\AccessToken;
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccount;
 
 class GlobalWechatOfficialAccountMiddleware
 {
-  public function handle($next, $R, $params)
+  public function handle($next, $R, $params = [])
   {
     $ATM = new AccessTokenModel();
     $AppId = $params['appId'];
@@ -26,7 +24,7 @@ class GlobalWechatOfficialAccountMiddleware
         $AT = new AccessToken(null, $AppId, $AppSecret);
         $res = $AT->getAccessToken();
         if (isset($res['errcode'])) {
-          Response::error(500, "500:ServerError", "服务器错误", null, $res);
+          return new ResponseError(500, "500:ServerError", "服务器错误", null, $res);
         }
         $ATM->add($res['access_token'], $Platform, $res['expires_in'], $AppId);
 
