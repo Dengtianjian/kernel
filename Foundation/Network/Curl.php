@@ -1,13 +1,13 @@
 <?php
 
-namespace kernel\Foundation\Network;
+namespace gstudio_kernel\Foundation\Network;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
 use CURLFile;
-use kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Data\Arr;
 
 /**
  * 二次封装的CURL类
@@ -31,15 +31,6 @@ class Curl
   private $responseData = NULL; //* 响应的数据
   private $curlErrorMsg = NULL; //* 错误信息
   private $curlErrorNo = NULL; //* 错误码
-  private $responseHeadersData = null; //* 响应头
-  private $responseStatusCode = 200; //* 相应状态码
-  private $proxy = [ //* 代理相关
-    "open" => false, //* 是否开启
-    "url" => "", //* 代理URL地址
-    "port" => "", //* 代理的URL端口
-    "username" => "", //* 代理用户
-    "password" => "" //* 代理用户密码
-  ];
   /**
    * 实例化当前类
    *
@@ -245,24 +236,6 @@ class Curl
     return $this;
   }
   /**
-   * 设置请求代理
-   *
-   * @param string $url 代理地址
-   * @param int $port 代理接口
-   * @param string $username 代理用户名
-   * @param string $password 代理用户密码
-   * @return Curl
-   */
-  public function proxy(string $url, int $port, string $username = "", string $password = ""): Curl
-  {
-    $this->proxy["open"] = true;
-    $this->proxy["url"] = $url;
-    $this->proxy["port"] = $port;
-    $this->proxy["username"] = $username;
-    $this->proxy["password"] = $password;
-    return $this;
-  }
-  /**
    * 开启https。协议头是https情况下默认验证https
    * 传true是验证https，否则就绕过https
    *
@@ -337,73 +310,28 @@ class Curl
       CURLOPT_CUSTOMREQUEST => \strtoupper($this->curlMethod), //* 请求方法
       CURLOPT_COOKIE => $this->buildCookie($this->curlCookie) //* cookies
     ];
-    if ($this->curlMethod === "file") {
-      $options[CURLOPT_PUT] = true;
-    }
     if ($this->curlMethod !== "get") {
-      $options[CURLOPT_POST] = true;
       $options[CURLOPT_POSTFIELDS] = $sendDatas;
-      $options[CURLOPT_HTTPGET] = false;
     }
     //* 绕过SSL验证
     if ($this->bypasSSLVerification === true) {
       $options[CURLOPT_SSL_VERIFYPEER] = false;
       $options[CURLOPT_SSL_VERIFYHOST] = false;
     }
-    //* 开启代理
-    if ($this->proxy['open']) {
-      $options[CURLOPT_PROXY] = $this->proxy['url'];
-      $options[CURLOPT_PROXYPORT] =  $this->proxy['port'];
-      if ($this->proxy['username']) {
-        $options[CURLOPT_PROXYUSERPWD] =  $this->proxy['username'] . ":" . $this->proxy['password'];
-      }
-    }
 
     foreach ($this->curlOptions as $key => $value) {
       $options[$key] = $value;
     }
     \curl_setopt_array($curl, $options);
-    curl_setopt($curl, CURLOPT_HEADER, true);
-    curl_setopt($curl, CURLOPT_NOBODY, false);
-
     $result = \curl_exec($curl);
-
-    $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
-    $header = substr($result, 0, $headerSize);
-    $header = explode("\r\n", $header);
-    $responseHeaders = [];
-    foreach ($header as &$headerItem) {
-      $headerItem = trim($headerItem);
-      $firstColon = strpos($headerItem, ":");
-      if ($firstColon === false) {
-        if (preg_match("/HTTP.+/", $headerItem)) {
-          $headerItem = explode(" ", $headerItem);
-          $responseHeaders['http-protocol'] = $headerItem[0];
-          $responseHeaders['http-status-code'] = intval($headerItem[1]);
-          $this->responseStatusCode = $responseHeaders['http-status-code'];
-        }
-      } else {
-        $key = trim(substr($headerItem, 0,  $firstColon));
-        $value = trim(substr($headerItem, $firstColon + 1));
-        $responseHeaders[$key] = $value;
-      }
-    }
-    $this->responseHeadersData = $responseHeaders;
-    $responseBody = substr($result, $headerSize);
 
     if ($result === false) {
       $this->curlErrorMsg = \curl_error($curl);
-      $this->curlErrorNo = intval(\curl_errno($curl));
+      $this->curlErrorNo = \curl_errno($curl);
     } else {
       if ($this->isJson) {
-        $result = \json_decode($responseBody, true);
-        if (!$result) {
-          $result = [
-            "response" => $responseBody
-          ];
-        }
+        $result = \json_decode($result, true);
       }
-
       $this->responseData = $result;
     }
     curl_close($curl);
@@ -444,23 +372,5 @@ class Curl
   public function getData()
   {
     return $this->responseData;
-  }
-  /**
-   * 获取响应状态码
-   *
-   * @return integer
-   */
-  public function statusCode(): int
-  {
-    return $this->responseStatusCode;
-  }
-  /**
-   * 获取响应头
-   *
-   * @return array
-   */
-  public function responseHeaders(): array
-  {
-    return $this->responseHeadersData;
   }
 }

@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Aliyun;
+namespace gstudio_kernel\Platform\Aliyun;
 
-use kernel\Foundation\Network\Curl;
+use gstudio_kernel\Foundation\Network\Curl;
 
 class AliyunRequest extends Aliyun
 {

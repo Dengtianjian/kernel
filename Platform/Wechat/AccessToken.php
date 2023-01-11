@@ -1,12 +1,12 @@
 <?php
 
-namespace kernel\Platform\Wechat;
+namespace gstudio_kernel\Platform\Wechat;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Network\Curl;
+use gstudio_kernel\Foundation\Network\Curl;
 
 /**
  * AccessToken类

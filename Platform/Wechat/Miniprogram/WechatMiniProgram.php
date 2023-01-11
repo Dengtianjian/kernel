@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram;
+namespace gstudio_kernel\Platform\Wechat\Miniprogram;
 
-use kernel\Platform\Wechat\Wechat;
+use gstudio_kernel\Platform\Wechat\Wechat;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 

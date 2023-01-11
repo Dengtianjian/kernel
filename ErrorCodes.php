@@ -1,32 +1,48 @@
 <?php
 
-namespace kernel\Foundation\Exception;
+namespace gstudio_kernel;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
+use gstudio_kernel\Foundation\Exception\ErrorCode;
+use gstudio_kernel\Foundation\Lang;
+
 $SubmitCodes = [
-  ErrorCode::make("LLLEGAL_SUBMISSION", 403, "SUBMIT_403001", "该内容被隐藏了")
+  "LLLEGAL_SUBMISSION" => [403, "SUBMIT_403001", Lang::value("kernel/lllegal_submission")]
 ];
 
-$AuthCodes = [];
+$AuthCodes = [
+  "NOT_AUTH" => [401, "Auth_401001", Lang::value("kernel/not_logged_in")],
+  "AUTH_FAILED" => [401, "Auth_401002",  Lang::value("kernel/authentication_failed_need_to_log_in_again")],
+  "AUTH_EXPIRED" => [401, "Auth_401003", Lang::value("kernel/login_has_expired_please_log_in_again")],
+  "UNAUTHORIZED_ACCESS" => [401, "Auth_401004", Lang::value("kernel/unauthorized_access")],
+];
 
 $RouteCodes = [
-  ErrorCode::make("ROUTE_DOES_NOT_EXIST", 404, "Route_404001", "资源不存在"),
-  ErrorCode::make("METHOD_NOT_ALLOWED", 405, "MethodNotAllowed", "不支持的请求方法")
+  "ROUTE_DOES_NOT_EXIST" => [404, "Route_404001", Lang::value("kernel/route_does_not_exits")],
+  "METHOD_NOT_ALLOWED" => [400, "Route_400001", Lang::value("kernel/method_not_allowed")]
 ];
 
 $MiddlwareCodes = [
-  ErrorCode::make("MIDDLEWARE_EXECUTION_ERROR", 500, "MIDDLEWARE_500001", "页面不存在")
+  "MIDDLEWARE_EXECUTION_ERROR" => [
+    500, "MIDDLEWARE_500001", Lang::value("kernel/middleware_execution_error")
+  ]
 ];
 
 $ViewCodes = [
-  ErrorCode::make("VIEW_TEMPLATE_NOT_EXIST", 500, "VIEW_500001", "页面不存在")
+  "VIEW_TEMPLATE_NOT_EXIST" => [
+    500, "VIEW_500001", Lang::value("kernel/view_template_file_not_exist")
+  ]
 ];
 
 $ServerCodes = [
-  ErrorCode::make("SERVER_ERROR", 500, "SERVER_ERROR", "服务器错误")
+  "SERVER_ERROR" => [
+    500, "SERVER_ERROR_500001", Lang::value("kernel/serverError")
+  ]
 ];
-
-return \array_merge($AuthCodes, $RouteCodes, $SubmitCodes, $ViewCodes, $MiddlwareCodes);
+$ErrorCodes = \array_merge($AuthCodes, $RouteCodes, $SubmitCodes, $ViewCodes, $MiddlwareCodes, $ServerCodes);
+foreach ($ErrorCodes as $key => $value) {
+  ErrorCode::add($key, $value[0], $value[1], $value[2]);
+}

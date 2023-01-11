@@ -1,19 +1,19 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Data\Arr;
 
 class Store
 {
   /**
    * 设置全局变量
    *
-   * @param mixed $value 变量值
+   * @param any $value 变量值
    * @return boolean 默认返回true
    */
   static function set($value)
@@ -35,12 +35,6 @@ class Store
     }
     return true;
   }
-  /**
-   * 设置当前app的存储数据
-   *
-   * @param mixed $value 存储的数据
-   * @return bool
-   */
   static function setApp($value)
   {
     return self::set([
@@ -98,12 +92,6 @@ class Store
     }
     return $last;
   }
-  /**
-   * 获取当前运行的app下的数据
-   *
-   * @param string $path 数组层级路径，用 / 分隔
-   * @return mixed
-   */
   static function getApp($path = "")
   {
     $path = empty($path) ? "__App" : "__App/$path";

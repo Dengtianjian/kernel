@@ -1,19 +1,19 @@
 <?php
 
-namespace kernel\App\Api\Attachments;
+namespace gstudio_kernel\App\Api\Attachments;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
 use DB;
-use kernel\Foundation\Config;
-use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Database\Model;
-use kernel\Foundation\File;
-use kernel\Foundation\Lang;
-use kernel\Foundation\Output;
-use kernel\Foundation\Response;
+use gstudio_kernel\Foundation\Config;
+use gstudio_kernel\Foundation\Controller\AuthController;
+use gstudio_kernel\Foundation\Database\Model;
+use gstudio_kernel\Foundation\File;
+use gstudio_kernel\Foundation\Lang;
+use gstudio_kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Response;
 
 class DeleteAttachmentController extends AuthController
 {

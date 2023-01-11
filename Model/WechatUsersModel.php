@@ -1,17 +1,17 @@
 <?php
 
-namespace kernel\Model;
+namespace gstudio_kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Database\Model;
+use gstudio_kernel\Foundation\Output;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
 class WechatUsersModel extends Model
 {
-  public $tableName = "kernel_wechat_users";
+  public $tableName = "gstudio_kernel_wechat_users";
   public function bound($memberId, $openId)
   {
     return $this->where([

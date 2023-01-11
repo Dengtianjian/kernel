@@ -1,30 +1,17 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
 class Log
 {
-  /**
-   * 生成日志文件路径
-   *
-   * @param string[] ...$path 日志文件路径
-   * @return bool
-   */
   static private function genLogPath(...$path)
   {
     return File::genPath(F_APP_DATA, "Logs", ...$path);
   }
-  /**
-   * 记录日志
-   * 会根据当前年，月创建文件夹，以日来创建文件记录内容
-   *
-   * @param mixed $content 记录内容
-   * @return void
-   */
   static function record($content)
   {
     $year = date("Y");
@@ -40,21 +27,10 @@ class Log
     $content = strval($content);
     $time = date("Y-m-d h:i:s");
     $content = <<<EOT
-$time: $content
+$time: $content\n
 EOT;
-    if (file_exists($logFilePath)) {
-      $content = "\n" . $content;
-    }
     error_log($content, 3, $logFilePath);
   }
-  /**
-   * 读取指定日期下的日志文件
-   *
-   * @param int $day 日
-   * @param int $month 月
-   * @param int $year 年
-   * @return string[]
-   */
   static function read($day = null, $month = null, $year = null)
   {
     if ($year === null) {
@@ -101,9 +77,25 @@ EOT;
     if (!file_exists($directoryPath)) {
       return [];
     }
-    if (function_exists("yaml_parse")) {
-      return \yaml_parse(file_get_contents($directoryPath));
+    return \yaml_parse(file_get_contents($directoryPath));
+  }
+  //* 待确认需求
+  static function readRange($start, $end = null)
+  {
+    if ($end === null) {
+      $end = time();
     }
-    return explode("\n", file_get_contents($directoryPath));
+    $start = [
+      "year" => date("Y", $start),
+      "month" => date("m", $start),
+      "day" => date("d", $start),
+    ];
+    $end = [
+      "year" => date("Y", $end),
+      "month" => date("m", $end),
+      "day" => date("d", $end),
+    ];
+    $yearRanges = $end['year'] - $start['year'];
+    $monthRangs = $end['month'] - $start['month'];
   }
 }

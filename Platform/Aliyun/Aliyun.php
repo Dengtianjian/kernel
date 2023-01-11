@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\Aliyun;
+namespace gstudio_kernel\Platform\Aliyun;
 
 class Aliyun
 {

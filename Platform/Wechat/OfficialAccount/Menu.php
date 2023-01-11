@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace gstudio_kernel\Platform\Wechat\OfficialAccount;
 
-use kernel\Foundation\Data\Arr;
+use gstudio_kernel\Foundation\Data\Arr;
 
 class Menu extends WechatOfficialAccount
 {

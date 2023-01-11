@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Iuu\Install;
+namespace gstudio_kernel\Iuu\Install;
 
-if (!defined("F_KERNEL") || !defined('IN_ADMINCP')) {
+if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
   exit('Access Denied');
 }
 

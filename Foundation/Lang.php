@@ -1,33 +1,14 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\HTTP\Response;
-
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
 class Lang
 {
   private static $langs = [];
-  /**
-   * 加载语言包
-   *
-   * @return void
-   */
-  public static function load($filePath)
-  {
-    if (\file_exists($filePath)) {
-      include_once($filePath);
-    } else {
-      throw new Exception("编码文件不存在", 500, "Lang:500001", $filePath);
-    }
-    Store::setApp([
-      "langs" => Lang::all()
-    ]);
-  }
   public static function add($langs, $key = null)
   {
     if (\is_array($langs)) {

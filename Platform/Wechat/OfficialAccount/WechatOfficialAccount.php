@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace gstudio_kernel\Platform\Wechat\OfficialAccount;
 
-use kernel\Platform\Wechat\Wechat;
+use gstudio_kernel\Platform\Wechat\Wechat;
 
 class WechatOfficialAccount extends Wechat
 {

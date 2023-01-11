@@ -1,8 +1,10 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined("F_KERNEL")) {
+use GuzzleHttp\Promise\Is;
+
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 

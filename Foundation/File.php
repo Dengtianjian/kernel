@@ -1,11 +1,10 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use gstudio_kernel\Foundation\Data\Arr;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
@@ -92,7 +91,7 @@ class File
         $filePath = $fileItem;
         $fileSize = filesize($filePath);
         if (!$fileSize) {
-          throw new Exception("文件保存失败", 500, "FileUpload:500001");
+          Response::error(500, "File:500002", Lang::value("kernel/file/saveFailed"), [], error_get_last());
         }
         $fileSourceName = $filePath;
       } else {
@@ -106,8 +105,7 @@ class File
       }
 
       $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
-      $fileCode = uniqid();
-
+      $fileCode = \mt_rand(1000, 9999) . time();
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
       if (!is_dir($savePath)) {
@@ -122,7 +120,7 @@ class File
       }
 
       if (!$saveResult) {
-        throw new Exception("文件保存失败", 500, "FileSave:500001");
+        Response::error(500, "File:500001", Lang::value("kernel/file/saveFailed"), [], error_get_last());
       }
       $relativePath = str_replace(\F_APP_BASE, "", $savePath);
       $fileInfo = [
@@ -249,12 +247,12 @@ class File
   {
     return implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
       $lastText = $item[strlen($item) - 1];
-      // if ($lastText === "/" || $lastText === "\\") {
-      //   $item = substr($item, 0, strlen($item) - 1);
-      // }
-      // if ($item[0] === "/" || $item[0] === "\\") {
-      //   $item = substr($item, 1, strlen($item));
-      // }
+      if ($lastText === "/" || $lastText === "\\") {
+        $item = substr($item, 0, strlen($item) - 1);
+      }
+      if ($item[0] === "/" || $item[0] === "\\") {
+        $item = substr($item, 1, strlen($item));
+      }
       return $item;
     }, array_filter($els, function ($item) {
       return !empty(trim($item));
@@ -264,8 +262,8 @@ class File
    * 扫描目录
    *
    * @param string $targetPath 被扫描的目录路径
-   * @param integer|null $sorting_order 默认的排序顺序是按字母升序排列。如果使用了可选参数 sorting_order（设为 1），则排序顺序是按字母降序排列。
-   * @param mixed $context 参数的说明见手册中的 Streams API(https://www.php.net/manual/zh/ref.stream.php) 一章。
+   * @param integer|null $sorting_order
+   * @param mixed $context
    * @return array|false 扫描成功的话就返回扫描的数组，否则返回false
    */
   public static function scandir($targetPath, $sorting_order = 0, $context = null)

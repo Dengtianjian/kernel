@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Foundation\Data;
+namespace gstudio_kernel\Foundation\Data;
 
-use kernel\Foundation\Output;
+use gstudio_kernel\Foundation\Output;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 

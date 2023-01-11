@@ -1,15 +1,14 @@
 <?php
 
-namespace kernel\Foundation;
+namespace gstudio_kernel\Foundation;
 
-if (!defined('F_KERNEL')) {
+if (!defined('IN_DISCUZ')) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Database\Model;
-use kernel\Foundation\Exception\Exception;
+use gstudio_kernel\Foundation\Database\Model;
 
-if (!defined("F_KERNEL")) {
+if (!defined("IN_DISCUZ")) {
   exit('Access Denied');
 }
 
@@ -21,7 +20,7 @@ class Service
   {
     $callClass = \get_called_class();
     if (!$callClass::$tableName) {
-      throw new Exception("服务的表名称缺失",500,500001);
+      Response::error(500, 500001, Lang::value("service_tablename_empty"));
     }
     self::$tableName = $callClass::$tableName;
     if (self::$ModelInstance === null) {

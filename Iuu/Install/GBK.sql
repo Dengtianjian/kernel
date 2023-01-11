@@ -1,36 +1,36 @@
 -- ----------------------------
--- Table structure for pre_kernel_access_token
+-- Table structure for pre_gstudio_kernel_access_token
 -- ----------------------------
-DROP TABLE IF EXISTS `pre_kernel_access_token`;
-CREATE TABLE `pre_kernel_access_token`  (
+DROP TABLE IF EXISTS `pre_gstudio_kernel_access_token`;
+CREATE TABLE `pre_gstudio_kernel_access_token`  (
   `accessToken` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'access_token',
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `platform` enum('wechatOfficialAccount','dingtalk') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ½Ì¨',
-  `createdAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `expiredAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `expires` varchar(6) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½Ð§ï¿½ï¿½',
-  `appId` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ½Ì¨ï¿½ï¿½appid',
+  `platform` enum('wechatOfficialAccount','dingtalk') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ËùÊôµÚÈý·½Æ½Ì¨',
+  `createdAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '´´½¨Ê±¼ä',
+  `expiredAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '¹ýÆÚÊ±¼ä',
+  `expires` varchar(6) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ÓÐÐ§ÆÚ',
+  `appId` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'µÚÈý·½Æ½Ì¨µÄappid',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ½Ì¨ï¿½ï¿½AccessToken' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'µÚÈý·½Æ½Ì¨µÄAccessToken' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pre_kernel_extensions
+-- Table structure for pre_gstudio_kernel_extensions
 -- ----------------------------
-DROP TABLE IF EXISTS `pre_kernel_extensions`;
+DROP TABLE IF EXISTS `pre_gstudio_kernel_extensions`;
 
-CREATE TABLE `pre_kernel_extensions` (
-  `id` int(12) NOT NULL AUTO_INCREMENT COMMENT 'ï¿½ï¿½ï¿½ï¿½',
-  `install_time` int(13) NULL DEFAULT NULL COMMENT 'ï¿½ï¿½×°Ê±ï¿½ï¿½',
-  `upgrade_time` int(13) NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `local_version` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½Ø°æ±¾',
-  `plugin_id` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½idï¿½ï¿½kernelï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½Õ¹',
-  `extension_id` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½Õ¹id',
-  `enabled` tinyint(1) NULL DEFAULT NULL COMMENT 'ï¿½Ñ¿ï¿½ï¿½ï¿½',
-  `installed` tinyint(4) NULL DEFAULT NULL COMMENT 'ï¿½Ñ°ï¿½×°',
-  `path` varchar(535) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½Õ¹ï¿½ï¿½Â·ï¿½ï¿½',
-  `parent_id` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Õ¹ID',
-  `created_time` int(13) NULL DEFAULT NULL COMMENT 'ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `name` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½',
+CREATE TABLE `pre_gstudio_kernel_extensions` (
+  `id` int(12) NOT NULL AUTO_INCREMENT COMMENT 'Ö÷¼ü',
+  `install_time` int(13) NULL DEFAULT NULL COMMENT '°²×°Ê±¼ä',
+  `upgrade_time` int(13) NULL DEFAULT NULL COMMENT '¸üÐÂÊ±¼ä',
+  `local_version` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '±¾µØ°æ±¾',
+  `plugin_id` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'ËùÊô²å¼þid¡£kernelµÄÊÇÏµÍ³À©Õ¹',
+  `extension_id` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'À©Õ¹id',
+  `enabled` tinyint(1) NULL DEFAULT NULL COMMENT 'ÒÑ¿ªÆô',
+  `installed` tinyint(4) NULL DEFAULT NULL COMMENT 'ÒÑ°²×°',
+  `path` varchar(535) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'À©Õ¹¸ùÂ·¾¶',
+  `parent_id` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '¸¸À©Õ¹ID',
+  `created_time` int(13) NULL DEFAULT NULL COMMENT '¼ÇÂ¼´´½¨Ê±¼ä',
+  `name` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'À©Õ¹Ãû³Æ',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `extension_id`(`extension_id`) USING BTREE,
   INDEX `plugin_id`(`plugin_id`) USING BTREE,
@@ -38,39 +38,39 @@ CREATE TABLE `pre_kernel_extensions` (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pre_kernel_logins
+-- Table structure for pre_gstudio_kernel_logins
 -- ----------------------------
-DROP TABLE IF EXISTS `pre_kernel_logins`;
+DROP TABLE IF EXISTS `pre_gstudio_kernel_logins`;
 
-CREATE TABLE `pre_kernel_logins` (
+CREATE TABLE `pre_gstudio_kernel_logins` (
   `id` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `token` varchar(260) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'tokenÖµ',
-  `expiration` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½Ð§ï¿½ï¿½ï¿½ï¿½',
-  `userId` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½',
-  `appId` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IDï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Õ¼ï¿½ÎªÍ¨ï¿½ï¿½',
-  `createdAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `updatedAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `deletedAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'É¾ï¿½ï¿½Ê±ï¿½ï¿½',
+  `expiration` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ÓÐÐ§ÆÚÖÁ',
+  `userId` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ËùÊôÓÃ»§',
+  `appId` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ËùÊô²å¼þID£¬Èç¹ûÎª¿Õ¼´ÎªÍ¨ÓÃ',
+  `createdAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '´´½¨Ê±¼ä',
+  `updatedAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '×îºó¸üÐÂÊ±¼ä',
+  `deletedAt` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'É¾³ýÊ±¼ä',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for pre_kernel_wechat_users
+-- Table structure for pre_gstudio_kernel_wechat_users
 -- ----------------------------
-DROP TABLE IF EXISTS `pre_kernel_wechat_users`;
+DROP TABLE IF EXISTS `pre_gstudio_kernel_wechat_users`;
 
-CREATE TABLE `pre_kernel_wechat_users` (
+CREATE TABLE `pre_gstudio_kernel_wechat_users` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `memberId` bigint(20) NULL DEFAULT NULL COMMENT 'ï¿½ï¿½ï¿½ó¶¨µÄ»ï¿½Ô±ID',
+  `memberId` bigint(20) NULL DEFAULT NULL COMMENT '±»°ó¶¨µÄ»áÔ±ID',
   `openId` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'openId',
   `unionId` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'unionId',
-  `phone` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½',
-  `createdAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `updatedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½',
-  `deletedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ï¿½ï¿½É¾ï¿½ï¿½Ê±ï¿½ï¿½',
+  `phone` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ÊÖ»úºÅÂë',
+  `createdAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '´´½¨Ê±¼ä',
+  `updatedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '×îºó¸üÐÂÊ±¼ä',
+  `deletedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'ÈíÉ¾³ýÊ±¼ä',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `memberId`(`memberId`) USING BTREE COMMENT 'ï¿½ï¿½Ô±IDï¿½ï¿½ï¿½ï¿½',
-  INDEX `unionId`(`unionId`) USING BTREE COMMENT 'UnionIdï¿½ï¿½ï¿½ï¿½',
-  INDEX `openId`(`openId`) USING BTREE COMMENT 'OpenIdï¿½ï¿½ï¿½ï¿½',
-  INDEX `phone`(`phone`) USING BTREE COMMENT 'ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½'
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'Î¢ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½' ROW_FORMAT = Dynamic;
+  INDEX `memberId`(`memberId`) USING BTREE COMMENT '»áÔ±IDË÷Òý',
+  INDEX `unionId`(`unionId`) USING BTREE COMMENT 'UnionIdË÷Òý',
+  INDEX `openId`(`openId`) USING BTREE COMMENT 'OpenIdË÷Òý',
+  INDEX `phone`(`phone`) USING BTREE COMMENT 'ÊÖ»úºÅË÷Òý'
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'Î¢ÐÅÓÃ»§±í' ROW_FORMAT = Dynamic;
