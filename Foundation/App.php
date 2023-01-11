@@ -22,8 +22,8 @@ define("F_KERNEL", true);
 
 class App
 {
-  private $AppId = null;
-  private $KernelId = null;
+  protected $AppId = null;
+  protected $KernelId = null;
   protected $uri = null; //* 请求的URI
   protected $globalMiddlware = []; //*全局中间件
   protected $router = null; //* 路由相关

@@ -1,0 +1,11 @@
+<?php
+
+include_once("../kernel/vendor/autoload.php");
+
+if (file_exists("./vendor/autoload.php")) {
+  include_once("./vendor/autoload.php");
+}
+
+array_shift($argv);
+
+print_r(dirname(__DIR__, 3));
