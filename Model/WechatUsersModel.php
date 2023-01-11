@@ -2,7 +2,7 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\Model;
+use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Output;
 
 if (!defined("F_KERNEL")) {

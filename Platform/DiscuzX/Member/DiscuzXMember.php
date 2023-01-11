@@ -2,7 +2,9 @@
 
 namespace kernel\Platform\DiscuzX\Member;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Response;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -10,13 +12,6 @@ if (!defined("F_KERNEL")) {
 
 class DiscuzXMember
 {
-  static function getUser()
-  {
-    return \getglobal('member');
-  }
-  static function group()
-  {
-  }
   /**
    * 账号密码登录
    *
@@ -68,36 +63,73 @@ class DiscuzXMember
 
     return $userLoginResult['member'];
   }
-  /**
-   * 获取会员数据
-   *
-   * @param int $userId 会员ID
-   * @return array 会员数据
-   */
-  static function get($userId)
+  public static function credit($userId = null)
   {
-    $userInfo = getuserbyuid($userId);
-
-    $userFieldData = \C::t("common_member_profile")->fetch($userId);
-    $userFieldsSetting = \C::t("common_member_profile_setting")->fetch_all_by_available(1);
-    $userFields = [];
-    foreach ($userFieldsSetting as $fieldKey => $field) {
-      $field['content'] = $userFieldData[$fieldKey];
-      $userFields[$fieldKey] = $field;
+    if ($userId === null) {
+      $userId = \getglobal("uid");
     }
+    $CMCM = new DiscuzXModel("common_member_count");
+    $memberCredit = $CMCM->where([
+      "uid" => $userId
+    ])->getOne();
+    unset($CMCM);
+    return $memberCredit;
+  }
+  public static function group($groupId = null)
+  {
+    if ($groupId === null) {
+      $groupId = \getglobal("member")['groupid'];
+    }
+    $CUGM = new DiscuzXModel("common_usergroup");
+    $memberGroup = $CUGM->where([
+      "groupid" => $groupId
+    ])->getOne();
+    return $memberGroup;
+  }
+  public static function newPrompt($userId = null)
+  {
+    if ($userId === null) {
+      $userId = \getglobal("uid");
+    }
+    $CMNP = new DiscuzXModel("common_member_newprompt");
+    $prompts = $CMNP->where([
+      "uid" => $userId
+    ])->getOne();
+    foreach ($prompts as &$promptItem) {
+      $promptItem = \array_merge($promptItem, \unserialize($promptItem['data']));
+      unset($promptItem['data']);
+    }
+    return $prompts;
+  }
+  public static function get($userId = null, $detailed = true)
+  {
+    if ($userId === null) {
+      $userId = \getglobal("uid");
+    }
+    $MM = new DiscuzXModel("common_member");
+    $member = $MM->where([
+      "uid" => $userId
+    ])->getOne();
+    if ($detailed) {
+      $memberCredit = self::credit($userId);
+      $memberCredit = Arr::indexToAssoc($memberCredit, 'uid');
+      $memberGroupId = $member['groupid'];
+      $memberGroup = self::group($memberGroupId);
+      $memberGroup = Arr::indexToAssoc($memberGroup, "groupid");
+      $memberPrompt = self::newPrompt($userId);
+      $memberPrompt = Arr::indexToAssoc($memberPrompt, "uid");
+      $member['group'] = $memberGroup[$member['groupid']];
+      $member['credit'] = $memberCredit[$member['uid']];
+      $member['prompts'] = $memberPrompt[$member['uid']];
 
-    $userForumFields = \C::t("common_member_field_forum")->fetch($userId);
-    $userForumFields['sightml'] = preg_replace("/<img|img>/", "<span", $userForumFields['sightml']);
-    $userGroup = \C::t("common_usergroup")->fetch($userInfo['groupid']);
-    $userCount = \C::t("common_member_count")->fetch($userId);
+      $userForumFields = \C::t("common_member_field_forum")->fetch($userId);
+      $member['sightml'] = preg_replace("/<img|img>/", "<span", $userForumFields['sightml']);
 
-    $userInfo = array_merge([
-      "profile" => $userFields
-    ], $userInfo, $userForumFields, $userGroup, $userCount);
+      \ksort($member);
+    }
+    $member['regdate'] = dgmdate($member['regdate']);
+    $member['avatar'] = avatar($userId, "middle", true);
 
-    $userInfo['regdate'] = dgmdate($userInfo['regdate']);
-    $userInfo['avatar'] = avatar($userId, "middle", 1);
-
-    return $userInfo;
+    return $member;
   }
 }

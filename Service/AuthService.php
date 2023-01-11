@@ -47,7 +47,6 @@ SQL;
       ...$extraFields
     ]);
     $expirationDate = $nowTime + $expiration;
-    Response::header("Authorization", $hashString . "/" . $expirationDate, true);
     return [
       "value" => $hashString,
       "expirationDate" => $expirationDate,

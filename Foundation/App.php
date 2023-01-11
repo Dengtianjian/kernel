@@ -8,6 +8,7 @@ use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Database\PDO\DB;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Output;
@@ -28,6 +29,7 @@ class App
   protected $router = null; //* 路由相关
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
+  public $DBStaticClass = null; //*数据库DB静态类
   private function __clone()
   {
   }
@@ -55,7 +57,22 @@ class App
     //* 载入路由
     $this->loadRoutes();
 
+    //* 设置默认的数据库静态类
+    $this->DBStaticClass = DB::class;
+
     $this->request = new Request();
+  }
+  /**
+   * 设置数据库静态类
+   * 主要用于模型调用
+   *
+   * @param object $target 数据库静态类
+   * @return App
+   */
+  public function setDB($target)
+  {
+    $this->DBStaticClass = $target;
+    return $this;
   }
   /**
    * 初始化以及定义常量
@@ -228,19 +245,19 @@ class App
    */
   protected function loadExtensions()
   {
-    $EM = new ExtensionsModel();
-    $enabledExtensions = $EM->where("enabled", 1)->getOne();
-    foreach ($enabledExtensions as $extensionItem) {
-      $mainFilepath = File::genPath(F_APP_ROOT, $extensionItem['path'], "Main.php");
-      if (!\file_exists($mainFilepath)) {
-        Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
-      }
-      $namespace = implode("\\", [F_APP_ID, "Extensions", $extensionItem['extension_id'], "Main"]);
-      if (!\class_exists($namespace)) {
-        Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
-      }
-      new $namespace();
-    }
+    // $EM = new ExtensionsModel();
+    // $enabledExtensions = $EM->where("enabled", 1)->getOne();
+    // foreach ($enabledExtensions as $extensionItem) {
+    //   $mainFilepath = File::genPath(F_APP_ROOT, $extensionItem['path'], "Main.php");
+    //   if (!\file_exists($mainFilepath)) {
+    //     Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
+    //   }
+    //   $namespace = implode("\\", [F_APP_ID, "Extensions", $extensionItem['extension_id'], "Main"]);
+    //   if (!\class_exists($namespace)) {
+    //     Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
+    //   }
+    //   new $namespace();
+    // }
   }
   /**
    * 设置中间件

@@ -10,6 +10,7 @@ class Model
   public $tableName = "";
   protected Query $query;
   protected $returnSql = false;
+  protected $DB = null;
 
   public static $Timestamps = true;
   public static $CreatedAt = "createdAt";
@@ -23,6 +24,8 @@ class Model
       $this->tableName = $tableName;
     }
     $this->query = new Query($this->tableName);
+
+    $this->DB = $GLOBALS['App']->DBStaticClass;
   }
   /**
    * 快速实例化
@@ -90,23 +93,23 @@ class Model
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function insertId()
   {
-    return DB::insertId();
+    return $this->DB::insertId();
   }
   function batchInsert(array $fieldNames, array $values, bool $isReplaceInto = false)
   {
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function update(array $data)
   {
     $sql = $this->query->update($data)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function batchUpdate(array $fieldNames, array $values)
   {
@@ -125,7 +128,7 @@ class Model
     }
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function delete(bool $directly = false)
   {
@@ -153,23 +156,23 @@ class Model
     }
 
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function getAll()
   {
     if ($this->returnSql) return $this->query->get()->sql();
-    return DB::getAll($this->query);
+    return $this->DB::getAll($this->query);
   }
   function getOne()
   {
     if ($this->returnSql) return $this->query->limit(1)->get()->sql();
-    return DB::getOne($this->query);
+    return $this->DB::getOne($this->query);
   }
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
     if ($this->returnSql) return $sql;
-    $countResult = DB::query($sql);
+    $countResult = $this->DB::query($sql);
     if (!empty($countResult)) {
       return (int)$countResult['0']["COUNT('$field')"];
     }
@@ -184,7 +187,7 @@ class Model
   {
     $sql = $this->query->exist()->sql();
     if ($this->returnSql) return $sql;
-    $exist = DB::query($sql);
+    $exist = $this->DB::query($sql);
     if (empty($exist)) {
       return 0;
     }

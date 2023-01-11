@@ -2,11 +2,11 @@
 
 namespace kernel\Model;
 
+use kernel\Foundation\Database\PDO\Model;
+
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
-
-use kernel\Foundation\Database\Model;
 
 if (!defined("F_KERNEL")) {
   exit("Access Denied");

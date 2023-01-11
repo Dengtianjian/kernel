@@ -10,7 +10,7 @@ if (!defined('F_KERNEL')) {
 
 class Cache
 {
-  static private $SaveBasePath = F_APP_ROOT . "/cache"; //* 缓存存储的基路径
+  static private $SaveBasePath = F_APP_DATA . "/Cache"; //* 缓存存储的基路径
   static private $readedCaches = []; //* 已经读取的缓存
   static private $readedCacheMetas = []; //* 已经读取的缓存元数据
   static private $DaySeconeds = 60 * 60 * 24; //* 一天有多少秒
@@ -54,34 +54,41 @@ class Cache
    * 写入缓存，该方法只会合并已有的缓存
    *
    * @param string $id 缓存ID
-   * @param array $content 缓存内容
+   * @param mixed $content 缓存内容，只有已有缓存是数组以及传入的数据是数组才会合并
    * @param int $expiresIn 有效期（天）
    * @return bool
    */
-  static function write($id,  $content,  $expiresIn = 30)
+  static function write($id, $content, $expiresIn = 30)
   {
     if (!is_dir(self::$SaveBasePath)) {
       mkdir(self::$SaveBasePath, 0777, true);
     }
     $targetPath = File::genPath(self::$SaveBasePath, "$id.txt");
     $expired = round(time() + self::$DaySeconeds * $expiresIn);
+    $cache = [
+      "content" => [],
+      "meta" => [
+        "updatedAt" => time(),
+        "addedAt" => time(),
+        "expiredAt" => $expired
+      ]
+    ];
     if (!in_array($id, self::$readedCaches)) {
-      $cache = self::read($id);
-    } else {
-      $cache = [
-        "content" => [],
-        "meta" => [
-          "updatedAt" => time(),
-          "addedAt" => time(),
-          "expiredAt" => $expired
-        ]
-      ];
+      $cacheContent = self::read($id);
+      if ($cacheContent) {
+        $cache['content'] = $cacheContent;
+        $cache['meta'] = self::$readedCacheMetas[$id];
+      }
     }
 
     $cache['meta']['updatedAt'] = time();
     $cache['meta']['expiredAt'] = $expired;
 
-    $cache['content'] = Arr::merge($cache['content'], $content);
+    if (is_array($content) && is_array($cache['content'])) {
+      $cache['content'] = array_merge($cache['content'], $content);
+    } else {
+      $cache['content'] = $content;
+    }
 
     $result = file_put_contents($targetPath, serialize($cache));
     chmod($targetPath, 0700);

@@ -6,7 +6,6 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use DB;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Query;
@@ -16,10 +15,8 @@ class DiscuzXModel extends Model
 {
   function __construct($tableName = null)
   {
-    if ($tableName) {
-      $this->tableName = $tableName;
-    }
-    $this->tableName = \DB::table($this->tableName);
+    parent::__construct($tableName);
+    $this->tableName = $this->DB::table($this->tableName);
     $this->query = new Query($this->tableName);
   }
   function insert($data, $isReplaceInto = false)
@@ -42,17 +39,17 @@ class DiscuzXModel extends Model
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function insertId()
   {
-    return DB::insert_id();
+    return $this->DB::insert_id();
   }
   function batchInsert($fieldNames,  $values,  $isReplaceInto = false)
   {
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function update($data)
   {
@@ -71,13 +68,13 @@ class DiscuzXModel extends Model
     }
     $sql = $this->query->update($data)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function batchUpdate($fieldNames,  $values)
   {
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function delete($directly = false)
   {
@@ -105,19 +102,19 @@ class DiscuzXModel extends Model
     }
 
     if ($this->returnSql) return $sql;
-    return DB::query($sql);
+    return $this->DB::query($sql);
   }
   function getAll()
   {
     $sql = $this->query->get()->sql();
     if ($this->returnSql) return $sql;
-    return DB::fetch_all($sql);
+    return $this->DB::fetch_all($sql);
   }
   function getOne()
   {
     $sql = $this->query->limit(1)->get()->sql();
     if ($this->returnSql) return $sql;
-    $res = DB::fetch_all($sql);
+    $res = $this->DB::fetch_all($sql);
     if (empty($res)) return null;
     return $res[0];
   }
@@ -125,7 +122,7 @@ class DiscuzXModel extends Model
   {
     $sql = $this->query->count($field)->sql();
     if ($this->returnSql) return $sql;
-    return (int)DB::result(DB::query($sql));
+    return (int)$this->DB::result($this->DB::query($sql));
   }
   function genId($prefix = "", $suffix = "")
   {
@@ -136,7 +133,7 @@ class DiscuzXModel extends Model
   {
     $sql = $this->query->exist()->sql();
     if ($this->returnSql) return $sql;
-    $exist = DB::result(DB::query($sql));
+    $exist = $this->DB::result($this->DB::query($sql));
     // if (empty($exist)) {
     //   return 0;
     // }

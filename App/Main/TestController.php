@@ -3,6 +3,7 @@
 namespace kernel\App\Main;
 
 use Exception;
+use kernel\Foundation\Cache;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\DataConversion;
 use kernel\Foundation\Data\Serializer;
@@ -10,6 +11,7 @@ use kernel\Foundation\Exception\Exception as ExceptionException;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseView;
+use kernel\Foundation\Log;
 use kernel\Foundation\Output;
 use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Validate\ValidateArray;
@@ -32,16 +34,16 @@ class TestController extends Controller
   // ];
   public function __construct(Request $R)
   {
-    $this->serializes = [
-      "uid" => "int",
-      "country",
-      "json",
-      "serialize" => "serialize",
-      "keys" => [
-        "one"
-      ],
-      "user"
-    ];
+    // $this->serializes = [
+    //   "uid" => "int",
+    //   "country",
+    //   "json",
+    //   "serialize" => "serialize",
+    //   "keys" => [
+    //     "one"
+    //   ],
+    //   "user"
+    // ];
     // $this->query = new DataConversion([
     //   "username",
     //   "age" => "int"
@@ -118,6 +120,13 @@ class TestController extends Controller
   }
   public function data(Request $R, $username)
   {
+    Cache::write("1", [
+      "now" => time()
+    ]);
+    return Cache::read("1");
+    // return Cache::meta("1", [
+    //   "a"
+    // ]);
     // throw new Exception("test error");
     // Output::debug($this->body->some());
     return new Response(1);

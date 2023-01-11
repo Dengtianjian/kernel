@@ -2,7 +2,7 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\Model;
+use kernel\Foundation\Database\PDO\Model;
 
 class AccessTokenModel extends Model
 {
