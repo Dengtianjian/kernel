@@ -10,10 +10,32 @@ if (!defined('F_KERNEL')) {
 
 class Cache
 {
-  static private $SaveBasePath = F_APP_DATA . "/Cache"; //* 缓存存储的基路径
-  static private $readedCaches = []; //* 已经读取的缓存
-  static private $readedCacheMetas = []; //* 已经读取的缓存元数据
-  static private $DaySeconeds = 60 * 60 * 24; //* 一天有多少秒
+  /**
+   * 缓存存储目录
+   *
+   * @var string
+   */
+  static private $SaveBasePath = F_APP_DATA . "/Cache";
+  /**
+   * 已经读取的缓存
+   * 键是缓存ID，值是缓存内容
+   *
+   * @var array
+   */
+  static private $readedCaches = [];
+  /**
+   * 已经读取的缓存元数据
+   * 键是缓存ID，值是缓存元数据
+   *
+   * @var array
+   */
+  static private $readedCacheMetas = [];
+  /**
+   * 一天的秒数
+   *
+   * @var int
+   */
+  static private $DaySeconeds = 60 * 60 * 24;
   /**
    * 读取缓存
    *
