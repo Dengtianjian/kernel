@@ -3,6 +3,7 @@
 namespace kernel\Foundation;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Response;
 
 class Command
@@ -12,6 +13,7 @@ class Command
   private $env = [];
   private $options = [];
   private string $cwd = "/";
+  private $initCommand = "";
   private $status = [
     "command" => "",
     "pid" => 0,
@@ -55,11 +57,11 @@ class Command
     ];
     $this->process = $process = proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd, $this->env, $this->options);
     if ($process === false) {
-      Response::error(500, "500:CommandError", "服务器错误", "proc_open执行失败");
+      throw new Exception("服务器错误", 500, "500:CommandError", "proc_open执行失败");
     }
     $this->pipes = &$pipes;
     $this->status = proc_get_status($process);
-    Response::intercept(function () use ($process) {
+    register_shutdown_function(function () use ($process) {
       if (is_resource($process)) {
         proc_close($process);
       }
