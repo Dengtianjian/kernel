@@ -3,6 +3,7 @@
 namespace kernel\Foundation;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Exception\Exception;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
@@ -91,7 +92,7 @@ class File
         $filePath = $fileItem;
         $fileSize = filesize($filePath);
         if (!$fileSize) {
-          Response::error(500, "File:500002", Lang::value("kernel/file/saveFailed"), [], error_get_last());
+          throw new Exception("文件保存失败", 500, "FileUpload:500001");
         }
         $fileSourceName = $filePath;
       } else {
@@ -105,7 +106,8 @@ class File
       }
 
       $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
-      $fileCode = \mt_rand(1000, 9999) . time();
+      $fileCode = uniqid();
+
       $saveFullFileName = $fileCode . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
       if (!is_dir($savePath)) {
@@ -120,7 +122,7 @@ class File
       }
 
       if (!$saveResult) {
-        Response::error(500, "File:500001", Lang::value("kernel/file/saveFailed"), [], error_get_last());
+        throw new Exception("文件保存失败", 500, "FileSave:500001");
       }
       $relativePath = str_replace(\F_APP_BASE, "", $savePath);
       $fileInfo = [

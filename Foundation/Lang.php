@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\HTTP\Response;
 
 if (!defined("F_KERNEL")) {
@@ -21,7 +22,7 @@ class Lang
     if (\file_exists($filePath)) {
       include_once($filePath);
     } else {
-      Response::error(500, "Lang:500001", "Server error");
+      throw new Exception("编码文件不存在", 500, "Lang:500001", $filePath);
     }
     Store::setApp([
       "langs" => Lang::all()

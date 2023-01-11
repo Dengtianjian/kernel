@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Log;
 use kernel\Foundation\Response;
 use PDO;
@@ -14,7 +15,7 @@ class Driver
     $link = new \PDO("mysql:dbname=$database;host:$hostname;port=$port", $username, $password, $options);
 
     if (!$link) {
-      Response::error(500, "PDO:500001", $link->connect_errno() . ":" . $link->connect_error());
+      throw new Exception("数据连接失败", 500, "PDO:500001", $link->connect_errno() . ":" . $link->connect_error());
     }
     $this->PDOInstance = $link;
     return $this;
@@ -42,8 +43,7 @@ class Driver
         "trace" => debug_backtrace(),
         "sql" => $query
       ];
-      Log::record($errorDetails);
-      Response::error(500, "DatabaseError:500001-" . $this->errno(), "服务器错误", $errorDetails);
+      throw new Exception("数据错误", 500, "DatabaseError:500001", $errorDetails);
     } else {
       if ($isSelect) {
         $result = $data->fetchAll(PDO::FETCH_ASSOC);

@@ -7,6 +7,7 @@ if (!defined('F_KERNEL')) {
 }
 
 use kernel\Foundation\Database\Model;
+use kernel\Foundation\Exception\Exception;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -20,7 +21,7 @@ class Service
   {
     $callClass = \get_called_class();
     if (!$callClass::$tableName) {
-      Response::error(500, 500001, Lang::value("service_tablename_empty"));
+      throw new Exception("服务的表名称缺失",500,500001);
     }
     self::$tableName = $callClass::$tableName;
     if (self::$ModelInstance === null) {

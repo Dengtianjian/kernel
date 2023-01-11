@@ -19,7 +19,7 @@ use kernel\Model\ExtensionsModel;
  */
 define("F_KERNEL", true);
 
-class App extends Application
+class App
 {
   private $AppId = null;
   private $KernelId = null;

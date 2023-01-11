@@ -206,7 +206,7 @@ class SQL
     $sql = "UPDATE `$tableName` SET $data $extraStatement";
     return $sql;
   }
-  // OP 批量更新不应该走batchInsert的replace，应该是多条update
+  // BUG 批量更新不应该走batchInsert的replace，应该是多条update
   static function batchUpdate(string $tableName, array $fields, array $datas, string $extraStatement = "")
   {
     $sql = self::batchInsert($tableName, $fields, $datas, true);

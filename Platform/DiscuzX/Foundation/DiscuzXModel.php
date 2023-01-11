@@ -1,76 +1,28 @@
 <?php
 
-namespace kernel\Foundation\Database\PDO;
+namespace kernel\Platform\DiscuzX\Foundation;
 
+if (!defined('F_KERNEL')) {
+  exit('Access Denied');
+}
+
+use DB;
 use kernel\Foundation\Data\Str;
+use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\PDO\Query;
 use kernel\Foundation\Date;
 
-class Model
+class DiscuzXModel extends Model
 {
-  public $tableName = "";
-  protected Query $query;
-  protected $returnSql = false;
-
-  public static $Timestamps = true;
-  public static $CreatedAt = "createdAt";
-  public static $UpdatedAt = "updatedAt";
-  public static $DeletedAt = "deletedAt";
-  public static $TimestampFields = [];
-
-  function __construct(string $tableName = null)
+  function __construct($tableName = null)
   {
     if ($tableName) {
       $this->tableName = $tableName;
     }
+    $this->tableName = \DB::table($this->tableName);
     $this->query = new Query($this->tableName);
   }
-  /**
-   * 快速实例化
-   *
-   * @param string $tableName 表名称
-   * @return Model
-   */
-  static function quick($tableName = null)
-  {
-    $class = get_called_class();
-    return new $class($tableName);
-  }
-  function order(string $field, string $by = "ASC")
-  {
-    $this->query->order($field, $by);
-    return $this;
-  }
-  function field(...$fieldNames)
-  {
-    $this->query->field($fieldNames);
-    return $this;
-  }
-  function limit(int $startOrNumber, int $number = null)
-  {
-    $this->query->limit($startOrNumber, $number);
-    return $this;
-  }
-  function page(int $pages, int $pageLimit = 110)
-  {
-    $this->query->page($pages, $pageLimit);
-    return $this;
-  }
-  function skip($number)
-  {
-    $this->query->skip($number);
-    return $this;
-  }
-  function where($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
-  {
-    $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
-    return $this;
-  }
-  function sql($yes = true)
-  {
-    $this->returnSql = $yes;
-    return $this;
-  }
-  function insert(array $data, bool $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false)
   {
     $Call = get_class($this);
     if ($Call::$Timestamps) {
@@ -94,21 +46,15 @@ class Model
   }
   function insertId()
   {
-    return DB::insertId();
+    return DB::insert_id();
   }
-  function batchInsert(array $fieldNames, array $values, bool $isReplaceInto = false)
+  function batchInsert($fieldNames,  $values,  $isReplaceInto = false)
   {
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
     return DB::query($sql);
   }
-  function update(array $data)
-  {
-    $sql = $this->query->update($data)->sql();
-    if ($this->returnSql) return $sql;
-    return DB::query($sql);
-  }
-  function batchUpdate(array $fieldNames, array $values)
+  function update($data)
   {
     $Call = get_class($this);
     if ($Call::$Timestamps) {
@@ -123,11 +69,17 @@ class Model
         }
       }
     }
+    $sql = $this->query->update($data)->sql();
+    if ($this->returnSql) return $sql;
+    return DB::query($sql);
+  }
+  function batchUpdate($fieldNames,  $values)
+  {
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
     if ($this->returnSql) return $sql;
     return DB::query($sql);
   }
-  function delete(bool $directly = false)
+  function delete($directly = false)
   {
     if ($directly) {
       $sql = $this->query->delete()->sql();
@@ -157,23 +109,23 @@ class Model
   }
   function getAll()
   {
-    if ($this->returnSql) return $this->query->get()->sql();
-    return DB::getAll($this->query);
+    $sql = $this->query->get()->sql();
+    if ($this->returnSql) return $sql;
+    return DB::fetch_all($sql);
   }
   function getOne()
   {
-    if ($this->returnSql) return $this->query->limit(1)->get()->sql();
-    return DB::getOne($this->query);
+    $sql = $this->query->limit(1)->get()->sql();
+    if ($this->returnSql) return $sql;
+    $res = DB::fetch_all($sql);
+    if (empty($res)) return null;
+    return $res[0];
   }
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
     if ($this->returnSql) return $sql;
-    $countResult = DB::query($sql);
-    if (!empty($countResult)) {
-      return (int)$countResult['0']["COUNT('$field')"];
-    }
-    return null;
+    return (int)DB::result(DB::query($sql));
   }
   function genId($prefix = "", $suffix = "")
   {
@@ -184,10 +136,10 @@ class Model
   {
     $sql = $this->query->exist()->sql();
     if ($this->returnSql) return $sql;
-    $exist = DB::query($sql);
-    if (empty($exist)) {
-      return 0;
-    }
-    return intval($exist[0]["1"]);
+    $exist = DB::result(DB::query($sql));
+    // if (empty($exist)) {
+    //   return 0;
+    // }
+    return boolval($exist);
   }
 }

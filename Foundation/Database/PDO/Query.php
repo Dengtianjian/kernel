@@ -2,7 +2,9 @@
 
 namespace kernel\Foundation\Database\PDO;
 
-use kernel\Foundation\Output;
+if (!defined('F_KERNEL')) {
+  exit('Access Denied');
+}
 
 class Query
 {
@@ -29,7 +31,7 @@ class Query
         break;
       case "batchInsert":
       case "batchReplace":
-        $sql .= SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['datas'], $this->executeType === "batchReplace");
+        $sql .= SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
         break;
       case "update":
         $sql = SQL::update($this->tableName, $this->options['updateData']);
@@ -39,12 +41,6 @@ class Query
         break;
       case "delete":
         $sql = SQL::delete($this->tableName, $this->sql);
-        break;
-        // DONE 软删除实现
-      case "softDelete":
-        $sql = SQL::update($this->tableName, [
-          "deletedAt" => time()
-        ]);
         break;
       case "get":
         $sql = SQL::select($this->tableName, isset($this->options['fields']) ? $this->options['fields'] : "*", $this->sql);
