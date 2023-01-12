@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Data;
 
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Output;
 
 class Serializer
 {
@@ -42,7 +43,9 @@ class Serializer
     if (!is_array($Names)) {
       $Names = explode(".", $Names);
     }
-    $Rule = $upperLevel[array_shift($Names)];
+    $Name = array_shift($Names);
+    if (!isset($upperLevel[$Name])) return null;
+    $Rule = $upperLevel[$Name];
     if (is_null($Rule)) return null;
     if (count($Names) === 0) return $Rule;
     return self::get($Names, $Rule);
@@ -56,7 +59,7 @@ class Serializer
    */
   static function add($Name, $Rule)
   {
-    $Rules[$Name] = $Rule;
+    self::$Rules[$Name] = $Rule;
     return true;
   }
   /**

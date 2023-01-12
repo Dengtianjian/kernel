@@ -40,14 +40,14 @@ use kernel\Middleware\RouteTestMiddleware;
 // },
 // RouteTestMiddleware::class
 // ]);
-Router::get("user/{username:\w+}", TestController::class, [
+// Router::get("user/{username:\w+}", TestController::class, [
   // function ($next, Request $R) {
   //   print_r("r1");
   //   return $next();
   //   print_r("r2");
   // },
   // RouteTestMiddleware::class
-]);
+// ]);
 // Router::group("group", function () {
 //   Router::prefix("{age?:\d+}")::get("user/{username:\w+}/{?:\d+}", TestController::class, [
 //     function ($next, Request $R) {

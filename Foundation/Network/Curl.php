@@ -8,6 +8,7 @@ if (!defined('F_KERNEL')) {
 
 use CURLFile;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Output;
 
 /**
  * 二次封装的CURL类
@@ -145,11 +146,15 @@ class Curl
   /**
    * 设置请求方法为 post
    *
+   * @param array $body 请求体
    * @return Curl
    */
-  public function post()
+  public function post($body = null)
   {
     $this->curlMethod = "post";
+    if (!is_null($body)) {
+      $this->curlDatas = $body;
+    }
     return $this->send();
   }
   /**
@@ -321,7 +326,7 @@ class Curl
       $sendDatas = Arr::merge($sendDatas, $this->uploadFile);
     }
     if ($this->isJson) {
-      $defaultHeaders['Content-type'] = "Application/json";
+      $defaultHeaders['Content-Type'] = "application/json";
       $sendDatas = \json_encode($sendDatas, JSON_UNESCAPED_UNICODE);
       if ($this->curlMethod === "get") {
         $sendDatas = \urlencode($sendDatas);
