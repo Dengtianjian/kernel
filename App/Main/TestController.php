@@ -118,33 +118,34 @@ class TestController extends Controller
 
     parent::__construct($R);
   }
-  public function data(Request $R, $username)
+  public function data(Request $R)
   {
-    Cache::write("1", [
-      "now" => time()
-    ]);
-    return Cache::read("1");
+    // return 1;
+    // Cache::write("1", [
+    //   "now" => time()
+    // ]);
+    // return Cache::read("1");
     // return Cache::meta("1", [
     //   "a"
     // ]);
     // throw new Exception("test error");
     // Output::debug($this->body->some());
-    return new Response(1);
+    // return new Response(1);
     // $VR->minLength(2, "数组的每个元素最少2个字符");
     // $VR->type(["int", "string"], "数组的每个元素必须是数值类型");
 
-    $V = new ValidateRules();
-    $V->custom(function ($value) {
-      $R = new ReturnResult(true);
-      if (!preg_match("/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$/", $value)) {
-        $R->error(400, 400, "请输入正确的邮箱地址");
-      }
+    // $V = new ValidateRules();
+    // $V->custom(function ($value) {
+    //   $R = new ReturnResult(true);
+    //   if (!preg_match("/^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$/", $value)) {
+    //     $R->error(400, 400, "请输入正确的邮箱地址");
+    //   }
 
-      return $R;
-    });
+    //   return $R;
+    // });
 
-    $VV = new Validator($V, "mail@isdtj.com");
-    return $VV->validate();
+    // $VV = new Validator($V, "mail@isdtj.com");
+    // return $VV->validate();
     // $UsernameValidator = new Validator();
     // $UsernameValidator->minLength(3, "用户名最短3个字符");
     // $V = new Validator([
