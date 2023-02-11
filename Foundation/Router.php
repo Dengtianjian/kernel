@@ -54,11 +54,14 @@ class Router
   /**
    * 设置路由前缀
    *
-   * @param array|string $prefix
+   * @param array|string $prefix 前缀，如果传入null即为清除前缀，后续的注册路由不再添加前缀
    * @return Router
    */
   static function prefix($prefix)
   {
+    if (is_null($prefix)) {
+      self::$Prefix = [];
+    }
     if (self::$InGroup) {
       $prefix = is_string($prefix) ? [$prefix] : $prefix;
       foreach ($prefix as $value) {
