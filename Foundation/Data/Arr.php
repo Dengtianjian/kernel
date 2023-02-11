@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Data;
 
+use control;
 use kernel\Foundation\Output;
 
 if (!defined("F_KERNEL")) {
@@ -81,6 +82,7 @@ class Arr
       if (!$array) {
         continue;
       }
+      if (!is_array($array)) continue;
       foreach ($array as $key => $value) {
         if (is_string($key)) {
           if (
