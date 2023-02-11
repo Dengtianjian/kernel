@@ -73,7 +73,7 @@ class DiscuzXExceptionHandler
         $Response->output();
         exit;
       } else {
-        $View = new ResponseView("error");
+        $View = new ResponseView("error", [], "Views", "page", F_KERNEL_ROOT);
         $View->render(File::genPath(F_KERNEL_ROOT, "Views", "error.php"), [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails

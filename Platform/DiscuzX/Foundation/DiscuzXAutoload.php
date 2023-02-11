@@ -6,7 +6,6 @@ function loader($className)
   if (strpos($className, "kernel") !== false && strpos($className, "gstudio_kernel") === false) {
     $className = str_replace("kernel", "gstudio_kernel", $className);
   }
-
   $filePath = DISCUZ_ROOT . "/source/plugin/$className.php";
   if (file_exists($filePath)) {
     include_once(DISCUZ_ROOT . "/source/plugin/$className.php");
