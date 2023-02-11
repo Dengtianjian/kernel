@@ -216,33 +216,27 @@ class App
    */
   protected function loadRoutes()
   {
+    $LocaRouteFiles = [];
     $KernelRoutesDir = File::genPath(F_KERNEL_ROOT, "Routes");
     if (is_dir($KernelRoutesDir)) {
       //* 载入kernel路由
-      $KernelRouteFiles = File::scandir($KernelRoutesDir);
+      $KernelRouteFiles = File::recursionScanDir($KernelRoutesDir);
       if (count($KernelRouteFiles)) {
-        foreach ($KernelRouteFiles as $FileItem) {
-          if (is_dir(File::genPath($KernelRoutesDir, $FileItem))) {
-            continue;
-          }
-          include_once(File::genPath($KernelRoutesDir, $FileItem));
-        }
+        $LocaRouteFiles = array_merge($LocaRouteFiles, $KernelRouteFiles);
       }
     }
 
     $AppRoutesDir = File::genPath(F_APP_ROOT, "Routes");
     if (is_dir($AppRoutesDir)) {
       //* 载入App的路由
-
-      $AppRouteFiles = File::scandir($AppRoutesDir);
+      $AppRouteFiles = File::recursionScanDir($AppRoutesDir);
       if (count($AppRouteFiles)) {
-        foreach ($AppRouteFiles as $FileItem) {
-          if (is_dir(File::genPath($AppRoutesDir, $FileItem))) {
-            continue;
-          }
-          include_once(File::genPath($AppRoutesDir, $FileItem));
-        }
+        $LocaRouteFiles = array_merge($LocaRouteFiles, $AppRouteFiles);
       }
+    }
+    foreach ($LocaRouteFiles as $FileItem) {
+      include_once($FileItem);
+      Router::prefix(null);
     }
 
     return true;
@@ -406,9 +400,11 @@ class App
     }
 
     $endTime = Date::milliseconds();
-    $controllerExecutedResult->addBody([
-      "requiredTime" => $endTime - $this->startTime . "ms"
-    ]);
+    if ($this->request->ajax()) {
+      $controllerExecutedResult->addBody([
+        "requiredTime" => $endTime - $this->startTime . "ms"
+      ]);
+    }
     $controllerExecutedResult->output();
     exit;
   }
