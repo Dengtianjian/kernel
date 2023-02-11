@@ -20,15 +20,26 @@ class ResponsePagination extends Response
    */
   private $total = null;
   /**
+   * 当前页数数据量
+   *
+   * @var integer
+   */
+  private $items = null;
+  /**
    * 响应分页类
    *
    * @param Request $R 请求体
    * @param integer $total 数据总量
+   * @param mixed $data 数据
    */
-  public function __construct(Request $R, $total)
+  public function __construct(Request $R, $total, $data = null)
   {
     $this->request = $R;
     $this->total = $total;
+    $this->ResponseData = $data;
+    if (!is_null($data)) {
+      $this->items = count($data);
+    }
   }
   /**
    * 设置数据总量
@@ -50,6 +61,7 @@ class ResponsePagination extends Response
         "limit" => $this->request->pagination->limit,
         "page" => $this->request->pagination->page,
         "skip" => $this->request->pagination->skip,
+        "items" => $this->items
       ]
     ];
 

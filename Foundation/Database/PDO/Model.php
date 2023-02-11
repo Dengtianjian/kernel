@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Date;
 
@@ -22,6 +23,9 @@ class Model
   {
     if ($tableName) {
       $this->tableName = $tableName;
+    }
+    if (Config::get("database/mysql/prefix")) {
+      $this->tableName = Config::get("database/mysql/prefix") . "_" . $this->tableName;
     }
     $this->query = new Query($this->tableName);
 

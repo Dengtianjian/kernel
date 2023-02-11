@@ -5,17 +5,18 @@ namespace kernel\Service;
 use kernel\Foundation\Database\PDO\DB;
 use kernel\Foundation\Response;
 use kernel\Foundation\Service;
+use kernel\Foundation\Store;
 
 class AuthService extends Service
 {
-  protected static $tableName = "user_logins";
+  protected static $tableName = "logins";
   public static function initTable(string $extraFieldsSql = "")
   {
     $SQL = <<<SQL
   -- ----------------------------
 -- Table structure for user_logins
 -- ----------------------------
-DROP TABLE IF EXISTS `user_logins`;
+DROP TABLE IF EXISTS `logins`;
 CREATE TABLE `user_logins`  (
   `id` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `token` varchar(260) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'token值',
@@ -47,8 +48,17 @@ SQL;
       ...$extraFields
     ]);
     $expirationDate = $nowTime + $expiration;
+    Store::setApp([
+      "auth" => [
+        "value" => $hashString,
+        "token" => $hashString,
+        "expirationDate" => $expirationDate,
+        "expiration" => $expiration
+      ]
+    ]);
     return [
       "value" => $hashString,
+      "token" => $hashString,
       "expirationDate" => $expirationDate,
       "expiration" => $expiration
     ];

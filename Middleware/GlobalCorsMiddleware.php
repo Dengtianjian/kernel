@@ -13,7 +13,8 @@ class GlobalCorsMiddleware
 {
   public function handle($next)
   {
-    $Response = new Response();
+    $Response = $next();
+    // $Response = new Response();
     if ($_SERVER['REQUEST_METHOD'] === "OPTIONS") {
       $Response->null();
       return $Response;
@@ -37,9 +38,9 @@ class GlobalCorsMiddleware
       }
     }
 
-    $Response->header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?: []));
-    $Response->header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?: []));
+    $Response->header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?: ["Authorization"]));
+    $Response->header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?: ["Authorization"]));
     $Response->header("Access-Control-Max-Age", Config::get("cors/maxAge") ?: 86400);
-    return $next();
+    return $Response;
   }
 }

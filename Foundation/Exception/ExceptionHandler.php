@@ -60,7 +60,7 @@ class ExceptionHandler
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");
         } else {
-          $Response->error($statusCode, $errorCode, $message, null, $errorDetails ?: [
+          $Response->error($statusCode, $errorCode, $message, $errorDetails ?: [
             "code" => $code,
             "message" => $message,
             "file" => $file,

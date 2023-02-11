@@ -14,7 +14,7 @@ if (file_exists("./vendor/autoload.php")) {
   include_once("./vendor/autoload.php");
 }
 
-$App = new App("kernel");
+// $App = new App("kernel");
 // $App = new DiscuzXApp("kernel");
 // $App->setMiddlware(GlobalWechatOfficialAccountMiddleware::class);
-$App->run();
+// $App->run();
