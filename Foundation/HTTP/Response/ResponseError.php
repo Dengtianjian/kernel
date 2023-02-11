@@ -17,7 +17,7 @@ class ResponseError extends Response
    * @param array $details 响应详情，主要针对报错
    * @inherits Response
    */
-  public function __construct($statusCode, $code = 500, $message = "error", $data = [], $details = [])
+  public function __construct($statusCode, $code = 500, $message = "error", $details = [], $data = [])
   {
     $this->error = true;
     $this->ResponseStatusCode = $statusCode;

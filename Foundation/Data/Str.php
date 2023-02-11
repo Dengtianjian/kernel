@@ -68,11 +68,11 @@ class Str
    * @param integer $max 可选的、返回的最大值（默认：mt_getrandmax()）
    * @return integer
    */
-  static function generateRandomNumbers($min = 0, $max)
+  static function generateRandomNumbers($min = 0, $max = 100)
   {
     list($usec, $sec) = explode(' ', microtime());
     $seed = $sec + $usec * 1000000;
     mt_srand($seed);
-    return mt_rand($min, $max);
+    return random_int($min, $max);
   }
 }

@@ -30,6 +30,7 @@ class App
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
   public $DBStaticClass = null; //*数据库DB静态类
+  private $startTime = null; //* 开始时间戳
   private function __clone()
   {
   }
@@ -39,6 +40,7 @@ class App
   }
   function __construct(string $AppId, string $KernelId = "kernel")
   {
+    $this->startTime = Date::milliseconds();
     $this->AppId = $AppId;
     $this->KernelId = $KernelId;
     //* 定义常量
@@ -46,6 +48,9 @@ class App
 
     //* 初始化配置
     $this->initConfig();
+
+    //* 全局状态存储
+    $GLOBALS['_STORE'] = [];
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
@@ -105,7 +110,7 @@ class App
     /**
      * 当前运行的项目APP根目录，绝对路径
      */
-    define("F_APP_ROOT", dirname(__DIR__, 1));
+    define("F_APP_ROOT", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $this->AppId);
     /**
      * 当前运行的项目Data目录，绝对路径
      */
@@ -273,15 +278,13 @@ class App
       "params" => $executeParams
     ]);
   }
-  private $executedMiddlewareErrorResponse = null;
   private function executeMiddleware($Middlewares, Controller $Controller, \Closure $callback)
   {
     if (!count($Middlewares) === 0) return $callback();
 
     $middleware = array_shift($Middlewares);
     $params = $middleware['params'] ?: [];
-    array_unshift($params, $this->request);
-    array_unshift($params, $Controller);
+    array_unshift($params, $this->request, $Controller);
     if (count($Middlewares) === 0) {
       array_unshift($params, $callback);
     } else {
@@ -290,15 +293,11 @@ class App
       });
     }
 
-
     if (is_callable($middleware['target'])) {
       $executedResponse = $middleware['target'](...$params);
     } else {
       $MInstance = new $middleware['target']($this->request, $Controller);
       $executedResponse = $MInstance->handle(...$params);
-    }
-    if ($executedResponse->error && is_null($this->executedMiddlewareErrorResponse)) {
-      $this->executedMiddlewareErrorResponse = $executedResponse;
     }
 
     return $executedResponse;
@@ -341,9 +340,13 @@ class App
       $callTarget = $Route['controller'];
     } else {
       $Controller = new $Route['controller']($this->request);
+      $ControllerHandleMethodName = is_null($Route['controllerHandleMethodName']) ? 'data' : $Route['controllerHandleMethodName'];
+      if (!method_exists($Controller, $ControllerHandleMethodName)) {
+        throw new Exception("控制器缺少 $ControllerHandleMethodName 方法");
+      }
       $callTarget = [
         $Controller,
-        "data"
+        $ControllerHandleMethodName
       ];
     }
     $callParams = array_merge([$this->request], $Route['params'] ?: []);
@@ -360,6 +363,14 @@ class App
             throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
           } else {
             throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
+          }
+        }
+
+        if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
+          $response = new Response($response);
+          if (!$this->request->ajax()) {
+            $response->text();
+            $response->addBody($response->getData(), true);
           }
         }
 
@@ -389,6 +400,10 @@ class App
       $Controller->completed();
     }
 
+    $endTime = Date::milliseconds();
+    $controllerExecutedResult->addBody([
+      "requiredTime" => $endTime - $this->startTime . "ms"
+    ]);
     $controllerExecutedResult->output();
     exit;
   }

@@ -11,13 +11,13 @@ class RequestPagination
    *
    * @var int
    */
-  public $page = null;
+  public $page = 1;
   /**
    * 每页条数
    *
    * @var int
    */
-  public $limit = null;
+  public $limit = 10;
   /**
    * 查询时跳过前面指定条数的记录
    *
