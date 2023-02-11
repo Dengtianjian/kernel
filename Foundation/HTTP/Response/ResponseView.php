@@ -21,28 +21,33 @@ class ResponseView extends Response
    * @param array $viewData 渲染的数据
    * @param string $viewFileBaseDir 视图文件所在的目录，相对于根目录
    * @param string $templateId 模板ID，用于缓存模板
+   * @param string $viewFileDir 视图文件根目录，默认是基于F_APP_ROOT的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    */
-  public function __construct($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page")
+  public function __construct($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page", $viewFileDir = null)
   {
-    $this->page($viewFile, $viewData, $viewFileBaseDir, $templateId);
+    $this->page($viewFile, $viewData, $viewFileBaseDir, $templateId, $viewFileDir);
   }
   /**
    * 渲染页面
    *
    * @param string $viewFile 渲染的视图文件，相对于$viewFileBaseDir目录
    * @param array $viewData 渲染的数据
-   * @param string $viewFileBaseDir 视图文件所在的目录，相对于根目录
+   * @param string $viewFileBaseDir 视图文件所在的目录，相对于当前项目的根目录
    * @param string $templateId 模板ID，用于缓存模板
+   * @param string $viewFileDir 视图文件根目录，默认是基于F_APP_ROOT的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    * @return ResponseView
    */
-  public function page($viewFile, $viewData, $viewFileBaseDir = "Views", $templateId = "page")
+  public function page($viewFile, $viewData, $viewFileDirBaseProject = "Views", $templateId = "page", $viewFileDir = null)
   {
-    $this->viewFilePath = File::genPath(F_APP_ROOT, $viewFileBaseDir, $viewFile . ".php");
+    if (!$viewFileDir) {
+      $viewFileDir = F_APP_ROOT;
+    }
+    $this->viewFilePath = File::genPath($viewFileDir, $viewFileDirBaseProject, $viewFile . ".php");
     if (!file_exists($this->viewFilePath)) {
-      throw new Exception("模板文件不存在", 500);
+      throw new Exception("模板文件不存在", 500, 500, $this->viewFilePath);
     }
     $this->templateId = $templateId;
-    $this->viewFileBaseDir = $viewFileBaseDir;
+    $this->viewFileBaseDir = $viewFileDirBaseProject;
 
     $this->ResponseData = $viewData;
 
