@@ -35,7 +35,7 @@ use kernel\Foundation\Output;
     </p>
     <p>
       Trace:
-    <pre><? Output::print(implode("\n", $traceString)) ?></pre>
+    <pre><? Output::printContent(implode("\n", $traceString)) ?></pre>
     </p>
   </section>
 </body>
