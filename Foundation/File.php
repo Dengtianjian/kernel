@@ -270,9 +270,13 @@ class File
    */
   public static function scandir($targetPath, $sorting_order = 0, $context = null)
   {
-    $dirs = scandir($targetPath, $sorting_order, $context);
+    if ($context !== null) {
+      $dirs = scandir($targetPath, $sorting_order, $context);
+    } else {
+      $dirs = scandir($targetPath, $sorting_order);
+    }
     if (!$dirs) return false;
-    return array_values(array_filter(scandir($targetPath, $sorting_order, $context), function ($item) {
+    return array_values(array_filter($dirs, function ($item) {
       return !in_array($item, [".", ".."]);
     }));
   }
