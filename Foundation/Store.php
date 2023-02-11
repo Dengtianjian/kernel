@@ -93,6 +93,7 @@ class Store
       if (isset($last[$pathItem])) {
         $last = $last[$pathItem];
       } else {
+        $last = null;
         break;
       }
     }

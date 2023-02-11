@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use isdtjBackend\Controller\Links\Link\GetLinkController;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Network\Curl;
 
@@ -43,6 +45,12 @@ class Router
    * @var array
    */
   private static $Prefix = [];
+  /**
+   * same方法执行时记录的相同URI
+   *
+   * @var string
+   */
+  private static $sameURI = null;
   /**
    * 设置路由前缀
    *
@@ -89,6 +97,20 @@ class Router
 
     return new static;
   }
+  /**
+   * 注册同一URI不同方法的路由
+   *
+   * @param string $URI URI
+   * @param \Closure $callback 注册不同方法路由的回调函数
+   * @return Router
+   */
+  static function same($URI, \Closure $callback)
+  {
+    self::$sameURI = $URI;
+    $callback();
+    self::$sameURI = null;
+    return new static;
+  }
 
   /**
    * 注册路由
@@ -96,12 +118,22 @@ class Router
    * @param string $type 路由类型
    * @param string $method 请求的方法
    * @param string $URI 路由的URI
-   * @param object $controller 命中后执行的控制器
+   * @param Controller|array $controller 命中后执行的控制器
    * @param array $middlewares 路由的中间件
    * @return Router
    */
   static function register($type, $method, $URI, $controller, $middlewares = [])
   {
+    $handleMethodName = null;
+    if ((is_array($URI) || class_exists($URI)) && is_null($controller)) {
+      if (is_array($URI)) {
+        $controller = $URI[0];
+        $handleMethodName = isset($URI[1]) ? $URI[1] : "data";
+      } else {
+        $controller = $URI;
+      }
+      $URI = self::$sameURI;
+    }
     if (!is_array($middlewares)) {
       if (empty($middlewares)) {
         $middlewares = [];
@@ -114,6 +146,11 @@ class Router
         array_unshift($middlewares, $middleware);
       }
     }
+    if (is_array($controller)) {
+      $controllerClass = $controller[0];
+      $handleMethodName = isset($controller[1]) ? $controller[1] : "data";
+      $controller = $controllerClass;
+    }
 
     $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $Params);
     if ($HasParamsRoute) {
@@ -123,6 +160,10 @@ class Router
           array_unshift($URIParts, $prefix);
         }
       }
+      $URIParts = array_filter($URIParts, function ($item) {
+        if (empty(trim($item))) return false;
+        return true;
+      });
 
       $patterns = [];
       $Params = [];
@@ -175,7 +216,8 @@ class Router
         "method" => $method,
         "controller" => $controller,
         "middlewares" => $middlewares,
-        "params" => $Params
+        "params" => $Params,
+        "controllerHandleMethodName" => $handleMethodName
       ];
     } else {
       if (count(self::$Prefix)) {
@@ -194,44 +236,109 @@ class Router
         "method" => $method,
         "controller" => $controller,
         "middlewares" => $middlewares,
-        "params" => []
+        "params" => [],
+        "controllerHandleMethodName" => $handleMethodName
       ];
     }
 
     return new static;
   }
 
-  static function get($URI, $controller, $middlewares = [])
+  /**
+   * 注册get方法的路由
+   *
+   * @param string|Controller $URI URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function get($URI, $controller = null, $middlewares = [])
   {
     return self::register("common", "get", $URI, $controller, $middlewares);
   }
-  static function post($URI, $controller, $middlewares = [])
+  /**
+   * 注册post方法的路由
+   *
+   * @param string|Controller $URI URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function post($URI, $controller = null, $middlewares = [])
   {
     return self::register("common", "post", $URI, $controller, $middlewares);
   }
-  static function put($URI, $controller, $middlewares = [])
+  /**
+   * 注册put方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function put($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("common", "put", $URI, $controller, $middlewares);
+    return self::register("common", "put", $URIorController, $controller, $middlewares);
   }
-  static function patch($URI, $controller, $middlewares = [])
+  /**
+   * 注册patch方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function patch($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("common", "patch", $URI, $controller, $middlewares);
+    return self::register("common", "patch", $URIorController, $controller, $middlewares);
   }
-  static function delete($URI, $controller, $middlewares = [])
+  /**
+   * 注册delete方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function delete($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("common", "delete", $URI, $controller, $middlewares);
+    return self::register("common", "delete", $URIorController, $controller, $middlewares);
   }
-  static function options($URI, $controller, $middlewares = [])
+  /**
+   * 注册options方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function options($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("common", "options", $URI, $controller, $middlewares);
+    return self::register("common", "options", $URIorController, $controller, $middlewares);
   }
-  static function async($URI, $controller, $middlewares = [])
+  /**
+   * 注册async方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function async($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("async", "async", $URI, $controller, $middlewares);
+    return self::register("async", "async", $URIorController, $controller, $middlewares);
   }
-  static function any($URI, $controller, $middlewares = [])
+  /**
+   * 注册any方法的路由
+   *
+   * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
+   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param array $middlewares 路由中间件
+   * @return Router
+   */
+  static function any($URIorController, $controller = null, $middlewares = [])
   {
-    return self::register("any", "any", $URI, $controller, $middlewares);
+    return self::register("any", "any", $URIorController, $controller, $middlewares);
   }
 
   /**
@@ -243,7 +350,7 @@ class Router
    * @param array $data 发送的数据
    * @param array $headers 请求头
    * @param integer $timeout 请求超时时长
-   * @return Router
+   * @return mixed
    */
   static function dispatch($URI, $data = [], $headers = [], $timeout = 1)
   {

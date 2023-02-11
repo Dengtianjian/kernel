@@ -24,4 +24,39 @@ use kernel\Middleware\RouteTestMiddleware;
 // Router::get("/downloadAttachment", Attachment\DownloadAttachmentController::class);
 // Router::get("/thumbnail", Attachment\GetImageThumbnailViewController::class);
 
-Router::get("/",TestController::class);
+//* 测试专用
+// if (Config::get("mode") === "development") {
+//   Router::any("/test", TestController::class);
+// }
+
+// Router::prefix("aa");
+// Router::get("/user/{username:\w+}", function () {
+//   return [1];
+// }, [
+// function ($next, Request $R) {
+//   print_r("r1");
+//   print_r($next());
+//   print_r("r2");
+// },
+// RouteTestMiddleware::class
+// ]);
+// Router::get("user/{username:\w+}", TestController::class, [
+  // function ($next, Request $R) {
+  //   print_r("r1");
+  //   return $next();
+  //   print_r("r2");
+  // },
+  // RouteTestMiddleware::class
+// ]);
+// Router::group("group", function () {
+//   Router::prefix("{age?:\d+}")::get("user/{username:\w+}/{?:\d+}", TestController::class, [
+//     function ($next, Request $R) {
+//       print_r("r1");
+//       $next();
+//       print_r("r2");
+//     },
+//     RouteTestMiddleware::class
+//   ]);
+// }, function () {
+//   print_r("r0");
+// });

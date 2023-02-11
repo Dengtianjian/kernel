@@ -115,6 +115,7 @@ class GlobalAuthMiddleware extends Middleware
     Store::setApp([
       "auth" => $token
     ]);
+    return $RR;
   }
   public function handle(\Closure $next, Request $request, $Controller = null)
   {
@@ -131,7 +132,7 @@ class GlobalAuthMiddleware extends Middleware
 
     if ($Controller->Admin) {
       $adminChecked = true;
-      $Verified = $this->verifyToken($request, true);
+      $Verified = $this->verifyToken($request);
       if ($Verified->error) {
         return $Verified;
       }
@@ -142,7 +143,7 @@ class GlobalAuthMiddleware extends Middleware
     }
     if (!$adminChecked && $Controller->Auth) {
       $authChecked = true;
-      $Verified = $this->verifyToken($request, true);
+      $Verified = $this->verifyToken($request);
       if ($Verified->error) {
         return $Verified;
       }
@@ -152,12 +153,17 @@ class GlobalAuthMiddleware extends Middleware
       }
     }
     if (!$authChecked) {
-      $Verified = $this->verifyToken($request, true);
+      $Verified = $this->verifyToken($request, false);
       if ($Verified->error) {
         return $Verified;
       }
     }
 
-    return $next();
+    $res = $next();
+    if (Store::getApp("auth")) {
+      header("Authorization:" . Store::getApp("auth")['token'] . "/" . Store::getApp("auth")['expiration'], true);
+    }
+
+    return $res;
   }
 }

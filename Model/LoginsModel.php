@@ -11,7 +11,7 @@ if (!defined("F_KERNEL")) {
 
 class LoginsModel extends Model
 {
-  public $tableName = "kernel_logins";
+  public $tableName = "logins";
   public function getByToken($token)
   {
     return $this->where([
