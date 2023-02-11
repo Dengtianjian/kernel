@@ -25,9 +25,9 @@ use kernel\Middleware\RouteTestMiddleware;
 // Router::get("/thumbnail", Attachment\GetImageThumbnailViewController::class);
 
 //* 测试专用
-// if (Config::get("mode") === "development") {
-//   Router::any("/test", TestController::class);
-// }
+if (Config::get("mode") === "development") {
+  Router::any("/", TestController::class);
+}
 
 // Router::prefix("aa");
 // Router::get("/user/{username:\w+}", function () {
