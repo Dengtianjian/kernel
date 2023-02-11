@@ -37,7 +37,13 @@ class App
   {
     return $this->$name;
   }
-  function __construct(string $AppId, string $KernelId = "kernel")
+  /**
+   * 构造App
+   *
+   * @param string $AppId AppId，也是项目文件夹名称
+   * @param string $KernelId 指定kernel所在文件夹名称，也是kernel的ID
+   */
+  function __construct($AppId, $KernelId = "kernel")
   {
     $this->AppId = $AppId;
     $this->KernelId = $KernelId;
@@ -96,7 +102,7 @@ class App
     /**
      * KERNEL的根目录
      */
-    define("F_KERNEL_ROOT", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "kernel");
+    define("F_KERNEL_ROOT", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $this->KernelId);
 
     /**
      * 当前运行的项目APPID，也是项目的文件夹名称。值取自实例化APP时传入的第一个参数
@@ -208,7 +214,6 @@ class App
     $KernelRoutesDir = File::genPath(F_KERNEL_ROOT, "Routes");
     if (is_dir($KernelRoutesDir)) {
       //* 载入kernel路由
-
       $KernelRouteFiles = File::scandir($KernelRoutesDir);
       if (count($KernelRouteFiles)) {
         foreach ($KernelRouteFiles as $FileItem) {
