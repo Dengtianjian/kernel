@@ -29,7 +29,6 @@ class App
   protected $router = null; //* 路由相关
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
-  public $DBStaticClass = null; //*数据库DB静态类
   private $startTime = null; //* 开始时间戳
   private function __clone()
   {
@@ -68,22 +67,7 @@ class App
     //* 载入路由
     $this->loadRoutes();
 
-    //* 设置默认的数据库静态类
-    $this->DBStaticClass = DB::class;
-
     $this->request = new Request();
-  }
-  /**
-   * 设置数据库静态类
-   * 主要用于模型调用
-   *
-   * @param object $target 数据库静态类
-   * @return App
-   */
-  public function setDB($target)
-  {
-    $this->DBStaticClass = $target;
-    return $this;
   }
   /**
    * 初始化以及定义常量
