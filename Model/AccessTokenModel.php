@@ -6,7 +6,7 @@ use kernel\Foundation\Database\PDO\Model;
 
 class AccessTokenModel extends Model
 {
-  public $tableName = "kernel_access_token";
+  public $tableName = "access_token";
   public static $Timestamps = false;
   public function getPlatformLast($platform)
   {

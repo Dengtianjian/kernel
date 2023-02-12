@@ -14,7 +14,7 @@ if (!defined("F_KERNEL")) {
 
 class ExtensionsModel extends Model
 {
-  public $tableName = "kernel_extensions";
+  public $tableName = "extensions";
   public function getByExtensionId($extensionId)
   {
     return $this->where("extension_id", $extensionId)->getAll();
