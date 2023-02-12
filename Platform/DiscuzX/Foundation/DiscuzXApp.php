@@ -22,7 +22,6 @@ class DiscuzXApp extends App
     } else {
       $this->request->URI = "/";
     }
-    $this->DBStaticClass = DiscuzXDB::class;
 
     //* 异常处理
     \set_exception_handler("kernel\Platform\DiscuzX\Foundation\DiscuzXExceptionHandler::receive");
@@ -51,7 +50,11 @@ class DiscuzXApp extends App
     /**
      * DiscuzX插件目录
      */
-    define("F_DISCUZX_PLUGIN", File::genPath(F_ROOT, "source", "plugin"));
+    define("F_DISCUZX_PLUGIN_ROOT", File::genPath(F_ROOT, "source", "plugin"));
+    /**
+     * DiscuzX插件目录，相对路径
+     */
+    define("F_DISCUZX_PLUGIN", File::genPath("source", "plugin"));
     /**
      * DiscuzX Data目录
      */
@@ -63,7 +66,7 @@ class DiscuzXApp extends App
     /**
      * KERNEL的根目录
      */
-    define("F_KERNEL_ROOT", File::genPath(F_DISCUZX_PLUGIN, $this->KernelId));
+    define("F_KERNEL_ROOT", File::genPath(F_DISCUZX_PLUGIN_ROOT, $this->KernelId));
     /**
      * 当前运行的项目APPID，也是项目的文件夹名称。值取自实例化APP时传入的第一个参数
      */
@@ -71,7 +74,7 @@ class DiscuzXApp extends App
     /**
      * 当前运行的项目APP根目录，绝对路径
      */
-    define("F_APP_ROOT", File::genPath(F_DISCUZX_PLUGIN, $this->AppId));
+    define("F_APP_ROOT", File::genPath(F_DISCUZX_PLUGIN_ROOT, $this->AppId));
     /**
      * 当前运行的项目Data目录，绝对路径
      */
@@ -113,11 +116,11 @@ class DiscuzXApp extends App
     /**
      * 内核目录，相对路径
      */
-    define("F_KERNEL_DIR", $KernelRelativePath);
+    define("F_KERNEL_DIR", File::genPath(F_DISCUZX_PLUGIN, F_KERNEL_ID));
     /**
      * APP目录，相对路径
      */
-    define("F_APP_DIR", $AppRelativePath);
+    define("F_APP_DIR", File::genPath(F_DISCUZX_PLUGIN, F_APP_ID));
 
     global $_G;
     /**
