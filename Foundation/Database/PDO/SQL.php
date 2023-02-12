@@ -18,7 +18,7 @@ class SQL
    * @param boolean $addQuote 是否跳过添加引号
    * @return string[] 优化后的字符串
    */
-  static function addQuote(array $strings, string $quote = "`", bool $addQuote = true)
+  static function addQuote($strings, $quote = "`", $addQuote = true)
   {
     foreach ($strings as &$item) {
       if (empty($item)) {
@@ -160,7 +160,7 @@ class SQL
     }
     return $sql;
   }
-  static function insert(string $tableName, $data, $isReplaceInto = false)
+  static function insert($tableName, $data, $isReplaceInto = false)
   {
     $fields = \array_keys($data);
     $fields = self::addQuote($fields);
@@ -175,7 +175,7 @@ class SQL
     }
     return "$startSql `$tableName`($fields) VALUES($values);";
   }
-  static function batchInsert(string $tableName, $fields, $datas, $isReplaceInto = false)
+  static function batchInsert($tableName, $fields, $datas, $isReplaceInto = false)
   {
     $fields = self::addQuote($fields);
     $fields = \implode(",", $fields);
@@ -191,11 +191,11 @@ class SQL
     }
     return "$startSql `$tableName`($fields) VALUES$valueSql";
   }
-  static function delete(string $tableName, $condition)
+  static function delete($tableName, $condition)
   {
     return "DELETE FROM `$tableName` $condition";
   }
-  static function update(string $tableName, array $data, string $extraStatement = "")
+  static function update($tableName, $data, $extraStatement = "")
   {
     $data = self::addQuote($data, "'", true);
     foreach ($data as $field => &$value) {
@@ -207,13 +207,13 @@ class SQL
     return $sql;
   }
   // BUG 批量更新不应该走batchInsert的replace，应该是多条update
-  static function batchUpdate(string $tableName, array $fields, array $datas, string $extraStatement = "")
+  static function batchUpdate($tableName, $fields, $datas, $extraStatement = "")
   {
     $sql = self::batchInsert($tableName, $fields, $datas, true);
     $sql .= " $extraStatement";
     return $sql;
   }
-  static function select(string $tableName, $fields = "*", $extraStatement = "")
+  static function select($tableName, $fields = "*", $extraStatement = "")
   {
     if (is_array($fields)) {
       $fields = self::addQuote($fields, "`");
@@ -223,11 +223,11 @@ class SQL
     }
     return "SELECT $fields FROM `$tableName` $extraStatement";
   }
-  static function count(string $tableName, $field = "*", $extraStatement = "")
+  static function count($tableName, $field = "*", $extraStatement = "")
   {
     return "SELECT COUNT('$field') FROM `$tableName` $extraStatement";
   }
-  static function exist(string $tableName, $extraStatement = "")
+  static function exist($tableName, $extraStatement = "")
   {
     return "SELECT 1 FROM `$tableName` $extraStatement";
   }

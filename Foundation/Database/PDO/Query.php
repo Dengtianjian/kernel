@@ -8,20 +8,20 @@ if (!defined('F_KERNEL')) {
 
 class Query
 {
-  private string $executeType = "";
-  private array $options = [];
-  private array $conditions = [];
-  public string $tableName = "";
-  public string $sql = "";
-  function __construct(string $tableName)
+  private $executeType = "";
+  private $options = [];
+  private $conditions = [];
+  public $tableName = "";
+  public $sql = "";
+  function __construct($tableName)
   {
     $this->tableName = $tableName;
   }
-  static function ins(string $tableName)
+  static function ins($tableName)
   {
     return new Query($tableName);
   }
-  function generateSql(): string
+  function generateSql()
   {
     $this->sql = $sql = "";
     switch ($this->executeType) {
@@ -74,13 +74,13 @@ class Query
     }
     return $sql;
   }
-  function reset(): void
+  function reset()
   {
     $this->options = [];
     $this->executeType = "";
     $this->conditions = [];
   }
-  function order(string $field, string $by = "ASC")
+  function order($field, $by = "ASC")
   {
     if (!isset($this->options['order'])) {
       $this->options['order'] = [
@@ -97,7 +97,7 @@ class Query
     }
     return $this;
   }
-  function field(array $fieldNames)
+  function field($fieldNames)
   {
     if (!isset($this->options['fields'])) {
       $this->options['fields'] = $fieldNames;
@@ -106,7 +106,7 @@ class Query
     }
     return $this;
   }
-  function limit(int $startOrNumber, int $number = null)
+  function limit($startOrNumber, $number = null)
   {
     $data = [];
     if ($number === null) {
@@ -123,13 +123,13 @@ class Query
 
     return $this;
   }
-  function page(int $page, int $pageLimt = 10)
+  function page($page, $pageLimt = 10)
   {
     $start = $page * $pageLimt - $pageLimt;
     $this->limit($start, $pageLimt);
     return $this;
   }
-  function skip(int $number)
+  function skip($number)
   {
     if ($this->options['limit']) {
       $this->options['limit']['start'] = $number;
@@ -173,7 +173,7 @@ class Query
 
     return $this;
   }
-  function insert(array $data, $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false)
   {
     if ($isReplaceInto) {
       $this->executeType = "replace";
@@ -186,7 +186,7 @@ class Query
     $this->reset();
     return $this;
   }
-  function batchInsert(array $fieldNames, array $values, bool $isReplaceInto = false)
+  function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
     if ($isReplaceInto) {
       $this->executeType = "batchReplace";
@@ -202,7 +202,7 @@ class Query
     $this->reset();
     return $this;
   }
-  function update(array $data)
+  function update($data)
   {
     $this->executeType = "update";
     $this->options['updateData'] = $data;
@@ -210,7 +210,7 @@ class Query
     $this->reset();
     return $this;
   }
-  function batchUpdate(array $fieldNames, array $values)
+  function batchUpdate($fieldNames, $values)
   {
     $this->executeType = "batchUpdate";
     $this->options['batchUpdateData'] = [
@@ -221,7 +221,7 @@ class Query
     $this->reset();
     return $this;
   }
-  function delete(bool $directly = false)
+  function delete($directly = false)
   {
     if ($directly) {
       $this->executeType = "delete";
@@ -256,7 +256,7 @@ class Query
     $this->reset();
     return $this;
   }
-  function sql(): string
+  function sql()
   {
     return $this->sql;
   }
