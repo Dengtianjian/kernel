@@ -55,8 +55,7 @@ class DiscuzXExceptionHandler
       ]);
     }
     if (in_array($code, $DeadlyLevels)) {
-      $ajax = $GLOBALS['App']->request->ajax();
-      if ($ajax) {
+      if ($GLOBALS['App']&&$GLOBALS['App']->request->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");
@@ -82,16 +81,16 @@ class DiscuzXExceptionHandler
         exit;
       }
     }
-    Output::debug([
-      "code" => $code,
-      "message" => $message,
-      "file" => $file,
-      "line" => $line,
-      "trace" => debug_backtrace(),
-      "previous" => $previous,
-      "debug" => 1,
-      "details" => $errorDetails
-    ]);
+    // Output::debug([
+    //   "code" => $code,
+    //   "message" => $message,
+    //   "file" => $file,
+    //   "line" => $line,
+    //   "trace" => debug_backtrace(),
+    //   "previous" => $previous,
+    //   "debug" => 1,
+    //   "details" => $errorDetails
+    // ]);
   }
   /**
    * 接收Exception类的参数

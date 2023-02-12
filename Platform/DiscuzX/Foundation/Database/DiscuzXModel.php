@@ -14,6 +14,9 @@ class DiscuzXModel extends Model
 {
   function __construct($tableName = null)
   {
+    if (!$tableName) {
+      $tableName = $this->tableName;
+    }
     $this->tableName = \DB::table($tableName);
 
     $this->query = new DiscuzXQuery($tableName);
@@ -118,13 +121,13 @@ class DiscuzXModel extends Model
   {
     $sql = $this->query->get()->sql();
     if ($this->returnSql) return $sql;
-    return DiscuzXDB::getAll($this->query);
+    return DiscuzXDB::fetch_all($sql);
   }
   function getOne()
   {
     $sql = $this->query->limit(1)->get()->sql();
     if ($this->returnSql) return $sql;
-    $res = DiscuzXDB::getOne($this->query);
+    $res = DiscuzXDB::fetch_first($sql);
     if (empty($res)) return null;
     return $res;
   }

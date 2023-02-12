@@ -117,7 +117,6 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $adminChecked = false;
     $authChecked = false;
     $verified = null;
-
     if ($Controller->Admin) {
       $adminChecked = true;
       $verified = $this->verify($request, $Controller, "admin", true);
