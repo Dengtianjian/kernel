@@ -8,11 +8,11 @@ use kernel\Middleware\GlobalTestMiddleware;
 use kernel\Middleware\GlobalWechatOfficialAccountMiddleware;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXApp;
 
-// include_once("../kernel/vendor/autoload.php");
+include_once("../kernel/vendor/autoload.php");
 
-// if (file_exists("./vendor/autoload.php")) {
-//   include_once("./vendor/autoload.php");
-// }
+if (file_exists("./vendor/autoload.php")) {
+  include_once("./vendor/autoload.php");
+}
 
 // $App = new App("kernel");
 // $App = new DiscuzXApp("kernel");
