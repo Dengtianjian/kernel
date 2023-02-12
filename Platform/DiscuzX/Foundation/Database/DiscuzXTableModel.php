@@ -1,8 +1,6 @@
 <?php
 
-namespace kernel\Platform\DiscuzX\Foundation;
-
-use kernel\Foundation\Database\PDO\Query;
+namespace kernel\Platform\DiscuzX\Foundation\Database;
 
 class DiscuzXTableModel extends DiscuzXModel
 {
@@ -11,6 +9,6 @@ class DiscuzXTableModel extends DiscuzXModel
     if (!$tableName) $tableName = $this->tableName;
     parent::__construct($tableName);
 
-    $this->query = new Query($tableName);
+    $this->query = new DiscuzXQuery($tableName);
   }
 }

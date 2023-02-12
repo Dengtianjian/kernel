@@ -1,19 +1,25 @@
 <?php
 
-namespace kernel\Platform\DiscuzX\Foundation;
+namespace kernel\Platform\DiscuzX\Foundation\Database;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Database\PDO\Query;
 use kernel\Foundation\Date;
 
 class DiscuzXModel extends Model
 {
+  function __construct($tableName = null)
+  {
+    $this->tableName = \DB::table($tableName);
+
+    $this->query = new DiscuzXQuery($tableName);
+
+    $this->DB = \DB::class;
+  }
   function createTable()
   {
     if (empty($this->tableStructureSQL)) return true;
@@ -49,7 +55,7 @@ class DiscuzXModel extends Model
   {
     return \DB::insert_id();
   }
-  function batchInsert($fieldNames,  $values,  $isReplaceInto = false)
+  function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;

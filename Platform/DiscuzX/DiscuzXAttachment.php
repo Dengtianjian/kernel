@@ -8,10 +8,9 @@ if (!defined("F_KERNEL")) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Database\Model as DatabaseModel;
 use kernel\Foundation\File;
-use kernel\Foundation\Output;
 use kernel\Foundation\Store;
+use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXTableModel;
 
 class DiscuzXAttachment
 {
@@ -102,11 +101,11 @@ class DiscuzXAttachment
     }
 
     foreach ($insertDatas as $tableName => $insertData) {
-      $attachmenModel = new DatabaseModel($tableName);
+      $attachmenModel = new DiscuzXTableModel($tableName);
       $fieldNames = array_keys($insertData[0]);
       $attachmenModel->batchInsert($fieldNames, $insertData);
     }
-    $ForumAttachmentModel = new DatabaseModel("forum_attachment");
+    $ForumAttachmentModel = new DiscuzXTableModel("forum_attachment");
     $ForumAttachmentModel->batchUpdate([
       "aid", "tableid", "uid"
     ], $updateDatas);
@@ -126,13 +125,13 @@ class DiscuzXAttachment
   }
   public static function getAttachment($AttachmentId)
   {
-    $AM = new DatabaseModel("forum_attachment");
+    $AM = new DiscuzXTableModel("forum_attachment");
     $attachment = $AM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
       return null;
     }
     $TableId = $attachment['tableid'];
-    $SAM = new DatabaseModel("forum_attachment_$TableId");
+    $SAM = new DiscuzXTableModel("forum_attachment_$TableId");
     $attachment = $SAM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
       return null;

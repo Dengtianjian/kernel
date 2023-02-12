@@ -5,8 +5,8 @@ namespace kernel\Platform\DiscuzX\Member;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXModel;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXTableModel;
+use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXTableModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');

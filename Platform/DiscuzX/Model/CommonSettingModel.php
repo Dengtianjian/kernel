@@ -2,7 +2,7 @@
 
 namespace kernel\Model\DiscuzX;
 
-use kernel\Platform\DiscuzX\Foundation\DiscuzXModel;
+use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
 class CommonSettingModel extends DiscuzXModel
 {
