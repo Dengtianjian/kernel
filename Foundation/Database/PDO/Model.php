@@ -32,7 +32,7 @@ class Model
 
     $this->query = new Query($this->tableName);
 
-    $this->DB = $GLOBALS['App']->DBStaticClass;
+    $this->DB = DB::class;
   }
   /**
    * 表名添加前缀
