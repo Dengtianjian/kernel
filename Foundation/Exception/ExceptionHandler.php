@@ -81,16 +81,16 @@ class ExceptionHandler
         exit;
       }
     }
-    Output::debug([
-      "code" => $code,
-      "message" => $message,
-      "file" => $file,
-      "line" => $line,
-      "trace" => debug_backtrace(),
-      "previous" => $previous,
-      "debug" => 1,
-      "details" => $errorDetails
-    ]);
+    // Output::debug([
+    //   "code" => $code,
+    //   "message" => $message,
+    //   "file" => $file,
+    //   "line" => $line,
+    //   "trace" => debug_backtrace(),
+    //   "previous" => $previous,
+    //   "debug" => 1,
+    //   "details" => $errorDetails
+    // ]);
   }
   /**
    * 接收Exception类的参数
