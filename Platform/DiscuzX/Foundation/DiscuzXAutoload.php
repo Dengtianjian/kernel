@@ -8,7 +8,11 @@ function loader($className)
   }
   $filePath = DISCUZ_ROOT . "/source/plugin/$className.php";
   if (file_exists($filePath)) {
-    include_once(DISCUZ_ROOT . "/source/plugin/$className.php");
+    include_once($filePath);
+  } else {
+    if (strpos($filePath, "gstudio") !== false && F_APP_MODE === "development") {
+      debug($filePath);
+    }
   }
 }
 spl_autoload_register("loader", true, true);
