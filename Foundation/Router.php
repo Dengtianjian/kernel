@@ -158,7 +158,7 @@ class Router
     $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $Params);
     if ($HasParamsRoute) {
       $URIParts = explode("/", $URI);
-      if (count(self::$Prefix)) {
+      if (!empty(self::$Prefix)) {
         foreach (self::$Prefix as $prefix) {
           array_unshift($URIParts, $prefix);
         }
@@ -223,11 +223,11 @@ class Router
         "controllerHandleMethodName" => $handleMethodName
       ];
     } else {
-      if (count(self::$Prefix)) {
+      if (!empty(self::$Prefix)) {
         $URI = [
           $URI
         ];
-        foreach (self::$Prefix as  $prefix) {
+        foreach (self::$Prefix as $prefix) {
           array_unshift($URI, $prefix);
         }
         $URI = implode("/", $URI);
