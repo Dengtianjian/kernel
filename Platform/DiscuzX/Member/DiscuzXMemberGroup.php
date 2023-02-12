@@ -14,6 +14,7 @@ class DiscuzXMemberGroup
 {
   public static function all()
   {
-    return CommonUserGroupModel::ins()->getAll();
+    $CUGM = new CommonUserGroupModel();
+    return $CUGM->getAll();
   }
 }

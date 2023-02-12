@@ -6,7 +6,6 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
-use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXTableModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -70,7 +69,7 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $CMCM = new DiscuzXTableModel("common_member_count");
+    $CMCM = new DiscuzXModel("common_member_count");
     $memberCredit = $CMCM->where([
       "uid" => $userId
     ])->getOne();
@@ -82,7 +81,7 @@ class DiscuzXMember
     if ($groupId === null) {
       $groupId = \getglobal("member")['groupid'];
     }
-    $CUGM = new DiscuzXTableModel("common_usergroup");
+    $CUGM = new DiscuzXModel("common_usergroup");
     $memberGroup = $CUGM->where([
       "groupid" => $groupId
     ])->getOne();
@@ -93,7 +92,7 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $CMNP = new DiscuzXTableModel("common_member_newprompt");
+    $CMNP = new DiscuzXModel("common_member_newprompt");
     $prompts = $CMNP->where([
       "uid" => $userId
     ])->getAll();
@@ -108,7 +107,7 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $MM = new DiscuzXTableModel("common_member");
+    $MM = new DiscuzXModel("common_member");
     $member = $MM->where([
       "uid" => $userId
     ])->getOne();
