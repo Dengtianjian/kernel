@@ -79,7 +79,7 @@ class DataConversion
    *
    * @return DataConversion
    */
-  public function array()
+  public function arr()
   {
     $this->types = "array";
     return $this;
