@@ -45,25 +45,6 @@ class Iuu
     }
     return $this;
   }
-  public function runInstallSql()
-  {
-    $multipleEncode = Config::get("multipleEncode");
-    $sqlPath =  $this->pluginPath . "/Iuu/Install";
-    if ($multipleEncode) {
-      $sqlPath .= "/" . $this->Charset . ".sql";
-    }
-    if (!\file_exists($sqlPath) || is_dir($sqlPath)) {
-      $sqlPath =  $this->pluginPath . "/Iuu/Install/install.sql";
-    }
-
-    if (!\file_exists($sqlPath)) {
-      return $this;
-    }
-    $sql = \file_get_contents($sqlPath);
-    \runquery($sql);
-
-    return $this;
-  }
   public function upgrade()
   {
     $UpgradeListFile = File::genPath($this->pluginPath, "Iuu", "UpgradeList.php");

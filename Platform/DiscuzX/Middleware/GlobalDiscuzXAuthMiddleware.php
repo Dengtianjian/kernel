@@ -2,20 +2,20 @@
 
 namespace kernel\Platform\DiscuzX\Middleware;
 
-use kernel\Foundation\Config;
-use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Middleware\GlobalAuthMiddleware;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Member\DiscuzXMember;
-use ReflectionMethod;
+use kernel\Platform\DiscuzX\Model\DiscuzXLoginsModel;
 
 class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
 {
+  public function __construct()
+  {
+    $this->LoginsModel = DiscuzXLoginsModel::class;
+  }
   /**
    * 验证视图控制器管理员权限
    *

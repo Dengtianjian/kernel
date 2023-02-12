@@ -14,6 +14,14 @@ use kernel\Foundation\Date;
 
 class DiscuzXModel extends Model
 {
+  function createTable()
+  {
+    if (empty($this->tableStructureSQL)) return true;
+    if (!function_exists("runquery")) {
+      include_once libfile("function/plugin");
+    }
+    return runquery($this->tableStructureSQL);
+  }
   function insert($data, $isReplaceInto = false)
   {
     $Call = get_class($this);

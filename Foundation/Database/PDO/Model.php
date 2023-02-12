@@ -9,6 +9,7 @@ use kernel\Foundation\Date;
 class Model
 {
   public $tableName = "";
+  public $tableStructureSQL = "";
   protected $query;
   protected $returnSql = false;
   protected $DB = null;
@@ -27,16 +28,27 @@ class Model
     if ($tableName) {
       $this->tableName = $tableName;
     }
-    if (Config::get("database/mysql/prefix")) {
-      $prefix = Config::get("database/mysql/prefix");
-      $prefix = str_replace(array_keys($this->prefixReplaces), array_values($this->prefixReplaces), $prefix);
-
-      $this->tableName = $prefix . "_" . $this->tableName;
-    }
+    $this->tableName = $this->prefix($this->tableName);
 
     $this->query = new Query($this->tableName);
 
     $this->DB = $GLOBALS['App']->DBStaticClass;
+  }
+  /**
+   * 表名添加前缀
+   *
+   * @param string $tableName 表名称
+   * @return string 添加前缀后的表名称
+   */
+  public function prefix($tableName)
+  {
+    if (Config::get("database/mysql/prefix")) {
+      $prefix = Config::get("database/mysql/prefix");
+      $prefix = str_replace(array_keys($this->prefixReplaces), array_values($this->prefixReplaces), $prefix);
+
+      $tableName = $prefix . "_" . $tableName;
+    }
+    return $tableName;
   }
   /**
    * 快速实例化

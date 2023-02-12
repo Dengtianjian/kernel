@@ -9,9 +9,14 @@ use kernel\Platform\Wechat\AccessToken;
 
 class GlobalWechatOfficialAccountMiddleware
 {
+  protected $accessTokenModel = null;
+  public function __construct()
+  {
+    $this->accessTokenModel = AccessTokenModel::class;
+  }
   public function handle($next, $R, $params = [])
   {
-    $ATM = new AccessTokenModel();
+    $ATM = new $this->accessTokenModel();
     $AppId = $params['appId'];
     $AppSecret = $params['appSecret'];
     $Platform = "wechatOfficialAccount";

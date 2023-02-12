@@ -2,11 +2,32 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\KernelModel;
+use kernel\Foundation\Database\PDO\Model;
 
-class AccessTokenModel extends KernelModel
+class AccessTokenModel extends Model
 {
   public $tableName = "access_token";
+  public $tableStructureSQL = "";
+  public function __construct()
+  {
+    parent::__construct($this->tableName);
+    $this->tableStructureSQL = <<<SQL
+-- ----------------------------
+-- Table structure for access_token
+-- ----------------------------
+DROP TABLE IF EXISTS `{$this->tableName}`;
+CREATE TABLE `{$this->tableName}`  (
+  `accessToken` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'access_token',
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `platform` enum('wechatOfficialAccount','dingtalk') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '所属第三方平台',
+  `createdAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '创建时间',
+  `expiredAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '过期时间',
+  `expires` varchar(6) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '有效期',
+  `appId` varchar(60) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '第三方平台的appid',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '第三方平台的AccessToken' ROW_FORMAT = Dynamic;
+SQL;
+  }
   public static $Timestamps = false;
   public function getPlatformLast($platform)
   {

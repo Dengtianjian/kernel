@@ -6,25 +6,23 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use Error;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Lang;
-use kernel\Foundation\Output;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware;
 use kernel\Foundation\Response;
 use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Model\LoginsModel;
-use kernel\Platform\Discuzx\Member;
 use kernel\Service\AuthService;
-use LDAP\ResultEntry;
-use ReflectionMethod;
 
 class GlobalAuthMiddleware extends Middleware
 {
+  protected $LoginsModel = null;
+  public function __construct()
+  {
+    $this->LoginsModel = LoginsModel::class;
+  }
   /**
    * 判断当前请求是否同源
    *
@@ -82,7 +80,7 @@ class GlobalAuthMiddleware extends Middleware
       return $RR;
     }
     $token = $token[1];
-    $ULM = new LoginsModel();
+    $ULM = new $this->LoginsModel();
     $token = $ULM->getByToken($token);
     if ($token === null) {
       header("Authorization", "");
