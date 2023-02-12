@@ -133,7 +133,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
     if (!$authChecked && !$adminChecked && !$verified) {
-      $verified = $this->verifyToken($request, true);
+      $verified = $this->verifyToken($request, false);
     }
     if ($verified->error) {
       return $verified;
