@@ -11,9 +11,9 @@ use kernel\Foundation\Store;
 
 class ResponseView extends Response
 {
-  private $viewFilePath = "";
-  private $viewFileBaseDir = "";
-  private $templateId = "";
+  protected $viewFilePath = "";
+  protected $viewFileBaseDir = "";
+  protected $templateId = "";
   /**
    * 响应视图类，构建函数渲染的是页面，相当于调用了page函数
    *
@@ -96,7 +96,7 @@ class ResponseView extends Response
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
     http_response_code($this->ResponseStatusCode);
-    ResponseView::render($this->viewFilePath, $this->ResponseData, $this->templateId);
+    return ResponseView::render($this->viewFilePath, $this->ResponseData, $this->templateId);
     // exit;
   }
   /**
@@ -143,6 +143,7 @@ return function($DataKeys)
   return true;
 };
 PHP;
+
     $fun = eval($CallFunctionCode);
 
     return call_user_func_array($fun, array_values($viewData));
@@ -165,7 +166,7 @@ PHP;
     } else {
       $viewFiles = File::genPath(F_APP_ROOT, $viewFileBaseDir, "$viewFiles.php");
     }
-    return self::render($viewFiles, $viewData, $templateId);
+    return static::render($viewFiles, $viewData, $templateId);
   }
   /**
    * 注入到布局模板内
@@ -180,7 +181,7 @@ PHP;
     Store::remove("__View_LayoutRenderViewFile");
     Store::remove("__View_LayoutRenderViewData");
 
-    return self::render($PageFilePath, $RenderData, "inject");
+    return static::render($PageFilePath, $RenderData, "inject");
   }
   /**
    * 渲染模板组件
@@ -193,6 +194,6 @@ PHP;
    */
   public static function section($viewFiles, $viewData = [], $viewFileBaseDir = "Views", $templateId = "section")
   {
-    return self::renderAppPage($viewFiles, $viewFileBaseDir, $viewData, $templateId);
+    return static::renderAppPage($viewFiles, $viewFileBaseDir, $viewData, $templateId);
   }
 }
