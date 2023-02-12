@@ -2,8 +2,10 @@
 
 namespace kernel\Platform\DiscuzX\Middleware;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\File;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\ReturnResult;
 use kernel\Foundation\Store;
@@ -133,7 +135,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     if (!$authChecked && !$adminChecked && !$verified) {
       $verified = $this->verifyToken($request, true);
     }
-    if (!$verified->error) {
+    if ($verified->error) {
       return $verified;
     }
 
@@ -158,6 +160,6 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       ]);
     }
 
-    $next();
+    return $next();
   }
 }

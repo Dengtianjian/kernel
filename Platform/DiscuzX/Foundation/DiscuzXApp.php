@@ -22,6 +22,7 @@ class DiscuzXApp extends App
     } else {
       $this->request->URI = "/";
     }
+    $this->DBStaticClass = DiscuzXDB::class;
 
     //* 异常处理
     \set_exception_handler("kernel\Platform\DiscuzX\Foundation\DiscuzXExceptionHandler::receive");

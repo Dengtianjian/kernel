@@ -3,8 +3,10 @@
 namespace kernel\Platform\DiscuzX\Member;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXModel;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXTableModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -42,7 +44,7 @@ class DiscuzXMember
     }
 
     if ($loginPerm == 0) {
-      Response::error(403, 403001, "密码错误次数过多，请 15 分钟后重新登录", [
+      return new ResponseError(403, 403001, "密码错误次数过多，请 15 分钟后重新登录", [
         "loginCount" => 0
       ]);
     }
@@ -52,7 +54,7 @@ class DiscuzXMember
       \C::t('common_failedlogin')->update_failed($_G['clientip']);
       failedip();
       $loginCount = $loginperm - 1;
-      Response::error(400, 400001, "登录失败，您还可以尝试 {$loginCount} 次", [
+      return new ResponseError(400, 400001, "登录失败，您还可以尝试 {$loginCount} 次", [
         "loginCount" => $loginCount
       ]);
     }
@@ -68,7 +70,7 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $CMCM = new DiscuzXModel("common_member_count");
+    $CMCM = new DiscuzXTableModel("common_member_count");
     $memberCredit = $CMCM->where([
       "uid" => $userId
     ])->getOne();
@@ -80,7 +82,7 @@ class DiscuzXMember
     if ($groupId === null) {
       $groupId = \getglobal("member")['groupid'];
     }
-    $CUGM = new DiscuzXModel("common_usergroup");
+    $CUGM = new DiscuzXTableModel("common_usergroup");
     $memberGroup = $CUGM->where([
       "groupid" => $groupId
     ])->getOne();
@@ -91,10 +93,10 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $CMNP = new DiscuzXModel("common_member_newprompt");
+    $CMNP = new DiscuzXTableModel("common_member_newprompt");
     $prompts = $CMNP->where([
       "uid" => $userId
-    ])->getOne();
+    ])->getAll();
     foreach ($prompts as &$promptItem) {
       $promptItem = \array_merge($promptItem, \unserialize($promptItem['data']));
       unset($promptItem['data']);
@@ -106,29 +108,26 @@ class DiscuzXMember
     if ($userId === null) {
       $userId = \getglobal("uid");
     }
-    $MM = new DiscuzXModel("common_member");
+    $MM = new DiscuzXTableModel("common_member");
     $member = $MM->where([
       "uid" => $userId
     ])->getOne();
+    if (!$member) return null;
     if ($detailed) {
-      $memberCredit = self::credit($userId);
-      $memberCredit = Arr::indexToAssoc($memberCredit, 'uid');
-      $memberGroupId = $member['groupid'];
-      $memberGroup = self::group($memberGroupId);
-      $memberGroup = Arr::indexToAssoc($memberGroup, "groupid");
-      $memberPrompt = self::newPrompt($userId);
-      $memberPrompt = Arr::indexToAssoc($memberPrompt, "uid");
-      $member['group'] = $memberGroup[$member['groupid']];
-      $member['credit'] = $memberCredit[$member['uid']];
-      $member['prompts'] = $memberPrompt[$member['uid']];
+      $member['group'] = self::group($member['groupid']);
+      $member['credit'] = self::credit($userId);
+      $member['prompts'] = self::newPrompt($userId);
 
       $userForumFields = \C::t("common_member_field_forum")->fetch($userId);
       $member['sightml'] = preg_replace("/<img|img>/", "<span", $userForumFields['sightml']);
 
       \ksort($member);
     }
+
     $member['regdate'] = dgmdate($member['regdate']);
-    $member['avatar'] = avatar($userId, "middle", true);
+    global $_G;
+    $_G['setting']['dynavt'] = 1;
+    $member['avatar'] = \avatar($userId, "middle", true);
 
     return $member;
   }
