@@ -11,7 +11,7 @@ class Query
   private string $executeType = "";
   private array $options = [];
   private array $conditions = [];
-  private string $tableName = "";
+  public string $tableName = "";
   public string $sql = "";
   function __construct(string $tableName)
   {
