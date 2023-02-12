@@ -2,9 +2,9 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\PDO\KernelModel;
 
-class UserLoginsModel extends Model
+class UserLoginsModel extends KernelModel
 {
   public $tableName = "user_logins";
   public function getByToken($token)

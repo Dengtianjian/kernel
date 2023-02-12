@@ -2,14 +2,13 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Output;
+use kernel\Foundation\Database\PDO\KernelModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class LoginsModel extends Model
+class LoginsModel extends KernelModel
 {
   public $tableName = "logins";
   public function getByToken($token)

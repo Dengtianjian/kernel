@@ -2,9 +2,9 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\PDO\KernelModel;
 
-class AccessTokenModel extends Model
+class AccessTokenModel extends KernelModel
 {
   public $tableName = "access_token";
   public static $Timestamps = false;

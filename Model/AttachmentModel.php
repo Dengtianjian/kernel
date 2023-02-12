@@ -2,9 +2,9 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\PDO\KernelModel;
 
-class AttachmentModel extends Model
+class AttachmentModel extends KernelModel
 {
   public $tableName = "attachments";
   public function deleteByFileId(string $fileId)

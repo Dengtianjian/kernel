@@ -2,16 +2,15 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Output;
+use kernel\Foundation\Database\PDO\KernelModel;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class WechatUsersModel extends Model
+class WechatUsersModel extends KernelModel
 {
-  public $tableName = "kernel_wechat_users";
+  public $tableName = "wechat_users";
   public function bound($memberId, $openId)
   {
     return $this->where([
