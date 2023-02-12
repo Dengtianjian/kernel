@@ -9,9 +9,12 @@ use kernel\Foundation\Date;
 class Model
 {
   public $tableName = "";
-  protected Query $query;
+  protected $query;
   protected $returnSql = false;
   protected $DB = null;
+  protected $prefixReplaces = [
+    "{AppId}" => F_APP_ID
+  ];
 
   public static $Timestamps = true;
   public static $CreatedAt = "createdAt";
@@ -19,14 +22,18 @@ class Model
   public static $DeletedAt = "deletedAt";
   public static $TimestampFields = [];
 
-  function __construct(string $tableName = null)
+  function __construct($tableName = null)
   {
     if ($tableName) {
       $this->tableName = $tableName;
     }
     if (Config::get("database/mysql/prefix")) {
-      $this->tableName = Config::get("database/mysql/prefix") . "_" . $this->tableName;
+      $prefix = Config::get("database/mysql/prefix");
+      $prefix = str_replace(array_keys($this->prefixReplaces), array_values($this->prefixReplaces), $prefix);
+
+      $this->tableName = $prefix . "_" . $this->tableName;
     }
+
     $this->query = new Query($this->tableName);
 
     $this->DB = $GLOBALS['App']->DBStaticClass;
@@ -42,7 +49,7 @@ class Model
     $class = get_called_class();
     return new $class($tableName);
   }
-  function order(string $field, string $by = "ASC")
+  function order($field, $by = "ASC")
   {
     $this->query->order($field, $by);
     return $this;
@@ -52,12 +59,12 @@ class Model
     $this->query->field($fieldNames);
     return $this;
   }
-  function limit(int $startOrNumber, int $number = null)
+  function limit($startOrNumber, $number = null)
   {
     $this->query->limit($startOrNumber, $number);
     return $this;
   }
-  function page(int $pages, int $pageLimit = 110)
+  function page($pages, $pageLimit = 110)
   {
     $this->query->page($pages, $pageLimit);
     return $this;
@@ -77,7 +84,7 @@ class Model
     $this->returnSql = $yes;
     return $this;
   }
-  function insert(array $data, bool $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false)
   {
     $Call = get_class($this);
     if ($Call::$Timestamps) {
@@ -97,25 +104,29 @@ class Model
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return $this->DB::query($sql);
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
   function insertId()
   {
-    return $this->DB::insertId();
+    $DB = $this->DB;
+    return $DB::insertId();
   }
-  function batchInsert(array $fieldNames, array $values, bool $isReplaceInto = false)
+  function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
-    return $this->DB::query($sql);
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
-  function update(array $data)
+  function update($data)
   {
     $sql = $this->query->update($data)->sql();
     if ($this->returnSql) return $sql;
-    return $this->DB::query($sql);
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
-  function batchUpdate(array $fieldNames, array $values)
+  function batchUpdate($fieldNames, $values)
   {
     $Call = get_class($this);
     if ($Call::$Timestamps) {
@@ -132,9 +143,10 @@ class Model
     }
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
     if ($this->returnSql) return $sql;
-    return $this->DB::query($sql);
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
-  function delete(bool $directly = false)
+  function delete($directly = false)
   {
     if ($directly) {
       $sql = $this->query->delete()->sql();
@@ -160,23 +172,27 @@ class Model
     }
 
     if ($this->returnSql) return $sql;
-    return $this->DB::query($sql);
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
   function getAll()
   {
     if ($this->returnSql) return $this->query->get()->sql();
-    return $this->DB::getAll($this->query);
+    $DB = $this->DB;
+    return $DB::getAll($this->query);
   }
   function getOne()
   {
     if ($this->returnSql) return $this->query->limit(1)->get()->sql();
-    return $this->DB::getOne($this->query);
+    $DB = $this->DB;
+    return $DB::getOne($this->query);
   }
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
     if ($this->returnSql) return $sql;
-    $countResult = $this->DB::query($sql);
+    $DB = $this->DB;
+    $countResult = $DB::query($sql);
     if (!empty($countResult)) {
       return (int)$countResult['0']["COUNT('$field')"];
     }
@@ -191,7 +207,8 @@ class Model
   {
     $sql = $this->query->exist()->sql();
     if ($this->returnSql) return $sql;
-    $exist = $this->DB::query($sql);
+    $DB = $this->DB;
+    $exist = $DB::query($sql);
     if (empty($exist)) {
       return 0;
     }
