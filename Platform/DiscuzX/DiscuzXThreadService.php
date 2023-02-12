@@ -6,7 +6,7 @@ if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class DiscuzXThreadService
+class DiscuzXThread
 {
   static function changeThreadViews($threadId, $newViews)
   {

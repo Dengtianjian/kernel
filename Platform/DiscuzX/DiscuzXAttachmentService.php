@@ -12,7 +12,7 @@ use kernel\Foundation\File;
 use kernel\Foundation\Store;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
-class DiscuzXAttachmentService
+class DiscuzXAttachment
 {
   public static function save($files, $saveDir = "")
   {
