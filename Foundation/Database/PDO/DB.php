@@ -4,8 +4,8 @@ namespace kernel\Foundation\Database\PDO;
 
 class DB
 {
-  private static Driver $db;
-  static function driver(Driver $db): DB
+  private static $db;
+  static function driver($db)
   {
     self::$db = $db;
     return new static;
@@ -26,44 +26,44 @@ class DB
   {
     return self::$db->insertId();
   }
-  static function getOne(Query $query)
+  static function getOne($query)
   {
     $data = self::query($query->limit(1)->get()->sql());
     if (empty($data)) return null;
     return $data[0];
   }
-  static function getAll(Query $query = null)
+  static function getAll($query = null)
   {
     $data = self::query($query->get()->sql());
     if (empty($data)) return [];
     return $data;
   }
-  static function insert(Query $query = null)
+  static function insert($query = null)
   {
     self::query($query->sql());
     return self::insertId();
   }
-  static function batchInsert(Query $query)
+  static function batchInsert($query)
   {
     return self::query($query->sql());
   }
-  static function update(Query $query)
+  static function update($query)
   {
     return self::query($query->sql());
   }
-  static function batchUpdate(Query $query)
+  static function batchUpdate($query)
   {
     return self::query($query->sql());
   }
-  static function delete(Query $query)
+  static function delete($query)
   {
     return self::query($query->sql());
   }
-  static function count(Query $query)
+  static function count($query)
   {
     return self::query($query->sql());
   }
-  static function exist(Query $query)
+  static function exist($query)
   {
     $queryResult = self::query($query->exist()->sql());
     if (empty($queryResult)) {
