@@ -26,7 +26,7 @@ class DiscuzXDB extends \DB
   }
   static function count($query)
   {
-    return self::query($query->sql());
+    return self::result_first($query->sql());
   }
   static function exist($query)
   {
@@ -36,7 +36,7 @@ class DiscuzXDB extends \DB
     }
     return $query[0]["1"];
   }
-  
+
   //* 事务相关
   static function begin()
   {

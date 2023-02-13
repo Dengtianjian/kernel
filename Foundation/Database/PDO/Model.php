@@ -34,6 +34,10 @@ class Model
 
     $this->DB = DB::class;
   }
+  function __clone()
+  {
+    $this->query = clone $this->query;
+  }
   /**
    * 表名添加前缀
    *

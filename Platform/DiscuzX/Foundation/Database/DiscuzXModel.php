@@ -135,7 +135,7 @@ class DiscuzXModel extends Model
   {
     $sql = $this->query->count($field)->sql();
     if ($this->returnSql) return $sql;
-    return (int)DiscuzXDB::count($this->query);
+    return (int)\DB::result_first($sql);
   }
   function genId($prefix = "", $suffix = "")
   {

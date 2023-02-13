@@ -46,7 +46,7 @@ class Controller
    *
    * @var array
    */
-  protected $Pipes = [];
+  protected $pipes = [];
   /**
    * 请求实例
    *
@@ -76,7 +76,7 @@ class Controller
     if (!is_null($this->serializes) || is_array($this->serializes) && count($this->serializes)) {
       $this->serialization();
     }
-    if (!is_null($this->Pipes) && is_array($this->Pipes) && count($this->Pipes)) {
+    if (!is_null($this->pipes) && is_array($this->pipes) && count($this->pipes)) {
       $this->pipe();
     }
   }
@@ -114,7 +114,7 @@ class Controller
       $requestPipes = explode(",", $this->request->query->get("_pipes"));
     }
 
-    $requestPipes = array_intersect($requestPipes, $this->Pipes);
+    $requestPipes = array_intersect($requestPipes, $this->pipes);
     foreach ($requestPipes as $PipeName) {
       if (method_exists($this, $PipeName)) {
         $this->$PipeName();

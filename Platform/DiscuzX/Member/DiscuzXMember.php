@@ -130,4 +130,26 @@ class DiscuzXMember
 
     return $member;
   }
+  public static function getAll($page = 1, $limit = 15, $query = null, $accurateQuery = false)
+  {
+    $CM = new DiscuzXModel("common_member");
+    if ($query) {
+      $userQueryValue = "%" . $query . "%";
+      if ($accurateQuery) {
+        $userQueryValue = $query;
+      }
+      $CM->where("username", $userQueryValue, $accurateQuery ? '=' : "LIKE", "OR");
+      $CM->where("uid", $query, "=");
+    }
+    $CMT = clone $CM;
+    $CM->page($page, $limit);
+    $Members = $CM->getAll();
+    foreach ($Members as &$MemberItem) {
+      $MemberItem['avatar'] = avatar($MemberItem['uid'], "middle", 1);
+    }
+    return [
+      "list" => $Members,
+      "total" => $CMT->count()
+    ];
+  }
 }
