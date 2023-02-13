@@ -15,38 +15,38 @@ class Controller
    *
    * @var array|\kernel\Foundation\Data\DataConversion|ControllerQuery
    */
-  protected $query = null;
+  public $query = null;
   /**
    * 请求体数据转换规则
    * 实例化后该值会变成ControllerBody实例
    *
    * @var array|\kernel\Foundation\Data\DataConversion|ControllerBody
    */
-  protected $body = null;
+  public $body = null;
   /**
    * 查询参数校验器
    *
    * @var array|\kernel\Foundation\Validate\Validator
    */
-  protected $queryValidator = [];
+  public $queryValidator = [];
   /**
    * 请求体数据校验器
    *
    * @var array|\kernel\Foundation\Validate\Validator
    */
-  protected $bodyValidator = [];
+  public $bodyValidator = [];
   /**
    * 响应的数据序列化规则
    *
    * @var array
    */
-  protected $serializes = null;
+  public $serializes = null;
   /**
    * 输出数据处理管道
    *
    * @var array
    */
-  protected $pipes = [];
+  public $pipes = [];
   /**
    * 请求实例
    *
@@ -73,11 +73,11 @@ class Controller
    */
   final function completed()
   {
-    if (!is_null($this->serializes) || is_array($this->serializes) && count($this->serializes)) {
-      $this->serialization();
-    }
     if (!is_null($this->pipes) && is_array($this->pipes) && count($this->pipes)) {
       $this->pipe();
+    }
+    if (!is_null($this->serializes) || is_array($this->serializes) && count($this->serializes)) {
+      $this->serialization();
     }
   }
   /**

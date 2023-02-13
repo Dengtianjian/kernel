@@ -206,7 +206,11 @@ class Router
             array_push($patterns, $ParamPattern);
           }
         } else {
-          array_push($patterns, "/$URIPart");
+          if (count($patterns) === 0) {
+            array_push($patterns, $URIPart);
+          } else {
+            array_push($patterns, "/$URIPart");
+          }
         }
       }
       $pattern = implode("", $patterns);
