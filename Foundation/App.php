@@ -386,7 +386,8 @@ class App
     $endTime = Date::milliseconds();
     if ($this->request->ajax()) {
       $controllerExecutedResult->addBody([
-        "requiredTime" => $endTime - $this->startTime . "ms"
+        "requiredTime" => $endTime - $this->startTime . "ms",
+        "version" => Config::get("version")
       ]);
     }
     $controllerExecutedResult->output();
