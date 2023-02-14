@@ -416,6 +416,9 @@ class Router
     $Method = $request->method;
     $URI = $request->URI;
     $matchRoute = null;
+    if ($URI[0] === "/") {
+      $URI = substr($URI, 1);
+    }
 
     //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
     if (isset(self::$StaticRoutes['common'][$Method][$URI]) && isset(self::$StaticRoutes['common'][$Method])) {
