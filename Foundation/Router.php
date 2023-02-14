@@ -416,7 +416,7 @@ class Router
     $Method = $request->method;
     $URI = $request->URI;
     $matchRoute = null;
-    if ($URI[0] === "/") {
+    if (strlen($URI) > 1 && $URI[0] === "/") {
       $URI = substr($URI, 1);
     }
 
