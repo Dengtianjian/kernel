@@ -150,7 +150,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
         $memberInfo = DiscuzXMember::get(0);
       }
       Store::setApp([
-        "member" => $memberInfo
+        "member" => $memberInfo,
       ]);
     } else {
       $memberInfo = DiscuzXMember::get(getglobal("uid"));

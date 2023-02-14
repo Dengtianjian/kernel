@@ -116,7 +116,8 @@ class GlobalAuthMiddleware extends Middleware
     }
 
     Store::setApp([
-      "auth" => $token
+      "auth" => $token,
+      "logged" => true
     ]);
     return $RR;
   }
@@ -163,7 +164,7 @@ class GlobalAuthMiddleware extends Middleware
     }
 
     $res = $next();
-    if (Store::getApp("auth")) {
+    if (Store::getApp("logged")) {
       header("Authorization:" . Store::getApp("auth")['token'] . "/" . Store::getApp("auth")['expiration'], true);
     }
 

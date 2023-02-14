@@ -9,7 +9,7 @@ use kernel\Foundation\Store;
 
 class AuthService extends Service
 {
-  static function generateToken(string $userId, array $tokenSalt = [], int $expiration = 30, array $extraFields = []): array
+  static function generateToken($userId, $tokenSalt = [], $expiration = 30)
   {
     array_push($tokenSalt, $userId);
     $hashString = time() . ":" . implode(":", $tokenSalt);
