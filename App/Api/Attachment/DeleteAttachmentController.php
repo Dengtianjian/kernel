@@ -3,11 +3,8 @@
 namespace kernel\App\Api\Attachment;
 
 use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Request;
-use kernel\Foundation\Response;
-use kernel\Foundation\Data\Str;
+use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Model\AttachmentModel;
-use kernel\Service\AttachmentService;
 
 class DeleteAttachmentController extends Controller
 {
@@ -21,7 +18,7 @@ class DeleteAttachmentController extends Controller
     $attachmentId = $this->body['id'];
     if (!$fileId) {
       if (!$attachmentId) {
-        Response::error(400, "GetAttachment:400001", "附件不存在");
+        return new ResponseError(400, "GetAttachment:400001", "附件不存在");
       }
     }
 

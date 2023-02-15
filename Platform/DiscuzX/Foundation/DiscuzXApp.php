@@ -4,6 +4,7 @@ namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
 use kernel\Foundation\File;
+use kernel\Platform\DiscuzX\DiscuzXAttachment;
 use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMiddleware;
 use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMultipleEncodeMiddleware;
 
@@ -22,6 +23,8 @@ class DiscuzXApp extends App
     } else {
       $this->request->URI = "/";
     }
+
+    DiscuzXAttachment::registerRoute();
 
     //* 异常处理
     \set_exception_handler("kernel\Platform\DiscuzX\Foundation\DiscuzXExceptionHandler::receive");

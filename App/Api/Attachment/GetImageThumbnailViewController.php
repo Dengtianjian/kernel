@@ -2,11 +2,8 @@
 
 namespace kernel\App\Api\Attachment;
 
-use kernel\Foundation\Controller;
-use kernel\Foundation\File;
-use kernel\Foundation\Output;
-use kernel\Foundation\Request;
-use kernel\Foundation\Response;
+use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\HTTP\Request;
 
 class GetImageThumbnailViewController extends Controller
 {
@@ -41,7 +38,7 @@ class GetImageThumbnailViewController extends Controller
         $sourceImage = imagecreatefromwebp($filePath);
         break;
       default:
-        Response::download($filePath, $attachment['fileName'], $attachment['fileSize']);
+        // Response::download($filePath, $attachment['fileName'], $attachment['fileSize']);
         break;
     }
 
@@ -89,10 +86,8 @@ class GetImageThumbnailViewController extends Controller
     $targetWdith = $this->query['width'] ?: false;
     $targetHeight = $this->query['height'] ?: false;
     $targetRatio = $this->query['ratio'] ?: false;
-    
-    // Response::download($filePath,"a.webp",)
 
-    $fileTag = $R->fileId . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
+    $fileTag = $R->query->get("fileId") . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
     $fileTag = md5($fileTag);
 
     if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {

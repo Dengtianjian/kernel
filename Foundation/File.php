@@ -122,9 +122,12 @@ class File
       }
 
       if (!$saveResult) {
-        throw new Exception("文件保存失败", 500, "FileSave:500001");
+        throw new Exception("文件保存失败", 500, "FileSave:500001", [
+          "saveFullPath" => $saveFullPath,
+          "filePath" => $filePath,
+        ]);
       }
-      $relativePath = str_replace(\F_APP_BASE, "", $savePath);
+      $relativePath = str_replace(\F_APP_ROOT, "", $savePath);
       $fileInfo = [
         "path" => $savePath,
         "extension" => $fileExtension,

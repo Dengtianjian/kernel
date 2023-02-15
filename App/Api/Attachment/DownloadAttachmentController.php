@@ -2,9 +2,9 @@
 
 namespace kernel\App\Api\Attachment;
 
-use kernel\Foundation\Controller;
-use kernel\Foundation\Request;
-use kernel\Foundation\Response;
+use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\HTTP\Response\ResponseDownload;
 
 class DownloadAttachmentController extends Controller
 {
@@ -14,6 +14,6 @@ class DownloadAttachmentController extends Controller
     $attachment = $GetAttachment->data($request);
     $fullPath = F_APP_ROOT . "/" . $attachment['path'] . "/" . $attachment['saveFileName'];
 
-    Response::download($fullPath, $attachment['fileName'], $attachment['fileSize']);
+    return new ResponseDownload($request, $fullPath, $attachment['fileName']);
   }
 }
