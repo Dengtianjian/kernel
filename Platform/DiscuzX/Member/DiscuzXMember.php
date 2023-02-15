@@ -5,6 +5,7 @@ namespace kernel\Platform\DiscuzX\Member;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
+use kernel\Foundation\ReturnResult;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
 if (!defined("F_KERNEL")) {
@@ -18,7 +19,7 @@ class DiscuzXMember
    *
    * @param string $username 会员账号
    * @param string $password 会员密码
-   * @return array 会员信息
+   * @return ReturnResult 会员信息
    */
   static function login($username, $password)
   {
@@ -62,7 +63,7 @@ class DiscuzXMember
 
     uc_user_synlogin($_G['uid']); //* UC同步登录
 
-    return $userLoginResult['member'];
+    return new ReturnResult($userLoginResult['member']);
   }
   public static function credit($userId = null)
   {
