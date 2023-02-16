@@ -32,6 +32,6 @@ class GetSettingsController extends DiscuzXController
     }
     $names = array_merge($names, $adminNames);
 
-    return DiscuzXSettingService::quick()->items(array_unique($names));
+    return DiscuzXSettingService::quick()->items(...array_unique($names));
   }
 }
