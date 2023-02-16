@@ -5,6 +5,7 @@ namespace kernel\Platform\DiscuzX\Foundation;
 use kernel\Foundation\App;
 use kernel\Foundation\File;
 use kernel\Platform\DiscuzX\DiscuzXAttachment;
+use kernel\Platform\DiscuzX\DiscuzXFile;
 use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMiddleware;
 use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMultipleEncodeMiddleware;
 
@@ -25,6 +26,7 @@ class DiscuzXApp extends App
     }
 
     DiscuzXAttachment::registerRoute();
+    DiscuzXFile::registerRoute();
 
     //* 异常处理
     \set_exception_handler("kernel\Platform\DiscuzX\Foundation\DiscuzXExceptionHandler::receive");
@@ -82,6 +84,10 @@ class DiscuzXApp extends App
      * 当前运行的项目Data目录，绝对路径
      */
     define("F_APP_DATA", File::genPath(F_APP_ROOT, "Data"));
+    /**
+     * DiscuzX Data下存放插件数据的目录
+     */
+    define("F_DISCUZX_DATA_PLUGIN", File::genPath(F_ROOT, "data", "plugindata", F_APP_ID));
 
     $KernelRelativePath = "";
     $AppRelativePath = "";
