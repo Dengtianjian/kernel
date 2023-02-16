@@ -71,23 +71,10 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   public function verify(Request $request, $controller, $viewVerifyType, $strongCheck = false)
   {
     //* 如果是同源，那么来源就是视图页面发起的ajax请求，无需token，用verifyViewControllerAdmin和verifyViewControllerAuth去验证
-    $SameOrigin = $this->sameOrigin($request);
-    if ($request->ajax()) {
-      if ($SameOrigin) {
-        if ($viewVerifyType === "admin") {
-          return $this->verifyViewControllerAdmin($controller);
-        } else {
-          return $this->verifyViewControllerAuth($controller);
-        }
-      } else {
-        return $this->verifyToken($request, $strongCheck);
-      }
+    if ($viewVerifyType === "admin") {
+      return $this->verifyViewControllerAdmin($controller);
     } else {
-      if ($viewVerifyType === "admin") {
-        return $this->verifyViewControllerAdmin($controller);
-      } else {
-        return $this->verifyViewControllerAuth($controller);
-      }
+      return $this->verifyViewControllerAuth($controller);
     }
   }
   /**
@@ -114,6 +101,34 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
+    $SameOrigin = $this->sameOrigin($request);
+    if (!$SameOrigin) {
+      $Verified = $this->verifyToken($request);
+      if ($Verified->error) {
+        return $Verified;
+      }
+    }
+
+    $memberInfo = null;
+    if ($request->ajax() && !$SameOrigin) {
+      $Auth = Store::getApp("auth");
+      if ($Auth && isset($Auth['userId'])) {
+        $memberInfo = DiscuzXMember::get($Auth['userId']);
+        include_once libfile("function/member");
+        \setloginstatus($memberInfo, 0);
+      } else {
+        $memberInfo = DiscuzXMember::get(0);
+      }
+      Store::setApp([
+        "member" => $memberInfo,
+      ]);
+    } else {
+      $memberInfo = DiscuzXMember::get(getglobal("uid"));
+      Store::setApp([
+        "member" => $memberInfo
+      ]);
+    }
+
     $adminChecked = false;
     $authChecked = false;
     $verified = null;
@@ -136,27 +151,6 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     }
     if ($verified->error) {
       return $verified;
-    }
-
-    $SameOrigin = $this->sameOrigin($request);
-    $memberInfo = null;
-    if ($request->ajax() && !$SameOrigin) {
-      $Auth = Store::getApp("auth");
-      if ($Auth && isset($Auth['userId'])) {
-        $memberInfo = DiscuzXMember::get($Auth['userId']);
-        include_once libfile("function/member");
-        \setloginstatus($memberInfo, 0);
-      } else {
-        $memberInfo = DiscuzXMember::get(0);
-      }
-      Store::setApp([
-        "member" => $memberInfo,
-      ]);
-    } else {
-      $memberInfo = DiscuzXMember::get(getglobal("uid"));
-      Store::setApp([
-        "member" => $memberInfo
-      ]);
     }
 
     return $next();
