@@ -14,37 +14,37 @@ class ResponseDownload extends Response
    *
    * @var string
    */
-  private $filePath = null;
+  protected $filePath = null;
   /**
    * 下载的文件名称，也就是保存到下载者电脑的文件名称，需要包含文件扩展名
    *
    * @var string
    */
-  private $fileName = null;
+  protected $fileName = null;
   /**
    * 文件大小，字节
    *
    * @var int
    */
-  private $fileSize = null;
+  protected $fileSize = null;
   /**
    * 文件扩展名
    *
    * @var string
    */
-  private $fileExtension = null;
+  protected $fileExtension = null;
   /**
    * 下载速率限制。如果值不为false，即开启了文件下载速率限制，单位是：千字节
    *
    * @var boolean|int
    */
-  private $DownloadRateLimit = false;
+  protected $DownloadRateLimit = false;
   /**
    * 请求体
    *
    * @var Request
    */
-  private $request = null;
+  protected $request = null;
   /**
    * 下载响应
    *
@@ -53,7 +53,7 @@ class ResponseDownload extends Response
    * @param ?string $downloadFileName 下载到下载者设备时保存的文件名
    * @param boolean|int $rateLimit 下载速率限制，如果值不为false，即开启了下载速率，kb/秒，单位是：千字节
    */
-  public function __construct(Request $R, $filePath, $downloadFileName = null, $rateLimit = false)
+  function __construct(Request $R, $filePath, $downloadFileName = null, $rateLimit = false)
   {
     $this->request = $R;
 
@@ -71,7 +71,7 @@ class ResponseDownload extends Response
    * @param boolean $readFile 未开启速率限制时，true就是以readfile函数来读取输出文件，否则是file_get_contents后再echo输出文件内容
    * @return void
    */
-  private function printContent($readFile = false)
+  protected function printContent($readFile = false)
   {
     if ($this->DownloadRateLimit) {
       flush();
