@@ -17,14 +17,6 @@ class AuthService extends Service
     $nowTime = time();
     $expiration = 86400 * $expiration;
     $expirationDate = $nowTime + $expiration;
-    Store::setApp([
-      "auth" => [
-        "value" => $hashString,
-        "token" => $hashString,
-        "expirationDate" => $expirationDate,
-        "expiration" => $expiration
-      ]
-    ]);
     return [
       "value" => $hashString,
       "token" => $hashString,
