@@ -105,10 +105,11 @@ class SettingService
    */
   public function saveItems($settings)
   {
-    $values = array_values($settings);
-    foreach ($values as &$item) {
-      $item = serialize($item);
+    foreach ($settings as $name => $value) {
+      $this->settingModel->where("name", $name)->update([
+        "value" => serialize($value)
+      ]);
     }
-    return $this->settingModel->batchUpdate(array_keys($settings), $values);
+    return true;
   }
 }
