@@ -86,4 +86,17 @@ class ReturnResult extends Response
   {
     throw new Exception($this->ResponseMessage, $this->ResponseStatusCode, $this->ResponseCode, $this->ResponseDetails);
   }
+  /**
+   * 获取响应数据
+   *
+   * @param string $key 指定键的数据，不传即返回全部
+   * @return mixed
+   */
+  public function getData($key = null)
+  {
+    if ($key) {
+      return $this->ResponseData[$key];
+    }
+    return $this->ResponseData;
+  }
 }
