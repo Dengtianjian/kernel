@@ -12,58 +12,28 @@ if (!defined('F_KERNEL')) {
 class File
 {
   /**
-   * 判断文件是不是视频文件
+   * 判断指定的文件是不是视频文件，该文件必须存在
    *
-   * @param string $fileName 文件路径(包含文件名和扩展名) root/path/show.mp4
-   * @param array|string $extensions? 校验的扩展名。如果传入了就会校验文件是否是指定的扩展名
+   * @param string $fileName 文件路径(包含文件名和扩展名) root/path/show.mp4名
    * @return boolean 是视频返回true，否则返回false
    */
-  public static function isVideo($fileName, $extensions = null)
+  public static function isVideo($fileName)
   {
-    if ($extensions === null) {
-      $extensions = ["mp4"];
-    }
-    $fileExtension = \pathinfo($fileName, \PATHINFO_EXTENSION);
-    if (is_array($extensions)) {
-      return \in_array($fileExtension, $extensions);
-    } else {
-      $extensions = \strtolower($extensions);
-      return \strpos($fileName, $extensions) !== false;
-    }
+    $Mine = mime_content_type("a.mp4");
+    if (!$Mine) return false;
+    return explode("/", $Mine)[0] === "video";
   }
   /**
-   * 判断文件是否是图片文件
+   * 判断指定的文件是否是图片文件，该文件必须存在
    *
    * @param string $fileName 文件路径(包含文件名和扩展名) root/path/image.png
-   * @param array|string $extensions? 校验的扩展名。如果传入了就会校验文件是否是指定的扩展名
    * @return boolean 是图片返回true，否则返回false
    */
-  public static function isImage($fileName, $extensions = null)
+  public static function isImage($fileName)
   {
-    if ($extensions !== null) {
-      $fileExtension = \pathinfo($fileName, \PATHINFO_EXTENSION);
-      if (is_array($extensions)) {
-        return \in_array($fileExtension, $extensions);
-      } else {
-        $fileExtension = \strtolower($fileExtension);
-        return \strpos($fileName, $fileExtension) !== false;
-      }
-    } else {
-      if (!file_exists($fileName)) return false;
-
-      if (\function_exists("exif_imagetype")) {
-        $info = \exif_imagetype($fileName);
-        if ($info === false) {
-          return false;
-        }
-      } else {
-        $info = @\getimagesize($fileName);
-        if (!$info) {
-          return false;
-        }
-      }
-      return true;
-    }
+    $Mine = mime_content_type($fileName);
+    if (!$Mine) return false;
+    return explode("/", $Mine)[0] === "image";
   }
   /**
    * 上传文件，并且保存在服务器
