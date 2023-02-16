@@ -37,13 +37,13 @@ class SettingService
    */
   public function items(...$names)
   {
-    $SettingsData = $this->settingModel->items($names);
+    $SettingsData = $this->settingModel->where("name", $names)->getAll();
     $Settings = [];
     foreach ($SettingsData as $item) {
       if ($item['value']) {
-        $Settings['name'] = unserialize($item['value']);
+        $Settings[$item['name']] = unserialize($item['value']);
       } else {
-        $Settings['name'] = null;
+        $Settings[$item['name']] = null;
       }
     }
     return $Settings;
