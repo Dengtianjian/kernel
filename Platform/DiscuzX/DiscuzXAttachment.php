@@ -72,38 +72,6 @@ class DiscuzXAttachment
     return $R;
   }
   /**
-   * aidcode解码
-   *
-   * @param string $code 附件码
-   * @return array
-   */
-  public static function aidDecode($code)
-  {
-    $code = base64_decode(rawurldecode($code));
-    list($aid, $hash, $timestamp, $uid, $tid, $savePath) = explode("|", $code);
-    return [
-      "aid" => $aid,
-      "hash" => $hash,
-      "timestamp" => $timestamp,
-      "uid" => $uid,
-      "tid" => $tid,
-      "savePath" => $savePath,
-    ];
-  }
-  /**
-   * aidcode编码
-   *
-   * @param string $code 附件码
-   * @return array
-   */
-  public static function aidEncode($aid, $dir = "plugindata", $type = 0, $tid = 0)
-  {
-    global $_G;
-    $s = !$type ? $aid . '|' . substr(md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP . $_G['uid']), 0, 8) . '|' . TIMESTAMP . '|' . $_G['uid'] . '|' . $tid : $aid . '|' . md5($aid . md5($_G['config']['security']['authkey']) . TIMESTAMP) . '|' . TIMESTAMP;
-    $s .= "|" . File::genPath($dir, F_APP_ID, "attachments");
-    return rawurlencode(base64_encode($s));
-  }
-  /**
    * 根据附件ID获取附件信息
    *
    * @param integer $AttachmentId 附件ID
