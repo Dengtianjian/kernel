@@ -88,7 +88,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   public function handle(\Closure $next, Request $request, $Controller = null)
   {
     if (!($Controller instanceof DiscuzXController)) {
-      $Verified = $this->verifyToken($request);
+      $Verified = $this->verifyToken($request, false);
       if ($Verified->error) {
         return $Verified;
       }
