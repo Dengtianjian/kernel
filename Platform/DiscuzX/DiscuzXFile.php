@@ -19,7 +19,7 @@ class DiscuzXFile
    */
   private static function genFileId($fileName, $savePath)
   {
-    return base64_encode(rawurlencode(uniqid("file:") . "|" . $savePath . "|" . $fileName));
+    return rawurlencode(base64_encode(uniqid("file:") . "|" . $savePath . "|" . $fileName));
   }
   /**
    * 注册路由
@@ -29,8 +29,8 @@ class DiscuzXFile
   static function registerRoute()
   {
     Router::post("files", FilesNamespace\UploadFilesController::class);
-    Router::delete("files/{fileId:\w+}", FilesNamespace\DeleteFileController::class);
-    Router::get("files/{fileId:\w+}", FilesNamespace\AccessFileController::class);
+    Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
+    Router::get("files/{fileId:.+?}", FilesNamespace\AccessFileController::class);
   }
   /**
    * 保存文件
@@ -86,7 +86,7 @@ class DiscuzXFile
    */
   static function decodeFileId($fileId)
   {
-    list($tag, $fileId) = explode(":", rawurldecode(base64_decode($fileId)));
+    list($tag, $fileId) = explode(":", base64_decode(rawurldecode($fileId)));
 
     if ($tag !== "file") {
       return new ResponseError(400, 400, "文件ID错误");

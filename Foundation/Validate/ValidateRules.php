@@ -11,13 +11,22 @@ class ValidateRules
    *
    * @var array
    */
-  protected $Rule = null;
+  public $Rule = null;
   /**
    * 规则校验失败的错误信息
    *
    * @var array
    */
-  protected $ErrorMessages = [];
+  public $ErrorMessages = [];
+  public $typeCheckNullAllowed = false;
+  /**
+   * 快速实例化
+   *
+   */
+  public static function quick()
+  {
+    return new ValidateRules();
+  }
   /**
    * 是否等于指定值
    *
@@ -66,8 +75,32 @@ class ValidateRules
    */
   public function type($value, $message = "")
   {
+    if (is_array($value)) {
+      $value = array_map(function ($item) {
+        if ($item === "int") {
+          $item = "integer";
+        }
+        if ($item === "bool") {
+          $item = "boolean";
+        }
+        return $item;
+      }, $value);
+    } else {
+      if ($value === "int") {
+        $value = "integer";
+      }
+      if ($value === "bool") {
+        $value = "boolean";
+      }
+    }
+
     $this->Rule["type"] = $value;
     $this->ErrorMessages["type"] = $message;
+    return $this;
+  }
+  public function nullAllow($allow = true)
+  {
+    $this->typeCheckNullAllowed = $allow;
     return $this;
   }
   /**
@@ -199,10 +232,10 @@ class ValidateRules
   /**
    * 自定义校验
    *
-   * @param Closure $callback 校验函数
+   * @param Closure|callable  $callback 校验函数
    * @return ValidateRules
    */
-  public function custom(\Closure $callback)
+  public function custom($callback)
   {
     $this->Rule['CustomValidate'] = $callback;
     return $this;
@@ -213,7 +246,7 @@ class ValidateRules
    * @param ValidateRules $validateRule 校验规则实例数组或者校验规则实例
    * @return ValidateRules
    */
-  public function use(ValidateRules $validateRule)
+  public function useRule(ValidateRules $validateRule)
   {
     if (!isset($this->Rule['use'])) {
       $this->Rule['use'] = [];
