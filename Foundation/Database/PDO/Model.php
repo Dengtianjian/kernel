@@ -58,12 +58,15 @@ class Model
    * 快速实例化
    *
    * @param string $tableName 表名称
-   * @return Model
    */
   static function quick($tableName = null)
   {
     $class = get_called_class();
-    return new $class($tableName);
+    if ($tableName) {
+      return new $class($tableName);
+    } else {
+      return new $class();
+    }
   }
   function order($field, $by = "ASC")
   {
