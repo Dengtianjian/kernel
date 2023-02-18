@@ -11,6 +11,8 @@ class DiscuzXWechatUsersModel extends WechatUsersModel
   public $tableName = "gstudio_kernel_wechat_users";
   function __construct($tableName = null)
   {
+    parent::__construct();
+    
     $this->query = new DiscuzXQuery($this->tableName);
 
     $this->tableName = \DB::table($this->tableName);

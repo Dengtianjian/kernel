@@ -9,35 +9,19 @@ if (!defined("F_KERNEL")) {
 /** Install Upgrade Uninstall */
 class Iuu
 {
-  protected $pluginId = null;
   protected $fromVersion = null;
   protected $latestVersion = null;
-  protected $pluginPath = null;
-  protected $Charset = null;
-  public function __construct($pluginId, $fromVersion)
+  public function __construct($appId, $fromVersion = null)
   {
-    $this->pluginId = $pluginId;
-    $this->pluginPath = "source/plugin/$pluginId";
     $this->fromVersion = $fromVersion;
-    $this->latestVersion = \getglobal("setting/plugins/version/$pluginId");
-    $this->Charset = \strtoupper(\CHARSET);
-
-    if (!defined("F_APP_ID")) {
-      define("F_APP_ID", $this->pluginId);
-    }
-    if (!defined("F_APP_BASE")) {
-      define("F_APP_BASE", $this->pluginPath);
-    }
-    if (!defined("F_APP_DATA")) {
-      define("F_APP_DATA", File::genPath(DISCUZ_ROOT, "data", "plugindata", $this->pluginId));
-    }
+    new App($appId);
   }
   public function install()
   {
-    $installFile =  $this->pluginPath . "/Iuu/Install/install.php";
+    $installFile =  F_APP_ROOT . "/Iuu/Install/install.php";
     if (\file_exists($installFile)) {
       // include_once($installFile);
-      $className = "\\" . $this->pluginId . "\Iuu\Install\Install";
+      $className = "\\" . F_APP_ID . "\Iuu\Install\Install";
       new $className();
     }
     if (!is_dir(F_APP_DATA)) {
@@ -47,7 +31,7 @@ class Iuu
   }
   public function upgrade()
   {
-    $UpgradeListFile = File::genPath($this->pluginPath, "Iuu", "UpgradeList.php");
+    $UpgradeListFile = File::genPath(F_APP_ROOT, "Iuu", "UpgradeList.php");
     if (!file_exists($UpgradeListFile)) return true;
     $UpgradeList = include_once($UpgradeListFile);
 
@@ -64,21 +48,26 @@ class Iuu
   }
   public function uninstall()
   {
-    File::deleteDirectory(File::genPath(\getglobal("setting/attachurl"), "plugin/" . F_APP_ID));
-    File::deleteDirectory(F_APP_DATA);
+    $uninstallFile =  F_APP_ROOT . "/Iuu/Uninstall/uninstall.php";
+    if (\file_exists($uninstallFile)) {
+      // include_once($installFile);
+      $className = "\\" . F_APP_ID . "\Iuu\Uninstall\uninstall";
+      new $className();
+    }
+    // File::deleteDirectory(F_APP_DATA);
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return File::deleteDirectory($this->pluginPath . "/Iuu");
+    return File::deleteDirectory(F_APP_ROOT . "/Iuu");
   }
   public function cleanInstall()
   {
-    return File::deleteDirectory($this->pluginPath . "/Iuu/Install");
+    return File::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
   }
   public function cleanUpgrade()
   {
-    return File::deleteDirectory($this->pluginPath . "/Iuu/Upgrade");
+    return File::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
   }
 }

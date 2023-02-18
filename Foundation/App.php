@@ -8,17 +8,15 @@ use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Database\PDO\DB;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\Output;
-use kernel\Middleware\GlobalExtensionsMiddleware;
-use kernel\Model\ExtensionsModel;
 
 /**
  * KERNEL标识符
  */
-define("F_KERNEL", true);
+if (!defined("F_KERNEL")) {
+  define("F_KERNEL", true);
+}
 
 class App
 {

@@ -11,6 +11,8 @@ class DiscuzXAccessTokenModel extends AccessTokenModel
   public $tableName = "gstudio_kernel_access_token";
   function __construct()
   {
+    parent::__construct();
+    
     $this->query = new DiscuzXQuery($this->tableName);
 
     $this->tableName = \DB::table($this->tableName);

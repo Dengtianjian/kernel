@@ -11,6 +11,8 @@ class DiscuzXLoginsModel extends LoginsModel
   public $tableName = "gstudio_kernel_logins";
   function __construct()
   {
+    parent::__construct();
+    
     $this->query = new DiscuzXQuery($this->tableName);
 
     $this->tableName = \DB::table($this->tableName);
