@@ -3,6 +3,7 @@
 namespace kernel\Platform\DiscuzX\Member;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\DataConversion;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
 use kernel\Foundation\ReturnResult;
@@ -103,7 +104,7 @@ class DiscuzXMember
     }
     return $prompts;
   }
-  public static function get($userId = null, $detailed = true)
+  public static function get($userId = null, $detailed = true, $dataConversionRules = null)
   {
     if ($userId === null) {
       $userId = \getglobal("uid");
@@ -128,6 +129,10 @@ class DiscuzXMember
     global $_G;
     $_G['setting']['dynavt'] = 1;
     $member['avatar'] = \avatar($userId, "middle", true);
+
+    if ($dataConversionRules) {
+      $member = DataConversion::quick($member, $dataConversionRules, true, true);
+    }
 
     return $member;
   }
