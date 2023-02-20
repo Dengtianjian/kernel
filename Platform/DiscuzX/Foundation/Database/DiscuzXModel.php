@@ -14,11 +14,11 @@ class DiscuzXModel extends Model
 {
   function __construct($tableName = null)
   {
-    if (!$tableName) {
+    if ($tableName) {
+      $this->tableName = $tableName;
+    } else {
       $tableName = $this->tableName;
     }
-    $this->tableName = \DB::table($tableName);
-
     $this->query = new DiscuzXQuery($tableName);
 
     $this->DB = \DB::class;
