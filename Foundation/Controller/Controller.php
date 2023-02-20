@@ -87,12 +87,16 @@ class Controller
    */
   private function serialization()
   {
+    $ClassNamespace = explode("\\", get_class($this));
+    $ClassName = $ClassNamespace[count($ClassNamespace) - 1];
+    $ClassName = str_replace("Controller", "", $ClassName);
+    $ClassName = lcfirst($ClassName);
     if ($this->serializes instanceof DataConversion) {
       $this->response->addData($this->serializes->data($this->response->getData())->convert(), true);
     } else if ($this->serializes instanceof Serializer) {
       $this->response->addData(Serializer::serialization($this->serializes->useRuleName, $this->response->getData()), true);
     } else if (is_array($this->serializes)) {
-      $this->response->addData(Serializer::serialization($this->serializes, $this->response->getData()), true);
+      $this->response->addData(Serializer::serialization($this->serializes, $this->response->getData(), $ClassName), true);
     }
   }
   /**
