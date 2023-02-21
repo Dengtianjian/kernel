@@ -6,6 +6,7 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
+use DB;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Date;
@@ -92,7 +93,7 @@ class DiscuzXModel extends Model
   function delete($directly = false)
   {
     if ($directly) {
-      $sql = $this->query->delete()->sql();
+      $sql = $this->query->delete($directly)->sql();
     } else {
       $data = [];
       $Call = get_class($this);
@@ -144,12 +145,9 @@ class DiscuzXModel extends Model
   }
   function exist()
   {
-    $sql = $this->query->exist()->sql();
+    $sql = $this->query->count()->sql();
     if ($this->returnSql) return $sql;
-    $exist = DiscuzXDB::exist($this->query);
-    // if (empty($exist)) {
-    //   return 0;
-    // }
+    $exist = DiscuzXDB::result_first($sql);
     return boolval($exist);
   }
 }

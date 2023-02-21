@@ -2,6 +2,8 @@
 
 namespace kernel\Platform\DiscuzX\Foundation\Database;
 
+use mysqli_result;
+
 class DiscuzXDB extends \DB
 {
   public static function getOne($query)
@@ -30,11 +32,8 @@ class DiscuzXDB extends \DB
   }
   static function exist($query)
   {
-    $queryResult = self::query($query->exist()->sql());
-    if (empty($queryResult)) {
-      return 0;
-    }
-    return $query[0]["1"];
+    $queryResult = self::count($query);
+    return $queryResult;
   }
 
   //* 事务相关
