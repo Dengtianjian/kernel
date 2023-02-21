@@ -115,7 +115,7 @@ class DiscuzXModel extends Model
     }
 
     if ($this->returnSql) return $sql;
-    return \DB::query($this->query);
+    return \DB::query($sql);
   }
   function getAll()
   {
