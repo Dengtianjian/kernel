@@ -83,9 +83,14 @@ class Model
     $this->query->limit($startOrNumber, $number);
     return $this;
   }
-  function page($pages, $pageLimit = 110)
+  function page($pages, $pageLimit = 10)
   {
     $this->query->page($pages, $pageLimit);
+    return $this;
+  }
+  function cancelPage()
+  {
+    $this->query->clearPage();
     return $this;
   }
   function skip($number)

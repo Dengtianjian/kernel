@@ -140,6 +140,11 @@ class Query
     }
     return $this;
   }
+  function clearPage()
+  {
+    unset($this->options['limit']);
+    return $this;
+  }
   function where($params, $value = null, $glue = "=", $operator = "AND")
   {
     // DONE 重构where方法，不管传入什么参数最后都push到conditions格式为 [field,value,glue,operator]
