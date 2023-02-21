@@ -66,17 +66,18 @@ class DiscuzXMember
 
     return new ReturnResult($userLoginResult['member']);
   }
-  public static function credit($userId = null)
+  public static function credit($memberId = null)
   {
-    if ($userId === null) {
-      $userId = \getglobal("uid");
+    if ($memberId === null) {
+      $memberId = \getglobal("uid");
     }
     $CMCM = new DiscuzXModel("common_member_count");
-    $memberCredit = $CMCM->where([
-      "uid" => $userId
-    ])->getOne();
-    unset($CMCM);
-    return $memberCredit;
+    $memberCredits = $CMCM->where([
+      "uid" => $memberId
+    ])->getAll();
+    if (!count($memberCredits) && !is_array($memberId)) return null;
+    if (is_array($memberId)) return Arr::indexToAssoc($memberCredits, "uid");
+    return $memberCredits[0];
   }
   public static function group($groupId = null)
   {
@@ -84,57 +85,85 @@ class DiscuzXMember
       $groupId = \getglobal("member")['groupid'];
     }
     $CUGM = new DiscuzXModel("common_usergroup");
-    $memberGroup = $CUGM->where([
+    $memberGroups = $CUGM->where([
       "groupid" => $groupId
-    ])->getOne();
-    return $memberGroup;
+    ])->getAll();
+    if (!count($memberGroups) && !is_array($groupId)) return null;
+    if (is_array($groupId)) return Arr::indexToAssoc($memberGroups, "groupid");
+    return $memberGroups[0];
   }
-  public static function newPrompt($userId = null)
+  public static function newPrompt($memberId = null)
   {
-    if ($userId === null) {
-      $userId = \getglobal("uid");
+    if ($memberId === null) {
+      $memberId = \getglobal("uid");
     }
     $CMNP = new DiscuzXModel("common_member_newprompt");
     $prompts = $CMNP->where([
-      "uid" => $userId
+      "uid" => $memberId
     ])->getAll();
-    foreach ($prompts as &$promptItem) {
-      $promptItem = \array_merge($promptItem, \unserialize($promptItem['data']));
-      unset($promptItem['data']);
+    $prompts = Arr::group($prompts, "uid");
+    foreach ($prompts as &$MemberPrompts) {
+      foreach ($MemberPrompts as &$promptItem) {
+        $promptItem = \array_merge($promptItem, \unserialize($promptItem['data']));
+        unset($promptItem['data']);
+      }
     }
-    return $prompts;
+    if (!count($prompts) && !is_array($memberId)) return null;
+    if (is_array($memberId)) return $prompts;
+    return $prompts[$memberId];
   }
-  public static function get($userId = null, $detailed = true, $dataConversionRules = null)
+  public static function get($memberId = null, $detailed = true, $dataConversionRules = null)
   {
-    if ($userId === null) {
-      $userId = \getglobal("uid");
+    if ($memberId === null) {
+      $memberId = \getglobal("uid");
     }
     $MM = new DiscuzXModel("common_member");
-    $member = $MM->where([
-      "uid" => $userId
-    ])->getOne();
-    if (!$member) return null;
+    $members = $MM->where([
+      "uid" => $memberId
+    ])->getAll();
+    if (empty($members)) return is_array($memberId) ? [] : null;
+
+    $Groups = [];
+    $Credits = [];
+    $Prompts = [];
+    $userForumFields = [];
     if ($detailed) {
-      $member['group'] = self::group($member['groupid']);
-      $member['credit'] = self::credit($userId);
-      $member['prompts'] = self::newPrompt($userId);
+      $Groups = self::group(array_column($members, "groupid"));
 
-      $userForumFields = \C::t("common_member_field_forum")->fetch($userId);
-      $member['sightml'] = preg_replace("/<img|img>/", "<span", $userForumFields['sightml']);
+      $Credits = self::credit(is_array($memberId) ? $memberId : [$memberId]);
+      $Prompts = self::newPrompt(is_array($memberId) ? $memberId : [$memberId]);
 
-      \ksort($member);
+      $userForumFields = \C::t("common_member_field_forum")->fetch_all($memberId);
+      $userForumFields = Arr::indexToAssoc($userForumFields, "uid");
+      foreach ($userForumFields as &$item) {
+        $item['sightml'] = preg_replace("/<img|img>/", "<span", $item['sightml']);
+      }
     }
 
-    $member['regdate'] = dgmdate($member['regdate']);
     global $_G;
     $_G['setting']['dynavt'] = 1;
-    $member['avatar'] = \avatar($userId, "middle", true);
+    foreach ($members as &$MemberItem) {
+      $MemberItem['avatar'] = \avatar($MemberItem, "middle", true);
 
-    if ($dataConversionRules) {
-      $member = DataConversion::quick($member, $dataConversionRules, true, true);
+      if (isset($Groups[$MemberItem['groupid']])) {
+        $MemberItem['group'] = $Groups[$MemberItem['groupid']];
+      }
+      if (isset($Credits[$MemberItem['uid']])) {
+        $MemberItem['count'] = $Credits[$MemberItem['groupid']];
+      }
+      if (isset($Prompts[$MemberItem['uid']])) {
+        $MemberItem['prompts'] = $Prompts[$MemberItem['uid']];
+      }
+      if (isset($userForumFields[$MemberItem['uid']])) {
+        $MemberItem['forum_field'] = $userForumFields[$MemberItem['uid']];
+      }
     }
 
-    return $member;
+    if ($dataConversionRules) {
+      $members = DataConversion::quick($members, $dataConversionRules, true, true);
+    }
+
+    return is_array($memberId) ? $members : $members[0];
   }
   public static function getAll($page = 1, $limit = 15, $query = null, $accurateQuery = false)
   {
@@ -144,8 +173,7 @@ class DiscuzXMember
       if ($accurateQuery) {
         $userQueryValue = $query;
       }
-      $CM->where("username", $userQueryValue, $accurateQuery ? '=' : "LIKE", "OR");
-      $CM->where("uid", $query, "=");
+      $CM->where("username", $userQueryValue, $accurateQuery ? '=' : "LIKE");
     }
     $CMT = clone $CM;
     $CM->page($page, $limit);
