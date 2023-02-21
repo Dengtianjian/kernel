@@ -19,12 +19,6 @@ class RequestData
    */
   protected $data = [];
   /**
-   * 源数据
-   *
-   * @var array
-   */
-  protected $rawData = [];
-  /**
    * 是否存在某个键
    *
    * @param string $key 键名
@@ -50,35 +44,21 @@ class RequestData
    * 批量获取某些键的值
    *
    * @param string[] $keys 键名索引数组
-   * @param bool $onlyRealExist 只获取实际存在没被补全的数据 实例化该类时会根据DataConversion规则补全一些不存在的参数，可以通过该参数来滤掉那些根据DataConversion规则补全的参数。例如post处理请求体数据时，假设有username、nickname字段，就算nickname没提交也会把它补全，值为null，直接写入数据库即可，因为是新增数据，没传置为空也无所谓，只要数据库有该字段即可，而patch请求处理请求体时，如果把没提交的nickname补全为null，那控制器就以为是把数据库的该字段置空，在update数据时就会把数据库的nickname字段置为空，导致数据被更改，但实际是没传nickname参数的，主要是区分插入数据和更新数据两个概念区别。
    * @return array
    */
-  public function some($keys = null, $onlyRealExist = false)
+  public function some($keys = null)
   {
     $data = [];
-    if ($onlyRealExist) {
-      if ($keys === null) return $this->rawData;
-      foreach ($keys as $key) {
-        if ($this->rawData[$key]) {
-          $data[$key] = $this->rawData[$key];
-        } else {
-          $data[$key] = null;
-        }
+    if ($keys === null) return $this->data;
+    foreach ($keys as $key) {
+      if ($this->has($key)) {
+        $data[$key] = $this->get($key);
+      } else {
+        $data[$key] = null;
       }
-
-      return $data;
-    } else {
-      if ($keys === null) return $this->data;
-      foreach ($keys as $key) {
-        if ($this->has($key)) {
-          $data[$key] = $this->get($key);
-        } else {
-          $data[$key] = null;
-        }
-      }
-
-      return $data;
     }
+
+    return $data;
   }
   /**
    * 处理数据
@@ -127,12 +107,11 @@ class RequestData
           $this->data = $ConvertedData;
         }
       } else {
-        $ConvertedData = DataConversion::quick($this->data, $DataConversion, true, true);
+        $ConvertedData = DataConversion::quick($this->data, $DataConversion, false, true);
         if ($ConvertedData !== false) {
           $this->data = $ConvertedData;
         }
       }
-      $this->rawData = DataConversion::quick($this->data, $DataConversion, false, true);
     }
 
     return $this->data;
