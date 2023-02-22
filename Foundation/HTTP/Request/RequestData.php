@@ -19,6 +19,12 @@ class RequestData
    */
   protected $data = [];
   /**
+   * 数据转换规则
+   *
+   * @var DataConversion|array|null
+   */
+  protected $dataConversion = null;
+  /**
    * 是否存在某个键
    *
    * @param string $key 键名
@@ -46,10 +52,18 @@ class RequestData
    * @param string[] $keys 键名索引数组
    * @return array
    */
-  public function some($keys = null)
-  {
+  public function some(
+    $keys = null,
+    $completion = false
+  ) {
     $data = [];
-    if ($keys === null) return $this->data;
+    if ($keys === null) {
+      $data = $this->data;
+      if ($completion) {
+        $data = DataConversion::quick($data, $this->dataConversion, true);
+      }
+      return $data;
+    };
     foreach ($keys as $key) {
       if ($this->has($key)) {
         $data[$key] = $this->get($key);
@@ -101,6 +115,7 @@ class RequestData
     }
 
     if (!is_null($DataConversion)) {
+      $this->dataConversion = $DataConversion;
       if ($DataConversion instanceof DataConversion) {
         $ConvertedData = $DataConversion->data($this->data)->convert();
         if ($ConvertedData !== false) {
