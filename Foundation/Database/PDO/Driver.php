@@ -4,6 +4,7 @@ namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Log;
+use kernel\Foundation\Output;
 use kernel\Foundation\Response;
 use PDO;
 
@@ -12,7 +13,13 @@ class Driver
   private \PDO $PDOInstance;
   function __construct(string $hostname = null, string $username = null, string $password = null, string $database = null, int $port = 3306, $options = null)
   {
-    $link = new \PDO("mysql:dbname=$database;host:$hostname;port=$port", $username, $password, $options);
+    $link = null;
+    try {
+      $link = new \PDO("mysql:dbname=$database;host:$hostname;port=$port", $username, $password, $options);
+    } catch (\Exception $e) {
+      throw new Exception("数据连接失败：" . $e->getMessage(), 500, "PDO:500001", $e->getMessage() . ":" . $e->getCode());
+    }
+
 
     if (!$link) {
       throw new Exception("数据连接失败", 500, "PDO:500001", $link->connect_errno() . ":" . $link->connect_error());
