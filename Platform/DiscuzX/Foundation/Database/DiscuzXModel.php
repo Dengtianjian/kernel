@@ -51,7 +51,6 @@ class DiscuzXModel extends Model
       }
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
-    $this->query->tableName = \DB::table($this->query->tableName);
     if ($this->returnSql) return $sql;
     return \DB::query($sql);
   }
