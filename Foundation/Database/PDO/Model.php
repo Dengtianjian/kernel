@@ -39,6 +39,21 @@ class Model
     $this->query = clone $this->query;
   }
   /**
+   * 调用静态方法
+   *
+   * @param string $name 方法名称
+   * @param array $args 参数
+   * @return Model
+   */
+  // public static function __callStatic($name, $args)
+  // {
+  //   $ClasName = get_called_class();
+  //   $I = new $ClasName();
+  //   // debug($I);
+  //   return $I->$name(...$args);
+  //   // call_user_func_array([$I, $name], $args);
+  // }
+  /**
    * 表名添加前缀
    *
    * @param string $tableName 表名称
