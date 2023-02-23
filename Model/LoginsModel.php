@@ -37,7 +37,8 @@ SQL;
   public function getByToken($token)
   {
     return $this->where([
-      "token" => $token
+      "token" => $token,
+      "deletedAt" => null
     ])->getOne();
   }
   public function deleteByToken($token)
