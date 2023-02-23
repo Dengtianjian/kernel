@@ -8,10 +8,6 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
-
 class AuthController extends Controller
 {
   public function __get($name)
