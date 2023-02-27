@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Middleware;
 
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Middleware\GlobalAuthMiddleware;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;

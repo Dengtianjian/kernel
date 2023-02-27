@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation;
+namespace kernel\Foundation\ReturnResult;
 
 use Error;
 use kernel\Foundation\Exception\Exception;

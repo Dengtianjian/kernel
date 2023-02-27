@@ -4,7 +4,7 @@ namespace kernel\Platform\DiscuzX;
 
 use kernel\Foundation\File;
 use kernel\Foundation\HTTP\Response\ResponseError;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files as FilesNamespace;
 

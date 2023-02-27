@@ -11,7 +11,7 @@ use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware;
 use kernel\Foundation\Response;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Model\LoginsModel;
 use kernel\Service\AuthService;

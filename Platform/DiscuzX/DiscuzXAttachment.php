@@ -10,7 +10,7 @@ use forum_upload;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\File;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Store;
 use kernel\Platform\DiscuzX\Controller\Attachments as AttachmentsNamespace;

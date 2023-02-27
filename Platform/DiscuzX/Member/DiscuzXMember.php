@@ -6,7 +6,7 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\DataConversion;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
 if (!defined("F_KERNEL")) {

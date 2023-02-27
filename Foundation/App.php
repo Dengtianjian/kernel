@@ -3,6 +3,7 @@
 namespace kernel\Foundation;
 
 use Exception as GlobalException;
+use gstudio_kernel\Foundation\ReturnResult\ReturnList;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Router;
@@ -10,6 +11,7 @@ use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\HTTP\Response\ResponsePagination;
 
 /**
  * KERNEL标识符
@@ -347,7 +349,9 @@ class App
           }
         }
 
-        if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
+        if ($response instanceof ReturnList) {
+          $response = new ResponsePagination($this->request, $response->total(), $response->getData());
+        } else if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
           $response = new Response($response);
           if (!$this->request->ajax()) {
             $response->text();
@@ -368,7 +372,9 @@ class App
         }
       }
     }
-    if (!($controllerExecutedResult instanceof \kernel\Foundation\HTTP\Response)) {
+    if ($controllerExecutedResult instanceof ReturnList) {
+      $controllerExecutedResult = new ResponsePagination($this->request, $controllerExecutedResult->total(), $controllerExecutedResult->getData());
+    } else if (!($controllerExecutedResult instanceof \kernel\Foundation\HTTP\Response)) {
       $controllerExecutedResult = new Response($controllerExecutedResult);
       if (!$this->request->ajax()) {
         $controllerExecutedResult->text();

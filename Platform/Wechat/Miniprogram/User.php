@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Wechat\Miniprogram;
 
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Model\WechatUsersModel;
 

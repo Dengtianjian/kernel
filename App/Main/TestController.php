@@ -13,7 +13,7 @@ use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Log;
 use kernel\Foundation\Output;
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Validate\ValidateArray;
 use kernel\Foundation\Validate\ValidateRules;
 use kernel\Foundation\Validate\Validator;

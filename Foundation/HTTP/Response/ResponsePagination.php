@@ -37,7 +37,7 @@ class ResponsePagination extends Response
     $this->request = $R;
     $this->total = $total;
     $this->ResponseData = $data;
-    if (!is_null($data)) {
+    if (!is_null($data) && is_array($data)) {
       $this->items = count($data);
     }
   }

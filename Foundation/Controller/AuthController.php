@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Controller;
 
-use kernel\Foundation\ReturnResult;
+use kernel\Foundation\ReturnResult\ReturnResult;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
