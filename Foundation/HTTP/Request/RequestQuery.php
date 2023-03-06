@@ -14,4 +14,14 @@ class RequestQuery extends RequestData
       }
     }
   }
+  /**
+   * 获取某个键的值
+   *
+   * @param string $key 键名
+   * @return string
+   */
+  public function get($key)
+  {
+    return parent::get($key);
+  }
 }

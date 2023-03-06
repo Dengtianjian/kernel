@@ -38,7 +38,7 @@ class RequestData
    * 获取某个键的值
    *
    * @param string $key 键名
-   * @return string
+   * @return mixed
    */
   public function get($key)
   {
