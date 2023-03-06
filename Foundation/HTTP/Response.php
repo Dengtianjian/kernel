@@ -232,6 +232,18 @@ class Response
     return $this;
   }
   /**
+   * 设置主体数据
+   *
+   * @param mixed $data 添加的数据
+   * @return Response
+   */
+  public function setData($data)
+  {
+    $this->ResponseData = $data;
+
+    return $this;
+  }
+  /**
    * 输出为json格式的内容
    *
    * @return Response
