@@ -188,7 +188,7 @@ class Model
   function delete($directly = false)
   {
     if ($directly) {
-      $sql = $this->query->delete()->sql();
+      $sql = $this->query->delete($directly)->sql();
     } else {
       $data = [];
       $Call = get_class($this);
