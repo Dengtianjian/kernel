@@ -6,6 +6,7 @@ use kernel\Foundation\Data\DataConversion;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Output;
 use kernel\Foundation\Data\Serializer;
+use kernel\Foundation\HTTP\Response;
 
 class Controller
 {
@@ -63,6 +64,7 @@ class Controller
   function __construct(Request $request)
   {
     $this->request = $request;
+    $this->response = new Response(null);
     $this->query = new ControllerQuery($request, $this->query, $this->queryValidator);
     $this->body = new ControllerBody($request, $this->body, $this->bodyValidator);
   }
