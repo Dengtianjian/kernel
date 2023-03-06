@@ -96,7 +96,8 @@ class ResponseView extends Response
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
     http_response_code($this->ResponseStatusCode);
-    return ResponseView::render($this->viewFilePath, $this->ResponseData, $this->templateId);
+    $CallClass=get_called_class();
+    return $CallClass::render($this->viewFilePath, $this->ResponseData, $this->templateId);
     // exit;
   }
   /**
