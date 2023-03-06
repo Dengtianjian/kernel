@@ -258,7 +258,7 @@ class Curl
    * @param string $password 代理用户密码
    * @return Curl
    */
-  public function proxy(string $url, int $port, string $username = "", string $password = ""): Curl
+  public function proxy($url, $port,  $username = "", $password = "")
   {
     $this->proxy["open"] = true;
     $this->proxy["url"] = $url;
@@ -455,7 +455,7 @@ class Curl
    *
    * @return integer
    */
-  public function statusCode(): int
+  public function statusCode()
   {
     return $this->responseStatusCode;
   }
@@ -464,7 +464,7 @@ class Curl
    *
    * @return array
    */
-  public function responseHeaders(): array
+  public function responseHeaders()
   {
     return $this->responseHeadersData;
   }
