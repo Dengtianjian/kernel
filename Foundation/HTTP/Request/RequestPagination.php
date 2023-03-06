@@ -57,6 +57,7 @@ class RequestPagination
    */
   public function __get($name)
   {
+    if ($name === "limit") $name = "perPage";
     if (property_exists($this, "_$name")) {
       return $this->{"_$name"};
     }
