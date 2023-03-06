@@ -67,7 +67,7 @@ class DiscuzXView extends ResponseView
 
     return $this;
   }
-  public static function render($viewFiles, $viewData = [])
+  public static function render($viewFiles, $viewData = [], $returnName = null)
   {
     if (!is_array($viewFiles)) {
       $viewFiles = [$viewFiles];
@@ -96,21 +96,36 @@ PHP;
     }
 
     if (count($TemplateIncludeCodes) === 0) return false;
+
+    $returnCode = "return true";
+    if (!empty($returnName)) {
+      if (is_array($returnName)) {
+        $items=[];
+        foreach ($returnName as $name) {
+          array_push($items,'"'.$name.'"=>$'.$name);
+        }
+        $items=implode(",",$items);
+        $returnCode='return ['.$items.'];';
+      } else {
+        $returnCode = 'return $'.$returnName.';';
+      }
+    }
+
     $TemplateIncludeCodes = implode("\n", $TemplateIncludeCodes);
-    $CallFunctionCode = <<<PHP
+    $CallFunctionCode = <<<EOT
 return function($DataKeys)
 {
   global \$_G;
   $TemplateIncludeCodes;
-  return true;
+  $returnCode;
 };
-PHP;
+EOT;
 
     $fun = eval($CallFunctionCode);
 
     return call_user_func_array($fun, array_values($viewData));
   }
-  static function renderAppPage($viewFiles, $viewFileBaseDir = "", $viewData = [], $templateId = "page")
+  static function renderAppPage($viewFiles, $viewFileBaseDir = "", $viewData = [], $templateId = "page", $returnName = null)
   {
     if (is_array($viewFiles)) {
       foreach ($viewFiles as &$fileItem) {
@@ -119,6 +134,10 @@ PHP;
     } else {
       $viewFiles = self::generateTemplatePath($viewFiles, $templateId, $viewFileBaseDir);
     }
-    return self::render($viewFiles, $viewData, $templateId);
+    return self::render($viewFiles, $viewData, $returnName);
+  }
+  static function hook($viewFiles, $viewData, $returnName = "return")
+  {
+    return self::renderAppPage($viewFiles, "Views", $viewData, "hook", $returnName);
   }
 }
