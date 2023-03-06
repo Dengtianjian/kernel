@@ -89,7 +89,8 @@ class Request
       if ($this->params->has("x-ajax")) return 1;
     }
 
-    if ($this->header->has("x-ajax")||$this->header->has("X-Ajax")) return 1;
+    if ($this->header->has("x-ajax") || $this->header->has("X-Ajax")) return 1;
+    if ($this->query->has("isAjax")) return 1;
 
     return 0;
   }
