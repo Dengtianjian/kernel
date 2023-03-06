@@ -14,7 +14,6 @@ class GlobalCorsMiddleware
   public function handle($next)
   {
     $Response = $next();
-    // $Response = new Response();
     if ($_SERVER['REQUEST_METHOD'] === "OPTIONS") {
       $Response->null();
       return $Response;

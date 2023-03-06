@@ -14,11 +14,11 @@ class GlobalWechatOfficialAccountMiddleware
   {
     $this->accessTokenModel = AccessTokenModel::class;
   }
-  public function handle($next, $R, $params = [])
+  public function handle($next, $R, $AppId,$AppSecret)
   {
     $ATM = new $this->accessTokenModel();
-    $AppId = $params['appId'];
-    $AppSecret = $params['appSecret'];
+    // $AppId = $params['appId'];
+    // $AppSecret = $params['appSecret'];
     $Platform = "wechatOfficialAccount";
 
     $ATM->where("expiredAt", time(), "<")->delete(true);
@@ -46,6 +46,6 @@ class GlobalWechatOfficialAccountMiddleware
       ]);
     }
 
-    $next();
+    return $next();
   }
 }
