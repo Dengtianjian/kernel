@@ -17,8 +17,6 @@ class GlobalWechatOfficialAccountMiddleware
   public function handle($next, $R, $AppId,$AppSecret)
   {
     $ATM = new $this->accessTokenModel();
-    // $AppId = $params['appId'];
-    // $AppSecret = $params['appSecret'];
     $Platform = "wechatOfficialAccount";
 
     $ATM->where("expiredAt", time(), "<")->delete(true);
