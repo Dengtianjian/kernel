@@ -297,7 +297,7 @@ class App
       }
     }
 
-    if (is_callable($Controller)) {
+    if (is_callable($Controller) || is_null($Controller)) {
       $Controller = new Controller($this->request);
     }
 
