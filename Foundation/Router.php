@@ -61,14 +61,15 @@ class Router
   {
     if (is_null($prefix)) {
       self::$Prefix = [];
-    }
-    if (self::$InGroup) {
-      $prefix = is_string($prefix) ? [$prefix] : $prefix;
-      foreach ($prefix as $value) {
-        array_unshift(self::$Prefix, $value);
-      }
     } else {
-      self::$Prefix = is_string($prefix) ? [$prefix] : $prefix;
+      if (self::$InGroup) {
+        $prefix = is_string($prefix) ? [$prefix] : $prefix;
+        foreach ($prefix as $value) {
+          array_unshift(self::$Prefix, $value);
+        }
+      } else {
+        self::$Prefix = is_string($prefix) ? [$prefix] : $prefix;
+      }
     }
 
     return new static;
