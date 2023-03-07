@@ -44,7 +44,7 @@ class DiscuzXExceptionHandler
       $traceString = \explode(\PHP_EOL, $traceString);
     }
 
-    if (in_array($code, $ErrorLevels)) {
+    if (in_array($code, $DeadlyLevels)) {
       Log::record([
         "errno" => $code,
         "errstr" => $message,
@@ -53,8 +53,6 @@ class DiscuzXExceptionHandler
         "trace" => $trace,
         "error" => $errorDetails
       ]);
-    }
-    if (in_array($code, $DeadlyLevels)) {
       if ($GLOBALS['App'] && $GLOBALS['App']->request->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
