@@ -94,9 +94,12 @@ class Router
 
     self::$InGroup = true;
     self::$GroupMiddlewares = $middlewares;
+    $OldPrefix = self::$Prefix;
     self::$Prefix = is_string($prefix) ? [$prefix] : $prefix;
 
     $callback();
+
+    self::$Prefix = $OldPrefix;
 
     return new static;
   }
