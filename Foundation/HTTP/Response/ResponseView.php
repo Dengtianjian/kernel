@@ -42,9 +42,13 @@ class ResponseView extends Response
     if (!$viewFileDir) {
       $viewFileDir = F_APP_ROOT;
     }
-    $this->viewFilePath = File::genPath($viewFileDir, $viewFileDirBaseProject, $viewFile . ".php");
+    $extension = ".php";
+    if (strpos($viewFile, ".") !== false) {
+      $extension = "";
+    }
+    $this->viewFilePath = File::genPath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
     if (!file_exists($this->viewFilePath)) {
-      throw new Exception("模板文件不存在", 500, 500, $this->viewFilePath);
+      throw new Exception("模板文件不存在 - " . $this->viewFilePath, 500, 500, $this->viewFilePath);
     }
     $this->templateId = $templateId;
     $this->viewFileBaseDir = $viewFileDirBaseProject;
@@ -96,7 +100,7 @@ class ResponseView extends Response
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
     http_response_code($this->ResponseStatusCode);
-    $CallClass=get_called_class();
+    $CallClass = get_called_class();
     return $CallClass::render($this->viewFilePath, $this->ResponseData, $this->templateId);
     // exit;
   }

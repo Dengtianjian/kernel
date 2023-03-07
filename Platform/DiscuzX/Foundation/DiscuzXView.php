@@ -34,10 +34,14 @@ class DiscuzXView extends ResponseView
     if (!$viewFileDir) {
       $dir = F_APP_DIR;
     }
-    return template($viewFile, implode("_", [
-      F_APP_ID,
-      $templateId
-    ]), File::genPath($dir, $viewFileDirBaseProject));
+    if (strpos($viewFile, ".") === false) {
+      return template($viewFile, implode("_", [
+        F_APP_ID,
+        $templateId
+      ]), File::genPath($dir, $viewFileDirBaseProject));
+    } else {
+      return File::genPath($dir, $viewFileDirBaseProject, $viewFile);
+    }
   }
   public function page($viewFile, $viewData, $viewFileDirBaseProject = "Views", $templateId = "page", $viewFileDir = null)
   {
@@ -100,14 +104,14 @@ PHP;
     $returnCode = "return true";
     if (!empty($returnName)) {
       if (is_array($returnName)) {
-        $items=[];
+        $items = [];
         foreach ($returnName as $name) {
-          array_push($items,'"'.$name.'"=>$'.$name);
+          array_push($items, '"' . $name . '"=>$' . $name);
         }
-        $items=implode(",",$items);
-        $returnCode='return ['.$items.'];';
+        $items = implode(",", $items);
+        $returnCode = 'return [' . $items . '];';
       } else {
-        $returnCode = 'return $'.$returnName.';';
+        $returnCode = 'return $' . $returnName . ';';
       }
     }
 
