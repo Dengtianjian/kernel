@@ -66,7 +66,7 @@ class Response
    *
    * @var json|text|xml
    */
-  protected $OutputType = "json";
+  protected $OutputType = "text";
   /**
    * 响应输出为text格式是，是否需要格式化
    *
@@ -119,7 +119,7 @@ class Response
   public function null($statusCode = 200)
   {
     $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = [];
+    $this->ResponseData = null;
     $this->ResponseCode = $statusCode;
     $this->ResponseMessage = $statusCode > 299 ? 'error' : 'ok';
     $this->ResponseDetails = null;
@@ -205,6 +205,7 @@ class Response
     if ($cover) {
       $this->ResponseAddBody =  $responseBody;
     } else {
+      unset($responseBody['data']);
       $this->ResponseAddBody = array_merge($this->ResponseAddBody, $responseBody);
     }
 
@@ -219,7 +220,7 @@ class Response
    */
   public function addData($data, $cover = false)
   {
-    if ($cover) {
+    if ($cover || is_null($this->ResponseData)) {
       $this->ResponseData = $data;
     } else {
       if (is_array($this->ResponseData) && is_array($data)) {
@@ -300,7 +301,7 @@ class Response
       return array_merge([
         "statusCode" => $this->ResponseStatusCode,
         "code" => $this->ResponseCode,
-        "data" => $this->ResponseData,
+        "data" => $this->getData(),
         "message" => $this->ResponseMessage,
         "details" => $this->ResponseDetails,
       ], $this->ResponseAddBody);
@@ -332,6 +333,7 @@ class Response
     if ($this->ResponseResetBody) {
       $body = $this->ResponseResetBody;
     }
+    $data = $this->getData();
 
     switch ($this->OutputType) {
       case "json":
@@ -340,20 +342,18 @@ class Response
         break;
       case "xml":
         header("Content-type:text/xml", true);
-        print_r(Arr::toXML($body));
+        print_r(Arr::toXML($data));
         break;
       case "text":
         if ($this->FormatOutputTypeOfText) {
-          Output::format($body);
+          Output::format($data);
         } else {
-          Output::printContent($body);
+          Output::printContent($data);
         }
         break;
       default:
         Output::printContent($body);
         break;
     }
-
-    // exit;
   }
 }

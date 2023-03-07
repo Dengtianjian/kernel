@@ -285,28 +285,39 @@ class App
 
     return $executedResponse;
   }
-  public function controllerExecutedResultHandle($response, $Controller)
+  public function execureController($callTarget, $callParams, &$Controller)
   {
-    if ($response instanceof ReturnList) {
-      $response = new ResponsePagination($this->request, $response->total(), $response->getData());
-    } else if ($response instanceof \kernel\Foundation\HTTP\Response) {
-      if (!is_callable($Controller) && $Controller instanceof Controller) {
-        $response->addData($Controller->response->getData());
-      }
-    } else if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
-      if (is_callable($Controller)) {
-        $response = new Response($response);
-        if (!$this->request->ajax()) {
-          $response->text();
-          $response->addBody($response->getData(), true);
-        }
+    try {
+      $response = call_user_func_array($callTarget, $callParams);
+    } catch (GlobalException $E) {
+      if ($E instanceof Exception) {
+        throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
       } else {
-        $Controller->response->addData($response);
-        $response = $Controller->response;
+        throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
       }
     }
 
-    return $response;
+    if (is_callable($Controller)) {
+      $Controller = new Controller($this->request);
+    }
+
+    if (!is_null($response)) {
+      if ($response instanceof \kernel\Foundation\HTTP\Response) {
+        $Controller->response = $response;
+      }
+
+      if (is_callable($response)) {
+        $Controller->response->setData($response);
+      } else {
+        if ($response instanceof ReturnList) {
+          $response = new ResponsePagination($this->request, $response->total(), $response->getData());
+        }
+
+        if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
+          $Controller->response->setData($response);
+        }
+      }
+    }
   }
   public function run()
   {
@@ -357,50 +368,36 @@ class App
     }
     $callParams = array_merge([$this->request], $Route['params'] ?: []);
     $callParams = array_values($callParams);
-    $controllerExecutedResult = null;
 
     //* 执行中间件
     if (count($Middlewares)) {
       $app = $this;
-      $controllerExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, $Controller) {
-        try {
-          $response = call_user_func_array($callTarget, $callParams);
-        } catch (GlobalException $E) {
-          if ($E instanceof Exception) {
-            throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
-          } else {
-            throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
-          }
-        }
+      $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
+        $app->execureController($callTarget, $callParams, $Controller);
 
-        return $app->controllerExecutedResultHandle($response, $Controller);
+        return $Controller->response;
       });
     } else {
-      try {
-        $controllerExecutedResult = call_user_func_array($callTarget, $callParams);
-      } catch (GlobalException $E) {
-        if ($E instanceof Exception) {
-          throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
-        } else {
-          throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
-        }
-      }
-      $controllerExecutedResult = $this->controllerExecutedResultHandle($controllerExecutedResult, $Controller);
+      $this->execureController($callTarget, $callParams, $Controller);
     }
 
-    if ($Controller instanceof Controller && !$controllerExecutedResult->error) {
-      $Controller->response = $controllerExecutedResult;
+    if (!$Controller->response->error) {
       $Controller->completed();
     }
 
     $endTime = Date::milliseconds();
     if ($this->request->ajax()) {
-      $controllerExecutedResult->addBody([
+      $Controller->response->json();
+      $Controller->response->addBody([
         "requiredTime" => $endTime - $this->startTime . "ms",
         "version" => Config::get("version")
       ]);
     }
-    $controllerExecutedResult->output();
+    if (is_callable($Controller->response->getData())) {
+      call_user_func_array($Controller->response->getData(), []);
+    } else {
+      $Controller->response->output();
+    }
     exit;
   }
 }
