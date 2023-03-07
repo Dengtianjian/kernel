@@ -121,10 +121,10 @@ class GlobalAuthMiddleware extends Middleware
     ]);
     return $RR;
   }
-  public function handle(\Closure $next, Request $request, $Controller = null)
+  public function handle(\Closure $next)
   {
-    if (!($Controller instanceof AuthController)) {
-      $Verified = $this->verifyToken($request);
+    if (!($this->controller instanceof AuthController)) {
+      $Verified = $this->verifyToken($this->request);
       if ($Verified->error) {
         return $Verified;
       }
@@ -134,30 +134,30 @@ class GlobalAuthMiddleware extends Middleware
     $adminChecked = false;
     $authChecked = false;
 
-    if ($Controller->Admin) {
+    if ($this->controller->Admin) {
       $adminChecked = true;
-      $Verified = $this->verifyToken($request);
+      $Verified = $this->verifyToken($this->request);
       if ($Verified->error) {
         return $Verified;
       }
-      $adminVerified = $Controller->verifyAdmin();
+      $adminVerified = $this->controller->verifyAdmin();
       if ($adminVerified->error) {
         return $adminVerified;
       }
     }
-    if (!$adminChecked && $Controller->Auth) {
+    if (!$adminChecked && $this->controller->Auth) {
       $authChecked = true;
-      $Verified = $this->verifyToken($request);
+      $Verified = $this->verifyToken($this->request);
       if ($Verified->error) {
         return $Verified;
       }
-      $authVerified = $Controller->verifyAuth();
+      $authVerified = $this->controller->verifyAuth();
       if ($authVerified->error) {
         return $authVerified;
       }
     }
     if (!$authChecked) {
-      $Verified = $this->verifyToken($request, false);
+      $Verified = $this->verifyToken($this->request, false);
       if ($Verified->error) {
         return $Verified;
       }

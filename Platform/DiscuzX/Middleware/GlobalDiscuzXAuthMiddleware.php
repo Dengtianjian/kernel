@@ -85,10 +85,10 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
    * @param DiscuzXController $Controller
    * @return Response
    */
-  public function handle(\Closure $next, Request $request, $Controller = null)
+  public function handle(\Closure $next)
   {
-    if (!($Controller instanceof DiscuzXController)) {
-      $Verified = $this->verifyToken($request, false);
+    if (!($this->controller instanceof DiscuzXController)) {
+      $Verified = $this->verifyToken($this->request, false);
       if ($Verified->error) {
         return $Verified;
       }
@@ -101,16 +101,16 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
-    $SameOrigin = $this->sameOrigin($request);
+    $SameOrigin = $this->sameOrigin($this->request);
     if (!$SameOrigin) {
-      $Verified = $this->verifyToken($request);
+      $Verified = $this->verifyToken($this->request);
       if ($Verified->error) {
         return $Verified;
       }
     }
 
     $memberInfo = null;
-    if ($request->ajax() && !$SameOrigin) {
+    if ($this->request->ajax() && !$SameOrigin) {
       $Auth = Store::getApp("auth");
       if ($Auth && isset($Auth['userId'])) {
         $memberInfo = DiscuzXMember::get($Auth['userId']);

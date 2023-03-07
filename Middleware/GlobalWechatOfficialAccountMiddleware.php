@@ -3,18 +3,20 @@
 namespace kernel\Middleware;
 
 use kernel\Foundation\HTTP\Response\ResponseError;
+use kernel\Foundation\Middleware;
 use kernel\Foundation\Store;
 use kernel\Model\AccessTokenModel;
 use kernel\Platform\Wechat\AccessToken;
 
-class GlobalWechatOfficialAccountMiddleware
+class GlobalWechatOfficialAccountMiddleware extends Middleware
 {
   protected $accessTokenModel = null;
-  public function __construct()
+  public function __construct($request, $controller)
   {
+    parent::__construct($request, $controller);
     $this->accessTokenModel = AccessTokenModel::class;
   }
-  public function handle($next, $R, $AppId,$AppSecret)
+  public function handle($AppId, $AppSecret, $next)
   {
     $ATM = new $this->accessTokenModel();
     $Platform = "wechatOfficialAccount";

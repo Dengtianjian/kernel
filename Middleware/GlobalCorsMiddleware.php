@@ -8,8 +8,9 @@ if (!defined('F_KERNEL')) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\Middleware;
 
-class GlobalCorsMiddleware
+class GlobalCorsMiddleware extends Middleware
 {
   public function handle($next)
   {
