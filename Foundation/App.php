@@ -266,21 +266,22 @@ class App
     if (!count($Middlewares) === 0) return $callback();
 
     $middleware = array_shift($Middlewares);
-    $params = $middleware['params'] ?: [];
-    array_unshift($params, $this->request, $Controller);
-    if (count($Middlewares) === 0) {
-      array_unshift($params, $callback);
-    } else {
-      array_unshift($params, function () use ($Middlewares, $callback, $Controller) {
+    if (count($Middlewares) > 0) {
+      $next = function () use ($Middlewares, $Controller, $callback) {
         return $this->executeMiddleware($Middlewares, $Controller, $callback);
-      });
+      };
+    } else {
+      $next = $callback;
     }
+
+    $params = $middleware['params'] ?: [];
+    array_push($params, $next);
 
     if (is_callable($middleware['target'])) {
       $executedResponse = $middleware['target'](...$params);
     } else {
       $MInstance = new $middleware['target']($this->request, $Controller);
-      $executedResponse = $MInstance->handle(...$params);
+      $executedResponse = call_user_func_array([$MInstance, "handle"], $params);
     }
 
     return $executedResponse;
@@ -366,8 +367,7 @@ class App
         $ControllerHandleMethodName
       ];
     }
-    $callParams = array_merge([$this->request], $Route['params'] ?: []);
-    $callParams = array_values($callParams);
+    $callParams = $Route['params'] ?: [];
 
     //* 执行中间件
     if (count($Middlewares)) {
