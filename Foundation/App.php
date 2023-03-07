@@ -285,6 +285,29 @@ class App
 
     return $executedResponse;
   }
+  public function controllerExecutedResultHandle($response, $Controller)
+  {
+    if ($response instanceof ReturnList) {
+      $response = new ResponsePagination($this->request, $response->total(), $response->getData());
+    } else if ($response instanceof \kernel\Foundation\HTTP\Response) {
+      if (!is_callable($Controller) && $Controller instanceof Controller) {
+        $response->addData($Controller->response->getData());
+      }
+    } else if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
+      if (is_callable($Controller)) {
+        $response = new Response($response);
+        if (!$this->request->ajax()) {
+          $response->text();
+          $response->addBody($response->getData(), true);
+        }
+      } else {
+        $Controller->response->addData($response);
+        $response = $Controller->response;
+      }
+    }
+
+    return $response;
+  }
   public function run()
   {
     header("Access-Control-Allow-Origin:*");
@@ -338,7 +361,8 @@ class App
 
     //* 执行中间件
     if (count($Middlewares)) {
-      $controllerExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($callTarget, $callParams) {
+      $app = $this;
+      $controllerExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, $Controller) {
         try {
           $response = call_user_func_array($callTarget, $callParams);
         } catch (GlobalException $E) {
@@ -349,17 +373,7 @@ class App
           }
         }
 
-        if ($response instanceof ReturnList) {
-          $response = new ResponsePagination($this->request, $response->total(), $response->getData());
-        } else if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
-          $response = new Response($response);
-          if (!$this->request->ajax()) {
-            $response->text();
-            $response->addBody($response->getData(), true);
-          }
-        }
-
-        return $response;
+        return $app->controllerExecutedResultHandle($response, $Controller);
       });
     } else {
       try {
@@ -371,15 +385,7 @@ class App
           throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
         }
       }
-    }
-    if ($controllerExecutedResult instanceof ReturnList) {
-      $controllerExecutedResult = new ResponsePagination($this->request, $controllerExecutedResult->total(), $controllerExecutedResult->getData());
-    } else if (!($controllerExecutedResult instanceof \kernel\Foundation\HTTP\Response)) {
-      $controllerExecutedResult = new Response($controllerExecutedResult);
-      if (!$this->request->ajax()) {
-        $controllerExecutedResult->text();
-        $controllerExecutedResult->addBody($controllerExecutedResult->getData(), true);
-      }
+      $controllerExecutedResult = $this->controllerExecutedResultHandle($controllerExecutedResult, $Controller);
     }
 
     if ($Controller instanceof Controller && !$controllerExecutedResult->error) {

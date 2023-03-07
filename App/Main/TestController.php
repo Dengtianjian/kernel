@@ -180,6 +180,7 @@ class TestController extends Controller
     // ]);
     // $R->layout("default");
 
+    return new ResponseView("map.htm");
     return new ResponseView("template", [
       "name" => "test"
     ]);
