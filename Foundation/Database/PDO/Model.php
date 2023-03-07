@@ -5,6 +5,7 @@ namespace kernel\Foundation\Database\PDO;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Date;
+use mysqli_result;
 
 class Model
 {
@@ -248,9 +249,14 @@ class Model
     if ($this->returnSql) return $sql;
     $DB = $this->DB;
     $exist = $DB::query($sql);
-    if (empty($exist)) {
-      return 0;
+    if ($exist instanceof mysqli_result) {
+      $exist = $exist->fetch_assoc();
+      if (!empty($exist)) {
+        $exist = $exist[array_keys($exist)[0]];
+      }
+    } else if (is_array($exist)) {
+      $exist = $exist[array_keys($exist)[0]];
     }
-    return intval($exist[0]["1"]);
+    return boolval($exist);
   }
 }
