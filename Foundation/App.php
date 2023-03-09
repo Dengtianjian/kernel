@@ -311,7 +311,7 @@ class App
         $Controller->response->setData($response);
       } else {
         if ($response instanceof ReturnList) {
-          $response = new ResponsePagination($this->request, $response->total(), $response->getData());
+          $Controller->response = new ResponsePagination($this->request, $response->total(), $response->getData());
         }
 
         if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
