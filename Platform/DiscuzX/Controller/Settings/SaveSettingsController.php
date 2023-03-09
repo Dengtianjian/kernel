@@ -9,9 +9,9 @@ use kernel\Platform\DiscuzX\Service\DiscuzXSettingService;
 class SaveSettingsController extends DiscuzXController
 {
   public $Admin = true;
-  public function data(Request $R)
+  public function data()
   {
-    $settings = $R->body->some();
+    $settings = $this->request->body->some();
     return DiscuzXSettingService::quick()->saveItems($settings);
   }
 }

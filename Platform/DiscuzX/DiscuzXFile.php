@@ -89,7 +89,7 @@ class DiscuzXFile
     list($tag, $fileId) = explode(":", base64_decode(rawurldecode($fileId)));
 
     if ($tag !== "file") {
-      return new ResponseError(400, 400, "文件ID错误");
+      return new ReturnResult(false, 400, 400, "文件ID错误");
     }
     list($uniqueId, $saveDir, $fileName) = explode("|", $fileId);
     $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);

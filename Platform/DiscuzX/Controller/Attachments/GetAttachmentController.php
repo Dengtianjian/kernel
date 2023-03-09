@@ -24,7 +24,7 @@ class GetAttachmentController extends DiscuzXController
     "height",
     "filesize"
   ];
-  public function data(Request $request, $attachId)
+  public function data($attachId)
   {
     return DiscuzXAttachment::getAttachment($attachId, $this->query->get("w"), $this->query->get("h"));
   }

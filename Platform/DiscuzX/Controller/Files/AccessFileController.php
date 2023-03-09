@@ -10,12 +10,12 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class AccessFileController extends Controller
 {
-  public function data(Request $R, $FileId)
+  public function data($FileId)
   {
     $decodeData = DiscuzXFile::decodeFileId($FileId);
     if ($decodeData->error) {
       showmessage($decodeData->errorMessage());
     }
-    return new ResponseFile($R, $decodeData->getData("filePath"));
+    return new ResponseFile($this->request, $decodeData->getData("filePath"));
   }
 }

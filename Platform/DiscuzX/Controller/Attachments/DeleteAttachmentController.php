@@ -8,7 +8,7 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class DeleteAttachmentController extends DiscuzXController
 {
-  public function data(Request $R, $aid)
+  public function data($aid)
   {
     DiscuzXAttachment::deleteAttachment([175, 176]);
     return true;

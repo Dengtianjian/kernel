@@ -8,7 +8,7 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class DeleteFileController extends DiscuzXController
 {
-  public function data(Request $R, $fileId)
+  public function data($fileId)
   {
     return DiscuzXFile::deleteFile($fileId);
   }
