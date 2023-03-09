@@ -13,6 +13,7 @@ class Query
   private $conditions = [];
   public $tableName = "";
   public $sql = "";
+  public $_reset = true;
   function __construct($tableName)
   {
     $this->tableName = $tableName;
@@ -74,8 +75,16 @@ class Query
     }
     return $sql;
   }
-  function reset()
+  function reset($flag = null)
   {
+    if (!is_null($flag)) {
+      $this->_reset = $flag;
+      return $this;
+    }
+    if ($this->_reset === false) {
+      $this->_reset = true;
+      return $this;
+    }
     $this->options = [];
     $this->executeType = "";
     $this->conditions = [];

@@ -259,4 +259,9 @@ class Model
     }
     return boolval($exist);
   }
+  function reset($flag = true)
+  {
+    $this->query->reset($flag);
+    return $this;
+  }
 }
