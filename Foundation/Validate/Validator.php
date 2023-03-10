@@ -5,6 +5,7 @@ namespace kernel\Foundation\Validate;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Output;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
@@ -378,6 +379,12 @@ class Validator
     //* 自定义校验
     if (isset($Rule['CustomValidate'])) {
       $ValidatedResult = $Rule['CustomValidate']($Target, $Rule, $Data);
+      if (!($ValidatedResult instanceof Response)) {
+        throw new Exception("自定义校验函数返回值必须是继承自Response类的实例");
+      }
+      if ($ValidatedResult->error) {
+        return $ValidatedResult;
+      }
     }
     //* 使用了别的校验规则
     if (isset($Rule['use']) && is_array($Rule['use']) && count($Rule['use'])) {
