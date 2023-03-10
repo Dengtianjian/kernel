@@ -4,8 +4,7 @@
 namespace kernel\Foundation\HTTP\Request;
 
 use kernel\Foundation\Data\DataConversion;
-use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\Output;
+use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Validate\ValidateArray;
 use kernel\Foundation\Validate\ValidateRules;
 use kernel\Foundation\Validate\Validator;
@@ -24,6 +23,23 @@ class RequestData
    * @var DataConversion|array|null
    */
   protected $dataConversion = null;
+  /**
+   * 数据校验规则或者数据校验器
+   *
+   * @var Validator|array|null
+   */
+  protected $validator = null;
+  /**
+   * 实例化请求数据类
+   *
+   * @param DataConversion|array|null $dataConversion 数据转换规则
+   * @param Validator|array|null $validator 数据校验规则或者数据校验器
+   */
+  public function __construct($dataConversion = null, $validator = null)
+  {
+    $this->dataConversion = $dataConversion;
+    $this->validator = $validator;
+  }
   /**
    * 是否存在某个键
    *
@@ -75,60 +91,57 @@ class RequestData
     return $data;
   }
   /**
+   * 校验器结果
+   *
+   * @var ReturnResult
+   */
+  public $validatedResult = null;
+  /**
    * 处理数据
    * 会先执行校验器再使用数据转换器转换数据
-   * 校验器执行途中有问题会直接抛出错误
    * 数据转换器转换完后会把转换后的数据赋值到当前实例的data属性
    *
-   * @param DataConversion|array $DataConversion 数据转换器或者数转换规则
-   * @param Validator|Validator[] $Validator 校验器或者校验器数组
-   * @return mixed 数据
+   * @return void
    */
-  public function handle($DataConversion = null, $Validator = null)
+  public function handle()
   {
-    if (!empty($Validator)) {
-      $ValidatedResult = null;
-
-      if (is_array($Validator)) {
-        foreach ($Validator as $validatorItem) {
+    if (!empty($this->validator)) {
+      if (is_array($this->validator)) {
+        foreach ($this->validator as $validatorItem) {
           if (!($validatorItem instanceof Validator || $validatorItem instanceof ValidateRules)) {
-            throw new Exception("控制器的校验器字段必须传入Validator实例或者ValidateRules实例");
+            $this->validatedResult = new ReturnResult(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者ValidateRules实例");
+            return;
           }
         }
-        $Validator = new Validator(new ValidateArray($Validator), $this->data, $this->data);
-        $ValidatedResult = $Validator->validate();
+        $Validator = new Validator(new ValidateArray($this->validator), $this->data, $this->data);
+        $this->validatedResult = $Validator->validate();
       } else {
-        if (!($Validator instanceof Validator || $Validator instanceof ValidateRules)) {
-          throw new Exception("控制器的校验器字段必须传入Validator实例或者ValidateRules实例");
+        if (!($this->validator instanceof Validator || $this->validator instanceof ValidateRules)) {
+          $this->validatedResult = new ReturnResult(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者ValidateRules实例");
+          return;
         }
-        if ($Validator instanceof Validator) {
-          $ValidatedResult = $Validator->data($this->data)->fullData($this->data)->validate();
+        if ($this->validator instanceof Validator) {
+          $this->validatedResult = $this->validator->data($this->data)->fullData($this->data)->validate();
         } else {
-          $Validator = new Validator($Validator, $this->data, $this->data);
-          $ValidatedResult = $Validator->validate();
+          $Validator = new Validator($this->validator, $this->data, $this->data);
+          $this->validatedResult = $Validator->validate();
         }
-      }
-
-      if ($ValidatedResult->error) {
-        $ValidatedResult->throwError();
+        if ($this->validatedResult->error) return;
       }
     }
 
-    if (!is_null($DataConversion)) {
-      $this->dataConversion = $DataConversion;
-      if ($DataConversion instanceof DataConversion) {
-        $ConvertedData = $DataConversion->data($this->data)->convert();
+    if (!is_null($this->dataConversion)) {
+      if ($this->dataConversion instanceof DataConversion) {
+        $ConvertedData = $this->dataConversion->data($this->data)->convert();
         if ($ConvertedData !== false) {
           $this->data = $ConvertedData;
         }
       } else {
-        $ConvertedData = DataConversion::quick($this->data, $DataConversion, false, true);
+        $ConvertedData = DataConversion::quick($this->data, $this->dataConversion, false, true);
         if ($ConvertedData !== false) {
           $this->data = $ConvertedData;
         }
       }
     }
-
-    return $this->data;
   }
 }
