@@ -5,7 +5,6 @@ namespace kernel\Foundation;
 use Exception as GlobalException;
 use gstudio_kernel\Foundation\ReturnResult\ReturnList;
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
@@ -358,6 +357,7 @@ class App
       $callTarget = $Route['controller'];
     } else {
       $Controller = new $Route['controller']($this->request);
+      $Controller->before();
       $ControllerHandleMethodName = is_null($Route['controllerHandleMethodName']) ? 'data' : $Route['controllerHandleMethodName'];
       if (!method_exists($Controller, $ControllerHandleMethodName)) {
         throw new Exception("控制器缺少 $ControllerHandleMethodName 方法");
@@ -367,23 +367,24 @@ class App
         $ControllerHandleMethodName
       ];
     }
-    $callParams = $Route['params'] ?: [];
-
-    //* 执行中间件
-    if (count($Middlewares)) {
-      $app = $this;
-      $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
-        $app->execureController($callTarget, $callParams, $Controller);
-
-        return $Controller->response;
-      });
-    } else {
-      $this->execureController($callTarget, $callParams, $Controller);
-    }
 
     if (!$Controller->response->error) {
-      $Controller->completed();
+      $callParams = $Route['params'] ?: [];
+
+      //* 执行中间件
+      if (count($Middlewares)) {
+        $app = $this;
+        $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
+          $app->execureController($callTarget, $callParams, $Controller);
+
+          return $Controller->response;
+        });
+      } else {
+        $this->execureController($callTarget, $callParams, $Controller);
+      }
     }
+
+    $Controller->after();
 
     $endTime = Date::milliseconds();
     if ($this->request->ajax()) {
