@@ -12,8 +12,9 @@ use kernel\Platform\DiscuzX\Model\DiscuzXLoginsModel;
 
 class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
 {
-  public function __construct()
+  public function __construct(Request $request, $controller)
   {
+    parent::__construct($request, $controller);
     $this->LoginsModel = DiscuzXLoginsModel::class;
   }
   /**
