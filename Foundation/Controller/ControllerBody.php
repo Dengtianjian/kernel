@@ -11,6 +11,6 @@ class ControllerBody extends RequestBody
   {
     parent::__construct($bodyDataConversion, $bodyValidator);
     $this->data = $request->body->some();
-    $this->handle($bodyDataConversion, $bodyValidator);
+    $this->handle();
   }
 }

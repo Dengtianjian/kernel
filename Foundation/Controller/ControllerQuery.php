@@ -12,6 +12,6 @@ class ControllerQuery extends RequestQuery
   {
     parent::__construct($queryDataConversion, $queryValidator);
     $this->data = $request->query->some();
-    $this->handle($queryDataConversion, $queryValidator);
+    $this->handle();
   }
 }

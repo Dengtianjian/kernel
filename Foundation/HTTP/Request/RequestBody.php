@@ -8,8 +8,11 @@ use kernel\Foundation\Output;
 class RequestBody extends RequestData
 {
   protected $body = [];
-  public function __construct()
+  public function __construct($dataConversion = null, $validator = null)
   {
+    $this->dataConversion = $dataConversion;
+    $this->validator = $validator;
+
     $input = \file_get_contents("php://input");
     $data = [];
     if ($input) {
