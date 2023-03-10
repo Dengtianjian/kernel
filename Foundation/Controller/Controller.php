@@ -7,6 +7,7 @@ use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Output;
 use kernel\Foundation\Data\Serializer;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\ReturnResult\ReturnResult;
 
 class Controller
 {
@@ -16,44 +17,44 @@ class Controller
    *
    * @var array|\kernel\Foundation\Data\DataConversion|ControllerQuery
    */
-  public $query = null;
+  protected $query = null;
   /**
    * 请求体数据转换规则
    * 实例化后该值会变成ControllerBody实例
    *
    * @var array|\kernel\Foundation\Data\DataConversion|ControllerBody
    */
-  public $body = null;
+  protected $body = null;
   /**
    * 查询参数校验器
    *
    * @var array|\kernel\Foundation\Validate\Validator
    */
-  public $queryValidator = [];
+  protected $queryValidator = [];
   /**
    * 请求体数据校验器
    *
    * @var array|\kernel\Foundation\Validate\Validator
    */
-  public $bodyValidator = [];
+  protected $bodyValidator = [];
   /**
    * 响应的数据序列化规则
    *
    * @var array
    */
-  public $serializes = null;
+  protected $serializes = null;
   /**
    * 输出数据处理管道
    *
    * @var array
    */
-  public $pipes = [];
+  protected $pipes = [];
   /**
    * 请求实例
    *
    * @var \kernel\Foundation\HTTP\Request
    */
-  public $request = null;
+  protected $request = null;
   /**
    * 控制器执行完data方法后返回的响应实例
    *
@@ -69,17 +70,33 @@ class Controller
     $this->body = new ControllerBody($request, $this->body, $this->bodyValidator);
   }
   /**
-   * 控制器处理方法执行完成，执行完成方法
+   * 控制器执行处理方法执行前钩子
    *
    * @return void
    */
-  final function completed()
+  final function before()
   {
-    if (!is_null($this->pipes) && is_array($this->pipes) && count($this->pipes)) {
-      $this->pipe();
+    if ($this->query->validatedResult->error) {
+      $this->response = $this->query->validatedResult;
     }
-    if (!is_null($this->serializes) || is_array($this->serializes) && count($this->serializes)) {
-      $this->serialization();
+    if ($this->body->validatedResult->error) {
+      $this->response = $this->body->validatedResult;
+    }
+  }
+  /**
+   * 控制器执行处理方法执行后钩子
+   *
+   * @return void
+   */
+  final function after()
+  {
+    if (!$this->response->error) {
+      if (!is_null($this->pipes) && is_array($this->pipes) && count($this->pipes)) {
+        $this->pipe();
+      }
+      if (!is_null($this->serializes) || is_array($this->serializes) && count($this->serializes)) {
+        $this->serialization();
+      }
     }
   }
   /**
