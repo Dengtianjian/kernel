@@ -277,6 +277,7 @@ class App
     array_push($params, $next);
 
     if (is_callable($middleware['target'])) {
+      array_unshift($params, $this->request);
       $executedResponse = $middleware['target'](...$params);
     } else {
       $MInstance = new $middleware['target']($this->request, $Controller);
@@ -352,9 +353,11 @@ class App
     }
 
     $callTarget = [];
+    $callParams = $Route['params'] ?: [];
     $Controller = null;
     if (is_callable($Route['controller'])) {
       $callTarget = $Route['controller'];
+      array_unshift($callParams, $this->request);
     } else {
       $Controller = new $Route['controller']($this->request);
       $Controller->before();
@@ -369,7 +372,6 @@ class App
     }
 
     if (!$Controller->response->error) {
-      $callParams = $Route['params'] ?: [];
 
       //* 执行中间件
       if (count($Middlewares)) {
