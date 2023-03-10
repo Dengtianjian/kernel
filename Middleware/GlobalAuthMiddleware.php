@@ -8,9 +8,9 @@ if (!defined('F_KERNEL')) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware;
-use kernel\Foundation\Response;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Model\LoginsModel;
@@ -19,20 +19,20 @@ use kernel\Service\AuthService;
 class GlobalAuthMiddleware extends Middleware
 {
   protected $LoginsModel = null;
-  public function __construct()
+  public function __construct(Request $request, Controller $controller)
   {
     $this->LoginsModel = LoginsModel::class;
+    parent::__construct($request, $controller);
   }
   /**
    * 判断当前请求是否同源
    *
-   * @param Request $request 请求实例
    * @return bool
    */
-  protected function sameOrigin(Request $request)
+  protected function sameOrigin()
   {
-    if ($request->header->has("Sec-Fetch-Site")) {
-      return $request->header->get("Sec-Fetch-Site") === "same-origin";
+    if ($this->request->header->has("Sec-Fetch-Site")) {
+      return $this->request->header->get("Sec-Fetch-Site") === "same-origin";
     } else {
       $Origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : null;
       if (!$Origin) {
@@ -60,14 +60,13 @@ class GlobalAuthMiddleware extends Middleware
   /**
    * 验证token
    *
-   * @param Request $request 请求体
    * @param boolean $strongCheck 严格校验
    * @return ReturnResult
    */
-  protected function verifyToken(Request $request, $strongCheck = true)
+  protected function verifyToken($strongCheck = true)
   {
     $RR = new ReturnResult(true);
-    $token = $request->header->get("Authorization") ?: $request->query->get("authToken") ?: $request->body->get("authToken");
+    $token = $this->request->header->get("Authorization") ?: $this->request->query->get("authToken") ?: $this->request->body->get("authToken");
     if ($strongCheck && (empty($token) || is_null($token))) {
       $RR->error(401, "Auth:401001", "请登录后重试", null, "空Token");
       return $RR;
@@ -124,7 +123,7 @@ class GlobalAuthMiddleware extends Middleware
   public function handle(\Closure $next)
   {
     if (!($this->controller instanceof AuthController)) {
-      $Verified = $this->verifyToken($this->request);
+      $Verified = $this->verifyToken();
       if ($Verified->error) {
         return $Verified;
       }
@@ -136,7 +135,7 @@ class GlobalAuthMiddleware extends Middleware
 
     if ($this->controller->Admin) {
       $adminChecked = true;
-      $Verified = $this->verifyToken($this->request);
+      $Verified = $this->verifyToken();
       if ($Verified->error) {
         return $Verified;
       }
@@ -147,7 +146,7 @@ class GlobalAuthMiddleware extends Middleware
     }
     if (!$adminChecked && $this->controller->Auth) {
       $authChecked = true;
-      $Verified = $this->verifyToken($this->request);
+      $Verified = $this->verifyToken();
       if ($Verified->error) {
         return $Verified;
       }
@@ -157,7 +156,7 @@ class GlobalAuthMiddleware extends Middleware
       }
     }
     if (!$authChecked) {
-      $Verified = $this->verifyToken($this->request, false);
+      $Verified = $this->verifyToken(false);
       if ($Verified->error) {
         return $Verified;
       }
