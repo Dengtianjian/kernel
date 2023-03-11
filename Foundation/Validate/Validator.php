@@ -144,8 +144,10 @@ class Validator
       //* 必传检测
       if (isset($Rule['required'])) {
         $checkedPass = true;
-        if (is_null($Target) || is_array($Target) && empty($Target)) {
+        if (is_null($Target)) {
           $checkedPass = false;
+        } else if (is_array($Target)) {
+          $checkedPass = !empty($Target);
         } else if (!is_numeric($Target) && empty(trim($Target))) {
           $checkedPass = false;
         }
