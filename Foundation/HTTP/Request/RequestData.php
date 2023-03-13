@@ -83,7 +83,7 @@ class RequestData
     foreach ($keys as $key) {
       if ($this->has($key)) {
         $data[$key] = $this->get($key);
-      } else {
+      } else if ($completion) {
         $data[$key] = null;
       }
     }
