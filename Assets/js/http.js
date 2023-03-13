@@ -9,6 +9,7 @@ class CDZXHTTP {
     return CDZXHTTP;
   }
   static send(url, method = "get", params = null) {
+    let _view = view;
     return new Promise((resolve, reject) => {
       let config = {
         method,
@@ -35,7 +36,8 @@ class CDZXHTTP {
           if (res.status === 204) {
             return true;
           }
-          if (view) {
+          console.log(_view);
+          if (_view) {
             return res.text();
           }
           return res.json();
