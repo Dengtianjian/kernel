@@ -60,6 +60,25 @@ class DiscuzXModel extends Model
   }
   function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
+    $Call = get_class($this);
+    if ($Call::$Timestamps) {
+      $now = time();
+      if ($Call::$CreatedAt) {
+        array_push($fieldNames, "createdAt");
+      }
+      if ($Call::$UpdatedAt) {
+        array_push($fieldNames, "updatedAt");
+      }
+      foreach ($values as &$value) {
+        array_push($value, $now);
+      }
+
+      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+        foreach ($Call::$TimestampFields as $item) {
+          $data[$item] = $now;
+        }
+      }
+    }
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
     return DiscuzXDB::batchInsert($this->query);
