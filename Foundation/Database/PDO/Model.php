@@ -99,9 +99,12 @@ class Model
     $this->query->limit($startOrNumber, $number);
     return $this;
   }
-  function page($pages, $pageLimit = 10)
+  function page($pages, $perPage = 10)
   {
-    $this->query->page($pages, $pageLimit);
+    if ($pages === 0 && $perPage === 0) {
+      return $this;
+    }
+    $this->query->page($pages, $perPage);
     return $this;
   }
   function cancelPage()
