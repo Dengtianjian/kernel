@@ -1,7 +1,12 @@
 let requestUrl = null;
+let view = false;
 class CDZXHTTP {
   static setRequestUrl(url) {
     requestUrl = url;
+  }
+  static view(flag = true) {
+    view = flag;
+    return CDZXHTTP;
   }
   static send(url, method = "get", params = null) {
     return new Promise((resolve, reject) => {
@@ -17,7 +22,9 @@ class CDZXHTTP {
         }
       }
       let headers = new Headers();
-      headers.append("x-ajax", "fetch");
+      if (!view) {
+        headers.append("x-ajax", "fetch");
+      }
       headers.append("x-client", "520");
       config["headers"] = headers;
       if (typeof FORMHASH != "undefined") {
@@ -27,6 +34,9 @@ class CDZXHTTP {
         .then((res) => {
           if (res.status === 204) {
             return true;
+          }
+          if (view) {
+            return res.text();
           }
           return res.json();
         })
@@ -41,7 +51,11 @@ class CDZXHTTP {
             }
             resolve(res);
           }
-        });
+        }).catch(err => {
+          showError(err.message ?? "加载失败，请稍后重试");
+        }).finally(() => {
+          view = false;
+        })
     });
   }
   static makeQueryString(queryObj) {
