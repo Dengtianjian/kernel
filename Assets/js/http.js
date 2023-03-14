@@ -36,7 +36,6 @@ class CDZXHTTP {
           if (res.status === 204) {
             return true;
           }
-          console.log(_view);
           if (_view) {
             return res.text();
           }
