@@ -28,7 +28,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $RR = new ReturnResult(true);
     $Member = getglobal("member");
     if ((int)$Member['uid'] === 0) {
-      $RR->error(401, "DiscuzXAdminAuth:401001", "请登录后重试", "空Token");
+      $RR->error(401, "DiscuzXAdminAuth:401001", "请登录后重试", "未登录，缺少Token（Admin）");
     }
     if (is_array($Controller->Admin)) {
       if (!in_array($Member['adminid'], $Controller->Admin)) {
@@ -56,7 +56,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $RR = new ReturnResult(true);
     $Member = getglobal("member");
     if ((int)$Member['uid'] === 0) {
-      $RR->error(401, "DiscuzXAuth:401001", "请登录后重试", "空Token");
+      $RR->error(401, "DiscuzXAuth:401001", "请登录后重试", "未登录，缺少Token（Auth）");
     }
     if (is_array($Controller->Auth)) {
       if (!in_array($Member['groupid'], $Controller->Auth)) {
@@ -89,7 +89,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   public function handle(\Closure $next)
   {
     if (!($this->controller instanceof DiscuzXController)) {
-      $Verified = $this->verifyToken($this->request, false);
+      $Verified = $this->verifyToken(false);
       if ($Verified->error) {
         return $Verified;
       }
@@ -102,9 +102,9 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
-    $SameOrigin = $this->sameOrigin($this->request);
+    $SameOrigin = $this->sameOrigin();
     if (!$SameOrigin) {
-      $Verified = $this->verifyToken($this->request);
+      $Verified = $this->verifyToken();
       if ($Verified->error) {
         return $Verified;
       }
@@ -148,7 +148,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
     if (!$authChecked && !$adminChecked && !$verified) {
-      $verified = $this->verifyToken($request, false);
+      $verified = $this->verifyToken(false);
     }
     if ($verified->error) {
       return $verified;

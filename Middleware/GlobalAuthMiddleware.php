@@ -68,7 +68,7 @@ class GlobalAuthMiddleware extends Middleware
     $RR = new ReturnResult(true);
     $token = $this->request->header->get("Authorization") ?: $this->request->query->get("authToken") ?: $this->request->body->get("authToken");
     if ($strongCheck && (empty($token) || is_null($token))) {
-      $RR->error(401, "Auth:401001", "请登录后重试", null, "空Token");
+      $RR->error(401, "Auth:401001", "请登录后重试", "未登录，缺少Token（verify）");
       return $RR;
     }
     if (empty($token)) {
