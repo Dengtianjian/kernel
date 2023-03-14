@@ -348,6 +348,13 @@ class Response
         if ($this->FormatOutputTypeOfText) {
           Output::format($data);
         } else {
+          if ($this->ResponseStatusCode > 299) {
+            $detailsText = F_APP_MODE === "development" ? Output::format($this->ResponseDetails) : "";
+            $data = <<<EOT
+{$this->ResponseMessage}\n
+{$detailsText}
+EOT;
+          }
           Output::printContent($data);
         }
         break;
