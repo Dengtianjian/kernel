@@ -90,39 +90,6 @@ class DiscuzXApp extends App
      */
     define("F_DISCUZX_DATA_PLUGIN", File::genPath(F_ROOT, "data", "plugindata", F_APP_ID));
 
-    $KernelRelativePath = "";
-    $AppRelativePath = "";
-    if (!function_exists("array_key_last")) {
-      function array_key_last($arr)
-      {
-        $keys = array_keys($arr);
-        return $keys[count($keys) - 1];
-      }
-    }
-    //* kernel和app的两个绝对路径对比，获取相对路径
-    if (F_KERNEL_ROOT === F_APP_ROOT) {
-      $KernelDirs = explode(DIRECTORY_SEPARATOR, F_KERNEL_ROOT);
-      $AppRelativePath = $KernelRelativePath = $KernelDirs[array_key_last($KernelDirs)];
-    } else {
-      $KernelDirs = explode(DIRECTORY_SEPARATOR, F_KERNEL_ROOT);
-      $AppDirs = explode(DIRECTORY_SEPARATOR, F_APP_ROOT);
-
-      $kernelDiffStartIndex = 0;
-      $appDiffStartIndex = 0;
-
-      foreach ($KernelDirs as $Index => $Dir) {
-        if (isset($AppDirs[$Index])) {
-          $kernelDiffStartIndex = $Index;
-          $appDiffStartIndex = $Index;
-        } else {
-          $kernelDiffStartIndex = $Index;
-        }
-      }
-
-      $KernelRelativePath = $KernelDirs[$kernelDiffStartIndex];
-      $AppRelativePath = $AppDirs[$appDiffStartIndex];
-    }
-
     /**
      * 内核目录，相对路径
      */
