@@ -372,15 +372,17 @@ class App
     }
 
     if (!$Controller->response->error) {
-
       //* 执行中间件
       if (count($Middlewares)) {
         $app = $this;
-        $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
+        $MiddlewareExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
           $app->execureController($callTarget, $callParams, $Controller);
 
           return $Controller->response;
         });
+        if ($MiddlewareExecutedResult->error) {
+          $Controller->response = $MiddlewareExecutedResult;
+        }
       } else {
         $this->execureController($callTarget, $callParams, $Controller);
       }
