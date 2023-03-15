@@ -45,6 +45,7 @@ class GlobalAuthMiddleware
         }
         return Config::get("cors/sameOrigin") === $Origin;
       } else {
+        // debug([F_BASE_URL, $Origin]);
         return F_BASE_URL === $Origin;
       }
     }
@@ -53,7 +54,7 @@ class GlobalAuthMiddleware
   {
     $token = $request->headers("Authorization") ?: $request->query("Authorization") ?: $request->body("Authorization");
     if ($strongCheck && (empty($token) || !$token)) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
+      Response::error(401, "Auth:401011", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
     }
     if (empty($token)) {
       return;
@@ -105,7 +106,7 @@ class GlobalAuthMiddleware
   {
     $Member = getglobal("member");
     if ((int)$Member['uid'] === 0) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
+      Response::error(401, "Auth:40106", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
     }
     if (is_array($controller::$Admin)) {
       if (!in_array($Member['adminid'], $controller::$Admin)) {
@@ -126,7 +127,7 @@ class GlobalAuthMiddleware
     $Member = getglobal("member");
     // Output::debug($Member);
     if ((int)$Member['uid'] === 0) {
-      Response::error(401, "Auth:40101", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
+      Response::error(401, "Auth:40107", Lang::value("kernel/auth/needLogin"), [], Lang::value("kernel/auth/emptyToken"));
     }
     if (is_array($controller::$Auth)) {
       if (!in_array($Member['groupid'], $controller::$Auth)) {
