@@ -46,7 +46,6 @@ EOT;
       $content = "\n" . $content;
     }
     error_log($content, 3, $logFilePath);
-    chmod($logFilePath, 0777);
   }
   /**
    * 读取指定日期下的日志文件
