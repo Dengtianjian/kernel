@@ -105,6 +105,7 @@ class RequestData
    */
   public function handle()
   {
+    $this->validatedResult = new ReturnResult(true);
     if (!empty($this->validator)) {
       if (is_array($this->validator)) {
         foreach ($this->validator as $validatorItem) {
