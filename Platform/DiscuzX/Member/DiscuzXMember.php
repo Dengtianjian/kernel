@@ -143,7 +143,7 @@ class DiscuzXMember
     global $_G;
     $_G['setting']['dynavt'] = 1;
     foreach ($members as &$MemberItem) {
-      $MemberItem['avatar'] = \avatar($MemberItem, "middle", true);
+      $MemberItem['avatar'] = \avatar($MemberItem['uid'], "middle", true);
 
       if (isset($Groups[$MemberItem['groupid']])) {
         $MemberItem['group'] = $Groups[$MemberItem['groupid']];
