@@ -68,7 +68,7 @@ class DiscuzXAttachment
       $aid => $FU->attach
     ]);
 
-    $R->addData($aid, true);
+    $R->addData($FU->attach, true);
     return $R;
   }
   /**
@@ -77,7 +77,7 @@ class DiscuzXAttachment
    * @param integer $AttachmentId 附件ID
    * @return ReturnResult
    */
-  public static function getAttachment($AttachmentId, $thumbWidth = 140, $thumbHeight = 140)
+  public static function getAttachment($AttachmentId, $thumbWidth = null, $thumbHeight = null)
   {
     $AM = new DiscuzXModel("forum_attachment");
     $attachment = $AM->where("aid", $AttachmentId)->getOne();
@@ -93,8 +93,25 @@ class DiscuzXAttachment
     $attachment['downloadLink'] = "forum.php?mod=attachment&aid=" . aidencode($AttachmentId) . "&nothumb=yes";
     $attachment['thumbURL'] = null;
     if ($attachment['isimage']) {
+      if (is_null($thumbWidth)) {
+        $thumbWidth = $attachment['width'];
+      }
+      if (is_null($thumbHeight)) {
+        $thumbHeight = $attachment['height'];
+      }
       $attachment['thumbURL'] = getforumimg($AttachmentId, 0, $thumbWidth, $thumbHeight, fileext($attachment['filename']));
     }
+
+    $attachment = [
+      "aid" => $attachment['aid'],
+      "fileName" => $attachment['filename'],
+      "isImage" => $attachment['isimage'],
+      "size" => $attachment['filesize'],
+      "width" =>  $attachment['width'],
+      "height" =>  $attachment['height'],
+      "downloadLink" => $attachment['downloadLink'],
+      "thumbURL" => $attachment['thumbURL']
+    ];
 
     return new ReturnResult($attachment);
   }

@@ -10,7 +10,6 @@ class DeleteAttachmentController extends DiscuzXController
 {
   public function data($aid)
   {
-    DiscuzXAttachment::deleteAttachment([175, 176]);
-    return true;
+    return DiscuzXAttachment::deleteAttachment($aid);
   }
 }

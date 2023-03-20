@@ -14,15 +14,14 @@ class GetAttachmentController extends DiscuzXController
     "h" => "int",
   ];
   public $serializes = [
-    "aid",
-    "filename",
-    "attachment",
-    "downloadLink",
-    "thumbURL",
-    "isimage",
-    "width",
-    "height",
-    "filesize"
+    "aid" => "int",
+    "fileName" => "string",
+    "isImage" => "bool",
+    "size" => "double",
+    "width" => "double",
+    "height" => "double",
+    "downloadLink" => "string",
+    "thumbURL" => "string",
   ];
   public function data($attachId)
   {
