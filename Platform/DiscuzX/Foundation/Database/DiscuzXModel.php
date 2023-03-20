@@ -65,12 +65,15 @@ class DiscuzXModel extends Model
       $now = time();
       if ($Call::$CreatedAt) {
         array_push($fieldNames, "createdAt");
+        foreach ($values as &$value) {
+          array_push($value, $now);
+        }
       }
       if ($Call::$UpdatedAt) {
         array_push($fieldNames, "updatedAt");
-      }
-      foreach ($values as &$value) {
-        array_push($value, $now);
+        foreach ($values as &$value) {
+          array_push($value, $now);
+        }
       }
 
       if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
