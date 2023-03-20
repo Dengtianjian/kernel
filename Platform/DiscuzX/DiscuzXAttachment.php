@@ -131,8 +131,8 @@ class DiscuzXAttachment
    */
   public static function registerRoute()
   {
-    Router::post("attachment", AttachmentsNamespace\UploadAttachmentController::class);
-    Router::same("attachment/{fileId:\w+}", function () {
+    Router::post("attachments", AttachmentsNamespace\UploadAttachmentController::class);
+    Router::same("attachments/{fileId:\w+}", function () {
       Router::get(AttachmentsNamespace\GetAttachmentController::class);
       Router::delete(AttachmentsNamespace\DeleteAttachmentController::class);
     });

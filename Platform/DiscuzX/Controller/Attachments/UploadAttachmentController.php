@@ -8,6 +8,7 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class UploadAttachmentController extends DiscuzXController
 {
+  public $Auth = false;
   public function data()
   {
     if (count($_FILES) === 0 || !$_FILES['file']) {
