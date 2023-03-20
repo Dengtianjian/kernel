@@ -32,7 +32,7 @@ class UploadAttachmentController extends DiscuzXController
       $url = "forum.php?mod=attachment&aid=" . $aidEncode . "&nothumb=yes";
       $thumbURL = null;
       if ($Attachment['isimage']) {
-        $thumbURL = getforumimg($Attachment['aid'], 0, $Attachment['imageinfo'][0], $Attachment['imageinfo'][1]);
+        $thumbURL = getforumimg($Attachment['aid'], 0, $Attachment['imageinfo'][0], $Attachment['imageinfo'][1], $Attachment['ext']);
       }
       $data = [
         "aid" => $Attachment['aid'],
