@@ -204,7 +204,14 @@ class DataConversion
               $Data[$key] = $value($this->data[$key]);
             } else {
               if (is_array($this->data[$key])) {
-                $Data[$key] = self::quick($this->data[$key], $value, $this->completion, $this->removeNotExistRuleKey);
+                if (Arr::isAssoc($this->data[$key])) {
+                  $Data[$key] = self::quick($this->data[$key], $value, $this->completion, $this->removeNotExistRuleKey);
+                } else {
+                  $Data[$key] = $this->data[$key];
+                  foreach ($Data[$key] as &$item) {
+                    $item = $this->auto($item);
+                  }
+                }
               } else {
                 $Data[$key] = $this->setType($this->data[$key], $value);
               }
