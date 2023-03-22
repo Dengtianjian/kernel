@@ -70,9 +70,12 @@ class Str
    */
   static function generateRandomNumbers($min = 0, $max = 100)
   {
-    list($usec, $sec) = explode(' ', microtime());
-    $seed = $sec + $usec * 1000000;
-    mt_srand($seed);
-    return random_int($min, $max);
+    if (function_exists("random_int")) {
+      list($usec, $sec) = explode(' ', microtime());
+      $seed = $sec + $usec * 1000000;
+      mt_srand($seed);
+      return random_int($min, $max);
+    }
+    return mt_rand($min, $max);
   }
 }
