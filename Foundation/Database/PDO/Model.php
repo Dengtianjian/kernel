@@ -2,12 +2,13 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\BaseObject;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Date;
 use mysqli_result;
 
-class Model
+class Model extends BaseObject
 {
   public $tableName = "";
   public $tableStructureSQL = "";
@@ -74,6 +75,7 @@ class Model
    * 快速实例化
    *
    * @param string $tableName 表名称
+   * @deprecated <0.3.5.20230218.1105
    */
   static function quick($tableName = null)
   {
