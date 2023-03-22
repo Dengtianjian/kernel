@@ -50,6 +50,8 @@ class App
     //* 定义常量
     $this->defineConstants();
 
+    include_once(File::genPath(F_KERNEL_ROOT . "/Foundation/Common.php"));
+
     //* 初始化配置
     $this->initConfig();
 

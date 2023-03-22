@@ -23,11 +23,11 @@ class TestController extends Controller
 
   public function __construct(Request $R)
   {
-    
+
     parent::__construct($R);
   }
   public function data(Request $R)
   {
-    return 1;
+    return Import("Configs/ConfigFun", [3, 6]);
   }
 }
