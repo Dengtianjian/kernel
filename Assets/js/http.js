@@ -1,5 +1,5 @@
-let requestUrl = null;
-let view = false;
+var requestUrl = null;
+var view = false;
 class CDZXHTTP {
   static setRequestUrl(url) {
     requestUrl = url;
