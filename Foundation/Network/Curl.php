@@ -14,6 +14,8 @@ use kernel\Foundation\Output;
  * 二次封装的CURL类
  *
  * 通过init静态方法实例化后链式调用实例化后的方法
+ * 
+ * @deprecated <0.3.5.20230218.1105
  */
 
 class Curl

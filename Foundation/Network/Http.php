@@ -6,6 +6,11 @@ if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
+/**
+ * HTTP
+ * 
+ * @deprecated <0.3.5.20230218.1105
+ */
 class Http
 {
   /**
