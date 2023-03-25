@@ -3,6 +3,7 @@
 namespace kernel\Platform\DiscuzX\Middleware;
 
 use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Store;
 use kernel\Middleware\GlobalAuthMiddleware;
@@ -20,70 +21,72 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   /**
    * 验证视图控制器管理员权限
    *
-   * @param DiscuzXController $Controller 控制器
    * @return ReturnResult
    */
-  public function verifyViewControllerAdmin(DiscuzXController $Controller)
+  public function verifyViewControllerAdmin()
   {
     $RR = new ReturnResult(true);
     $Member = getglobal("member");
-    if ((int)$Member['uid'] === 0) {
-      $RR->error(401, "DiscuzXAdminAuth:401001", "请登录后重试", "未登录，缺少Token（Admin）");
-    }
-    if (is_array($Controller->Admin)) {
-      if (!in_array($Member['adminid'], $Controller->Admin)) {
-        $RR->error(403, "DiscuzXAdminAuth:403001", "无权访问", "非管理员，无权访问");
+    if (is_bool($this->controller->Admin)) {
+      if ((int)$Member['uid'] === 0) {
+        $RR->error(401, "DiscuzXAdminAuth:401001", "请登录后重试", "未登录，缺少Token（Admin）");
       }
-    } else if (is_bool($Controller->Admin)) {
-      if ((int)$Member['adminid'] !== 1) {
-        $RR->error(403, "DiscuzXAdminAuth:403003", "无权访问", "非管理员，无权访问");
-      }
-    } else if (is_numeric($Controller->Admin) || is_string($Controller->Admin)) {
-      if ((int)$Member['adminid'] !== (int)$Controller->Admin) {
-        $RR->error(403, "DiscuzXAdminAuth:403004", "无权访问", "非管理员，无权访问");
+      if ((int)$Member['adminid'] === 0) {
+        $RR->error(401, "DiscuzXAdminAuth:401002", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
       }
     }
+    if ((int)$Member['adminid'] !== 1) {
+      if (is_array($this->controller->Admin)) {
+        if (!in_array($Member['adminid'], $this->controller->Admin)) {
+          $RR->error(403, "DiscuzXAdminAuth:403001", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
+        }
+      } else if (is_numeric($this->controller->Admin) || is_string($this->controller->Admin)) {
+        if ((int)$Member['adminid'] !== (int)$this->controller->Admin) {
+          $RR->error(403, "DiscuzXAdminAuth:403002", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
+        }
+      }
+    }
+
     return $RR;
   }
   /**
    * 验证视图控制器权限
    *
-   * @param DiscuzXController $Controller 控制器
    * @return ReturnResult
    */
-  public function verifyViewControllerAuth(DiscuzXController $Controller)
+  public function verifyViewControllerAuth()
   {
     $RR = new ReturnResult(true);
     $Member = getglobal("member");
-    if ((int)$Member['uid'] === 0) {
-      $RR->error(401, "DiscuzXAuth:401001", "请登录后重试", "未登录，缺少Token（Auth）");
-    }
-    if (is_array($Controller->Auth)) {
-      if (!in_array($Member['groupid'], $Controller->Auth)) {
-        $RR->error(403, "DiscuzXAuth:403001", "无权访问", "非管理员，无权访问");
+    if (is_bool($this->controller->Auth)) {
+      if ((int)$Member['uid'] === 0) {
+        $RR->error(401, "DiscuzXAuth:401001", "请登录后重试", "未登录，缺少Token（Auth）");
       }
-    } else if (is_numeric($Controller->Auth) || is_string($Controller->Auth)) {
-      if ((int)$Member['groupid'] !== (int)$Controller->Auth) {
-        $RR->error(403, "DiscuzXAuth:403003", "无权访问", "非管理员，无权访问");
+    }
+    if (is_array($this->controller->Auth)) {
+      if (!in_array($Member['groupid'], $this->controller->Auth)) {
+        $RR->error(403, "DiscuzXAuth:403001", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth1）");
+      }
+    } else if (is_numeric($this->controller->Auth) || is_string($this->controller->Auth)) {
+      if ((int)$Member['groupid'] !== (int)$this->controller->Auth) {
+        $RR->error(403, "DiscuzXAuth:403002", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth2）");
       }
     }
     return $RR;
   }
-  public function verify(Request $request, $controller, $viewVerifyType, $strongCheck = false)
+  public function verify($viewVerifyType)
   {
     //* 如果是同源，那么来源就是视图页面发起的ajax请求，无需token，用verifyViewControllerAdmin和verifyViewControllerAuth去验证
     if ($viewVerifyType === "admin") {
-      return $this->verifyViewControllerAdmin($controller);
+      return $this->verifyViewControllerAdmin();
     } else {
-      return $this->verifyViewControllerAuth($controller);
+      return $this->verifyViewControllerAuth();
     }
   }
   /**
    * 中间件处理
    *
    * @param \Closure $next
-   * @param Request $request
-   * @param DiscuzXController $Controller
    * @return Response
    */
   public function handle(\Closure $next)
@@ -95,16 +98,10 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
       return $next();
     }
-    if (!function_exists("getglobal")) {
-      function getglobal($key)
-      {
-        return null;
-      }
-    }
 
     $SameOrigin = $this->sameOrigin();
     if (!$SameOrigin) {
-      $Verified = $this->verifyToken();
+      $Verified = $this->verifyToken(false);
       if ($Verified->error) {
         return $Verified;
       }
@@ -133,18 +130,24 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $adminChecked = false;
     $authChecked = false;
     $verified = null;
-    if ($Controller->Admin) {
+    if ($this->controller->Admin) {
       $adminChecked = true;
-      $verified = $this->verify($request, $Controller, "admin", true);
+      $verified = $this->verify("admin");
       if (!$verified->error) {
-        $verified = $Controller->verifyAdmin();
+        $verified = $this->controller->verifyAdmin();
+        if ($verified instanceof Response && $verified->error) {
+          return $verified;
+        }
       }
     }
-    if (!$adminChecked && $Controller->Auth) {
+    if (!$adminChecked && $this->controller->Auth) {
       $authChecked = true;
-      $verified = $this->verify($request, $Controller, "auth", true);
+      $verified = $this->verify("auth");
       if (!$verified->error) {
-        $verified = $Controller->verifyAuth();
+        $verified = $this->controller->verifyAuth();
+        if ($verified instanceof Response && $verified->error) {
+          return $verified;
+        }
       }
     }
     if (!$authChecked && !$adminChecked && !$verified) {
