@@ -4,6 +4,7 @@ namespace kernel\Foundation;
 
 use Closure;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Request;
 
 class Middleware
