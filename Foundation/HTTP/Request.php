@@ -4,6 +4,7 @@ namespace kernel\Foundation\HTTP;
 
 use kernel\Foundation\HTTP\Request\RequestBody;
 use kernel\Foundation\HTTP\Request\RequestHeader;
+use kernel\Foundation\HTTP\Request\RequestModelParams;
 use kernel\Foundation\HTTP\Request\RequestPagination;
 use kernel\Foundation\HTTP\Request\RequestParams;
 use kernel\Foundation\HTTP\Request\RequestQuery;
@@ -40,11 +41,17 @@ class Request
    */
   public $pagination = null;
   /**
-   * 分页
+   * URI参数
    *
    * @var RequestParams
    */
   public $params = null;
+  /**
+   * 用于模型查询的参数
+   *
+   * @var RequestModelParams
+   */
+  public $modelParams = null;
 
   /**
    * 请求方法
@@ -72,6 +79,7 @@ class Request
     $this->header = new RequestHeader($this);
     $this->pagination = new RequestPagination($this);
     $this->params = new RequestParams($this);
+    $this->modelParams = new RequestModelParams($this);
 
     $this->getMethod();
     $this->getURI();
