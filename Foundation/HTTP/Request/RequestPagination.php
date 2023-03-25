@@ -4,6 +4,10 @@ namespace kernel\Foundation\HTTP\Request;
 
 use kernel\Foundation\HTTP\Request;
 
+/**
+ * 请求分页类
+ * @deprecated version
+ */
 class RequestPagination
 {
   /**
