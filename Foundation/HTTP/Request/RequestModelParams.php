@@ -66,35 +66,42 @@ class RequestModelParams extends RequestData
      * 排序相关参数处理
      */
     if ($R->query->has("order")) {
-      $order = addslashes(trim($R->query->get("order")));
-      if (strpos($order, ",") !== false) {
-        $order = array_filter(explode(",", $order), function ($item) {
-          return addslashes(trim($item));
-        });
-        $orders = [];
-        foreach ($order as $item) {
-          if (strpos($item, ":") === false) {
-            $orders[$item] = $R->query->has("orderBy") ? $R->query->get("orderBy") : "ASC";
-          } else {
-            list($fieldName, $sortType) = explode(":", $item);
-            $orders[$fieldName] = $sortType;
-          }
-        }
-        if (count($orders)) {
-          $this->order(array_keys($orders)[0]);
-          if (!$R->query->get("orderBy")) {
-            $this->orderBy($orders[array_keys($orders)[0]]);
-          }
-          $this->_orders = $orders;
-        }
-      } else {
-        $this->order($order);
-        $this->ordered(true);
-      }
+      $this->order(addslashes(trim($R->query->get("order"))));
+      $this->ordered(true);
     }
     if ($R->query->has("orderBy")) {
       $this->orderBy(addslashes(trim($R->query->get("orderBy"))));
       $this->ordered(true);
+    }
+    if ($R->query->has("orders")) {
+      $orders = addslashes(trim($R->query->get("orders")));
+
+      if (strpos($orders, ",") !== false) {
+        $orders = array_filter(explode(",", $orders), function ($item) {
+          return addslashes(trim($item));
+        });
+        $orderList = [];
+        foreach ($orders as $item) {
+          if (strpos($item, ":") === false) {
+            $orderList[$item] = $R->query->has("orderBy") ? $R->query->get("orderBy") : "ASC";
+          } else {
+            list($fieldName, $sortType) = explode(":", $item);
+            if (!$sortType) {
+              $sortType = $R->query->has("orderBy") ? $R->query->get("orderBy") : "ASC";
+            }
+            $orderList[$fieldName] = $sortType;
+          }
+        }
+        $this->orders($orderList);
+        if (count($orderList)) {
+          if (!$R->query->has("order")) {
+            $this->order(array_keys($orderList)[0]);
+          }
+          if (!$R->query->has("orderBy")) {
+            $this->orderBy($orderList[array_keys($orderList)[0]]);
+          }
+        }
+      }
     }
   }
   /**
@@ -134,7 +141,7 @@ class RequestModelParams extends RequestData
   public function orders($rules = null)
   {
     if (!is_null($rules)) {
-      $this->_order['_orders'] = $rules;
+      $this->_orders = $rules;
     }
     if (is_null($this->_orders)) return null;
     return $this->_orders;
