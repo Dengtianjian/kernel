@@ -52,7 +52,7 @@ class DiscuzXExceptionHandler
         "trace" => $trace,
         "error" => $errorDetails
       ]);
-      if (App()->request()->ajax()) {
+      if (getApp()->request()->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");

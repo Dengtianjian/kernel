@@ -54,8 +54,7 @@ class ExceptionHandler
       ]);
     }
     if (in_array($code, $DeadlyLevels)) {
-      $ajax = $GLOBALS['App']->request->ajax();
-      if ($ajax) {
+      if (getApp()->request()->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");
