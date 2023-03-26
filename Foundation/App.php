@@ -392,8 +392,7 @@ class App
     if ($this->request->ajax()) {
       $Controller->response->json();
       $Controller->response->addBody([
-        "requiredTime" => $endTime - $this->startTime . "ms",
-        "version" => Config::get("version")
+        "requiredTime" => $endTime - $this->startTime . "ms"
       ]);
     }
     if (is_callable($Controller->response->getData())) {

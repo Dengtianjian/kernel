@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\HTTP;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Output;
 
@@ -335,6 +336,9 @@ class Response
     }
     $data = $this->getData();
 
+    if (getApp()->request()->ajax()) {
+      $body['version'] = Config::get("version");
+    }
     switch ($this->OutputType) {
       case "json":
         header("Content-type:application/json", true);
