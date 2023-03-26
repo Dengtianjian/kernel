@@ -43,7 +43,6 @@ class DiscuzXExceptionHandler
     if ($traceString) {
       $traceString = \explode(\PHP_EOL, $traceString);
     }
-
     if (in_array($code, $DeadlyLevels)) {
       Log::record([
         "errno" => $code,
@@ -53,7 +52,7 @@ class DiscuzXExceptionHandler
         "trace" => $trace,
         "error" => $errorDetails
       ]);
-      if ($GLOBALS['App'] && $GLOBALS['App']->request->ajax()) {
+      if (App()->request()->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");
@@ -67,7 +66,7 @@ class DiscuzXExceptionHandler
             "previous" => $previous
           ], null);
         }
-        $Response->output();
+        $Response->json()->output();
         exit;
       } else {
         $View = new ResponseView("error", [], "Views", "page", F_KERNEL_ROOT);

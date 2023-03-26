@@ -32,10 +32,6 @@ class App
   private function __clone()
   {
   }
-  public function __get($name)
-  {
-    return $this->$name;
-  }
   /**
    * 构造App
    *
@@ -406,5 +402,14 @@ class App
       $Controller->response->output();
     }
     exit;
+  }
+  /**
+   * 获取请求实例
+   *
+   * @return Request
+   */
+  public function request()
+  {
+    return $this->request;
   }
 }

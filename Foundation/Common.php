@@ -1,5 +1,6 @@
 <?php
 
+use kernel\Foundation\App;
 use kernel\Foundation\File;
 use kernel\Foundation\Output;
 
@@ -33,4 +34,14 @@ function Import($fileName, $args = [])
 function formatDebug(...$data)
 {
   Output::debug(...$data);
+}
+
+/**
+ * 获取当前应用实例
+ *
+ * @return App
+ */
+function App()
+{
+  return $GLOBALS['App'];
 }
