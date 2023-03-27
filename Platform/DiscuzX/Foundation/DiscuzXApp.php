@@ -6,9 +6,6 @@ use kernel\Foundation\App;
 use kernel\Foundation\File;
 use kernel\Platform\DiscuzX\DiscuzXAttachment;
 use kernel\Platform\DiscuzX\DiscuzXFile;
-use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMiddleware;
-use kernel\Platform\DiscuzX\Middleware\GlobalDiscuzXMultipleEncodeMiddleware;
-use kernel\Platform\DiscuzX\Service\DiscuzXSettingService;
 
 class DiscuzXApp extends App
 {
@@ -17,11 +14,10 @@ class DiscuzXApp extends App
     if (!defined("CHARSET")) {
       define("CHARSET", "utf-8");
     }
+    
     DiscuzXAttachment::registerRoute();
     DiscuzXFile::registerRoute();
-    DiscuzXSettingService::registerRoute();
-    // $this->setMiddlware(GlobalDiscuzXMiddleware::class);
-    // $this->setMiddlware(GlobalDiscuzXMultipleEncodeMiddleware::class);
+
     parent::__construct($AppId, "gstudio_kernel");
     if (isset($_GET['uri'])) {
       $this->request->URI = addslashes(trim($_GET['uri']));

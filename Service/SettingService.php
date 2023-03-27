@@ -2,32 +2,21 @@
 
 namespace kernel\Service;
 
+use kernel\Foundation\Router;
+use kernel\Foundation\Service;
 use kernel\Model\SettingsModel;
 
-class SettingService
+class SettingService extends Service
 {
   /**
    * 设置表模型
    *
    * @var SettingsModel
    */
-  public $settingModel = null;
+  protected $settingModel = null;
   public function __construct()
   {
     $this->settingModel = new SettingsModel();
-  }
-  private static $instance = null;
-  /**
-   * 快速调用，单例模式
-   *
-   * @return SettingService
-   */
-  public static function quick()
-  {
-    if (!self::$instance) {
-      self::$instance = new SettingService();
-    }
-    return self::$instance;
   }
   /**
    * 获取多个设置项

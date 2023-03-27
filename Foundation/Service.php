@@ -6,13 +6,19 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Exception\Exception;
-
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class Service
+class Service extends BaseObject
 {
+  private static $useParams = [];
+  protected final static function setUseParams($params)
+  {
+    self::$useParams = $params;
+  }
+  final public static function getUseParams()
+  {
+    return self::$useParams;
+  }
 }
