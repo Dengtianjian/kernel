@@ -12,6 +12,13 @@ class GetSettingsController extends DiscuzXController
   protected $names = []; //* 都可以获取的键名
   protected $groupNames = []; //* 不同用户组可以获取的键名，键是数组ID，值是键名数组 [ 1=>['appId','appName'],3=>['appName'] ]
   protected $adminNames = []; //* 不同管理组可以获取的键名，键是数组ID，值是键名数组 [ 1=>['appId','appName'],3=>['appName'] ]
+  public function __construct($R)
+  {
+    $this->names = DiscuzXSettingService::getUseParams()['names'];
+    $this->groupNames = DiscuzXSettingService::getUseParams()['groupNames'];
+    $this->adminNames = DiscuzXSettingService::getUseParams()['adminNames'];
+    parent::__construct($R);
+  }
   public function data()
   {
     if (!$this->query->has("name")) return [];
