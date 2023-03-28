@@ -414,7 +414,7 @@ class DiscuzXMember
         $MemberItem['group'] = $Groups[$MemberItem['groupid']];
       }
       if (isset($Credits[$MemberItem['uid']])) {
-        $MemberItem['count'] = $Credits[$MemberItem['groupid']];
+        $MemberItem['count'] = $Credits[$MemberItem['uid']];
       }
       if (isset($Prompts[$MemberItem['uid']])) {
         $MemberItem['prompts'] = $Prompts[$MemberItem['uid']];
