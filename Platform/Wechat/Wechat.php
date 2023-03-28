@@ -3,7 +3,7 @@
 namespace kernel\Platform\Wechat;
 
 use DB;
-use kernel\Foundation\Network\Curl;
+use kernel\Foundation\HTTP\Curl;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');

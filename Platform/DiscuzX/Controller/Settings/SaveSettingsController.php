@@ -12,6 +12,6 @@ class SaveSettingsController extends DiscuzXController
   public function data()
   {
     $settings = $this->request->body->some();
-    return DiscuzXSettingService::quick()->saveItems($settings);
+    return DiscuzXSettingService::singleton()->saveItems($settings);
   }
 }

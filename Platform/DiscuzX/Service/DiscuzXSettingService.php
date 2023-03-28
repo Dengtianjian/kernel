@@ -35,7 +35,7 @@ class DiscuzXSettingService extends SettingService
     $C = DiscuzXSettingService::getUseParams()['SettingsModel'];
     $this->settingModel = new $C();
   }
-  public static function registerRoute()
+  protected static function registerRoute()
   {
     Router::get("settings", GetSettingsController::class);
     Router::patch("settings", SaveSettingsController::class);

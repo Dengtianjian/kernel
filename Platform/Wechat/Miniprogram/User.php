@@ -16,7 +16,6 @@ class User extends WechatMiniProgram
    * JSCode换取AccessToken
    *
    * @param string $code 前端获取到的JSCode
-   * @return ReturnResult
    */
   public function JSCode2Session($code)
   {
@@ -30,16 +29,19 @@ class User extends WechatMiniProgram
     if ($request['errcode']) {
       switch ($request['errcode']) {
         case "40029":
-          return new ReturnResult(false, 400, "400:InvalidCode", "登录失败，请稍后重试", [], "无效的Code");
+          return new ReturnResult(false, 400, "400:InvalidCode", "登录失败，请稍后重试", "无效的Code");
           break;
         case "45011":
-          return new ReturnResult(false, 400, "400:RequestLimited", "登录失败，尝试次数过多，请稍后重试", [], "频率限制，每个用户每分钟100次");
+          return new ReturnResult(false, 400, "400:RequestLimited", "登录失败，尝试次数过多，请稍后重试", "频率限制，每个用户每分钟100次");
           break;
         case "40226":
-          return new ReturnResult(false, 400, "400:BadUser", "登录失败，您是高风险用户，请联系管理员", [], "高风险等级用户，小程序登录拦截");
+          return new ReturnResult(false, 400, "400:BadUser", "登录失败，您是高风险用户，请联系管理员", "高风险等级用户，小程序登录拦截");
+          break;
+        case "40163":
+          return new ReturnResult(false, 400, "400:CodeBeenUsed", "登录失败，请重新操作", "jscode已经使用过了");
           break;
         default:
-          return new ReturnResult(false, 400, "400:" . $request['errcode'], "登录失败，请稍后重试", [], $request['errmsg']);
+          return new ReturnResult(false, 400, "400:" . $request['errcode'], "登录失败，请稍后重试", $request['errmsg']);
           break;
       }
     }
