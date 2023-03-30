@@ -43,5 +43,5 @@ function formatDebug(...$data)
  */
 function getApp()
 {
-  return $GLOBALS['App'];
+  return $GLOBALS['App'] ?: $GLOBALS['app'];
 }
