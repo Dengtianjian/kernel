@@ -336,7 +336,10 @@ class App
     $Route = Router::match($this->request);
 
     if (!$Route) {
-      throw new Exception("路由不存在", 404, 404);
+      throw new Exception("路由不存在", 404, 404, [
+        "uri" => $this->request()->URI,
+        'method' => $this->request()->method
+      ]);
     }
     $this->request->Route = $Route;
 
