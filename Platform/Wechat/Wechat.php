@@ -3,18 +3,25 @@
 namespace kernel\Platform\Wechat;
 
 use DB;
+use kernel\Foundation\BaseObject;
 use kernel\Foundation\HTTP\Curl;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class Wechat
+class Wechat extends BaseObject
 {
   protected $AppId = null;
   protected $AppSecret = null;
   protected $AccessToken = null;
   protected $ApiUrl = "https://api.weixin.qq.com";
+  /**
+   * CURL实例
+   *
+   * @var CURL
+   */
+  protected $CURL = null;
   /**
    * 微信小程序基类
    *
@@ -27,6 +34,7 @@ class Wechat
     $this->AppId = $appId;
     $this->AppSecret = $secret;
     $this->AccessToken = $accessToken;
+    $this->CURL = new Curl();
   }
   /**
    * 设置AccessToken
@@ -57,8 +65,7 @@ class Wechat
         ];
       }
     }
-    $CURL = new Curl();
-    $request = $CURL->url("https://api.weixin.qq.com/" . $uri, $query);
+    $request = $this->CURL->url($this->ApiUrl . "/" . $uri, $query);
     return $request->https(false)->get();
   }
   /**
@@ -81,9 +88,7 @@ class Wechat
         ];
       }
     }
-    $CURL = new Curl();
-    $request = $CURL->url("https://api.weixin.qq.com/" . $uri, $query);
-    $request->data($body);
-    return $request->https(false)->post();
+    $request = $this->CURL->url($this->ApiUrl . "/" . $uri, $query);
+    return $request->https(false)->post($body);
   }
 }
