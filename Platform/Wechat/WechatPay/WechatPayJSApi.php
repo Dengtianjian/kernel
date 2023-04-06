@@ -39,6 +39,14 @@ class WechatPayJSApi extends Wechat
    * @var string
    */
   protected $PrivateKeySerialNo = null;
+  /**
+   * 实例化微信支付JSAPI
+   * @param string $AppId 公众平台应用ID 由微信生成的应用ID，全局唯一。请求基础下单接口时请注意APPID的应用属性，例如公众号场景下，需使用应用属性为公众号的服务号APPID
+   * @param string $MerchantId 直连商户号 由微信支付生成并下发。
+   * @param string $ApiV3Secret APIV3密钥 https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay3_2.shtml
+   * @param string $PrivateKeyFilePath 商户私钥文件路径 https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay3_1.shtml
+   * @param string $PrivateKeySerialNo 商户密钥序列号 
+   */
   function __construct($AppId, $MerchantId, $ApiV3Secret, $PrivateKeyFilePath, $PrivateKeySerialNo)
   {
     $this->MerchantId = $MerchantId;
@@ -70,6 +78,21 @@ class WechatPayJSApi extends Wechat
 
     return implode("", $no);
   }
+  /**
+   * JSAPI下单
+   * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_1.shtml
+   *
+   * @param string $openId 支付者的用户标识
+   * @param string $notifyURL 通知地址 异步接收微信支付结果通知的回调地址，通知url必须为外网可访问的url，不能携带参数。 公网域名必须为https，如果是走专线接入，使用专线NAT IP或者私有回调域名可使用http
+   * @param double|int $total 订单金额的总金额。订单总金额，单位为分。
+   * @param string $currency 订单金额的货币类型，默认是CNY：人民币
+   * @param string $description 商品描述
+   * @param int $periodSeconds 订单有效期，单位：秒
+   * @param string $attach 附加数据，在查询API和支付通知中原样返回，可作为自定义参数使用，实际情况下只有支付完成状态才会返回该字段。
+   * @param string $goodsTag 订单优惠标记
+   * @param boolean $supportFapiao 电子发票入口开放标识 传入true时，支付成功消息和支付详情页将出现开票入口。需要在微信支付商户平台或微信公众平台开通电子发票功能，传此字段才可生效。true：是，false：否
+   * @return ReturnResult
+   */
   public function order($openId, $notifyURL, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false)
   {
     $OrderTime = time();
@@ -137,11 +160,13 @@ class WechatPayJSApi extends Wechat
     $GeneratePaySignMessage = $this->AppId . "\n$OrderTime\n$Nonce\nprepay_id=$PrepayId\n";
     openssl_sign($GeneratePaySignMessage, $PaySign, $MerchantPrivateKey, 'sha256WithRSAEncryption');
 
-    return [
+    $Body['params'] = [
       "timeStamp" => $OrderTime,
       "nonceStr" => $Nonce,
       "paySign" => base64_encode($PaySign),
       "prepayId" => $PrepayId
     ];
+
+    return $R->success($Body);
   }
 }
