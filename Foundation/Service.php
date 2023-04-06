@@ -17,7 +17,7 @@ class Service extends BaseObject
   {
     self::$useParams = $params;
   }
-  final public static function getUseParams()
+  final protected static function getUseParams()
   {
     return self::$useParams;
   }

@@ -2,6 +2,7 @@
 
 namespace kernel\Model;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Database\PDO\Model;
 
 class SettingsModel extends Model
@@ -34,7 +35,12 @@ SQL;
    */
   public function item($name)
   {
-    return $this->where("name", $name)->getOne();
+    $setting = $this->where("name", $name)->getOne();
+    if ($setting) {
+      $setting['value'] = $setting['value'] ?: null;
+      return unserialize($setting['value']) ?: $setting['value'];
+    }
+    return null;
   }
   /**
    * 获取多个设置项
@@ -44,6 +50,12 @@ SQL;
    */
   public function items(...$names)
   {
-    return $this->where("name", $names)->getAll();
+    $settingsData = $this->where("name", $names)->getAll();
+    $settings = [];
+    foreach ($settingsData as $setItem) {
+      $setItem['value'] = $setItem['value'] ?: null;
+      $settings[$setItem['name']] = unserialize($setItem['value']) ?: $setItem['value'];
+    }
+    return $settings;
   }
 }

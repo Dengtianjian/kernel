@@ -40,6 +40,13 @@ class WechatPayJSApi extends Wechat
    */
   protected $PrivateKeySerialNo = null;
   /**
+   * 回调通知地址
+   * 异步接收微信支付结果通知的回调地址，通知url必须为外网可访问的url，不能携带参数。 公网域名必须为https，如果是走专线接入，使用专线NAT IP或者私有回调域名可使用http
+   *
+   * @var string
+   */
+  protected $NotifyURL = null;
+  /**
    * 实例化微信支付JSAPI
    * @param string $AppId 公众平台应用ID 由微信生成的应用ID，全局唯一。请求基础下单接口时请注意APPID的应用属性，例如公众号场景下，需使用应用属性为公众号的服务号APPID
    * @param string $MerchantId 直连商户号 由微信支付生成并下发。
@@ -47,12 +54,13 @@ class WechatPayJSApi extends Wechat
    * @param string $PrivateKeyFilePath 商户私钥文件路径 https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay3_1.shtml
    * @param string $PrivateKeySerialNo 商户密钥序列号 
    */
-  function __construct($AppId, $MerchantId, $ApiV3Secret, $PrivateKeyFilePath, $PrivateKeySerialNo)
+  function __construct($AppId, $MerchantId, $ApiV3Secret, $PrivateKeyFilePath, $PrivateKeySerialNo, $NotifyURL)
   {
     $this->MerchantId = $MerchantId;
     $this->ApiV3Secret = $ApiV3Secret;
     $this->PrivateKeyFilePath = $PrivateKeyFilePath;
     $this->PrivateKeySerialNo = $PrivateKeySerialNo;
+    $this->NotifyURL = $NotifyURL;
 
     parent::__construct(null, $AppId);
 
@@ -83,7 +91,6 @@ class WechatPayJSApi extends Wechat
    * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_1.shtml
    *
    * @param string $openId 支付者的用户标识
-   * @param string $notifyURL 通知地址 异步接收微信支付结果通知的回调地址，通知url必须为外网可访问的url，不能携带参数。 公网域名必须为https，如果是走专线接入，使用专线NAT IP或者私有回调域名可使用http
    * @param double|int $total 订单金额的总金额。订单总金额，单位为分。
    * @param string $currency 订单金额的货币类型，默认是CNY：人民币
    * @param string $description 商品描述
@@ -93,7 +100,7 @@ class WechatPayJSApi extends Wechat
    * @param boolean $supportFapiao 电子发票入口开放标识 传入true时，支付成功消息和支付详情页将出现开票入口。需要在微信支付商户平台或微信公众平台开通电子发票功能，传此字段才可生效。true：是，false：否
    * @return ReturnResult
    */
-  public function order($openId, $notifyURL, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false)
+  public function order($openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false)
   {
     $OrderTime = time();
     $expireTime = null;
@@ -106,7 +113,7 @@ class WechatPayJSApi extends Wechat
       "appid" => $this->AppId,
       "mchid" => $this->MerchantId,
       "description" => $description,
-      "notify_url" => $notifyURL,
+      "notify_url" => $this->NotifyURL,
       "amount" => [
         "total" => $total,
         "currency" => $currency
