@@ -132,7 +132,7 @@ class Router
   static function register($type, $method, $URI, $controller, $middlewares = [])
   {
     $handleMethodName = null;
-    if ((is_array($URI) || class_exists($URI)) && is_null($controller)) {
+    if (!is_null($URI) && (is_array($URI) || class_exists($URI)) && is_null($controller)) {
       if (is_array($URI)) {
         $controller = $URI[0];
         $handleMethodName = isset($URI[1]) ? $URI[1] : "data";
@@ -232,13 +232,14 @@ class Router
       ];
     } else {
       if (!empty(self::$Prefix)) {
-        $URI = [
-          $URI
-        ];
-        foreach (self::$Prefix as $prefix) {
-          array_unshift($URI, $prefix);
+        $URIs = [];
+        if (!is_null($URI)) {
+          array_push($URIs, $URI);
         }
-        $URI = implode("/", $URI);
+        foreach (self::$Prefix as $prefix) {
+          array_unshift($URIs, $prefix);
+        }
+        $URI = implode("/", $URIs);
       }
       self::$StaticRoutes[$type][$method][$URI] = [
         "raw" => $URI,
