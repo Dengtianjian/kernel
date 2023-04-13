@@ -37,6 +37,17 @@ class Cache
    */
   static private $DaySeconeds = 60 * 60 * 24;
   /**
+   * 指定缓存是否存在
+   *
+   * @param string $id 缓存ID，也是文件夹名称
+   * @return bool
+   */
+  static function has($id)
+  {
+    $targetPath = self::$SaveBasePath . "/$id.txt";
+    return file_exists($targetPath);
+  }
+  /**
    * 读取缓存
    *
    * @param string $id 缓存ID，也是文件夹名称
@@ -49,7 +60,7 @@ class Cache
     $cache = file_get_contents($targetPath);
     $cache = unserialize($cache);
 
-    if ($cache['meta']['expiredAt'] < time()) {
+    if (!(is_null($cache['meta']['expiredAt']) || $cache['meta']['expiredAt'] <= 0) && $cache['meta']['expiredAt'] < time()) {
       return null;
     }
 
@@ -77,7 +88,7 @@ class Cache
    *
    * @param string $id 缓存ID
    * @param mixed $content 缓存内容，只有已有缓存是数组以及传入的数据是数组才会合并
-   * @param int $expiresIn 有效期（天）
+   * @param int $expiresIn 有效期（天），<=0|null 表示不过期
    * @return bool
    */
   static function write($id, $content, $expiresIn = 30)
@@ -86,13 +97,14 @@ class Cache
       mkdir(self::$SaveBasePath, 0777, true);
     }
     $targetPath = File::genPath(self::$SaveBasePath, "$id.txt");
-    $expired = round(time() + self::$DaySeconeds * $expiresIn);
+    $expired = is_null($expiresIn) || $expiresIn <= 0 ? 0 : round(time() + self::$DaySeconeds * $expiresIn);
     $cache = [
       "content" => [],
       "meta" => [
         "updatedAt" => time(),
         "addedAt" => time(),
-        "expiredAt" => $expired
+        "expiredAt" => $expired,
+        "format" => "php_serialize"
       ]
     ];
     if (!in_array($id, self::$readedCaches)) {
@@ -136,7 +148,7 @@ class Cache
       "meta" => [
         "updatedAt" => time(),
         "addedAt" => time(),
-        "expiredAt" => time() + self::$DaySeconeds * $expiresIn
+        "expiredAt" => is_null($expiresIn) || $expiresIn <= 0 ? 0 : time() + self::$DaySeconeds * $expiresIn
       ]
     ]));
 
