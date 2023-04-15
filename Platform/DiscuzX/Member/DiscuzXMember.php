@@ -340,6 +340,16 @@ class DiscuzXMember
     $memberCredits = $CMCM->where([
       "uid" => $memberId
     ])->getAll();
+    global $_G;
+    if (
+      isset($_G['setting']['membersplit'])
+    ) {
+      $CMCAM = new DiscuzXModel("common_member_count_archive");
+      $archiveMemberArchive = $CMCAM->where([
+        "uid" => $memberId
+      ])->getAll();
+      $memberCredits = array_merge($memberCredits, $archiveMemberArchive);
+    }
     if (!count($memberCredits) && !is_array($memberId)) return null;
     if (is_array($memberId)) return Arr::indexToAssoc($memberCredits, "uid");
     return $memberCredits[0];
@@ -379,6 +389,7 @@ class DiscuzXMember
   }
   public static function get($memberId = null, $detailed = true, $dataConversionRules = null)
   {
+    global $_G;
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
@@ -386,6 +397,16 @@ class DiscuzXMember
     $members = $MM->where([
       "uid" => $memberId
     ])->getAll();
+    if (
+      isset($_G['setting']['membersplit'])
+    ) {
+      $MMR = new DiscuzXModel("common_member_archive");
+      $archiveMembers = $MMR->where([
+        "uid" => $memberId
+      ])->getAll();
+      $members = array_merge($members, $archiveMembers);
+    }
+
     if (empty($members)) return is_array($memberId) ? [] : null;
 
     $Groups = [];
@@ -399,6 +420,12 @@ class DiscuzXMember
       $Prompts = self::newPrompt(is_array($memberId) ? $memberId : [$memberId]);
 
       $userForumFields = \C::t("common_member_field_forum")->fetch_all($memberId);
+      if (
+        isset($_G['setting']['membersplit'])
+      ) {
+        $archiveUserForumFields = \C::t("common_member_field_forum_archive")->fetch_all($memberId);
+        $userForumFields = array_merge($userForumFields, $archiveUserForumFields);
+      }
       $userForumFields = Arr::indexToAssoc($userForumFields, "uid");
       foreach ($userForumFields as &$item) {
         $item['sightml'] = preg_replace("/<img|img>/", "<span", $item['sightml']);
