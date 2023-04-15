@@ -128,7 +128,7 @@ class WechatPayJSApi extends Wechat
       "time_expire" => date("Y-m-d\TH:i:sT:00", $expireTime)
     ];
 
-    $JsonBody = json_encode($Body);
+    $JsonBody = json_encode($Body, JSON_UNESCAPED_UNICODE);
     $PrivateKeyFile = file_get_contents($this->PrivateKeyFilePath);
     $MerchantPrivateKey = openssl_pkey_get_private($PrivateKeyFile);
     $Nonce = md5(time());
