@@ -30,7 +30,8 @@ class SettingService extends Service
     $Settings = [];
     foreach ($SettingsData as $item) {
       if ($item['value']) {
-        $Settings[$item['name']] = unserialize($item['value']);
+        $v = unserialize($item['value']);
+        $Settings[$item['name']] = is_null($v) || (is_bool($v) && $v === false) ? null : $v;
       } else {
         $Settings[$item['name']] = null;
       }
@@ -57,7 +58,8 @@ class SettingService extends Service
   {
     $setting = $this->settingModel->where("name", $name)->getOne();
     if (!$setting) return null;
-    return unserialize($setting['value']);
+    $v = unserialize($setting['value']);
+    return is_null($v) || (is_bool($v) && $v === false) ? null : $v;
   }
   /**
    * 添加设置项
