@@ -4,8 +4,8 @@ namespace kernel\Foundation;
 
 use isdtjBackend\Controller\Links\Link\GetLinkController;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\Network\Curl;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -55,20 +55,25 @@ class Router
    * 设置路由前缀
    *
    * @param array|string $prefix 前缀，如果传入null即为清除前缀，后续的注册路由不再添加前缀
+   * @param bool $append 追加前缀，如果之前已经有设置了前缀，并且没有清空，会在之前的基础上追加这次设置的前缀值
    * @return Router
    */
-  static function prefix($prefix)
+  static function prefix($prefix, $append = false)
   {
     if (is_null($prefix)) {
       self::$Prefix = [];
     } else {
+      $prefix = is_string($prefix) ? [$prefix] : $prefix;
       if (self::$InGroup) {
-        $prefix = is_string($prefix) ? [$prefix] : $prefix;
         foreach ($prefix as $value) {
           array_unshift(self::$Prefix, $value);
         }
       } else {
-        self::$Prefix = is_string($prefix) ? [$prefix] : $prefix;
+        if ($append) {
+          array_unshift(self::$Prefix, ...$prefix);
+        } else {
+          self::$Prefix = $prefix;
+        }
       }
     }
 
