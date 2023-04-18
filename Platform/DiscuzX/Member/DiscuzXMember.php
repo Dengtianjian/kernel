@@ -103,7 +103,7 @@ class DiscuzXMember
       }
     }
 
-    // //* 同一 IP 24小时内允许注册的最大次数
+    //* 同一 IP 24小时内允许注册的最大次数
     $setregip = null;
     if ($_G['setting']['regfloodctrl']) {
       $regip = \C::t('common_regip')->fetch_by_ip_dateline($_G['clientip'], $_G['timestamp'] - 86400);
@@ -144,7 +144,6 @@ class DiscuzXMember
     }
 
     //* 密码强度检测
-    //检测密码强度
     $passwordStorageSetting = $_G['setting']['strongpw'];
     $passwordStorageList = [
       1 => "\d+",
