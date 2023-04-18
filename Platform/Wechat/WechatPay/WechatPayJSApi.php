@@ -176,4 +176,48 @@ class WechatPayJSApi extends Wechat
 
     return $R->success($Body);
   }
+  /**
+   * 数据密文最小长度
+   */
+  const AUTH_TAG_LENGTH_BYTE = 16;
+  /**
+   * 解密结果通知的加密数据
+   * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_5.shtml
+   *
+   * @param string $associatedData 附加数据
+   * @param string $nonceStr 随机串
+   * @param string $ciphertext 数据密文,Base64编码后的开启/停用结果数据密文
+   * @return array 
+   * @return string $id 通知ID,通知的唯一ID
+   * @return string $create_time 通知创建时间.通知创建的时间，遵循rfc3339标准格式，格式为yyyy-MM-DDTHH:mm:ss+TIMEZONE，yyyy-MM-DD表示年月日，T出现在字符串中，表示time元素的开头，HH:mm:ss.表示时分秒，TIMEZONE表示时区（+08:00表示东八区时间，领先UTC 8小时，即北京时间）。例如：2015-05-20T13:29:35+08:00表示北京时间2015年05月20日13点29分35秒。
+   * @return string $event_type 通知类型,通知的类型，支付成功通知的类型为TRANSACTION.SUCCESS
+   * @return string $resource_type 通知数据类型,通知的资源数据类型，支付成功通知为encrypt-resource
+   * @return array $resource 通知资源数据,json格式，见示例
+   * @return string $summary 回调摘要
+   */
+  public function decryptNotifyData($associatedData, $nonceStr, $ciphertext)
+  {
+    $ciphertext = \base64_decode($ciphertext);
+    if (strlen($ciphertext) <= self::AUTH_TAG_LENGTH_BYTE) {
+      return null;
+    }
+
+    // openssl (PHP >= 7.1 support AEAD)
+    if (PHP_VERSION_ID >= 70100 && in_array('aes-256-gcm', \openssl_get_cipher_methods())) {
+      $ctext = substr($ciphertext, 0, -self::AUTH_TAG_LENGTH_BYTE);
+      $authTag = substr($ciphertext, -self::AUTH_TAG_LENGTH_BYTE);
+
+      $data = \openssl_decrypt(
+        $ctext,
+        'aes-256-gcm',
+        $this->ApiV3Secret,
+        \OPENSSL_RAW_DATA,
+        $nonceStr,
+        $authTag,
+        $associatedData
+      );
+      return $data ? json_decode($data, true) : $data;
+    }
+    return null;
+  }
 }
