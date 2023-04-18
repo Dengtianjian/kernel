@@ -28,7 +28,7 @@ class Middleware
    * @param Controller|AuthController|null $Controller 控制器实例，如果控制器不是类是个闭包就会传入null
    * @return \kernel\Foundation\HTTP\Response
    */
-  public function __construct(Request $request, Controller $controller)
+  public function __construct($request, $controller)
   {
     $this->request = $request;
     $this->controller = $controller;
