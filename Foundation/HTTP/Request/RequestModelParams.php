@@ -107,13 +107,13 @@ class RequestModelParams extends RequestData
   /**
    * 设置|获取排序的字段
    *
-   * @param string $fileName 排序字段名称
+   * @param string $fieldName 排序字段名称
    * @return string 排序字段名称
    */
-  public function order($fileName = null)
+  public function order($fieldName = null)
   {
-    if (!is_null($fileName)) {
-      $this->_order['fieldName'] = $fileName;
+    if (!is_null($fieldName)) {
+      $this->_order['fieldName'] = $fieldName;
     }
     if (is_null($this->_order) || !isset($this->_order['fieldName'])) return null;
     return $this->_order['fieldName'];
