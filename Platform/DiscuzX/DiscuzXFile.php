@@ -17,9 +17,14 @@ class DiscuzXFile
    * @param string $savePath 保存的目录，相对于data\plugindata\{F_APP_ID}下，默认是files，也就是data\plugindata\{F_APP_ID}\files
    * @return string 文件ID
    */
-  private static function genFileId($fileName, $savePath)
+  static function genFileId($fileName, $savePath, $remote = false)
   {
-    return rawurlencode(base64_encode(uniqid("file:") . "|" . $savePath . "|" . $fileName));
+    return rawurlencode(base64_encode(implode("|", [
+      uniqid("file:"),
+      $savePath,
+      $fileName,
+      $remote
+    ])));
   }
   /**
    * 注册路由
@@ -91,13 +96,14 @@ class DiscuzXFile
     if ($tag !== "file") {
       return new ReturnResult(false, 400, 400, "文件ID错误");
     }
-    list($uniqueId, $saveDir, $fileName) = explode("|", $fileId);
+    list($uniqueId, $saveDir, $fileName, $remote) = explode("|", $fileId);
     $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
     return new ReturnResult([
       "uniqueId" => $uniqueId,
       "saveDir" => $saveDir,
       "fileName" => $fileName,
-      "filePath" => $filePath
+      "filePath" => $filePath,
+      "remote" => $remote
     ]);
   }
 }
