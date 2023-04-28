@@ -222,7 +222,7 @@ class DiscuzXMember
       }
     }
     if ($registerFailedMessage) {
-      return $R->error(400, "400:BadEmail", $registerFailedMessage);
+      return $R->error(400, "400_" . $uid . ":UCRegisterFailed", $registerFailedMessage);
     }
 
     //* 设置 初始用户组
