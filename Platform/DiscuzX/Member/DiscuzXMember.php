@@ -67,7 +67,7 @@ class DiscuzXMember
 
     return new ReturnResult($userLoginResult['member']);
   }
-  public static function register($username, $password, $email = null)
+  public static function register($username, $password, $email = null, $invationCode = null)
   {
     global $_G;
     $R = new ReturnResult(true);
@@ -76,6 +76,7 @@ class DiscuzXMember
     if ($_G['setting']['regstatus'] == 0 || $_G['setting']['regstatus'] == 2) {
       return $R->error(403, "403:RegisterClosed", $_G['setting']['regclosemessage']);
     }
+    include_once libfile("function/member");
 
     //* 限时注册IP注册间隔限制(小时)
     loadcache(['ipctrl']);
@@ -120,7 +121,79 @@ class DiscuzXMember
       }
     }
 
-    $email = $email ?: uniqid("email") . "@email.com"; //* 随机邮箱地址
+    //* 邀请码
+    if ($invationCode) {
+      $inviteStatus = false;
+      if ($_G['setting']['regstatus'] == 2) {
+        if ($_G['setting']['inviteconfig']['inviteareawhite']) {
+          $location = $whitearea = '';
+          $location = trim(convertip($_G['clientip']));
+          if ($location) {
+            $whitearea = preg_quote(trim($_G['setting']['inviteconfig']['inviteareawhite']), '/');
+            $whitearea = str_replace(array("\\*"), array('.*'), $whitearea);
+            $whitearea = '.*' . $whitearea . '.*';
+            $whitearea = '/^(' . str_replace(array("\r\n", ' '), array('.*|.*', ''), $whitearea) . ')$/i';
+            if (@preg_match($whitearea, $location)) {
+              $inviteStatus = true;
+            }
+          }
+        }
+
+        if ($_G['setting']['inviteconfig']['inviteipwhite']) {
+          foreach (explode("\n", $_G['setting']['inviteconfig']['inviteipwhite']) as $ctrlip) {
+            if (preg_match("/^(" . preg_quote(($ctrlip = trim($ctrlip)), '/') . ")/", $_G['clientip'])) {
+              $inviteStatus = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!$inviteStatus) {
+        $invite = \C::t('common_invite')->fetch_by_code($invationCode);
+        if (!$invite) {
+          return $R->error(400, "400:BadIntivationCode", "无效的邀请码");
+        }
+        if ($invite['code'] == $invationCode && empty($invite['fuid']) && (empty($invite['endtime']) || $_G['timestamp'] < $invite['endtime'])) {
+          $result['uid'] = $invite['uid'];
+          $result['id'] = $invite['id'];
+          $member = getuserbyuid($result['uid']);
+          $invite['username'] = $member['username'];
+        }
+      }
+    }
+    if ($_G['setting']['regstatus'] == 2 && empty($invite) && !$inviteStatus) {
+      return $R->error(400, "400:NoOpenRegistrationInvite", "抱歉，本站目前暂时不允许用户直接注册，需要有效的邀请码才能注册");
+    }
+
+    //* 邮箱验证
+    if ($email) {
+      $email = strtolower(trim($email));
+      if (strlen($email) > 255) {
+        return $R->error(400, "400:ProfileEmailIllegal", "Email 地址无效");
+      }
+      if ($_G['setting']['regmaildomain']) {
+        $maildomainexp = '/(' . str_replace("\r\n", '|', preg_quote(trim($_G['setting']['maildomainlist']), '/')) . ')$/i';
+        if ($_G['setting']['regmaildomain'] == 1 && !preg_match($maildomainexp, $email)) {
+          return $R->error(400, "400:ProfileEmailDomainIllegal", "抱歉，Email 包含不可使用的邮箱域名");
+        } elseif ($_G['setting']['regmaildomain'] == 2 && preg_match($maildomainexp, $email)) {
+          return $R->error(400, "400:ProfileEmailDomainIllegal", "抱歉，Email 包含不可使用的邮箱域名");
+        }
+      }
+
+      loaducenter();
+      $ucresult = uc_user_checkemail($email);
+
+      if ($ucresult == -4) {
+        return $R->error(400, "400:ProfileEmailIllegal", "Email 地址无效");
+      } elseif ($ucresult == -5) {
+        return $R->error(400, "400:ProfileEmailDomainIllegal", "抱歉，Email 包含不可使用的邮箱域名");
+      } elseif ($ucresult == -6) {
+        return $R->error(400, "400:ProfileEmailDuplicate", "该 Email 地址已被注册");
+      }
+    } else {
+      $email = uniqid("email") . "@email.com"; //* 随机邮箱地址
+    }
 
     //* 检测用户名长度
     if (dstrlen($username) < 3) {
@@ -129,6 +202,10 @@ class DiscuzXMember
     if (dstrlen($username) > 15) {
       return $R->error(400, "400:UsernameTooLong", "用户名长度不得超过 15 个字符");
     }
+    if (uc_get_user(addslashes($username)) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
+      return $R->error(400, "400:ProfileUsernameDuplicate", "该用户名已被注册");
+    }
+
     //* 检测是否是 用户信息保留关键字
     $censorUser = $_G['setting']['censoruser'];
     $censorUser = explode("\r\n", $censorUser);
@@ -165,6 +242,11 @@ class DiscuzXMember
     }
     if ($badPasswordMessage) {
       return $R->error(400, "400:BadPassword:002", $badPasswordMessage);
+    }
+    if (empty($_G['setting']['ignorepassword'])) {
+      if ($password != addslashes($password)) {
+        return $R->error(400, "400:ProfilePasswordIllegal", "抱歉，密码空或包含非法字符");
+      }
     }
 
     //* 新用户注册验证 查询是否在 注册验证限制的地区列表 和 注册验证限制的 IP 列表
@@ -248,10 +330,17 @@ class DiscuzXMember
       }
     }
 
+    if ($invite && $_G['setting']['inviteconfig']['invitegroupid']) {
+      $groupId = $_G['setting']['inviteconfig']['invitegroupid'];
+    }
+
     //* 插入用户表
     //* 存储在common_member表使用 随机密码
     $password = md5(random(10));
-    \C::t('common_member')->insert($uid, $username, $password, $email, $_G['clientip'], $groupId, [], 0, $_G['remoteport']);
+    $init = [
+      'credits' => explode(',', $_G['setting']['initcredits'])
+    ];
+    \C::t('common_member')->insert($uid, $username, $password, $email, $_G['clientip'], $groupId, $init, 0, $_G['remoteport']);
 
 
     //* 更新用户统计缓存
@@ -299,7 +388,6 @@ class DiscuzXMember
       manage_addnotify('verifyuser');
     }
 
-    include_once libfile("function/member");
     include_once libfile('function/stat');
     \setloginstatus([
       'uid' => $uid,
@@ -308,6 +396,34 @@ class DiscuzXMember
       'groupid' => $groupId
     ], 0);
     \updatestat('register');
+
+    if ($invite['id']) {
+      $result = \C::t('common_invite')->count_by_uid_fuid($invite['uid'], $uid);
+      if (!$result) {
+        \C::t('common_invite')->update($invite['id'], array('fuid' => $uid, 'fusername' => $_G['username'], 'regdateline' => $_G['timestamp'], 'status' => 2));
+        updatestat('invite');
+      } else {
+        $invite = array();
+      }
+    }
+    if ($invite['uid']) {
+      if ($_G['setting']['inviteconfig']['inviteaddcredit']) {
+        updatemembercount($uid, array($_G['setting']['inviteconfig']['inviterewardcredit'] => $_G['setting']['inviteconfig']['inviteaddcredit']));
+      }
+      if ($_G['setting']['inviteconfig']['invitedaddcredit']) {
+        updatemembercount($invite['uid'], array($_G['setting']['inviteconfig']['inviterewardcredit'] => $_G['setting']['inviteconfig']['invitedaddcredit']));
+      }
+      include_once libfile('function/friend');
+      friend_make($invite['uid'], $invite['username'], false);
+      notification_add($invite['uid'], 'friend', 'invite_friend', array('actor' => '<a href="home.php?mod=space&uid=' . $invite['uid'] . '" target="_blank">' . $invite['username'] . '</a>'), 1);
+
+      space_merge($invite, 'field_home');
+      if (!empty($invite['privacy']['feed']['invite'])) {
+        include_once libfile('function/feed');
+        $tite_data = array('username' => '<a href="home.php?mod=space&uid=' . $_G['uid'] . '">' . $_G['username'] . '</a>');
+        feed_add('friend', 'feed_invite', $tite_data, '', array(), '', array(), array(), '', '', '', 0, 0, '', $invite['uid'], $invite['username']);
+      }
+    }
 
     //* 发送欢迎信息
     $welcomemsg = &$_G['setting']['welcomemsg'];
@@ -327,6 +443,10 @@ class DiscuzXMember
         notification_add($uid, 'system', $welcomemsgtxt, array('from_id' => 0, 'from_idtype' => 'welcomemsg'), 1);
       }
     }
+
+    dsetcookie('loginuser', '');
+    dsetcookie('activationauth', '');
+    dsetcookie('invite_auth', '');
 
     return $R->success(getuserbyuid($uid));
   }
