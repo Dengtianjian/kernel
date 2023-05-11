@@ -29,6 +29,10 @@ class Curl
   private $curlCookie = []; //* 请求的cookies
   private $uploadFile = []; //* 上传的文件，当执行了file方法
   private $bypasSSLVerification = false; //* 绕过SSL验证
+  private $SSLCERTType = "PEM"; //* SSL证书类型
+  private $SSLCERTFilePath = null; //* SSL证书文件地址
+  private $SSLKeyType = "PEM"; //* SSL证书密钥类型
+  private $SSLKeyFilePath = null; //* SSL证书密钥文件地址
   private $responseData = NULL; //* 响应的数据
   private $curlErrorMsg = NULL; //* 错误信息
   private $curlErrorNo = NULL; //* 错误码
@@ -280,6 +284,32 @@ class Curl
     return $this;
   }
   /**
+   * 设置SSL证书
+   *
+   * @param string $filePath 证书文件地址
+   * @param string $type 证书类型，默认是PEM
+   * @return Curl
+   */
+  public function SSLCert($filePath, $type = "PEM")
+  {
+    $this->SSLCERTType = $type;
+    $this->SSLCERTFilePath = $filePath;
+    return $this;
+  }
+  /**
+   * 设置SSL密钥
+   *
+   * @param string $filePath 密钥文件地址
+   * @param string $type 密钥类型，默认是PEM
+   * @return Curl
+   */
+  public function SSLKey($filePath, $type = "PEM")
+  {
+    $this->SSLKeyType = $type;
+    $this->SSLKeyFilePath = $filePath;
+    return $this;
+  }
+  /**
    * 设置cookie
    *
    * @param array[$key=>$value] $datas 数据
@@ -354,6 +384,16 @@ class Curl
     if ($this->bypasSSLVerification === true) {
       $options[CURLOPT_SSL_VERIFYPEER] = false;
       $options[CURLOPT_SSL_VERIFYHOST] = false;
+    }
+    //* SSL证书
+    if ($this->SSLCERTFilePath) {
+      $options[CURLOPT_SSLCERTTYPE] = $this->SSLCERTType;
+      $options[CURLOPT_SSLCERT] = $this->SSLCERTFilePath;
+    }
+    //* SSL密钥
+    if ($this->SSLKeyFilePath) {
+      $options[CURLOPT_SSLKEYTYPE] = $this->SSLKeyType;
+      $options[CURLOPT_SSLKEY] = $this->SSLKeyFilePath;
     }
     //* 开启代理
     if ($this->proxy['open']) {
