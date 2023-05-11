@@ -98,9 +98,10 @@ class WechatPayJSApi extends Wechat
    * @param string $attach 附加数据，在查询API和支付通知中原样返回，可作为自定义参数使用，实际情况下只有支付完成状态才会返回该字段。
    * @param string $goodsTag 订单优惠标记
    * @param boolean $supportFapiao 电子发票入口开放标识 传入true时，支付成功消息和支付详情页将出现开票入口。需要在微信支付商户平台或微信公众平台开通电子发票功能，传此字段才可生效。true：是，false：否
+   * @param boolean $profitSharing 是否为分账订单
    * @return ReturnResult
    */
-  public function order($openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false)
+  public function order($openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false, $profitSharing = false)
   {
     $OrderTime = time();
     $expireTime = null;
@@ -125,7 +126,10 @@ class WechatPayJSApi extends Wechat
       "support_fapiao" => $supportFapiao,
       "goods_tag" => $goodsTag,
       "attach" => $attach,
-      "time_expire" => date("Y-m-d\TH:i:sT:00", $expireTime)
+      "time_expire" => date("Y-m-d\TH:i:sT:00", $expireTime),
+      "settle_info" => [
+        "profit_sharing" => $profitSharing
+      ]
     ];
 
     $JsonBody = json_encode($Body, JSON_UNESCAPED_UNICODE);
@@ -219,5 +223,66 @@ class WechatPayJSApi extends Wechat
       return $data ? json_decode($data, true) : $data;
     }
     return null;
+  }
+  /**
+   * 分账
+   * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter8_1_1.shtml
+   *
+   * @param string $transactionId 微信支付订单号
+   * @param string $outOrderNo 商户系统内部的分账单号，在商户系统内部唯一，同一分账单号多次请求等同一次。只能是数字、大小写字母_-|*@
+   * @param arra $receivers 账接收方列表，可以设置出资商户作为分账接受方，最多可有50个分账接收方
+   * @param boolean $unfreezeUnsplit 1、如果为true，该笔订单剩余未分账的金额会解冻回分账方商户；2、如果为false，该笔订单剩余未分账的金额不会解冻回分账方商户，可以对该笔订单再次进行分账。
+   * @return ReturnResult
+   */
+  public function profitsharing($transactionId, $outOrderNo, $receivers, $unfreezeUnsplit = false)
+  {
+    $HTTPMethod = "POST";
+    $Body = [
+      "appid" => $this->AppId,
+      "transaction_id" => $transactionId,
+      "out_order_no" => $outOrderNo,
+      "receivers" => $receivers,
+      "unfreeze_unsplit" => $unfreezeUnsplit
+    ];
+
+    $JsonBody = json_encode($Body, JSON_UNESCAPED_UNICODE);
+    $PrivateKeyFile = file_get_contents($this->PrivateKeyFilePath);
+    $MerchantPrivateKey = openssl_pkey_get_private($PrivateKeyFile);
+    $Now = time();
+    $Nonce = md5($Now);
+    $GenerateSignMessage = $HTTPMethod . "\n" .
+      "/v3/profitsharing/orders\n" .
+      $Now . "\n" .
+      $Nonce . "\n" .
+      $JsonBody . "\n";
+    openssl_sign($GenerateSignMessage, $RawSign, $MerchantPrivateKey, 'sha256WithRSAEncryption');
+    $OrderSign = base64_encode($RawSign);
+
+    $AuthorizationContent = sprintf(
+      'mchid="%s",nonce_str="%s",timestamp="%d",serial_no="%s",signature="%s"',
+      $this->MerchantId,
+      $Nonce,
+      $Now,
+      $this->PrivateKeySerialNo,
+      $OrderSign
+    );
+    $this->CURL->headers([
+      "Authorization" => "WECHATPAY2-SHA256-RSA2048 $AuthorizationContent",
+      'Content-Type' => 'application/json; charset=UTF-8',
+      'Accept' => 'application/json',
+      'User-Agent' => '*/*',
+    ]);
+    $response = $this->post("profitsharing/orders", $Body, [], false);
+
+    $R = new ReturnResult(true);
+    if ($response->errorNo()) {
+      return $R->error(500, 500, "服务器错误", $response->error());
+    }
+    $ResponseData = $response->getData();
+    if ($response->statusCode() > 299) {
+      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+    }
+
+    return $R->success($ResponseData);
   }
 }
