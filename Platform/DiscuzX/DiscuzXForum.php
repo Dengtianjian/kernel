@@ -13,13 +13,15 @@ class DiscuzXForum extends BaseObject
     include_once libfile('function/forumlist');
     include_once libfile('function/discuzcode');
 
-    $adminid = $_G['adminid'];
-    $Forum = \C::t('forum_forum')->fetch_info_by_fid($ForumId);
+    $ForumIds = is_array($ForumId) ? $ForumId : [$ForumId];
 
-    if ($Forum) {
+    $adminid = $_G['adminid'];
+    $Forums = \DB::fetch_all("SELECT ff.*, f.* FROM %t f LEFT JOIN %t ff ON ff.fid=f.fid WHERE f.fid IN(%n)", array("forum_forum", 'forum_forumfield', $ForumIds));
+
+    foreach ($Forums as &$Forum) {
       if ($_G['uid']) {
         if ($_G['member']['accessmasks']) {
-          $query = \C::t('forum_access')->fetch_all_by_fid_uid($ForumId, $_G['uid']);
+          $query = \C::t('forum_access')->fetch_all_by_fid_uid($Forum['fid'], $_G['uid']);
           $Forum['allowview'] = $query[0]['allowview'];
           $Forum['allowpost'] = $query[0]['allowpost'];
           $Forum['allowreply'] = $query[0]['allowreply'];
@@ -29,11 +31,10 @@ class DiscuzXForum extends BaseObject
           $Forum['allowpostimage'] = $query[0]['allowpostimage'];
         }
         if ($adminid == 3) {
-          $Forum['ismoderator'] = \C::t('forum_moderator')->fetch_uid_by_fid_uid($ForumId, $_G['uid']);
+          $Forum['ismoderator'] = \C::t('forum_moderator')->fetch_uid_by_fid_uid($Forum['fid'], $_G['uid']);
         }
       }
       $Forum['ismoderator'] = !empty($Forum['ismoderator']) || $adminid == 1 || $adminid == 2 ? 1 : 0;
-      $ForumId = $Forum['fid'];
       $gorup_admingroupids = $_G['setting']['group_admingroupids'] ? dunserialize($_G['setting']['group_admingroupids']) : array('1' => '1');
 
       if ($Forum['status'] == 3) {
@@ -41,7 +42,7 @@ class DiscuzXForum extends BaseObject
           $Forum['moderators'] = dunserialize($Forum['moderators']);
         } else {
           include_once libfile('function/group');
-          $Forum['moderators'] = update_groupmoderators($ForumId);
+          $Forum['moderators'] = update_groupmoderators($Forum['fid']);
         }
         if ($_G['uid'] && $_G['adminid'] != 1) {
           $Forum['ismoderator'] = !empty($Forum['moderators'][$_G['uid']]) ? 1 : 0;
@@ -124,10 +125,8 @@ class DiscuzXForum extends BaseObject
       $Forum['extra'] = dunserialize($Forum['extra']);
       $Forum['formulaperm'] = dunserialize($Forum['formulaperm']);
       $Forum['icon'] = get_forumimg($Forum['icon']);
-    } else {
-      $ForumId = 0;
     }
 
-    return $Forum;
+    return is_array($ForumId) ? $Forums : $Forums[0];
   }
 }
