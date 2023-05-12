@@ -8,6 +8,7 @@ if (!defined('F_KERNEL')) {
 
 use CURLFile;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Str;
 use kernel\Foundation\Output;
 
 /**
@@ -412,7 +413,6 @@ class Curl
     curl_setopt($curl, CURLOPT_NOBODY, false);
 
     $result = \curl_exec($curl);
-
     $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
     $header = substr($result, 0, $headerSize);
     $header = explode("\r\n", $header);
@@ -434,18 +434,21 @@ class Curl
       }
     }
     $this->responseHeadersData = $responseHeaders;
-    $responseBody = substr($result, $headerSize);
 
     if ($result === false) {
       $this->curlErrorMsg = \curl_error($curl);
       $this->curlErrorNo = intval(\curl_errno($curl));
     } else {
-      if ($this->isJson) {
+      $responseBody = $result = substr($result, $headerSize);
+      if (strpos($responseHeaders['Content-Type'], "json") !== false) {
         $result = \json_decode($responseBody, true);
         if (!$result) {
-          $result = [
-            "response" => $responseBody
-          ];
+          $result = $responseBody;
+        }
+      } else if (strpos($responseHeaders['Content-Type'], "xml") !== false) {
+        $result = Str::xmlToArray($responseBody);
+        if (!$result) {
+          $result = $responseBody;
         }
       }
 
