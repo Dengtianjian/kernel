@@ -8,6 +8,12 @@ if (!defined("F_KERNEL")) {
 
 class Str
 {
+  /**
+   * 可对前端通过escape()编码的字符进行解码
+   *
+   * @param string $str 要解码的字符串
+   * @return string
+   */
   static function unescape($str)
   {
     $str = rawurldecode($str);
@@ -77,5 +83,23 @@ class Str
       return random_int($min, $max);
     }
     return mt_rand($min, $max);
+  }
+  /**
+   * XML字符串转数组
+   *
+   * @param string $XMLString xml字符串
+   * @return array|false
+   */
+  static function xmlToArray($XMLString)
+  {
+    $options = 0;
+    if (strpos($XMLString, "CDATA") !== false) {
+      $options = LIBXML_NOCDATA;
+    }
+    $toObject = simplexml_load_string($XMLString, "SimpleXMLElement", $options);
+    if ($toObject == false) {
+      return false;
+    }
+    return json_decode(json_encode($toObject), true);
   }
 }
