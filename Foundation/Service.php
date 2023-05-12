@@ -13,11 +13,11 @@ if (!defined("F_KERNEL")) {
 class Service extends BaseObject
 {
   private static $useParams = [];
-  protected final static function setUseParams($params)
+  final static function setUseParams($params)
   {
     self::$useParams = $params;
   }
-  final protected static function getUseParams()
+  final static function getUseParams()
   {
     return self::$useParams;
   }
