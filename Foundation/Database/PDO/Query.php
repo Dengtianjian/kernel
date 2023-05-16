@@ -134,7 +134,10 @@ class Query
   }
   function page($page, $pageLimt = 10)
   {
-    $start = $page * $pageLimt - $pageLimt;
+    $start = 0;
+    if ($page > 0) {
+      $start = $page * $pageLimt - $pageLimt;
+    }
     $this->limit($start, $pageLimt);
     return $this;
   }
