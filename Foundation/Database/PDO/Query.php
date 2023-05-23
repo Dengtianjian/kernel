@@ -2,11 +2,13 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\BaseObject;
+
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-class Query
+class Query extends BaseObject
 {
   private $executeType = "";
   private $options = [];
@@ -14,6 +16,7 @@ class Query
   public $tableName = "";
   public $sql = "";
   public $_reset = true;
+  private $_whereFilterNull = false;
   function __construct($tableName)
   {
     $this->tableName = $tableName;
@@ -55,8 +58,20 @@ class Query
     }
 
     if (count($this->conditions) > 0) {
-      $whereSql = SQL::conditions($this->conditions);
-      $sql .= $whereSql;
+      $conditions = $this->conditions;
+      if ($this->_whereFilterNull) {
+        $conditions = array_filter($conditions, function ($item) {
+          return !is_null($item['value']) || !empty($item['value']);
+        });
+        $conditions = array_values($conditions);
+        $lastIndex = count($conditions) - 1;
+        $conditions[$lastIndex]['operator'] = null;
+      }
+      
+      if (count($conditions)) {
+        $whereSql = SQL::conditions($conditions);
+        $sql .= $whereSql;
+      }
     }
 
     if (isset($this->options['order'])) {
@@ -88,6 +103,11 @@ class Query
     $this->options = [];
     $this->executeType = "";
     $this->conditions = [];
+  }
+  function whereFilterNull($flag = true)
+  {
+    $this->_whereFilterNull = $flag;
+    return $this;
   }
   function order($field, $by = "ASC")
   {

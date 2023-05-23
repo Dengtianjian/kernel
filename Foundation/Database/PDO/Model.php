@@ -124,6 +124,17 @@ class Model extends BaseObject
     $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
     return $this;
   }
+  /**
+   * 过滤掉条件中为空的字段
+   *
+   * @param boolean $flag true=过滤，false=不过滤
+   * @return Model
+   */
+  function whereFilterNull($flag = true)
+  {
+    $this->query->whereFilterNull($flag);
+    return $this;
+  }
   function sql($yes = true)
   {
     $this->returnSql = $yes;
