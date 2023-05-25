@@ -54,8 +54,8 @@ class WechatPayV2 extends WechatPay
     foreach ($data as $key => $item) {
       array_push($DataStrings, $key . "=" . $item);
     }
+    array_push($DataStrings, "key=" . $this->ApiSecret);
     $dataString = implode("&", $DataStrings);
-    $dataString .= "&key=" . $this->ApiSecret;
     return strtoupper(md5($dataString));
   }
   /**
@@ -110,6 +110,8 @@ class WechatPayV2 extends WechatPay
       return $R->error(500, 500 . ":" . $ResponseData['FAIL'], "服务器错误", $ResponseData);
     }
     return $R->success([
+      "appId" => $this->AppId,
+      "merchantId" => $ResponseData['mch_id'],
       "returnCode" => $ResponseData['return_code'],
       "returnMsg" => $ResponseData['return_msg'],
       "resultCode" => $ResponseData['return_code'],
@@ -128,7 +130,8 @@ class WechatPayV2 extends WechatPay
    * @param string $tradeNo 商户订单号，需保持唯一（只允许数字[0~9]或字母[A~Z]和[a~z]最短8位，最长32位）
    * @return ReturnResult
    */
-  public function queryBank($tradeNo){
+  public function queryBank($tradeNo)
+  {
     $NonceStr = $this->gererateNonceString();
     $Body = [
       "mch_id" => $this->MerchantId,
