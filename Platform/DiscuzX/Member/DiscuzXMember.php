@@ -27,6 +27,7 @@ class DiscuzXMember
   {
     global $_G;
     include_once libfile("function/member");
+    $R = new ReturnResult(true);
 
     $login = \C::t('common_failedlogin')->fetch_ip($_G['clientip']);
     $loginPerm = (!$login || (TIMESTAMP - $login['lastupdate'] > 900)) ? 5 : max(0, 5 - $login['count']);
@@ -46,7 +47,7 @@ class DiscuzXMember
     }
 
     if ($loginPerm == 0) {
-      return new ResponseError(403, 403001, "密码错误次数过多，请 15 分钟后重新登录", [
+      return $R->error(403, 403001, "密码错误次数过多，请 15 分钟后重新登录", [
         "loginCount" => 0
       ]);
     }
@@ -56,7 +57,7 @@ class DiscuzXMember
       \C::t('common_failedlogin')->update_failed($_G['clientip']);
       failedip();
       $loginCount = $loginperm - 1;
-      return new ResponseError(400, 400001, "登录失败，您还可以尝试 {$loginCount} 次", [
+      return $R->error(400, 400001, "登录失败，您还可以尝试 {$loginCount} 次", [
         "loginCount" => $loginCount
       ]);
     }
@@ -67,6 +68,15 @@ class DiscuzXMember
 
     return new ReturnResult($userLoginResult['member']);
   }
+  /**
+   * 注册用户
+   *
+   * @param string $username 用户名
+   * @param string $password 账号密码
+   * @param string $email 注册邮箱地址
+   * @param string $invationCode 邀请码
+   * @return ReturnResult
+   */
   public static function register($username, $password, $email = null, $invationCode = null)
   {
     global $_G;
@@ -166,6 +176,8 @@ class DiscuzXMember
       return $R->error(400, "400:NoOpenRegistrationInvite", "抱歉，本站目前暂时不允许用户直接注册，需要有效的邀请码才能注册");
     }
 
+    loaducenter();
+
     //* 邮箱验证
     if ($email) {
       $email = strtolower(trim($email));
@@ -181,7 +193,6 @@ class DiscuzXMember
         }
       }
 
-      loaducenter();
       $ucresult = uc_user_checkemail($email);
 
       if ($ucresult == -4) {
@@ -202,8 +213,6 @@ class DiscuzXMember
     if (dstrlen($username) > 15) {
       return $R->error(400, "400:UsernameTooLong", "用户名长度不得超过 15 个字符");
     }
-
-    loaducenter();
 
     if (uc_get_user(addslashes($username)) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
       return $R->error(400, "400:ProfileUsernameDuplicate", "该用户名已被注册");
@@ -280,9 +289,6 @@ class DiscuzXMember
       }
     }
 
-    include_once(DISCUZ_ROOT . './config/config_ucenter.php');
-    include_once(DISCUZ_ROOT . "./uc_client/client.php");
-
     //* UC 查询用户名是否已经存在
     if (\uc_get_user($username) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
       return $R->error(400, 400014, "该用户名已被注册");
@@ -344,7 +350,6 @@ class DiscuzXMember
       'credits' => explode(',', $_G['setting']['initcredits'])
     ];
     \C::t('common_member')->insert($uid, $username, $password, $email, $_G['clientip'], $groupId, $init, 0, $_G['remoteport']);
-
 
     //* 更新用户统计缓存
     include_once libfile('cache/userstats', 'function');
