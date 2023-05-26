@@ -202,6 +202,9 @@ class DiscuzXMember
     if (dstrlen($username) > 15) {
       return $R->error(400, "400:UsernameTooLong", "用户名长度不得超过 15 个字符");
     }
+
+    loaducenter();
+
     if (uc_get_user(addslashes($username)) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
       return $R->error(400, "400:ProfileUsernameDuplicate", "该用户名已被注册");
     }
