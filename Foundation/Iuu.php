@@ -18,7 +18,7 @@ class Iuu
   }
   public function install()
   {
-    $installFile =  F_APP_ROOT . "/Iuu/Install/install.php";
+    $installFile =  F_APP_ROOT . "/Iuu/Install/Install.php";
     if (\file_exists($installFile)) {
       // include_once($installFile);
       $className = "\\" . F_APP_ID . "\Iuu\Install\Install";
@@ -51,7 +51,7 @@ class Iuu
     $uninstallFile =  F_APP_ROOT . "/Iuu/Uninstall/uninstall.php";
     if (\file_exists($uninstallFile)) {
       // include_once($installFile);
-      $className = "\\" . F_APP_ID . "\Iuu\Uninstall\uninstall";
+      $className = "\\" . F_APP_ID . "\Iuu\Uninstall\Uninstall";
       new $className();
     }
     // File::deleteDirectory(F_APP_DATA);

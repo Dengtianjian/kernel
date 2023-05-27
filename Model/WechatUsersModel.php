@@ -18,9 +18,7 @@ class WechatUsersModel extends Model
 -- ----------------------------
 -- Table structure for wechat_users
 -- ----------------------------
-DROP TABLE IF EXISTS `{$this->tableName}`;
-
-CREATE TABLE `{$this->tableName}` (
+CREATE TABLE IF NOT EXISTS `{$this->tableName}` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `memberId` bigint(20) NULL DEFAULT NULL COMMENT '被绑定的会员ID',
   `openId` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'openId',

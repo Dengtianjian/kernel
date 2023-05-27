@@ -19,9 +19,7 @@ class LoginsModel extends Model
 -- ----------------------------
 -- Table structure for logins
 -- ----------------------------
-DROP TABLE IF EXISTS `{$this->tableName}`;
-
-CREATE TABLE `{$this->tableName}` (
+CREATE TABLE IF NOT EXISTS `{$this->tableName}` (
   `id` varchar(26) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'id',
   `token` varchar(260) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'token值',
   `expiration` varchar(22) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '有效期至',

@@ -15,7 +15,6 @@ class AccessTokenModel extends Model
 -- ----------------------------
 -- Table structure for access_token
 -- ----------------------------
-DROP TABLE IF EXISTS `{$this->tableName}`;
 CREATE TABLE `{$this->tableName}`  (
   `accessToken` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'access_token',
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
