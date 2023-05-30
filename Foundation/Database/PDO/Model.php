@@ -280,4 +280,10 @@ class Model extends BaseObject
     $this->query->reset($flag);
     return $this;
   }
+
+  function createTable()
+  {
+    if (empty($this->tableStructureSQL)) return true;
+    return DB::query($this->tableStructureSQL);
+  }
 }
