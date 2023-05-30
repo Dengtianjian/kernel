@@ -221,7 +221,7 @@ class File
   public static function genPath(...$els)
   {
     return implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
-      $lastText = $item[strlen($item) - 1];
+      // $lastText = $item[strlen($item) - 1];
       // if ($lastText === "/" || $lastText === "\\") {
       //   $item = substr($item, 0, strlen($item) - 1);
       // }
