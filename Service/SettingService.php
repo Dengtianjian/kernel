@@ -80,12 +80,13 @@ class SettingService extends Service
    *
    * @param string $name 设置项名称
    * @param string $value 设置项值
+   * @param boolean $serialization 是否需要序列化后存储
    * @return bool
    */
-  public function save($name, $value)
+  public function save($name, $value, $serialization = true)
   {
     return $this->settingModel->where("name", $name)->update([
-      "value" => serialize($value),
+      "value" => $serialization ? serialize($value) : $value,
       "updatedAt" => time()
     ]);
   }
