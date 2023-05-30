@@ -11,15 +11,18 @@ class SettingsModel extends Model
   public static $CreatedAt = null;
   public static $DeletedAt = null;
 
-  public function __construct()
+  public function __construct($tableName = null)
   {
+    if ($tableName) {
+      $this->tableName = $tableName;
+    }
     parent::__construct();
     $this->tableStructureSQL = <<<SQL
 -- ----------------------------
 -- Table structure for pre_gstudio_super_app_system_settings
 -- ----------------------------
 DROP TABLE IF EXISTS `{$this->tableName}`;
-CREATE TABLE `{$this->tableName}`  (
+CREATE TABLE IF NOT EXISTS `{$this->tableName}`  (
   `name` varchar(66) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项名称',
   `value` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '设置项值',
   `updatedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项最后更新时间',
