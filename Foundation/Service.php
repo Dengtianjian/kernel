@@ -25,13 +25,20 @@ class Service extends BaseObject
     $this->return = new ReturnResult(true);
   }
 
-  private static $useParams = [];
-  final static function setUseParams($params)
+  /**
+   * 使用服务
+   *
+   * @return void
+   */
+  public static function use()
   {
-    self::$useParams = $params;
   }
-  final static function getUseParams()
+  /**
+   * 初始化服务
+   *
+   * @return void
+   */
+  public static function init()
   {
-    return self::$useParams;
   }
 }
