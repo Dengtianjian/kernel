@@ -31,7 +31,7 @@ class SettingService extends Service
     foreach ($SettingsData as $item) {
       if ($item['value']) {
         $v = unserialize($item['value']);
-        $Settings[$item['name']] = is_null($v) || (is_bool($v) && $v === false) ? null : $v;
+        $Settings[$item['name']] = is_null($v) || (is_bool($v) && $v === false) ? $item['value'] : $v;
       } else {
         $Settings[$item['name']] = null;
       }
@@ -50,6 +50,7 @@ class SettingService extends Service
   }
   /**
    * 获取单个设置项值
+   * @deprecated
    *
    * @param string $name 设置项名称
    * @return mixed 设置项值
@@ -59,20 +60,34 @@ class SettingService extends Service
     $setting = $this->settingModel->where("name", $name)->getOne();
     if (!$setting) return null;
     $v = unserialize($setting['value']);
-    return is_null($v) || (is_bool($v) && $v === false) ? null : $v;
+    return is_null($v) || (is_bool($v) && $v === false) ? $setting['value'] : $v;
+  }
+  /**
+   * 获取单个设置项值
+   *
+   * @param string $name 设置项名称
+   * @return mixed 设置项值
+   */
+  public function item($name)
+  {
+    $setting = $this->settingModel->where("name", $name)->getOne();
+    if (!$setting) return null;
+    $v = unserialize($setting['value']);
+    return is_null($v) || (is_bool($v) && $v === false) ? $setting['value'] : $v;
   }
   /**
    * 添加设置项
    *
    * @param string $name 设置项名称
    * @param mixed $value 设置项值
+   * @param boolean $serialization 是否需要序列化后存储
    * @return bool
    */
-  public function add($name, $value = null)
+  public function add($name, $value = null, $serialization = true)
   {
     return $this->settingModel->insert([
       "name" => $name,
-      "value" => serialize($value)
+      "value" => $serialization ? serialize($value) : $value,
     ]);
   }
   /**
