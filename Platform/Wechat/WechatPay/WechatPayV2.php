@@ -47,7 +47,7 @@ class WechatPayV2 extends WechatPay
    * @param array $data 用于生成签名的数据
    * @return string
    */
-  protected function generateSign($data)
+  public function generateSign($data)
   {
     ksort($data);
     $DataStrings = [];
@@ -70,6 +70,55 @@ class WechatPayV2 extends WechatPay
     openssl_public_encrypt($data, $encryptedData, $PublicKey, OPENSSL_PKCS1_OAEP_PADDING);
 
     return base64_encode($encryptedData);
+  }
+  /**
+   * 获取微信支付公钥  
+   * 返回的公钥是PKCS#1 格式
+   * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_7&index=4
+   *
+   * @return ReturnResult
+   */
+  public function getPublicKey()
+  {
+    $oldURL = $this->ApiUrl;
+    $this->ApiUrl = "https://fraud.mch.weixin.qq.com";
+    $Body = [
+      "mch_id" => $this->MerchantId,
+      "nonce_str" => $this->gererateNonceString(),
+      "sign_type" => "MD5"
+    ];
+    $Body['sign'] = $this->generateSign($Body);
+    $response = $this->post("risk/getpublickey", Arr::toXML($Body), [], false);
+    $this->ApiUrl = $oldURL;
+
+    $R = new ReturnResult(true);
+    if ($response->errorNo()) {
+      return $R->error(500, 500, "服务器错误", $response->error());
+    }
+    $ResponseData = $response->getData();
+    if ($response->statusCode() > 299) {
+      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+    }
+    if ($ResponseData['result_code'] === "FAIL") {
+      return $R->error(500, 500 . ":" . $ResponseData['FAIL'], "服务器错误", $ResponseData);
+    }
+
+    return $R->success($ResponseData['pub_key']);
+  }
+  /**
+   * RSA公钥PKCS#1格式转成PKCS#8格式
+   * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_7&index=4
+   *
+   * @param string $filePath PKCS#1公钥文件路径
+   * @return string|boolean
+   */
+  public function transformPKCS1ToPKCS8($filePath)
+  {
+    $result = exec("openssl rsa -RSAPublicKey_in -in $filePath -pubout 2>&1", $output);
+    if ($result === false) {
+      return false;
+    }
+    return implode("\n", array_slice($output, 1));
   }
   /**
    * 付款到银行卡
