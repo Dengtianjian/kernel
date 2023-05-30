@@ -85,7 +85,8 @@ class SettingService extends Service
   public function save($name, $value)
   {
     return $this->settingModel->where("name", $name)->update([
-      "value" => serialize($value)
+      "value" => serialize($value),
+      "updatedAt" => time()
     ]);
   }
   /**
@@ -98,7 +99,8 @@ class SettingService extends Service
   {
     foreach ($settings as $name => $value) {
       $this->settingModel->where("name", $name)->update([
-        "value" => serialize($value)
+        "value" => serialize($value),
+        "updatedAt" => time()
       ]);
     }
     return true;
