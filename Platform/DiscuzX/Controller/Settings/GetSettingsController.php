@@ -14,31 +14,27 @@ class GetSettingsController extends DiscuzXController
   protected $adminNames = []; //* 不同管理组可以获取的键名，键是数组ID，值是键名数组 [ 1=>['appId','appName'],3=>['appName'] ]
   public function __construct($R)
   {
-    $this->names = DiscuzXSettingService::getUseParams()['names'];
-    $this->groupNames = DiscuzXSettingService::getUseParams()['groupNames'];
-    $this->adminNames = DiscuzXSettingService::getUseParams()['adminNames'];
+    $this->names = DiscuzXSettingService::$Names;
+    $this->groupNames = DiscuzXSettingService::$GroupNames;
+    $this->adminNames = DiscuzXSettingService::$AdminNames;
     parent::__construct($R);
   }
   public function data()
   {
     if (!$this->query->has("name")) return [];
     global $_G;
-    $name = $this->query->get("name");
-    $SourceNames = explode(",", $name);
-    $names = array_intersect($SourceNames, $this->names);
+    $GetNames = explode(",", $this->query->get("name"));
+    $names = $this->names;
 
-    $groupNames = [];
     if (isset($this->groupNames[$_G['groupid']])) {
-      $groupNames = array_intersect($SourceNames, $this->groupNames[$_G['groupid']]);
+      $names = array_merge($names, $this->groupNames[$_G['groupid']]);
     }
-    $names = array_merge($names, $groupNames);
 
-    $adminNames = [];
     if (isset($this->adminNames[$_G['adminid']])) {
-      $adminNames = array_intersect($SourceNames, $this->adminNames[$_G['adminid']]);
+      $names = array_merge($names, $this->adminNames[$_G['adminid']]);
     }
-    $names = array_merge($names, $adminNames);
+    $names = array_unique(array_intersect($GetNames, $names));
 
-    return DiscuzXSettingService::singleton()->items(...array_unique($names));
+    return DiscuzXSettingService::singleton()->items(...$names);
   }
 }
