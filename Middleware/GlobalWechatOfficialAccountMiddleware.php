@@ -27,7 +27,7 @@ class GlobalWechatOfficialAccountMiddleware extends Middleware
       $LatestAccountToken = $ATM->where("platform", $Platform)->where("appId", $AppId)->where("expiredAt", time(), ">")->getOne();
       if (!$LatestAccountToken) {
         $AT = new AccessToken(null, $AppId, $AppSecret);
-        $res = $AT->getAccessToken();
+        $res = $AT->getStableAccessToken();
         if (isset($res['errcode'])) {
           return new ResponseError(500, "500:ServerError", "服务器错误", null, $res);
         }
