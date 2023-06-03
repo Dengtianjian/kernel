@@ -12,6 +12,7 @@ class WechatPayJSApi extends WechatPayV3
    * JSAPI下单
    * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_1.shtml
    *
+   * @param string $OrderId 订单号
    * @param string $openId 支付者的用户标识
    * @param double|int $total 订单金额的总金额。订单总金额，单位为分。
    * @param string $currency 订单金额的货币类型，默认是CNY：人民币
@@ -23,7 +24,7 @@ class WechatPayJSApi extends WechatPayV3
    * @param boolean $profitSharing 是否为分账订单
    * @return ReturnResult
    */
-  public function order($openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false, $profitSharing = false)
+  public function order($OrderId, $openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false, $profitSharing = false)
   {
     $OrderTime = time();
     $expireTime = null;
@@ -31,7 +32,6 @@ class WechatPayJSApi extends WechatPayV3
       $expireTime = $OrderTime + $periodSeconds;
     }
     $HTTPMethod = "POST";
-    $TradeNo = $this->gererateTradeNo();
     $Body = [
       "appid" => $this->AppId,
       "mchid" => $this->MerchantId,
@@ -44,7 +44,7 @@ class WechatPayJSApi extends WechatPayV3
       "payer" => [
         "openid" => $openId
       ],
-      "out_trade_no" => $TradeNo,
+      "out_trade_no" => $OrderId,
       "support_fapiao" => $supportFapiao,
       "goods_tag" => $goodsTag,
       "attach" => $attach,
