@@ -66,7 +66,7 @@ class DiscuzXMember
 
     uc_user_synlogin($_G['uid']); //* UC同步登录
 
-    return new ReturnResult($userLoginResult['member']);
+    return $R->success($userLoginResult['member']);
   }
   /**
    * 注册用户
