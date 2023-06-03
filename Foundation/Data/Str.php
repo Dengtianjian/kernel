@@ -85,6 +85,46 @@ class Str
     return mt_rand($min, $max);
   }
   /**
+   * 生成序列单号
+   *
+   * @param integer $ExpectLength 期望的长度
+   * @param string|int|double $Prefix 前缀
+   * @param string|int|double $Suffix 后缀
+   * @return string 序列单号
+   */
+  static function generateSerialNumber($ExpectLength = 32, $Prefix = null, $Suffix = null)
+  {
+    $length = $Prefix && (is_string($Prefix) || is_numeric($Prefix)) ? $ExpectLength - strlen(strval($Prefix)) : $ExpectLength;
+    $length = $Suffix && (is_string($Suffix) || is_numeric($Suffix)) ? $length - strlen(strval($Suffix)) : $length;
+    $NowTimeString = strval(time());
+
+    $SplitTimes = str_split($NowTimeString);
+    $no = [date("YmdHis")];
+    for ($i = 0; $i < 1; $i++) {
+      for ($i = 0; $i < count($SplitTimes); $i++) {
+        array_push($no, $SplitTimes[mt_rand(0, 9)]);
+      }
+    }
+    $no = implode("", $no);
+    if (strlen($no) > $length) {
+      $no = substr($no, strlen($no) - $length);
+    } else if (strlen($no) < $length) {
+      $min = "1";
+      $max = "9";
+      $FilledLength = $length - strlen($no);
+      for ($i = 1; $i < $FilledLength; $i++) {
+        $min .= "0";
+        $max .= "9";
+      }
+
+      $nonceStr = self::generateRandomNumbers(intval($min), intval($max));
+      $nonceStr = substr($nonceStr, 0, $FilledLength);
+      $no = implode("", [$no, $nonceStr]);
+    }
+
+    return implode("", [$Prefix, $no, $Suffix]);
+  }
+  /**
    * XML字符串转数组
    *
    * @param string $XMLString xml字符串

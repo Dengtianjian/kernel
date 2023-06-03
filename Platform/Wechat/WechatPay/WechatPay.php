@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\Wechat\WechatPay;
 
+use kernel\Foundation\Data\Str;
 use kernel\Platform\Wechat\Wechat;
 
 class WechatPay extends Wechat
@@ -31,23 +32,7 @@ class WechatPay extends Wechat
    */
   protected function gererateTradeNo()
   {
-    $now = (string)time();
-    $s = str_split($now);
-    $nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    $no = [date("YmdHis"), 0];
-    for ($i = 0; $i < 1; $i++) {
-      for ($i = 0; $i < count($s); $i++) {
-        array_push($no, $s[mt_rand(0, 9)]);
-      }
-    }
-
-    $rand = (string)mt_rand(10000, 99999);
-    $before = substr($rand, 0, 2);
-    $after = substr($rand, 2);
-    array_unshift($no, $before);
-    array_push($no, $after);
-
-    return implode("", $no);
+    return Str::generateSerialNumber();
   }
   /**
    * 生成32位随机字符串
