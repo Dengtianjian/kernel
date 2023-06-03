@@ -99,4 +99,16 @@ class ReturnResult extends Response
     }
     return $this->ResponseData;
   }
+  /**
+   * 获取结果
+   * 如果是有错误的话，就返回null，否则就返回结果
+   *
+   * @param string $key $key 指定键的数据，不传即返回全部
+   * @return mixed
+   */
+  public function getResult($key = null)
+  {
+    if ($this->error) return null;
+    return $this->getData($key);
+  }
 }
