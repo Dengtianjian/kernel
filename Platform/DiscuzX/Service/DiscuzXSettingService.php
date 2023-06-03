@@ -10,7 +10,7 @@ use kernel\Service\SettingService;
 
 class DiscuzXSettingService extends SettingService
 {
-  private static $SettingsTableName = null;
+  protected static $SettingsTableName = null;
   public static $Names = [];
   public static $GroupNames = [];
   public static $AdminNames = [];
