@@ -45,6 +45,7 @@ class Wechat extends BaseObject
   function setAccessToken($value)
   {
     $this->AccessToken = $value;
+    return $this;
   }
   /**
    * 发送GET请求
