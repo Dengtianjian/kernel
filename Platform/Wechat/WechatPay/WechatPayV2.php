@@ -175,9 +175,10 @@ class WechatPayV2 extends WechatPay
   /**
    * 查询付款到银行卡结果
    * 用于对商户付款到银行卡操作进行结果查询，返回付款操作详细结果。
+   * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_3
    *
    * @param string $tradeNo 商户订单号，需保持唯一（只允许数字[0~9]或字母[A~Z]和[a~z]最短8位，最长32位）
-   * @return ReturnResult
+   * @return ReturnResult 返回结果是调用微信查询接口后返回的数据，键名改成了驼峰法
    */
   public function queryBank($tradeNo)
   {
