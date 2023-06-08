@@ -12,11 +12,15 @@ class DiscuzXWechatUsersModel extends WechatUsersModel
   function __construct($tableName = null)
   {
     parent::__construct();
-    
+
     $this->query = new DiscuzXQuery($this->tableName);
 
     $this->tableName = \DB::table($this->tableName);
 
     $this->DB = DiscuzXDB::class;
+  }
+  public function itemByOpenId($openId)
+  {
+    return $this->where("openId", $openId)->getOne();
   }
 }
