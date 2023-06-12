@@ -30,7 +30,7 @@ class Service extends BaseObject
    *
    * @return void
    */
-  public static function userService()
+  public static function useService()
   {
   }
   /**
