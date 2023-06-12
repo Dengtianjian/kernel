@@ -36,7 +36,7 @@ class Log
     }
     $logFileName = date("d") . ".yml";
     $logFilePath = File::genPath($logDir, $logFileName);
-    if (is_array($content)) $content = json_encode($content);
+    if (is_array($content)) $content = json_encode($content, JSON_UNESCAPED_UNICODE);
     $content = strval($content);
     $time = date("Y-m-d h:i:s");
     $content = <<<EOT
