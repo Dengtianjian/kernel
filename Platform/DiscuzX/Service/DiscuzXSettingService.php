@@ -24,7 +24,7 @@ class DiscuzXSettingService extends SettingService
    * @param string $SettingsTableaName 设置存储表名称，默认是appId+"_settings"
    * @return void
    */
-  static function use(
+  static function useService(
     $names = [],
     $groupNames = [],
     $adminNames = [],

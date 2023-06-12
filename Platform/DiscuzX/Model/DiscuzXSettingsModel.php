@@ -23,14 +23,14 @@ class DiscuzXSettingsModel extends SettingsModel
     -- ----------------------------
     -- Table structure for pre_gstudio_super_app_system_settings
     -- ----------------------------
-    DROP TABLE IF EXISTS `{$this->tableName}`;
-    CREATE TABLE IF NOT EXISTS `{$this->tableName}`  (
+    DROP TABLE IF EXISTS `{$tableName}`;
+    CREATE TABLE IF NOT EXISTS `{$tableName}`  (
       `name` varchar(66) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项名称',
       `value` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '设置项值',
       `updatedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项最后更新时间',
       PRIMARY KEY (`name`) USING BTREE
     ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '系统设置' ROW_FORMAT = Dynamic;
-    SQL;
+SQL;
   }
   function createTable()
   {
