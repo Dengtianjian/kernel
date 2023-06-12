@@ -2,7 +2,6 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Database\PDO\Model;
 
 class SettingsModel extends Model
