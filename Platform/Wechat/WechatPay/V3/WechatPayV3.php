@@ -55,7 +55,11 @@ class WechatPayV3 extends WechatPay
 
     parent::__construct($AppId, $MerchantId);
 
-    $this->CURL->json(true);
+    $this->CURL->headers([
+      'Content-Type' => 'application/json; charset=UTF-8',
+      'Accept' => 'application/json',
+      'User-Agent' => '*/*',
+    ])->json(true);
   }
   /**
    * 数据密文最小长度
@@ -161,5 +165,35 @@ class WechatPayV3 extends WechatPay
     }
 
     return $R->success($ResponseData);
+  }
+  public function generateSign($URI, $HTTPRequestMethod = "POST", $Time, $NonceStr, $BodyJson)
+  {
+    $PrivateKeyFile = file_get_contents($this->PrivateKeyFilePath);
+    $MerchantPrivateKey = openssl_pkey_get_private($PrivateKeyFile);
+    $GenerateSignMessage = $HTTPRequestMethod . "\n" .
+      "$URI\n" .
+      $Time . "\n" .
+      $NonceStr . "\n" .
+      $BodyJson . "\n";
+    openssl_sign($GenerateSignMessage, $RawSign, $MerchantPrivateKey, 'sha256WithRSAEncryption');
+    return base64_encode($RawSign);
+  }
+  public function generateAuthorizationValue($NonceStr, $Time, $Sign)
+  {
+    return sprintf(
+      'mchid="%s",nonce_str="%s",timestamp="%d",serial_no="%s",signature="%s"',
+      $this->MerchantId,
+      $NonceStr,
+      $Time,
+      $this->PrivateKeySerialNo,
+      $Sign
+    );
+  }
+  public function addAuthorizationToHeader($NonceStr, $Time, $Sign)
+  {
+    $this->CURL->headers([
+      "Authorization" => "WECHATPAY2-SHA256-RSA2048 " . $this->generateAuthorizationValue($NonceStr, $Time, $Sign),
+    ]);
+    return $this;
   }
 }
