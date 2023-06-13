@@ -102,4 +102,32 @@ class WechatPayJSApi extends WechatPayV3
 
     return $R->success($Body);
   }
+  /**
+   * 关闭订单
+   * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_3.shtml
+   *
+   * @param string $merchantTransactionId 商户交易ID
+   * @return ReturnResult
+   */
+  public function close($merchantTransactionId)
+  {
+    $Body = [
+      "mchid" => $this->MerchantId
+    ];
+    $Now = time();
+    $JsonBody = json_encode($Body, JSON_UNESCAPED_UNICODE);
+    $Nonce = md5($Now);
+
+    $Sign = $this->generateSign("/v3/pay/transactions/out-trade-no/$merchantTransactionId/close", "POST", $Now, $Nonce, $JsonBody);
+    $this->addAuthorizationToHeader($Nonce, $Now, $Sign);
+
+    $response = $this->post("pay/transactions/out-trade-no/$merchantTransactionId/close", $Body);
+    $R = new ReturnResult(true);
+    $ResponseData = $response->getData();
+    if ($response->statusCode() > 299) {
+      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+    }
+
+    return $R;
+  }
 }
