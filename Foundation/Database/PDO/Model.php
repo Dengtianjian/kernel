@@ -126,6 +126,7 @@ class Model extends BaseObject
   }
   /**
    * 过滤掉条件中为空的字段
+   * @deprecated
    *
    * @param boolean $flag true=过滤，false=不过滤
    * @return Model
@@ -133,6 +134,11 @@ class Model extends BaseObject
   function whereFilterNull($flag = true)
   {
     $this->query->whereFilterNull($flag);
+    return $this;
+  }
+  function filterNullWhere($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
+  {
+    $this->query->filterNullWhere($fieldNameOrFieldValue, $value, $glue, $operator);
     return $this;
   }
   function sql($yes = true)

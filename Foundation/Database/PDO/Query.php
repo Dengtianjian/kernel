@@ -13,9 +13,15 @@ class Query extends BaseObject
   private $executeType = "";
   private $options = [];
   private $conditions = [];
+  private $filterNullConditions = [];
   public $tableName = "";
   public $sql = "";
   public $_reset = true;
+  /**
+   * @deprecated version
+   *
+   * @var boolean
+   */
   private $_whereFilterNull = false;
   function __construct($tableName)
   {
@@ -57,8 +63,11 @@ class Query extends BaseObject
         break;
     }
 
-    if (count($this->conditions) > 0) {
-      $conditions = $this->conditions;
+    if (count($this->conditions) > 0 || count($this->filterNullConditions) > 0) {
+      $conditions = array_filter($this->filterNullConditions, function ($item) {
+        return !is_null($item['value']) || !empty($item['value']);
+      });
+      $conditions = array_merge($this->conditions, $conditions);
       if ($this->_whereFilterNull) {
         $conditions = array_filter($conditions, function ($item) {
           return !is_null($item['value']) || !empty($item['value']);
@@ -67,7 +76,7 @@ class Query extends BaseObject
         $lastIndex = count($conditions) - 1;
         $conditions[$lastIndex]['operator'] = null;
       }
-      
+
       if (count($conditions)) {
         $whereSql = SQL::conditions($conditions);
         $sql .= $whereSql;
@@ -104,6 +113,12 @@ class Query extends BaseObject
     $this->executeType = "";
     $this->conditions = [];
   }
+  /**
+   * @deprecated version
+   *
+   * @param boolean $flag
+   * @return void
+   */
   function whereFilterNull($flag = true)
   {
     $this->_whereFilterNull = $flag;
@@ -200,6 +215,38 @@ class Query extends BaseObject
       }
     } else {
       array_push($this->conditions, [
+        "statement" => null,
+        "fieldName" => $params,
+        "value" => $value,
+        "glue" => $glue,
+        "operator" => $operator
+      ]);
+    }
+
+    return $this;
+  }
+  function filterNullWhere($params, $value = null, $glue = "=", $operator = "AND")
+  {
+    if (is_string($params) && \preg_match_all("/\s+[=|<|>|BETWEEN|IN|LIKE|NULL|REGEXP]+/i", $params)) {
+      array_push($this->filterNullConditions, [
+        "statement" => $params,
+        "fieldName" => null,
+        "value" => null,
+        "glue" => null,
+        "operator" => $operator
+      ]);
+    } else if (is_array($params)) {
+      foreach ($params as $fieldName => $param) {
+        array_push($this->filterNullConditions, [
+          "statement" => null,
+          "fieldName" => $fieldName,
+          "value" => $param,
+          "glue" => $glue,
+          "operator" => $operator
+        ]);
+      }
+    } else {
+      array_push($this->filterNullConditions, [
         "statement" => null,
         "fieldName" => $params,
         "value" => $value,
