@@ -31,7 +31,7 @@ class SettingService extends Service
     foreach ($SettingsData as $item) {
       if ($item['value']) {
         $v = unserialize($item['value']);
-        $Settings[$item['name']] = is_null($v) || (is_bool($v) && $v === false) ? $item['value'] : $v;
+        $Settings[$item['name']] = (is_bool($v) && $v === false) && strpos($item['value'], "b:") === false ? $item['value'] : $v;
       } else {
         $Settings[$item['name']] = null;
       }
@@ -60,7 +60,7 @@ class SettingService extends Service
     $setting = $this->settingModel->where("name", $name)->getOne();
     if (!$setting) return null;
     $v = unserialize($setting['value']);
-    return is_null($v) || (is_bool($v) && $v === false) ? $setting['value'] : $v;
+    return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
   }
   /**
    * 获取单个设置项值
@@ -73,7 +73,7 @@ class SettingService extends Service
     $setting = $this->settingModel->where("name", $name)->getOne();
     if (!$setting) return null;
     $v = unserialize($setting['value']);
-    return is_null($v) || (is_bool($v) && $v === false) ? $setting['value'] : $v;
+    return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
   }
   /**
    * 添加设置项
