@@ -112,6 +112,7 @@ class Query extends BaseObject
     $this->options = [];
     $this->executeType = "";
     $this->conditions = [];
+    $this->filterNullConditions = [];
   }
   /**
    * @deprecated version
