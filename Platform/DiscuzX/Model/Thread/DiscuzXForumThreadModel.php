@@ -19,8 +19,8 @@ class DiscuzXForumThreadModel extends DiscuzXModel
     if ($authorIds) {
       $this->where("authorid", $authorIds);
     }
-    $T = clone $this;
+    $total = $this->reset(false)->count();
     $this->page($page, $perPage);
-    return new ReturnList($this->getAll(), $T->count(), $page, $perPage);
+    return new ReturnList($this->getAll(), $total, $page, $perPage);
   }
 }
