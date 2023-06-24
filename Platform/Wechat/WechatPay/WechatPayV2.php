@@ -156,7 +156,10 @@ class WechatPayV2 extends WechatPay
       return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
     }
     if ($ResponseData['result_code'] === "FAIL") {
-      return $R->error(500, 500 . ":" . $ResponseData['FAIL'], "服务器错误", $ResponseData);
+      if ($ResponseData['err_code'] === "PARAM_ERROR") {
+        return $R->error(400, 400 . ":" . $ResponseData['err_code'], $ResponseData['err_code_des'], $ResponseData);
+      }
+      return $R->error(500, 500 . ":" . $ResponseData['err_code'], "服务器错误", $ResponseData);
     }
     return $R->success([
       "appId" => $this->AppId,
