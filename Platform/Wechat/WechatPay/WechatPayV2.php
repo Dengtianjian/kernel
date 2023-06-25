@@ -124,6 +124,7 @@ class WechatPayV2 extends WechatPay
    * 付款到银行卡
    * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_2
    *
+   * @param string $TransactionId 交易单号
    * @param int|string $BankCode 银行卡所在开户行编号,详见银行编号列表：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=24_4
    * @param string $BankNo 收款方银行卡号（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的银行卡信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权。
    * @param string $TrueName 收款方用户名（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的姓名信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权
@@ -131,13 +132,12 @@ class WechatPayV2 extends WechatPay
    * @param string $Description 付款到银行卡付款说明,即订单备注（UTF8编码，允许100个字符以内）
    * @return ReturnResult
    */
-  public function payBank($BankCode, $BankNo, $TrueName, $Amount, $Description)
+  public function payBank($TransactionId, $BankCode, $BankNo, $TrueName, $Amount, $Description)
   {
-    $PartnerTradeNo = $this->gererateTradeNo();
     $NonceStr = $this->gererateNonceString();
     $Body = [
       "mch_id" => $this->MerchantId,
-      "partner_trade_no" => $PartnerTradeNo,
+      "partner_trade_no" => $TransactionId,
       "nonce_str" => $NonceStr,
       "enc_bank_no" => $this->encryptByPublicKey($BankNo),
       "enc_true_name" => $this->encryptByPublicKey($TrueName),
@@ -164,12 +164,13 @@ class WechatPayV2 extends WechatPay
     return $R->success([
       "appId" => $this->AppId,
       "merchantId" => $ResponseData['mch_id'],
+      "transactionId" => $TransactionId,
+      "tradeNo" => $TransactionId,
       "returnCode" => $ResponseData['return_code'],
       "returnMsg" => $ResponseData['return_msg'],
       "resultCode" => $ResponseData['return_code'],
       "errCode" => $ResponseData['err_code'],
       "errCodeDes" => $ResponseData['err_code_des'],
-      "tradeNo" => $ResponseData['partner_trade_no'],
       "paymentNo" => $ResponseData['payment_no'],
       "amount" => $ResponseData['amount'],
       "cmmsAmt" => $ResponseData['cmms_amt'],
