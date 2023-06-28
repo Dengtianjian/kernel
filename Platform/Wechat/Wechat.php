@@ -92,4 +92,13 @@ class Wechat extends BaseObject
     $request = $this->CURL->url($this->ApiUrl . "/" . $uri, $query);
     return $request->https(false)->post($body);
   }
+  /**
+   * 获取响应是JSON格式的响应数据
+   *
+   * @return array
+   */
+  public function getJSONData()
+  {
+    return json_decode($this->CURL->getData(), true);
+  }
 }
