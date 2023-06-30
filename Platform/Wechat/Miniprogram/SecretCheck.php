@@ -12,6 +12,7 @@ class SecretCheck extends WechatMiniProgram
 {
   /**
    * 文本内容安全识别
+   * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/sec-center/sec-check/msgSecCheck.html
    *
    * @param string $content 需检测的文本内容，文本字数的上限为2500字，需使用UTF-8编码
    * @param string $openId 用户的openid（用户需在近两小时访问过小程序）
@@ -29,6 +30,7 @@ class SecretCheck extends WechatMiniProgram
   }
   /**
    * 音视频内容安全识别
+   * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/sec-center/sec-check/mediaCheckAsync.html
    *
    * @param string $mediaUrl 要检测的图片或音频的url，支持图片格式包括 jpg , jepg, png, bmp, gif（取首帧），支持的音频格式包括mp3, aac, ac3, wma, flac, vorbis, opus, wav
    * @param string $openId 用户的openid（用户需在近两小时访问过小程序）
@@ -48,6 +50,7 @@ class SecretCheck extends WechatMiniProgram
   }
   /**
    * 获取用户安全等级
+   * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/sec-center/safety-control-capability/getUserRiskRank.html
    *
    * @param string $openid 用户的openid
    * @param integer $scene 场景值，0:注册，1:营销作弊
