@@ -16,6 +16,7 @@ class User extends WechatMiniProgram
    * JSCode换取AccessToken
    *
    * @param string $code 前端获取到的JSCode
+   * @return ReturnResult
    */
   public function JSCode2Session($code)
   {
@@ -46,7 +47,7 @@ class User extends WechatMiniProgram
           break;
       }
     }
-    return $responseData;
+    return new ReturnResult($responseData);
   }
   /**
    * 绑定
