@@ -34,15 +34,18 @@ class AccessToken extends Wechat
   /**
    * 获取稳定版接口调用凭证
    * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/mp-access-token/getStableAccessToken.html
+   * 
+   * @param boolean $forceRefresh 强制刷新
    *
    * @return array
    */
-  function getStableAccessToken()
+  function getStableAccessToken($forceRefresh = false)
   {
     return $this->post("cgi-bin/stable_token", [
       "grant_type" => "client_credential",
       "appid" => $this->AppId,
-      "secret" => $this->AppSecret
+      "secret" => $this->AppSecret,
+      "force_refresh" => $forceRefresh,
     ])->getData();
   }
 }
