@@ -357,7 +357,7 @@ class Curl
       $sendDatas = Arr::merge($sendDatas, $this->uploadFile);
     }
     if ($this->isJson) {
-      $defaultHeaders['Content-Type'] = "application/json";
+      $defaultHeaders['Content-Type'] = "application/json; charset=utf-8";
       $sendDatas = \json_encode($sendDatas, JSON_UNESCAPED_UNICODE);
       if ($this->curlMethod === "get") {
         $sendDatas = \urlencode($sendDatas);
@@ -378,7 +378,9 @@ class Curl
     }
     if ($this->curlMethod !== "get") {
       $options[CURLOPT_POST] = true;
-      $options[CURLOPT_POSTFIELDS] = $sendDatas;
+      if($this->curlDatas&&!empty($this->curlDatas)){
+        $options[CURLOPT_POSTFIELDS] = $sendDatas;
+      }
       $options[CURLOPT_HTTPGET] = false;
     }
     //* 绕过SSL验证
