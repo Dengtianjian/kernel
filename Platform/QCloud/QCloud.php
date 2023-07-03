@@ -159,6 +159,9 @@ class QCloud extends BaseObject
     if (isset($ResponseData['Error'])) {
       return $R->error(500, $ResponseData['Error']['Code'], "服务器错误", $ResponseData);
     }
+    if ($ResponseData['Result'] < 0) {
+      return $R->error(400, "400-" . $ResponseData['Result'], $ResponseData['Description'], $ResponseData);
+    }
 
     return $R->success($ResponseData);
   }
@@ -193,7 +196,10 @@ class QCloud extends BaseObject
     if (isset($ResponseData['Error'])) {
       return $R->error(500, $ResponseData['Error']['Code'], "服务器错误", $ResponseData);
     }
-
+    if ($ResponseData['Result'] < 0) {
+      return $R->error(400, "400-" . $ResponseData['Result'], $ResponseData['Description'], $ResponseData);
+    }
+    
     return $R->success($ResponseData);
   }
 }
