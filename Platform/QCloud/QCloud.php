@@ -2,10 +2,11 @@
 
 namespace kernel\Platform\QCloud;
 
+use kernel\Foundation\BaseObject;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
-class QCloud
+class QCloud extends BaseObject
 {
   /**
    * 密钥对中的 SecretId
