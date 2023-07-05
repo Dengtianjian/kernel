@@ -16,18 +16,20 @@ class User extends WechatMiniProgram
    * JSCode换取AccessToken
    *
    * @param string $code 前端获取到的JSCode
+   * @return ReturnResult
    */
   public function JSCode2Session($code)
   {
-    $request = $this->get("sns/jscode2session", [
+    $this->get("sns/jscode2session", [
       "appid" => $this->AppId,
       "secret" => $this->AppSecret,
       "grant_type" => "authorization_code",
       "js_code" => $code
-    ], false)->getData();
+    ], false);
+    $responseData = $this->getJSONData();
 
-    if ($request['errcode']) {
-      switch ($request['errcode']) {
+    if ($responseData['errcode']) {
+      switch ($responseData['errcode']) {
         case "40029":
           return new ReturnResult(false, 400, "400:InvalidCode", "登录失败，请稍后重试", "无效的Code");
           break;
@@ -41,11 +43,11 @@ class User extends WechatMiniProgram
           return new ReturnResult(false, 400, "400:CodeBeenUsed", "登录失败，请重新操作", "jscode已经使用过了");
           break;
         default:
-          return new ReturnResult(false, 400, "400:" . $request['errcode'], "登录失败，请稍后重试", $request['errmsg']);
+          return new ReturnResult(false, 400, "400:" . $responseData['errcode'], "登录失败，请稍后重试", $responseData['errmsg']);
           break;
       }
     }
-    return $request;
+    return new ReturnResult($responseData);
   }
   /**
    * 绑定

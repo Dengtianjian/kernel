@@ -19,6 +19,15 @@ class DiscuzXWechatUsersModel extends WechatUsersModel
 
     $this->DB = DiscuzXDB::class;
   }
+  public function add($memberId, $openId, $unionId = null, $phone = null)
+  {
+    return $this->insert([
+      "memberId" => $memberId,
+      "openId" => $openId,
+      "unionId" => $unionId,
+      "phone" => $phone
+    ]);
+  }
   public function itemByOpenId($openId)
   {
     return $this->where("openId", $openId)->getOne();
