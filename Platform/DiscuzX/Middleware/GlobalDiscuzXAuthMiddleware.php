@@ -113,7 +113,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       if ($Auth && isset($Auth['userId'])) {
         $memberInfo = DiscuzXMember::get($Auth['userId']);
         include_once libfile("function/member");
-        \setloginstatus($memberInfo, 0);
+        \setloginstatus($memberInfo, 1296000);
       } else {
         $memberInfo = DiscuzXMember::get(0);
       }

@@ -21,9 +21,10 @@ class DiscuzXMember
    *
    * @param string $username 会员账号
    * @param string $password 会员密码
+   * @param int $cookieTime cookie有效期
    * @return ReturnResult 会员信息
    */
-  static function login($username, $password)
+  static function login($username, $password, $cookieTime = 1296000)
   {
     global $_G;
     include_once libfile("function/member");
@@ -61,7 +62,7 @@ class DiscuzXMember
         "loginCount" => $loginCount
       ]);
     }
-    setloginstatus($userLoginResult['member'], 0);
+    setloginstatus($userLoginResult['member'], $cookieTime);
     \C::t('common_member_status')->update($_G['uid'], array('lastip' => $_G['clientip'], 'port' => $_G['remoteport'], 'lastvisit' => TIMESTAMP, 'lastactivity' => TIMESTAMP));
 
     uc_user_synlogin($_G['uid']); //* UC同步登录
