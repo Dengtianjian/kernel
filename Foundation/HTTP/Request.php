@@ -115,7 +115,7 @@ class Request
       if ($this->params->has("x-async")) return true;
     }
 
-    if ($this->header->has("x-async")) return true;
+    if ($this->header->has("X-Async") || $this->header->has("x-async")) return true;
 
     return false;
   }
