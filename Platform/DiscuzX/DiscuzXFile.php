@@ -42,12 +42,13 @@ class DiscuzXFile
    *
    * @param \File $file 被保存的文件
    * @param string $saveDir 保存到的目录，相对于data\plugindata\{F_APP_ID}下，默认是files，也就是data\plugindata\{F_APP_ID}\files
+   * @param string $fileName 文件名称，不用带扩展名
    * @return ReturnResult accessPath就是可以直接通过URL访问的路径，fileId是base46编码后的文件数据
    */
-  static function save($file, $saveDir = "files")
+  static function save($file, $saveDir = "files", $fileName = null)
   {
     $saveBasePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir);
-    $file = File::upload($file, $saveBasePath);
+    $file = File::upload($file, $saveBasePath, $fileName);
 
     $file['relativePath'] = str_replace(F_DISCUZX_DATA, "", $file['relativePath']);
     if ($file['relativePath'][0] === "\\") {

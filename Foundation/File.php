@@ -40,9 +40,10 @@ class File
    *
    * @param array|string $files 文件或者多个文件数组
    * @param string $savePath 保存的完整路径
+   * @param string $fileName 文件名称，不含扩展名
    * @return array
    */
-  public static function upload($files, $savePath)
+  public static function upload($files, $savePath, $fileName = null)
   {
     if (!$files || is_array($files) && empty($files)) return false;
     $uploadResult = [];
@@ -76,9 +77,9 @@ class File
       }
 
       $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
-      $fileCode = uniqid();
+      $fileName = $fileName ?: uniqid();
 
-      $saveFullFileName = $fileCode . "." . $fileExtension;
+      $saveFullFileName = $fileName . "." . $fileExtension;
       $saveFullPath = $savePath . "/" . $saveFullFileName;
       if (!is_dir($savePath)) {
         mkdir($savePath, 707, true);
