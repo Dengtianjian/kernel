@@ -40,6 +40,7 @@ class RequestPagination
       $this->page((int)$R->query->get("page"));
       $this->passed(true);
     }
+
     if ($R->query->has("limit")) {
       $this->perPage((int)$R->query->get("limit"));
       $this->passed(true);
@@ -89,7 +90,7 @@ class RequestPagination
    */
   public function page($page = null)
   {
-    if ($page) {
+    if (!is_null($page)) {
       $this->_page = $page;
     }
     return $this->_page;
@@ -102,7 +103,7 @@ class RequestPagination
    */
   public function perPage($count = null)
   {
-    if ($count) {
+    if (!is_null($count)) {
       $this->_perPage = $count;
     }
     return $this->_perPage;
@@ -115,7 +116,7 @@ class RequestPagination
    */
   public function skip($count = null)
   {
-    if ($count) {
+    if (!is_null($count)) {
       $this->_skip = $count;
     }
     return $this->_skip;
@@ -128,7 +129,7 @@ class RequestPagination
    */
   public function passed($flag = null)
   {
-    if ($flag) {
+    if (!is_null($flag)) {
       $this->_passed = $flag;
     }
     return $this->_passed;
