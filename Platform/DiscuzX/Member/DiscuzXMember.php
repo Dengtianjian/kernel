@@ -482,15 +482,22 @@ class DiscuzXMember
     if (is_array($memberId)) return Arr::indexToAssoc($memberCredits, "uid");
     return $memberCredits[0];
   }
-  public static function group($groupId = null)
+  public static function group($groupId = null, $simple = false)
   {
     if ($groupId === null) {
       $groupId = \getglobal("member")['groupid'];
     }
     $CUGM = new DiscuzXModel("common_usergroup");
+    if ($simple) {
+      $CUGM->field("groupid", "grouptitle", "icon", "color");
+    }
+    include_once libfile("function/group");
     $memberGroups = $CUGM->where([
       "groupid" => $groupId
     ])->getAll();
+    foreach ($memberGroups as &$item) {
+      $item['icon'] = get_groupimg($item['icon']);
+    }
     if (!count($memberGroups) && !is_array($groupId)) return null;
     if (is_array($groupId)) return Arr::indexToAssoc($memberGroups, "groupid");
     return $memberGroups[0];
@@ -537,13 +544,11 @@ class DiscuzXMember
 
     if (empty($members)) return is_array($memberId) ? [] : null;
 
-    $Groups = [];
+    $Groups =  self::group(array_column($members, "groupid"), !$detailed);
     $Credits = [];
     $Prompts = [];
     $userForumFields = [];
     if ($detailed) {
-      $Groups = self::group(array_column($members, "groupid"));
-
       $Credits = self::credit(is_array($memberId) ? $memberId : [$memberId]);
       $Prompts = self::newPrompt(is_array($memberId) ? $memberId : [$memberId]);
 
