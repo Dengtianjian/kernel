@@ -64,6 +64,9 @@ class App
     //* 载入路由
     $this->loadRoutes();
 
+    //* 载入事件
+    $this->loadEvents();
+
     $this->request = new Request();
   }
   /**
@@ -243,6 +246,21 @@ class App
     //   }
     //   new $namespace();
     // }
+  }
+  /**
+   * 载入事件
+   *
+   * @return void
+   */
+  private function loadEvents()
+  {
+    if (!file_exists(File::genPath(F_APP_ROOT, "Events"))) {
+      return;
+    }
+    $EventFiles = File::recursionScanDir(File::genPath(F_APP_ROOT, "Events"));
+    foreach ($EventFiles as $item) {
+      include_once($item);
+    }
   }
   /**
    * 设置中间件
