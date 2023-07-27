@@ -1,5 +1,7 @@
 <?php
 
+namespace kernel\Foundation;
+
 use kernel\Foundation\Exception\Exception;
 
 class Event
@@ -11,7 +13,18 @@ class Event
    */
   static private $events = [];
 
+  /**
+   * 事件名称
+   *
+   * @var string
+   */
   private $name = null;
+
+  /**
+   * 订阅者
+   *
+   * @var array
+   */
   private $subscriptions = [];
   /**
    * 注册事件
@@ -57,6 +70,12 @@ class Event
 
     return self::class;
   }
+  /**
+   * 发送订阅通知
+   *
+   * @param array $params 发送通知的参数
+   * @return void
+   */
   private function send($params)
   {
     foreach ($this->subscriptions as $item) {
