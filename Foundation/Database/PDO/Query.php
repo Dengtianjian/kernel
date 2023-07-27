@@ -58,6 +58,12 @@ class Query extends BaseObject
       case "count":
         $sql = SQL::count($this->tableName, $this->options['count']['field']);
         break;
+      case "increment":
+        $sql = SQL::increment($this->tableName,  $this->options['increment']['field'], $this->options['increment']['value']);
+        break;
+      case "decrement":
+        $sql = SQL::increment($this->tableName,  $this->options['increment']['field'], $this->options['increment']['value']);
+        break;
       case "exist":
         $sql = SQL::exist($this->tableName, $this->sql);
         break;
@@ -329,6 +335,28 @@ class Query extends BaseObject
     $this->executeType = "count";
     $this->options["count"] = [
       "field" => $field
+    ];
+    $this->sql = $this->generateSql();
+    $this->reset();
+    return $this;
+  }
+  function increment($field, $value)
+  {
+    $this->executeType = "increment";
+    $this->options["increment"] = [
+      "field" => $field,
+      "value" => $value
+    ];
+    $this->sql = $this->generateSql();
+    $this->reset();
+    return $this;
+  }
+  function decrement($field, $value)
+  {
+    $this->executeType = "decrement";
+    $this->options["decrement"] = [
+      "field" => $field,
+      "value" => $value
     ];
     $this->sql = $this->generateSql();
     $this->reset();

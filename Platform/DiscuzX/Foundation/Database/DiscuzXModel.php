@@ -171,4 +171,16 @@ class DiscuzXModel extends Model
     $exist = DiscuzXDB::result_first($sql);
     return boolval($exist);
   }
+  function increment($field, $value = 1)
+  {
+    $sql = $this->query->increment($field, $value)->sql();
+    if ($this->returnSql) return $sql;
+    return (int)\DB::result_first($sql);
+  }
+  function decrement($field, $value = 1)
+  {
+    $sql = $this->query->decrement($field, $value)->sql();
+    if ($this->returnSql) return $sql;
+    return (int)\DB::result_first($sql);
+  }
 }
