@@ -12,24 +12,24 @@ class Event
   static private $events = [];
 
   private $name = null;
+  private $subscriptions = [];
   /**
    * 注册事件
    *
    * @param string $name 事件名称
    */
-  public function __construct($name)
+  public function __construct($name, $subscriptions = [])
   {
     $this->name = $name;
-    self::$events[$name] = [
-      "instance" => $this,
-      "subscriptions" => []
-    ];
+    $this->subscriptions = $subscriptions;
+
+    self::$events[$name] = $this;
   }
   /**
    * 分发事件
    *
    * @param string $name 事件名称
-   * @return Event
+   * @return callable
    */
   static function distribute($name)
   {
@@ -37,7 +37,9 @@ class Event
       throw new Exception("事件不存在或者未注册");
     }
 
-    return self::$events[$name]['instance'];
+    return function (...$params) use ($name) {
+      self::dispatch($name, ...$params);
+    };
   }
   /**
    * 触发事件
@@ -51,52 +53,14 @@ class Event
     if (!isset(self::$events[$name])) {
       throw new Exception("事件不存在或者未注册");
     }
-    foreach (self::$events[$name]['subscriptions'] as $item) {
-      call_user_func_array($item, $params);
-    }
+    self::$events[$name]->send($params);
 
     return self::class;
   }
-  /**
-   * 订阅事件
-   *
-   * @param string $name 事件名称
-   * @param callable $callback 事件触发时调用的回调函数
-   * @return callable
-   */
-  static function subscribe($name, $callback)
+  private function send($params)
   {
-    if (!isset(self::$events[$name])) {
-      throw new Exception("事件不存在或者未注册");
+    foreach ($this->subscriptions as $item) {
+      new $item(...$params);
     }
-
-    $Id = time() . count(self::$events[$name]['subscriptions']);
-    self::$events[$name]['subscriptions'][$Id] = $callback;
-
-    return function () use ($name, $Id) {
-      unset(self::$events[$name]['subscriptions'][$Id]);
-    };
-  }
-  /**
-   * 一次性的订阅事件
-   * 当事件触发后调用了传入的回调函数会自动取消掉订阅该事件
-   *
-   * @param string $name 事件名称
-   * @param callable $callback 事件触发时调用的回调函数
-   * @return Event
-   */
-  static function once($name, $callback)
-  {
-    if (!isset(self::$events[$name])) {
-      throw new Exception("事件不存在或者未注册");
-    }
-
-    $Id = time() . count(self::$events[$name]['subscriptions']);
-    self::$events[$name]['subscriptions'][$Id] = function () use ($name, $Id, $callback) {
-      $callback();
-      unset(self::$events[$name]['subscriptions'][$Id]);
-    };
-
-    return self::class;
   }
 }
