@@ -10,7 +10,7 @@ function loader($className)
   if (file_exists($filePath)) {
     include_once($filePath);
   } else {
-    if (strpos($filePath, "gstudio") !== false && F_APP_MODE === "development") {
+    if (strpos($filePath, "gstudio") !== false && defined("F_APP_MODE") && F_APP_MODE === "development") {
       debug($filePath);
     }
   }
