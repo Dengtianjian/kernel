@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\DiscuzX\Controller\Attachments;
+namespace kernel\Platform\DiscuzX\Controller\Attachment;
 
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response\ResponseError;

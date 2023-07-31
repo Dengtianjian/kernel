@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\App\Main;
+namespace kernel\Controller\Main;
 
 use Exception;
 use kernel\Foundation\BaseObject;
@@ -21,7 +21,7 @@ use kernel\Foundation\Validate\ValidateRules;
 use kernel\Foundation\Validate\Validator;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
-class TestController extends Controller
+class IndexController extends Controller
 {
   public function __construct(Request $R)
   {
