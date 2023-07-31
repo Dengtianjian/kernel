@@ -266,7 +266,6 @@ class Query extends BaseObject
       $this->executeType = "insert";
     }
     $this->options['insertData'] = $data;
-
     $this->sql = $this->generateSql();
     $this->reset();
     return $this;
