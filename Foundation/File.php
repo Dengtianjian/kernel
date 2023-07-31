@@ -106,7 +106,9 @@ class File
         "saveFileName" => $saveFullFileName,
         "size" => $fileSize,
         "fullPath" => $saveFullPath,
-        "relativePath" => $relativePath
+        "relativePath" => $relativePath,
+        "width" => 0,
+        "height" => 0
       ];
       if (self::isImage($saveFullPath)) {
         $imageInfo = \getimagesize($saveFullPath);
