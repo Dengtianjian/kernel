@@ -101,30 +101,22 @@ class ResponseDownload extends Response
     if ($range) {
       $remainingLength = $this->fileSize - $range;
       header("Content-Range: bytes $range-$remainingLength/$this->fileSize");
-      header('Content-Length: ' . $this->fileSize - $range);
+      header('Content-Length: ' . $remainingLength);
     }
 
-    if (File::isImage($this->filePath) && $range === false) {
-      header('Content-type: image/' . $this->fileExtension . ';', true);
-      header('Content-Disposition: inline; filename=' . urlencode($this->fileName));
-      $this->printContent(false);
+    header('Content-type: application/x-' . $this->fileExtension, true);
+    header('Content-Disposition: attachment; filename=' . urlencode($this->fileName));
+
+    if ($range) {
+      header("HTTP/1.1 206 Partial Content");
+      $content = file_get_contents($this->filePath, false, null, $range, $this->fileSize);
+      echo $content;
     } else {
-      header('Content-type: application/x-' . $this->fileExtension, true);
-      header('Content-Disposition: attachment; filename=' . urlencode($this->fileName));
-
-      if ($range) {
-        header("HTTP/1.1 206 Partial Content");
-        $content = file_get_contents($this->filePath, false, null, $range, $this->fileSize);
-        echo $content;
+      if (file_exists($this->filePath)) {
+        $this->printContent(true);
       } else {
-        if (file_exists($this->filePath)) {
-          $this->printContent(true);
-        } else {
-          echo "";
-        }
+        echo "";
       }
-
-      // exit();
     }
   }
 }
