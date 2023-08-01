@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\DiscuzX;
+namespace kernel\Platform\DiscuzX\Service;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
@@ -8,15 +8,14 @@ if (!defined("F_KERNEL")) {
 
 use forum_upload;
 use kernel\Foundation\Config;
-use kernel\Foundation\Data\Arr;
 use kernel\Foundation\File;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
-use kernel\Foundation\Store;
-use kernel\Platform\DiscuzX\Controller\Attachments as AttachmentsNamespace;
+use kernel\Foundation\Service;
+use kernel\Platform\DiscuzX\Controller\Attachment as AttachmentNamespace;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
-class DiscuzXAttachment
+class DiscuzXAttachmentService extends Service
 {
   /**
    * 保存文件
@@ -148,10 +147,10 @@ class DiscuzXAttachment
    */
   public static function registerRoute()
   {
-    Router::post("attachments", AttachmentsNamespace\UploadAttachmentController::class);
-    Router::same("attachments/{fileId:\w+}", function () {
-      Router::get(AttachmentsNamespace\GetAttachmentController::class);
-      Router::delete(AttachmentsNamespace\DeleteAttachmentController::class);
+    Router::post("attachment", AttachmentNamespace\UploadAttachmentController::class);
+    Router::same("attachment/{attach:\w+}", function () {
+      Router::get(AttachmentNamespace\GetAttachmentController::class);
+      Router::delete(AttachmentNamespace\DeleteAttachmentController::class);
     });
   }
 }

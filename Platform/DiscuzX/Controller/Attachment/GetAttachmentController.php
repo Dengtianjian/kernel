@@ -2,9 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Attachment;
 
-use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\HTTP\Response\ResponseError;
-use kernel\Platform\DiscuzX\DiscuzXAttachment;
+use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentService;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class GetAttachmentController extends DiscuzXController
@@ -25,6 +23,6 @@ class GetAttachmentController extends DiscuzXController
   ];
   public function data($attachId)
   {
-    return DiscuzXAttachment::getAttachment($attachId, $this->query->get("w"), $this->query->get("h"));
+    return DiscuzXAttachmentService::getAttachment($attachId, $this->query->get("w"), $this->query->get("h"));
   }
 }
