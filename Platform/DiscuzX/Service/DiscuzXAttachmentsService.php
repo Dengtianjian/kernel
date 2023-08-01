@@ -59,6 +59,6 @@ class DiscuzXAttachmentsService extends AttachmentsService
     Router::get("attachments/{attachId:\w+}", Attachments\DiscuzXGetAttachmentController::class);
     Router::delete("attachments/{attachId:\w+}", Attachments\DiscuzXDeleteAttachmentController::class);
     Router::get("attachments/{attachId:\w+}/download", Attachments\DiscuzXDownloadAttachmentController::class);
-    Router::get("attachments/{attachId:\w+}/thumbnail", Attachments\DiscuzXGetImageAttachmentThumbnailController::class);
+    Router::get("attachments/{attachId:\w+}/preview", Attachments\DiscuzXPreviewAttachmentController::class);
   }
 }
