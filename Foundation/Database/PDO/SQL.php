@@ -227,6 +227,14 @@ class SQL
   {
     return "SELECT COUNT('$field') FROM `$tableName` $extraStatement";
   }
+  static function increment($tableName, $field, $value)
+  {
+    return "SELECT COUNT('$field') FROM `$tableName` SET $field = $field+$value";
+  }
+  static function decrement($tableName, $field, $value)
+  {
+    return "SELECT COUNT('$field') FROM `$tableName` SET $field = $field-$value";
+  }
   static function exist($tableName, $extraStatement = "")
   {
     return "SELECT 1 FROM `$tableName` $extraStatement";
