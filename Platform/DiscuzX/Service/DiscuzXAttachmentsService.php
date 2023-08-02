@@ -30,7 +30,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
     }
     $attachId = self::genAttachId($savePath, $file['name']);
 
-    DiscuzXAttachmentsModel::singleton()->add($attachId, 0, $saveFileResult['sourceFileName'], $saveFileResult['saveFileName'], $saveFileResult['size'], $savePath, $saveFileResult['width'], $saveFileResult['height'], $saveFileResult['extension']);
+    DiscuzXAttachmentsModel::singleton()->add($attachId, getglobal("uid"), $saveFileResult['sourceFileName'], $saveFileResult['saveFileName'], $saveFileResult['size'], $savePath, $saveFileResult['width'], $saveFileResult['height'], $saveFileResult['extension']);
 
     return $attachId;
   }
@@ -43,6 +43,19 @@ class DiscuzXAttachmentsService extends AttachmentsService
       unlink($attachmentSavePath);
       $AM->deleteItem(null, $attachmentId);
     }
+    return true;
+  }
+  static function deleteBelongsSameTypeId($belongsId, $belongsType)
+  {
+    $Attachs = DiscuzXAttachmentsModel::singleton()->field("filePath", "fileName")->list(null, null, null, $belongsId, $belongsType);
+    if (count($Attachs)) {
+      foreach ($Attachs as $item) {
+        $attachmentSavePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $item['filePath'], $item['fileName']);
+        unlink($attachmentSavePath);
+      }
+      DiscuzXAttachmentsModel::singleton()->deleteBelongsSameIdType($belongsId, $belongsType);
+    }
+
     return true;
   }
   static function getAttachment($attachmentId)
