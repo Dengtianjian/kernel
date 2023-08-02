@@ -95,6 +95,6 @@ class AttachmentsService extends Service
     Router::get("attachments/{attachId:\w+}", Attachments\GetAttachmentController::class);
     Router::delete("attachments/{attachId:\w+}", Attachments\DeleteAttachmentController::class);
     Router::get("attachments/{attachId:\w+}/download", Attachments\DownloadAttachmentController::class);
-    Router::get("attachments/{attachId:\w+}/thumbnail", Attachments\GetImageThumbnailViewController::class);
+    Router::get("attachments/{attachId:\w+}/preview", Attachments\PreviewAttachmentController::class);
   }
 }
