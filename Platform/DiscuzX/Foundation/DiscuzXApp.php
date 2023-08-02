@@ -14,9 +14,6 @@ class DiscuzXApp extends App
     if (!defined("CHARSET")) {
       define("CHARSET", "utf-8");
     }
-    
-    DiscuzXAttachment::registerRoute();
-    DiscuzXFile::registerRoute();
 
     parent::__construct($AppId, "gstudio_kernel");
     if (isset($_GET['uri'])) {
