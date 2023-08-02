@@ -229,11 +229,11 @@ class SQL
   }
   static function increment($tableName, $field, $value)
   {
-    return "SELECT COUNT('$field') FROM `$tableName` SET $field = $field+$value";
+    return "UPDATE `$tableName` SET `$field` = $field+$value ";
   }
   static function decrement($tableName, $field, $value)
   {
-    return "SELECT COUNT('$field') FROM `$tableName` SET $field = $field-$value";
+    return "UPDATE `$tableName` SET `$field` = $field-$value ";
   }
   static function exist($tableName, $extraStatement = "")
   {
