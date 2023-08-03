@@ -79,9 +79,12 @@ class DiscuzXFile
     if (!file_exists($decodeData['filePath'])) {
       return new ResponseError(404, 404, "文件不存在或已删除");
     }
-    if ($decodeData['userId'] != getglobal("uid") || getglobal("adminid") != 1) {
-      return new ResponseError(403, 403, "无权删除该文件");
+    if (getglobal("adminid") != 1) {
+      if (!$decodeData['userId'] || $decodeData['userId'] != getglobal("uid")) {
+        return new ResponseError(403, 403, "无权删除该文件");
+      }
     }
+
     $res = unlink($decodeData['filePath']);
     if (!$res) {
       return new ResponseError(500, 500, "文件删除失败");
