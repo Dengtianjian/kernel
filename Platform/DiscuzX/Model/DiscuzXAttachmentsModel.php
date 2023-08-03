@@ -53,7 +53,7 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
   {
     $values = [];
     foreach ($list as $item) {
-      $attachId = md5($item['filePath'] . $item['fileName'] . ":" . $belongsId . $belongsType);
+      $attachId = md5($item['filePath'] . $item['fileName'] . ":" . $belongsId . $belongsType . ":" . $item['userId'] . ":" . uniqid("attachment"));
       array_push($values, [
         $attachId,
         $item['remote'] ?: 0,

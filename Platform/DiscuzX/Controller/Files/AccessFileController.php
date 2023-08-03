@@ -16,6 +16,10 @@ class AccessFileController extends Controller
     if ($decodeData->error) {
       showmessage($decodeData->errorMessage());
     }
+    global $_G;
+    if ($_G['group']['allowgetattach'] == "0" || ($decodeData['userId'] != getglobal("uid") || getglobal("adminid") != 1)) {
+      return $this->response->error(403, 403, "抱歉，您没有权限获取附件信息");
+    }
     return new ResponseFile($this->request, $decodeData->getData("filePath"));
   }
 }

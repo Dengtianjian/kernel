@@ -23,7 +23,8 @@ class DiscuzXFile
       uniqid("file:"),
       $savePath,
       $fileName,
-      $remote
+      $remote,
+      getglobal("uid")
     ])));
   }
   /**
@@ -78,6 +79,9 @@ class DiscuzXFile
     if (!file_exists($decodeData['filePath'])) {
       return new ResponseError(404, 404, "文件不存在或已删除");
     }
+    if ($decodeData['userId'] != getglobal("uid") || getglobal("adminid") != 1) {
+      return new ResponseError(403, 403, "无权删除该文件");
+    }
     $res = unlink($decodeData['filePath']);
     if (!$res) {
       return new ResponseError(500, 500, "文件删除失败");
@@ -97,14 +101,15 @@ class DiscuzXFile
     if ($tag !== "file") {
       return new ReturnResult(false, 400, 400, "文件ID错误");
     }
-    list($uniqueId, $saveDir, $fileName, $remote) = explode("|", $fileId);
+    list($uniqueId, $saveDir, $fileName, $remote, $userId) = explode("|", $fileId);
     $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
     return new ReturnResult([
       "uniqueId" => $uniqueId,
       "saveDir" => $saveDir,
       "fileName" => $fileName,
       "filePath" => $filePath,
-      "remote" => $remote
+      "remote" => $remote,
+      "userId" => $userId
     ]);
   }
 }

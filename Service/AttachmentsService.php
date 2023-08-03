@@ -21,7 +21,7 @@ class AttachmentsService extends Service
   protected static function genAttachId($savePath, $fileName)
   {
     $savePath = substr($savePath, stripos($savePath, "/") + 1);
-    return md5($savePath . "/" . $fileName);
+    return md5($savePath . "/" . $fileName . ":" . uniqid("attachment"));
   }
   /**
    * 获取附件下载地址
