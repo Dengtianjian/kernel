@@ -126,7 +126,7 @@ class Request
    */
   private function getMethod()
   {
-    $method = $_SERVER['REQUEST_METHOD'];
+    $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : "get";
     if (F_APP_MODE === "development") {
       if ($this->query->has("_method")) $method = $this->query->get("_method");
       if ($this->body->has("_method")) $method = $this->body->get("_method");
