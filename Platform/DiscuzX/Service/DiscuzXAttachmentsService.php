@@ -14,6 +14,10 @@ class DiscuzXAttachmentsService extends AttachmentsService
   {
     return F_BASE_URL . "/plugin.php?id=" . F_APP_ID . "&uri=attachments/" . $attachmentId . "/download";
   }
+  static function getPreviewURL($attachmentId)
+  {
+    return F_BASE_URL . "/plugin.php?id=" . F_APP_ID . "&uri=attachments/" . $attachmentId . "/preview";
+  }
   public static function upload($file, $savePath = "attachments")
   {
     if (!$file) return 0;
