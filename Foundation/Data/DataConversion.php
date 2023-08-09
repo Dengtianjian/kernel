@@ -31,17 +31,27 @@ class DataConversion
    */
   private $removeNotExistRuleKey = false;
   /**
+   * 字符串处理方式  
+   * **0**=使用**addslashed**进行处理  
+   * **1**=使用**stripslashes**进行处理
+   *
+   * @var int
+   */
+  private $stringHandleMethod = 0;
+  /**
    * 构建数据抓换类
    *
    * @param array|string $types 期望转换的目标类型，或者目标类型数组。例如传入string，那通过data传入的数据就会被转换为string，如果type为空，调用convert时也没传入类型规则或者目标类型，就会自动识别并转换类型。传入是数组的话就会和data的键值相匹配，把data对应规则的值转换，例如规则是[username=>int] 那传入的数据是[username=>"9910"] 调用convert就会返回[username=>9910] 9910被转换为了整数
    * @param boolean $completion 补全data不存在的键。假设传入类型数组是[username=>string,age=>int]，而传入需要转换的数据是[username=>"admin"]，当调用convert时就会返回[username=>"admin",age=>null]
    * @param boolean $removeNotExistRuleKey 剔除不存在类型规则的键。假设传入类型数组是[username=>string]，而传入需要转换的数据是[username=>"admin",age=>8]，当调用convert时就会返回[username=>"admin"]
+   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理
    */
-  public function __construct($types = null, $completion = false, $removeNotExistRuleKey = false)
+  public function __construct($types = null, $completion = false, $removeNotExistRuleKey = false, $stringHandleMethod = 0)
   {
     $this->types = $types;
     $this->completion = $completion;
     $this->removeNotExistRuleKey = $removeNotExistRuleKey;
+    $this->stringHandleMethod = $stringHandleMethod;
   }
   /**
    * 需要转换的数据
@@ -133,7 +143,11 @@ class DataConversion
         $target = doubleval($target);
       }
     } else if (is_string($target)) {
-      $target = addslashes($target);
+      if ($this->stringHandleMethod == 0) {
+        $target = addslashes($target);
+      } else {
+        $target = stripslashes($target);
+      }
     }
 
     return $target;
@@ -153,7 +167,11 @@ class DataConversion
     $setResult = settype($target, $type);
     if ($setResult) {
       if ($type === "string") {
-        $target = addslashes($target);
+        if ($this->stringHandleMethod == 0) {
+          $target = addslashes($target);
+        } else {
+          $target = stripslashes($target);
+        }
       }
       if ($type === "any") {
         $target = $this->auto($target);
@@ -248,11 +266,12 @@ class DataConversion
    * @param string|array $type 类型规则或者目标类型
    * @param boolean $completion 是否补全不存在的键
    * @param boolean $removeNotExistRuleKey 是否剔除规则不存在的键
+   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理
    * @return mixed 转换后的数据
    */
-  public static function quick($target, $type = null, $completion = false, $removeNotExistRuleKey = false)
+  public static function quick($target, $type = null, $completion = false, $removeNotExistRuleKey = false, $stringHandleMethod = 0)
   {
-    $DC = new DataConversion($type, $completion, $removeNotExistRuleKey);
+    $DC = new DataConversion($type, $completion, $removeNotExistRuleKey, $stringHandleMethod);
     if ($type) {
       $DC->data($target);
       return $DC->convert();

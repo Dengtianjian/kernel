@@ -130,7 +130,7 @@ class Serializer
         } else if (is_array($RuleItem)) {
           $Data[$FieldName] = self::serialization($RuleItem, $Data[$FieldName]);
         } else if (is_string($RuleItem)) {
-          $Data[$FieldName] = DataConversion::quick($Data[$FieldName], $RuleItem);
+          $Data[$FieldName] = DataConversion::quick($Data[$FieldName], $RuleItem, false, false, 1);
         }
       } else {
         $Data[$FieldName] = null;
