@@ -342,7 +342,7 @@ class Response
     switch ($this->OutputType) {
       case "json":
         header("Content-type:application/json", true);
-        print_r(json_encode($body));
+        print_r(json_encode($body, JSON_UNESCAPED_UNICODE));
         break;
       case "xml":
         header("Content-type:text/xml", true);
