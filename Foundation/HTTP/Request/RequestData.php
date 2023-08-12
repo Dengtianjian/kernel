@@ -138,7 +138,7 @@ class RequestData
           $this->data = $ConvertedData;
         }
       } else {
-        $ConvertedData = DataConversion::quick($this->data, $this->dataConversion, false, true);
+        $ConvertedData = DataConversion::quick($this->data, $this->dataConversion, false, true, 0);
         if ($ConvertedData !== false) {
           $this->data = $ConvertedData;
         }
