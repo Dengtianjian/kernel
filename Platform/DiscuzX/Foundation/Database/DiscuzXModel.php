@@ -60,6 +60,7 @@ class DiscuzXModel extends Model
   }
   function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
+    if (!count($values)) return null;
     $Call = get_class($this);
     if ($Call::$Timestamps) {
       $now = time();
