@@ -7,16 +7,61 @@ use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentsModel;
 use kernel\Service\AttachmentsService;
 use kernel\Platform\DiscuzX\Controller\Attachments as Attachments;
+use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentKeysModel;
 
 class DiscuzXAttachmentsService extends AttachmentsService
 {
-  static function getDownloadURL($attachmentId)
+  static function getDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null, $ratio = null)
   {
-    return F_BASE_URL . "/plugin.php?id=" . F_APP_ID . "&uri=attachments/" . $attachmentId . "/download";
+    $QueryStrings = [
+      "id" => F_APP_ID,
+      "uri" => "attachments/$attachmentId/download"
+    ];
+    if ($withKey) {
+      $QueryStrings['key'] = self::getAccessKey($attachmentId, $userId, $periodSeconds, $preview, true, $width, $height, $ratio);
+    }
+    if ($width) {
+      $QueryStrings['w'] = $width;
+    }
+    if ($height) {
+      $QueryStrings['w'] = $height;
+    }
+    if ($ratio) {
+      $QueryStrings['r'] = $ratio;
+    }
+    return F_BASE_URL . "/plugin.php?" . http_build_query($QueryStrings);
   }
-  static function getPreviewURL($attachmentId)
+  static function getPreviewURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $width = null, $height = null, $ratio = null)
   {
-    return F_BASE_URL . "/plugin.php?id=" . F_APP_ID . "&uri=attachments/" . $attachmentId . "/preview";
+    $QueryStrings = [
+      "id" => F_APP_ID,
+      "uri" => "attachments/$attachmentId/preview"
+    ];
+    if ($withKey) {
+      $QueryStrings['key'] = self::getAccessKey($attachmentId, $userId, $periodSeconds, true, $download, $width, $height, $ratio);
+    }
+    if ($width) {
+      $QueryStrings['w'] = $width;
+    }
+    if ($height) {
+      $QueryStrings['h'] = $height;
+    }
+    if ($ratio) {
+      $QueryStrings['r'] = $ratio;
+    }
+    return F_BASE_URL . "/plugin.php?" . http_build_query($QueryStrings);
+  }
+  static function getAccessKey($attachId, $userId = null, $periodSeconds = 300, $preview = true, $download = true, $width = 0, $height = 0, $ratio = null)
+  {
+    $ExpirationTime = time() + $periodSeconds;
+    $key = self::generateAccessKey($attachId, $userId, $periodSeconds, $ExpirationTime, $preview, $download, $width, $height, $ratio);
+    if ($key) {
+      $KeyId = DiscuzXAttachmentKeysModel::singleton()->add($attachId, $key, $userId, $download, $preview, $ExpirationTime);
+      if ($KeyId) {
+        return $key;
+      }
+    }
+    return false;
   }
   public static function upload($file, $savePath = "attachments")
   {
@@ -71,7 +116,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
   }
   static function useService()
   {
-    //* 附件
+    //* 附件路由注册
     Router::post("attachments", Attachments\DiscuzXUploadAttachmentController::class);
     Router::get("attachments/{attachId:\w+}", Attachments\DiscuzXGetAttachmentController::class);
     Router::delete("attachments/{attachId:\w+}", Attachments\DiscuzXDeleteAttachmentController::class);

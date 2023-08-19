@@ -66,7 +66,8 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
         $item['filePath'],
         $item['width'],
         $item['height'],
-        $item['extension']
+        $item['extension'],
+        $item['key']
       ]);
     }
 
@@ -83,7 +84,8 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
       "filePath",
       "width",
       "height",
-      "extension"
+      "extension",
+      "key"
     ], $values);
   }
   /**
@@ -92,13 +94,15 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
    * @param array $attachId 附件ID数组
    * @param int|string $belongsId 所属ID
    * @param int|string $belongsType 所属ID类型
+   * @param boolean $withKey 是否需要秘钥才可访问
    * @return int
    */
-  function bactchUpdateBelongsIdType($attachId, $belongsId, $belongsType)
+  function bactchUpdateBelongsIdType($attachId, $belongsId, $belongsType, $withKey = false)
   {
     return $this->where("attachId", $attachId)->update([
       "belongsId" => $belongsId,
       "belongsType" => $belongsType,
+      "key" => $withKey,
     ]);
   }
   function deleteBelongsSameIdType($belongsId, $belongsType)

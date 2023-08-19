@@ -8,8 +8,15 @@ use kernel\Foundation\Output;
 
 class ResponseFile extends ResponseDownload
 {
-  public function __construct(Request $R, $filePath, $downloadFileName = null)
+  /**
+   * 预览图片的质量
+   *
+   * @var integer
+   */
+  private $imageQuality = -1;
+  public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = 0)
   {
+    $this->imageQuality = $imageQuality;
     parent::__construct($R, $filePath, $downloadFileName, false);
   }
   private function createThumb($filePath, $fileName, $targetWdith, $targetHeight, $targetRatio)
@@ -71,8 +78,12 @@ class ResponseFile extends ResponseDownload
     header('Content-type:image/' . $targetExt);
     header('Content-Length: ' . "", true);
     switch ($targetExt) {
+      case "jpg":
+      case "jpeg":
+        imagejpeg($targetImage, null, $this->imageQuality);
+        break;
       case "png":
-        imagepng($targetImage);
+        imagepng($targetImage, null, $this->imageQuality);
         break;
       case "gif":
         imagegif($targetImage);

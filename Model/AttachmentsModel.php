@@ -71,7 +71,7 @@ SQL;
       "extension" => $extension,
     ])->limit(1)->delete(true);
   }
-  public function add($attachId, $userId, $sourceFileName, $fileName, $fileSize, $filePath, $width, $height, $extension, $belongsId = null, $belongsType = null, $remote = false)
+  public function add($attachId, $userId, $sourceFileName, $fileName, $fileSize, $filePath, $width, $height, $extension, $belongsId = null, $belongsType = null, $remote = false, $withKey = false)
   {
     return $this->insert([
       "attachId" => $attachId,
@@ -86,6 +86,7 @@ SQL;
       "width" => $width,
       "height" => $height,
       "extension" => $extension,
+      "key" => $withKey,
     ]);
   }
 }
