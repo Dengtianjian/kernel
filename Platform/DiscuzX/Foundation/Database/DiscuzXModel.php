@@ -176,12 +176,12 @@ class DiscuzXModel extends Model
   {
     $sql = $this->query->increment($field, $value)->sql();
     if ($this->returnSql) return $sql;
-    return (int)\DB::result_first($sql);
+    return (int)\DB::query($sql);
   }
   function decrement($field, $value = 1)
   {
     $sql = $this->query->decrement($field, $value)->sql();
     if ($this->returnSql) return $sql;
-    return (int)\DB::result_first($sql);
+    return (int)\DB::query($sql);
   }
 }
