@@ -10,6 +10,23 @@ if (!defined("F_KERNEL")) {
 
 class SecretCheck extends WechatMiniProgram
 {
+  function getLabelText($label)
+  {
+    $LabelTexts = [
+      100 => "",
+      10001 => "广告",
+      20001 => "时政",
+      20002 => "色情",
+      20003 => "辱骂",
+      20006 => "违法犯罪",
+      20008 => "欺诈",
+      20012 => "低俗",
+      20013 => "涉及版权",
+      21000 => "其它违规",
+    ];
+
+    return $LabelTexts[$label] ?: "违规";
+  }
   /**
    * 文本内容安全识别
    * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/sec-center/sec-check/msgSecCheck.html
