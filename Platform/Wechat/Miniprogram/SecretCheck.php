@@ -46,14 +46,14 @@ class SecretCheck extends WechatMiniProgram
     ])->getData();
   }
   /**
-   * 音视频内容安全识别
+   * 音视频内容安全识别，异步通知检测结果
    * @link https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/sec-center/sec-check/mediaCheckAsync.html
    *
    * @param string $mediaUrl 要检测的图片或音频的url，支持图片格式包括 jpg , jepg, png, bmp, gif（取首帧），支持的音频格式包括mp3, aac, ac3, wma, flac, vorbis, opus, wav
    * @param string $openId 用户的openid（用户需在近两小时访问过小程序）
    * @param integer $scene 场景枚举值（1 资料；2 评论；3 论坛；4 社交日志）
    * @param integer $mediaType 1:音频;2:图片
-   * @return array 检测结果
+   * @return array 提交结果
    */
   function mediaCheckAsync($mediaUrl, $openId, $scene = 2, $mediaType = 2)
   {
