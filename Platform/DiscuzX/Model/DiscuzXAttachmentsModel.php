@@ -8,9 +8,10 @@ use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
 
 class DiscuzXAttachmentsModel extends AttachmentsModel
 {
+  protected $appId = F_APP_ID;
   function __construct()
   {
-    $tableName = F_APP_ID . "_attachments";
+    $tableName = $this->appId . "_attachments";
 
     $this->query = new DiscuzXQuery($tableName);
 
@@ -97,7 +98,24 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
    * @param boolean $withKey 是否需要秘钥才可访问
    * @return int
    */
-  function bactchUpdateBelongsIdType($attachId, $belongsId, $belongsType, $withKey = false)
+  function bactchUpdateBelongsIdType($attachIds, $belongsId, $belongsType, $withKey = false)
+  {
+    return $this->where("attachId", $attachIds)->update([
+      "belongsId" => $belongsId,
+      "belongsType" => $belongsType,
+      "key" => $withKey,
+    ]);
+  }
+  /**
+   * 更新附件的所属ID以及所属ID类型
+   *
+   * @param array $attachId 附件ID
+   * @param int|string $belongsId 所属ID
+   * @param int|string $belongsType 所属ID类型
+   * @param boolean $withKey 是否需要秘钥才可访问
+   * @return int
+   */
+  function updateBelongsIdType($attachId, $belongsId, $belongsType, $withKey = false)
   {
     return $this->where("attachId", $attachId)->update([
       "belongsId" => $belongsId,
