@@ -31,7 +31,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
     }
     return F_BASE_URL . "/plugin.php?" . http_build_query($QueryStrings);
   }
-  static function getPreviewURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $width = null, $height = null, $ratio = null)
+  static function getPreviewURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $width = null, $height = null, $ratio = null, $baseURL = F_BASE_URL)
   {
     $QueryStrings = [
       "id" => F_APP_ID,
@@ -49,7 +49,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
     if ($ratio) {
       $QueryStrings['r'] = $ratio;
     }
-    return F_BASE_URL . "/plugin.php?" . http_build_query($QueryStrings);
+    return $baseURL . "/plugin.php?" . http_build_query($QueryStrings);
   }
   static function getAccessKey($attachId, $userId = null, $periodSeconds = 300, $preview = true, $download = true, $width = 0, $height = 0, $ratio = null)
   {
