@@ -28,8 +28,8 @@ class App
   protected $router = null; //* 路由相关
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
-  private $startTime = null; //* 开始时间戳
-  private function __clone()
+  protected $startTime = null; //* 开始时间戳
+  protected function __clone()
   {
   }
   /**
@@ -252,7 +252,7 @@ class App
    *
    * @return void
    */
-  private function loadEvents()
+  protected function loadEvents()
   {
     if (!file_exists(File::genPath(F_APP_ROOT, "Events"))) {
       return;

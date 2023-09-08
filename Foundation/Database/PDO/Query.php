@@ -62,7 +62,7 @@ class Query extends BaseObject
         $sql = SQL::increment($this->tableName,  $this->options['increment']['field'], $this->options['increment']['value']);
         break;
       case "decrement":
-        $sql = SQL::decrement($this->tableName,  $this->options['increment']['field'], $this->options['increment']['value']);
+        $sql = SQL::decrement($this->tableName,  $this->options['decrement']['field'], $this->options['decrement']['value']);
         break;
       case "exist":
         $sql = SQL::exist($this->tableName, $this->sql);

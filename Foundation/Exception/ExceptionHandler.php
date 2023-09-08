@@ -33,9 +33,10 @@ class ExceptionHandler
    * @param array $statusCode HTTP响应状态码
    * @param array $errorCode 响应错误码 
    * @param mixed $errorDetails 响应详情
+   * @param boolean $directlyThrow 直接抛出错误，无需判断其错误级别
    * @return void
    */
-  public static function handle($code = 0, $message = "", $file = "", $line = null, $trace = "", $traceString = NULL, $previous = null, $statusCode = 500, $errorCode = 500, $errorDetails = null)
+  public static function handle($code = 0, $message = "", $file = "", $line = null, $trace = "", $traceString = NULL, $previous = null, $statusCode = 500, $errorCode = 500, $errorDetails = null, $directlyThrow = false)
   {
     $ErrorLevels = [E_ERROR, E_USER_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE, E_CORE_WARNING, E_COMPILE_WARNING, E_WARNING]; //* 写入日志的错误级别 包含 致命性错误级别
     $DeadlyLevels = [E_ERROR, E_USER_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE]; //* 致命性错误级别
@@ -43,7 +44,7 @@ class ExceptionHandler
       $traceString = \explode(\PHP_EOL, $traceString);
     }
 
-    if (in_array($code, $ErrorLevels)) {
+    if ($directlyThrow || in_array($code, $ErrorLevels)) {
       Log::record([
         "errno" => $code,
         "errstr" => $message,
