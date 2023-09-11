@@ -103,6 +103,10 @@ class Query extends BaseObject
 
       $sql .= " $limitSql";
     }
+    if (isset($this->options['groupBy'])) {
+
+      $sql .= " " . SQL::groupBy($this->options['groupBy']);
+    }
     return $sql;
   }
   function reset($flag = null)
@@ -155,6 +159,23 @@ class Query extends BaseObject
     } else {
       $this->options['fields'] = \array_merge($this->options['fields'], $fieldNames);
     }
+    return $this;
+  }
+  function distinct($fieldName)
+  {
+    $sql = "DISTINCT " . SQL::addQuote([$fieldName])[0];
+    if (!isset($this->options['fields'])) {
+      $this->options['fields'] = [$sql];
+    } else {
+      \array_unshift($this->options['fields'], $sql);
+    }
+
+    return $this;
+  }
+  function groupBy($fieldName)
+  {
+    $this->options['groupBy'] = $fieldName;
+
     return $this;
   }
   function limit($startOrNumber, $number = null)

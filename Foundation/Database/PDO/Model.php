@@ -96,6 +96,16 @@ class Model extends BaseObject
     $this->query->field($fieldNames);
     return $this;
   }
+  function distinct($fieldName)
+  {
+    $this->query->distinct($fieldName);
+    return $this;
+  }
+  function groupBy($fieldName)
+  {
+    $this->query->groupBy($fieldName);
+    return $this;
+  }
   function limit($startOrNumber, $number = null)
   {
     $this->query->limit($startOrNumber, $number);
