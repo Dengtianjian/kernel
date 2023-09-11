@@ -126,7 +126,7 @@ class AttachmentsService extends Service
    *
    * @param File $file 文件
    * @param string $savePath 基于项目根目录
-   * @return Array 附件数据
+   * @return int 附件ID
    */
   public static function upload($file, $savePath = "Data/Attachments")
   {
@@ -144,7 +144,8 @@ class AttachmentsService extends Service
     }
     $attachId = self::genAttachId($savePath, $file['name']);
 
-    return AttachmentsModel::singleton()->add($attachId, 0, $saveFileResult['sourceFileName'], $saveFileResult['saveFileName'], $saveFileResult['size'], $savePath, $saveFileResult['width'], $saveFileResult['height'], $saveFileResult['extension']);
+    AttachmentsModel::singleton()->add($attachId, 0, $saveFileResult['sourceFileName'], $saveFileResult['saveFileName'], $saveFileResult['size'], $savePath, $saveFileResult['width'], $saveFileResult['height'], $saveFileResult['extension']);
+    return $attachId;
   }
   /**
    * 根据附件ID删除附件
@@ -159,7 +160,7 @@ class AttachmentsService extends Service
     if ($attachment) {
       $attachmentSavePath = File::genPath(F_APP_ROOT, $attachment['filePath'], $attachment['fileName']);
       unlink($attachmentSavePath);
-      $AM->deleteItem($attachmentId);
+      $AM->deleteItem(null, $attachmentId);
     }
     return true;
   }
