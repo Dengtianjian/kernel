@@ -305,7 +305,7 @@ class App
   public function execureController($callTarget, $callParams, &$Controller)
   {
     try {
-      $response = call_user_func_array($callTarget, $callParams);
+      $response = call_user_func_array($callTarget, array_values($callParams));
     } catch (GlobalException $E) {
       if ($E instanceof Exception) {
         throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
