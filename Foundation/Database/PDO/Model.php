@@ -296,6 +296,17 @@ class Model extends BaseObject
     $this->query->reset($flag);
     return $this;
   }
+  /**
+   * 执行sql
+   *
+   * @param string $sql sql语句
+   * @return mixed
+   */
+  function query($sql)
+  {
+    $DB = $this->DB;
+    return $DB::query($sql);
+  }
 
   function createTable()
   {
