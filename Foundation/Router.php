@@ -206,7 +206,11 @@ class Router
 
             $NotEssential = strpos($key, "?") !== false; //* 该参数可有可无的
             if ($NotEssential) {
-              $key = substr($key, 1);
+              if (substr($key, 0, 1) === "?") {
+                $key = substr($key, 1);
+              } else {
+                $key = substr($key, 0, strlen($key) - 1);
+              }
             }
             if (empty($key)) {
               array_push($Params, null);
