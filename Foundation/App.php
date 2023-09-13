@@ -360,6 +360,7 @@ class App
       ]);
     }
     $this->request->Route = $Route;
+    $this->request->params->set($Route['params']);
 
     $Middlewares = $this->globalMiddlware ?: [];
     if (is_array($Route['middlewares']) && count($Route['middlewares'])) {
