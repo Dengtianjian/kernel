@@ -27,7 +27,7 @@ function Import($fileName, $args = [])
 /**
  * 格式化debug输出
  * 二次封装Output::debug
- *
+ * @deprecated
  * @param mixed ...$data 输出的数据
  * @return void
  */
@@ -35,7 +35,6 @@ function formatDebug(...$data)
 {
   Output::debug(...$data);
 }
-
 /**
  * 获取当前应用实例
  *
@@ -44,4 +43,18 @@ function formatDebug(...$data)
 function getApp()
 {
   return $GLOBALS['App'] ?: $GLOBALS['app'];
+}
+
+if (!function_exists("debug")) {
+  /**
+   * debug输出
+   *
+   * @param mixed 输出内容
+   * @return void
+   */
+  function debug(...$data)
+  {
+    Output::debug($data);
+    exit;
+  }
 }
