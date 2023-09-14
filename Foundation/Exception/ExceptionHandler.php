@@ -72,8 +72,14 @@ class ExceptionHandler
         $Response->output();
         exit;
       } else {
-        $View = new ResponseView("error");
-        $View->render(File::genPath(F_KERNEL_ROOT, "Views", "error.php"), [
+        $errorPagePath = File::genPath(F_APP_ROOT, "Views", "error.php");
+        if (file_exists($errorPagePath)) {
+          $View = new ResponseView("error");
+        } else {
+          $View = new ResponseView("error", [], "Views", "kernel_page", F_KERNEL_ROOT);
+          $errorPagePath = File::genPath(F_KERNEL_ROOT, "Views", "error.php");
+        }
+        $View->render($errorPagePath, [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails
         ]);
