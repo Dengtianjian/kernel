@@ -54,7 +54,7 @@ if (!function_exists("debug")) {
    */
   function debug(...$data)
   {
-    Output::debug($data);
+    Output::debug(...$data);
     exit;
   }
 }
