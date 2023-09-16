@@ -40,8 +40,11 @@ class DB
   }
   static function insert($query = null)
   {
-    self::query($query->sql());
-    return self::insertId();
+    $InsertResult = self::query($query->sql());
+    if ($InsertResult && self::insertId()) {
+      return self::insertId();
+    }
+    return $InsertResult;
   }
   static function batchInsert($query)
   {

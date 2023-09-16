@@ -177,7 +177,7 @@ class Model extends BaseObject
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
     $DB = $this->DB;
-    return $DB::query($sql);
+    return $DB::insert($this->query);
   }
   function insertId()
   {
