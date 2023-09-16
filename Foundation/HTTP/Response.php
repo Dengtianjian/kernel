@@ -93,6 +93,62 @@ class Response
     $this->ResponseDetails = $statusCode > 299 ? $details : null;
   }
 
+  protected static $Interactions = [
+    "list" => [],
+    "error" => [],
+    "success" => [],
+    "statusCodes" => [],
+    "errorCodes" => [],
+    "mixCodes" => []
+  ];
+  /**
+   * 响应时拦截
+   * 如果同时传入状态码和错误码，就只有当响应状态码和响应错误码都匹配时才会执行回调函数。  
+   * 如果不传入状态码和错误码，只要响应就会执行
+   *
+   * @param \Closure $callback 回调函数，函数接收一个参数，是Response类或者基于Response的派生类
+   * @param int $statusCode 状态码，如果传入该值，只有当响应状态码等于指定状态码时才会执行回调函数
+   * @param string|int $errorCode 错误码，如果传入该值，只有当响应错误码等于指定错误码时才会执行回调函数
+   * @param string|int $responseType 响应类型，可以传入success（成功），或者error（错误），也可传入1或者0，1代表成功，0代表失败，如果响应是成功的就会调用成功的回调函数，如果是错误的，就会调用错误的回调函数
+   * @return self
+   */
+  static function interaction(
+    \Closure $callback,
+    $statusCode = null,
+    $errorCode = null,
+    $responseType = null
+  ) {
+    if ($statusCode && $errorCode) {
+      if (!self::$Interactions['mixCodes'][$statusCode]) {
+        self::$Interactions['mixCodes'][$statusCode] = [];
+      }
+      if (!self::$Interactions['mixCodes'][$statusCode][$errorCode]) {
+        self::$Interactions['mixCodes'][$statusCode][$errorCode] = [];
+      }
+      array_push(self::$Interactions['mixCodes'][$statusCode][$errorCode], $callback);
+    } else if ($statusCode) {
+      if (!self::$Interactions['statusCodes'][$statusCode]) {
+        self::$Interactions['statusCodes'][$statusCode] = [];
+      }
+      array_push(self::$Interactions['statusCodes'][$statusCode], $callback);
+    } else if ($errorCode) {
+      if (!self::$Interactions['errorCodes'][$errorCode]) {
+        self::$Interactions['errorCodes'][$errorCode] = [];
+      }
+      array_push(self::$Interactions['errorCodes'][$errorCode], $callback);
+    } else if (!is_null($responseType)) {
+      if (is_numeric($responseType)) {
+        $responseType = $responseType ? 'success' : 'error';
+      }
+
+      array_push(self::$Interactions[$responseType], $callback);
+    } else {
+      array_push(self::$Interactions['list'], $callback);
+    }
+
+    return self::class;
+  }
+
   /**
    * 设置响应头
    *
@@ -318,6 +374,48 @@ class Response
   {
     return $this->ResponseData;
   }
+  protected function interactionOutput()
+  {
+    //* 无筛选的
+    foreach (self::$Interactions['list'] as $item) {
+      call_user_func_array($item, [$this]);
+    }
+
+    //* 只匹配成功的
+    if ($this->ResponseStatusCode > 199 && $this->ResponseStatusCode < 300) {
+      foreach (self::$Interactions['success'] as $item) {
+        call_user_func_array($item, [$this]);
+      }
+    }
+
+    //* 只匹配错误的
+    if ($this->ResponseStatusCode > 399) {
+      foreach (self::$Interactions['error'] as $item) {
+        call_user_func_array($item, [$this]);
+      }
+    }
+
+    //* 只匹配状态码
+    if (self::$Interactions['statusCodes'][$this->ResponseStatusCode]) {
+      foreach (self::$Interactions['statusCodes'][$this->ResponseStatusCode] as $item) {
+        call_user_func_array($item, [$this]);
+      }
+    }
+
+    //* 只匹配错误码
+    if (self::$Interactions['errorCodes'][$this->ResponseStatusCode]) {
+      foreach (self::$Interactions['errorCodes'][$this->ResponseStatusCode] as $item) {
+        call_user_func_array($item, [$this]);
+      }
+    }
+
+    //* 状态码错误码同时匹配
+    if (self::$Interactions['mixCodes'][$this->ResponseStatusCode] && self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode]) {
+      foreach (self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode] as $item) {
+        call_user_func_array($item, [$this]);
+      }
+    }
+  }
   /**
    * 输出内容，调用该方法会直接exit退出程序
    *
@@ -325,6 +423,8 @@ class Response
    */
   public function output()
   {
+    $this->interactionOutput();
+
     foreach ($this->ResponseHeaders as $Header) {
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
