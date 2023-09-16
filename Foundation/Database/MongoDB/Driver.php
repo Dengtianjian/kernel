@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Database\MongoDB;
 
+use kernel\Foundation\Output;
+
 class Driver
 {
   private ?\MongoDB\Driver\Manager $instance = null;
@@ -29,9 +31,9 @@ class Driver
     $optionStrings = implode(";", $optionStrings);
     $user = "";
     if ($username && $password) {
-      $user = "$username:$password";
+      $user = "$username:$password@";
     }
-    $this->instance = new \MongoDB\Driver\Manager("mongodb://$user@$host:$port/$databaseName?$optionStrings");
+    $this->instance = new \MongoDB\Driver\Manager("mongodb://{$user}{$host}:{$port}/{$databaseName}?{$optionStrings}");
   }
   private function genNamespace(string $extra): string
   {

@@ -200,38 +200,59 @@ class DataConversion
       if (!is_array($this->data)) return false;
 
       if (Arr::isAssoc($this->data)) {
-        foreach ($types as $key => $value) {
+        foreach ($types as $key => $type) {
           if (is_numeric($key)) {
-            $key = $value;
-            $value = "any";
+            $key = $type;
+            $type = "any";
           }
 
           if (isset($this->data[$key])) {
-            if ($value instanceof DataConversion) {
+            if ($type instanceof DataConversion) {
               if (is_array($this->data[$key]) && !Arr::isAssoc($this->data[$key])) {
                 if (!isset($Data[$key])) {
                   $Data[$key] = [];
                 }
                 foreach ($this->data[$key] as $dataKey => $dataValue) {
-                  $Data[$key][$dataKey] = $value->data($dataValue)->convert();
+                  $Data[$key][$dataKey] = $type->data($dataValue)->convert();
                 }
               } else {
                 $Data[$key] = $types[$key]->data($this->data[$key])->convert();
               }
-            } else if (is_callable($value)) {
-              $Data[$key] = $value($this->data[$key]);
+            } else if (is_callable($type)) {
+              $Data[$key] = $type($this->data[$key]);
             } else {
               if (is_array($this->data[$key])) {
                 if (Arr::isAssoc($this->data[$key])) {
-                  $Data[$key] = self::quick($this->data[$key], $value, $this->completion, $this->removeNotExistRuleKey);
+                  $Data[$key] = self::quick($this->data[$key], $type, $this->completion, $this->removeNotExistRuleKey);
                 } else {
                   $Data[$key] = $this->data[$key];
-                  foreach ($Data[$key] as &$item) {
-                    $item = $this->auto($item);
+                  if (preg_match("/array<(\w+)>/", $type, $type)) {
+                    if (count($type) === 2) {
+                      foreach ($Data[$key] as &$item) {
+                        $item = $this->setType($item, $type[1]);
+                      }
+                    } else {
+                      foreach ($Data[$key] as &$item) {
+                        $item = $this->auto($item);
+                      }
+                    }
+                  } else {
+                    foreach ($Data[$key] as &$item) {
+                      $item = $this->auto($item);
+                    }
                   }
                 }
               } else {
-                $Data[$key] = $this->setType($this->data[$key], $value);
+                if (strpos($type, "/")) {
+                  list($type, $separator) = explode("/", $type);
+                  $separator = $separator ?: ',';
+                  $Data[$key] = explode($separator, $this->data[$key]);
+                  foreach ($Data[$key] as &$item) {
+                    $item = $this->setType($item, $type);
+                  }
+                } else {
+                  $Data[$key] = $this->setType($this->data[$key], $type);
+                }
               }
             }
           } else {

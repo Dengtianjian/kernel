@@ -12,6 +12,24 @@ use kernel\Foundation\Middleware;
 
 class GlobalCorsMiddleware extends Middleware
 {
+  /**
+   * 获取请求来源
+   *
+   * @return string
+   */
+  public function getOrigin()
+  {
+    $origin = null;
+    if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
+      $origin = $_SERVER['HTTP_ORIGIN'];
+    } else  if (array_key_exists('HTTP_REFERER', $_SERVER)) {
+      $origin = $_SERVER['HTTP_REFERER'];
+    } else {
+      $origin = $_SERVER['REMOTE_ADDR'];
+    }
+
+    return $origin;
+  }
   public function handle($next)
   {
     $Response = $next();
@@ -19,7 +37,7 @@ class GlobalCorsMiddleware extends Middleware
       $Response->null();
       return $Response;
     }
-    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    $origin = $this->getOrigin();
     $allowOrigin = Config::get("cors/allowOrigin");
     if (!is_array($allowOrigin)) {
       if ($allowOrigin !== "*") {

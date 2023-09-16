@@ -15,7 +15,7 @@ class UploadFilesController extends DiscuzXController
       return $this->response->error(403, 403, "抱歉，您目前没有权限上传附件");
     }
     $File = $_FILES['file'];
-    if ($File['size'] > $_G['group']['maxattachsize']) {
+    if ($_G['group']['maxattachsize'] != 0 && $File['size'] > $_G['group']['maxattachsize']) {
       return $this->response->error(400, 400, "单个文件大小不得超过" . round(($_G['group']['maxattachsize'] / 1024 / 1024)) . "MB");
     }
     if ($_G['group']['attachextensions']) {

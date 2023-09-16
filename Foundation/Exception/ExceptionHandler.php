@@ -39,7 +39,7 @@ class ExceptionHandler
   public static function handle($code = 0, $message = "", $file = "", $line = null, $trace = "", $traceString = NULL, $previous = null, $statusCode = 500, $errorCode = 500, $errorDetails = null, $directlyThrow = false)
   {
     $ErrorLevels = [E_ERROR, E_USER_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE, E_CORE_WARNING, E_COMPILE_WARNING, E_WARNING]; //* 写入日志的错误级别 包含 致命性错误级别
-    $DeadlyLevels = [E_ERROR, E_USER_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE]; //* 致命性错误级别
+    $DeadlyLevels = [0, E_ERROR, E_USER_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE]; //* 致命性错误级别
     if ($traceString) {
       $traceString = \explode(\PHP_EOL, $traceString);
     }
@@ -55,7 +55,7 @@ class ExceptionHandler
       ]);
     }
     if (in_array($code, $DeadlyLevels)) {
-      if (getApp()->request()->ajax()) {
+      if (getApp() && getApp()->request()->ajax()) {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");
@@ -72,8 +72,14 @@ class ExceptionHandler
         $Response->output();
         exit;
       } else {
-        $View = new ResponseView("error");
-        $View->render(File::genPath(F_KERNEL_ROOT, "Views", "error.php"), [
+        $errorPagePath = File::genPath(F_APP_ROOT, "Views", "error.php");
+        if (file_exists($errorPagePath)) {
+          $View = new ResponseView("error");
+        } else {
+          $View = new ResponseView("error", [], "Views", "kernel_page", F_KERNEL_ROOT);
+          $errorPagePath = File::genPath(F_KERNEL_ROOT, "Views", "error.php");
+        }
+        $View->render($errorPagePath, [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails
         ]);

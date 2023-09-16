@@ -21,6 +21,9 @@ class SQL
   static function addQuote($strings, $quote = "`", $addQuote = true)
   {
     foreach ($strings as &$item) {
+      if (strpos($item, "distinct") !== false || strpos($item, "DISTINCT") !== false) {
+        continue;
+      }
       if (empty($item)) {
         // if ($item === null) {
         //   continue;
@@ -238,5 +241,9 @@ class SQL
   static function exist($tableName, $extraStatement = "")
   {
     return "SELECT 1 FROM `$tableName` $extraStatement";
+  }
+  static function groupBy($fieldName)
+  {
+    return  "GROUP BY " . self::addQuote($fieldName);
   }
 }

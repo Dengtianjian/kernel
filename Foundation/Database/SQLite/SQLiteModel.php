@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Database\SQLite;
 
 use kernel\Foundation\BaseObject;
+use kernel\Foundation\Database\PDO\Query;
 
 class SQLiteModel extends BaseObject
 {
@@ -25,6 +26,9 @@ class SQLiteModel extends BaseObject
    * @var SQLite
    */
   protected $SQLite = null;
+  protected $query;
+  protected $returnSql = false;
+  protected $DB = null;
   /**
    * 实例化模型
    *
@@ -37,9 +41,96 @@ class SQLiteModel extends BaseObject
   public function __construct($flags = SQLITE3_OPEN_READWRITE, $encryptionKey = null)
   {
     if (!$this->SQLite) {
+      $this->query = new Query($this->tableName);
       $this->SQLite = new SQLite($this->tableFileName, $flags, $encryptionKey);
     }
   }
+  function order($field, $by = "ASC")
+  {
+    $this->query->order($field, $by);
+    return $this;
+  }
+  function field(...$fieldNames)
+  {
+    $this->query->field($fieldNames);
+    return $this;
+  }
+  function distinct($fieldName)
+  {
+    $this->query->distinct($fieldName);
+    return $this;
+  }
+  function groupBy($fieldName)
+  {
+    $this->query->groupBy($fieldName);
+    return $this;
+  }
+  function limit($startOrNumber, $number = null)
+  {
+    $this->query->limit($startOrNumber, $number);
+    return $this;
+  }
+  function page($pages, $perPage = 10)
+  {
+    if ($pages === 0 && $perPage === 0) {
+      return $this;
+    }
+    $this->query->page($pages, $perPage);
+    return $this;
+  }
+  function cancelPage()
+  {
+    $this->query->clearPage();
+    return $this;
+  }
+  function skip($number)
+  {
+    $this->query->skip($number);
+    return $this;
+  }
+  function where($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
+  {
+    $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
+    return $this;
+  }
+  function filterNullWhere($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
+  {
+    $this->query->filterNullWhere($fieldNameOrFieldValue, $value, $glue, $operator);
+    return $this;
+  }
+  function sql($yes = true)
+  {
+    $this->returnSql = $yes;
+    return $this;
+  }
+  function getAll()
+  {
+    $sql = $this->query->get()->sql();
+    if ($this->returnSql) return $sql;
+    return $this->fetchAll($sql);
+  }
+  function getOne()
+  {
+    $sql = $this->query->limit(1)->get()->sql();
+    if ($this->returnSql) return $sql;
+    return $this->fetchOne($sql);
+  }
+  function count($field = "*")
+  {
+    $sql = $this->query->count($field)->sql();
+    if ($this->returnSql) return $sql;
+    $countResult = $this->fetch($sql);
+    if (!empty($countResult)) {
+      return (int)$countResult["COUNT('$field')"];
+    }
+    return null;
+  }
+  function reset($flag = true)
+  {
+    $this->query->reset($flag);
+    return $this;
+  }
+
   public function fetchAll($sql, $mode = SQLITE3_ASSOC)
   {
     return $this->SQLite->fetchAll($sql, $mode);

@@ -96,6 +96,16 @@ class Model extends BaseObject
     $this->query->field($fieldNames);
     return $this;
   }
+  function distinct($fieldName)
+  {
+    $this->query->distinct($fieldName);
+    return $this;
+  }
+  function groupBy($fieldName)
+  {
+    $this->query->groupBy($fieldName);
+    return $this;
+  }
   function limit($startOrNumber, $number = null)
   {
     $this->query->limit($startOrNumber, $number);
@@ -285,6 +295,17 @@ class Model extends BaseObject
   {
     $this->query->reset($flag);
     return $this;
+  }
+  /**
+   * 执行sql
+   *
+   * @param string $sql sql语句
+   * @return mixed
+   */
+  function query($sql)
+  {
+    $DB = $this->DB;
+    return $DB::query($sql);
   }
 
   function createTable()

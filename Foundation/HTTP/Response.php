@@ -339,7 +339,16 @@ class Response
     if (getApp()->request()->ajax()) {
       $body['version'] = Config::get("version");
     }
-    switch ($this->OutputType) {
+    $outputType = $this->OutputType;
+    $Accept = getApp()->request()->header->get("Accept");
+    if ($Accept) {
+      list($type, $format) = explode("/", $Accept);
+      if ($format !== "*") {
+        $outputType = $format;
+      }
+    }
+
+    switch ($outputType) {
       case "json":
         header("Content-type:application/json", true);
         print_r(json_encode($body, JSON_UNESCAPED_UNICODE));

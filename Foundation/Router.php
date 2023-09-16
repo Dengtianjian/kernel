@@ -164,14 +164,24 @@ class Router
       $controller = $controllerClass;
     }
 
+    if (!empty(self::$Prefix)) {
+      $prefix = self::$Prefix;
+      if (is_array($prefix)) {
+        $prefix = implode("/", $prefix);
+      }
+      if (substr($prefix, strlen($prefix) - 1) === "/") {
+        $prefix = substr($prefix, 0, strlen($prefix) - 1);
+      }
+      $URI = implode("/", array_filter([
+        $prefix,
+        $URI
+      ], function ($item) {
+        return $item;
+      }));
+    }
     $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $Params);
     if ($HasParamsRoute) {
       $URIParts = explode("/", $URI);
-      if (!empty(self::$Prefix)) {
-        foreach (self::$Prefix as $prefix) {
-          array_unshift($URIParts, $prefix);
-        }
-      }
       $URIParts = array_filter($URIParts, function ($item) {
         if (empty(trim($item))) return false;
         return true;
@@ -198,7 +208,11 @@ class Router
 
             $NotEssential = strpos($key, "?") !== false; //* 该参数可有可无的
             if ($NotEssential) {
-              $key = substr($key, 1);
+              if (substr($key, 0, 1) === "?") {
+                $key = substr($key, 1);
+              } else {
+                $key = substr($key, 0, strlen($key) - 1);
+              }
             }
             if (empty($key)) {
               array_push($Params, null);
@@ -236,16 +250,23 @@ class Router
         "controllerHandleMethodName" => $handleMethodName
       ];
     } else {
-      if (!empty(self::$Prefix)) {
-        $URIs = [];
-        if (!is_null($URI)) {
-          array_push($URIs, $URI);
-        }
-        foreach (self::$Prefix as $prefix) {
-          array_unshift($URIs, $prefix);
-        }
-        $URI = implode("/", $URIs);
-      }
+      // if (!empty(self::$Prefix)) {
+      //   $URIs = [];
+      //   if (!is_null($URI)) {
+      //     array_push($URIs, $URI);
+      //   }
+      //   if (!empty(self::$Prefix)) {
+      //     $prefix = self::$Prefix;
+      //     if (is_array($prefix)) {
+      //       $prefix = implode("/", $prefix);
+      //     }
+      //     if (substr($prefix, strlen($prefix) - 1) === "/") {
+      //       $prefix = substr($prefix, 0, strlen($prefix) - 1);
+      //     }
+      //     array_unshift($URIs, $prefix);
+      //   }
+      //   $URI = implode("/", $URIs);
+      // }
       self::$StaticRoutes[$type][$method][$URI] = [
         "raw" => $URI,
         "uri" => $URI,
