@@ -172,10 +172,12 @@ class Router
       if (substr($prefix, strlen($prefix) - 1) === "/") {
         $prefix = substr($prefix, 0, strlen($prefix) - 1);
       }
-      $URI = implode("/", [
+      $URI = implode("/", array_filter([
         $prefix,
         $URI
-      ]);
+      ], function ($item) {
+        return $item;
+      }));
     }
     $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $Params);
     if ($HasParamsRoute) {
