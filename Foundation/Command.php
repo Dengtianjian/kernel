@@ -12,7 +12,7 @@ class Command
   private $pipes = [];
   private $env = [];
   private $options = [];
-  private string $cwd = "/";
+  private string $cwd = F_APP_ROOT;
   private $initCommand = "";
   private $status = [
     "command" => "",
@@ -33,6 +33,9 @@ class Command
    */
   function __construct(array $env = [], array $options = [], string $command = "/bin/bash")
   {
+    if (strpos(PHP_OS, "WIN") !== false) {
+      $command = "";
+    }
     $this->initCommand = $command;
     $this->env = $env;
     $this->options = $options;
@@ -55,10 +58,19 @@ class Command
         'pipe', /*F_APP_ROOT . '/Data/errors',*/ 'w' // 标准错误，写入到一个文件
       ]
     ];
+    if (strpos(PHP_OS, "WIN") !== false) {
+      if (!$this->env) {
+        $this->env = null;
+      }
+    }
     $this->process = $process = proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd, $this->env, $this->options);
     if ($process === false) {
       throw new Exception("服务器错误", 500, "500:CommandError", "proc_open执行失败");
     }
+
+    stream_set_blocking($pipes[1], 0);
+    stream_set_blocking($pipes[2], 0);
+
     $this->pipes = &$pipes;
     $this->status = proc_get_status($process);
     register_shutdown_function(function () use ($process) {
@@ -81,20 +93,26 @@ class Command
     $oldOptions = $this->options;
     $this->env = Arr::merge($this->env, $env);
     $this->options = Arr::merge($this->options, $options);
-    $this->init();
 
     $command = escapeshellcmd($command);
-    fwrite($this->pipes[0], "$command 2>&1;");
+    if (strpos(PHP_OS, "WIN") !== false) {
+      $this->initCommand = "cmd /c {$command}";
+      $command = "";
+    }
+
+    $this->init();
+
+    fwrite($this->pipes[0], $command);
     fclose($this->pipes[0]);
 
-    $output = fread($this->pipes[1], 99999);
-    $output = fread($this->pipes[2], 99999);
+    $stdout = stream_get_contents($this->pipes[1]);
+    $stderr = stream_get_contents($this->pipes[2]);
 
     $this->env = $oldEnv;
     $this->options = $oldOptions;
     $this->status = proc_get_status($this->process);
 
-    return $output;
+    return $stderr ?: $stdout;
   }
   /**
    * 切换目录
