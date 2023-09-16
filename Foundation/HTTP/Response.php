@@ -396,21 +396,21 @@ class Response
     }
 
     //* 只匹配状态码
-    if (self::$Interactions['statusCodes'][$this->ResponseStatusCode]) {
+    if (isset(self::$Interactions['statusCodes'][$this->ResponseStatusCode])) {
       foreach (self::$Interactions['statusCodes'][$this->ResponseStatusCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 只匹配错误码
-    if (self::$Interactions['errorCodes'][$this->ResponseStatusCode]) {
+    if (isset(self::$Interactions['errorCodes'][$this->ResponseStatusCode])) {
       foreach (self::$Interactions['errorCodes'][$this->ResponseStatusCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 状态码错误码同时匹配
-    if (self::$Interactions['mixCodes'][$this->ResponseStatusCode] && self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode]) {
+    if (isset(self::$Interactions['mixCodes'][$this->ResponseStatusCode]) && isset(self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode])) {
       foreach (self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode] as $item) {
         call_user_func_array($item, [$this]);
       }
