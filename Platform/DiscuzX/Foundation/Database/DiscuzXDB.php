@@ -35,6 +35,10 @@ class DiscuzXDB extends \DB
     $queryResult = self::count($query);
     return $queryResult;
   }
+  static function insertId()
+  {
+    return self::insert_id();
+  }
 
   //* 事务相关
   static function begin()
