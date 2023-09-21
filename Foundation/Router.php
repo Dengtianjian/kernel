@@ -66,11 +66,11 @@ class Router
       $prefix = is_string($prefix) ? [$prefix] : $prefix;
       if (self::$InGroup) {
         foreach ($prefix as $value) {
-          array_unshift(self::$Prefix, $value);
+          array_push(self::$Prefix, $value);
         }
       } else {
         if ($append) {
-          array_unshift(self::$Prefix, ...$prefix);
+          array_push(self::$Prefix, ...$prefix);
         } else {
           self::$Prefix = $prefix;
         }
@@ -145,6 +145,8 @@ class Router
         $controller = $URI;
       }
       $URI = self::$sameURI;
+    } else {
+      $handleMethodName = "data";
     }
     if (!is_array($middlewares)) {
       if (empty($middlewares)) {
