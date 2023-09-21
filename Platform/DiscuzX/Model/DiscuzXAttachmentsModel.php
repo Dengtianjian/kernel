@@ -11,7 +11,33 @@ class DiscuzXAttachmentsModel extends AttachmentsModel
   protected $appId = F_APP_ID;
   function __construct()
   {
-    $tableName = $this->appId . "_attachments";
+    parent::__construct();
+    $this->tableName = $tableName = "{$this->appId}_attachments";
+    $this->tableStructureSQL = <<<SQL
+-- ----------------------------
+-- Table structure for attachments
+-- ----------------------------
+DROP TABLE IF EXISTS `pre_{$this->tableName}`;
+CREATE TABLE IF NOT EXISTS `pre_{$this->tableName}`  (
+  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
+  `attachId` varchar(32) NOT NULL COMMENT '附件ID',
+  `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件（OSS）',
+  `belongsId` varchar(34) NULL COMMENT '所属ID',
+  `belongsType` varchar(32) NULL COMMENT '所属ID类型',
+  `userId` bigint(20) NOT NULL DEFAULT 0 COMMENT '附件上传用户ID',
+  `sourceFileName` varchar(255) NOT NULL COMMENT '原本的文件名称',
+  `fileName` varchar(255) NOT NULL COMMENT '保存后的文件名称',
+  `fileSize` double NOT NULL COMMENT '文件尺寸',
+  `filePath` text NOT NULL COMMENT '保存的文件路径',
+  `width` double NULL DEFAULT 0 COMMENT '宽度（媒体文件才有该值）',
+  `height` double NULL DEFAULT 0 COMMENT '高度（媒体文件才有该值）',
+  `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
+  `createdAt` varchar(12) NOT NULL COMMENT '创建时间',
+  `updatedAt` varchar(12) NOT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `userId`(`userId`) USING BTREE COMMENT '用户ID'
+) COMMENT = '附件' 
+SQL;
 
     $this->query = new DiscuzXQuery($tableName);
 

@@ -21,10 +21,10 @@ class DiscuzXSettingsModel extends SettingsModel
 
     $this->tableStructureSQL = <<<SQL
     -- ----------------------------
-    -- Table structure for pre_gstudio_super_app_system_settings
+    -- Table structure for pre_{F_APP_ID}_settings
     -- ----------------------------
-    DROP TABLE IF EXISTS `{$tableName}`;
-    CREATE TABLE IF NOT EXISTS `{$tableName}`  (
+    DROP TABLE IF EXISTS `pre_{$tableName}`;
+    CREATE TABLE IF NOT EXISTS `pre_{$tableName}`  (
       `name` varchar(66) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项名称',
       `value` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '设置项值',
       `updatedAt` varchar(12) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '设置项最后更新时间',

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `{$this->tableName}` (
   INDEX `unionId`(`unionId`) USING BTREE COMMENT 'UnionId索引',
   INDEX `openId`(`openId`) USING BTREE COMMENT 'OpenId索引',
   INDEX `phone`(`phone`) USING BTREE COMMENT '手机号索引'
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '微信用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '微信用户表' ROW_FORMAT = Dynamic;
 SQL;
   }
   public function bound($memberId, $openId)
