@@ -48,7 +48,7 @@ class Iuu
   }
   public function uninstall()
   {
-    $uninstallFile =  F_APP_ROOT . "/Iuu/Uninstall/uninstall.php";
+    $uninstallFile =  F_APP_ROOT . "/Iuu/Uninstall/Uninstall.php";
     if (\file_exists($uninstallFile)) {
       // include_once($installFile);
       $className = "\\" . F_APP_ID . "\Iuu\Uninstall\Uninstall";
