@@ -28,9 +28,9 @@ class DiscuzXSettingService extends SettingService
     $names = [],
     $groupNames = [],
     $adminNames = [],
-    $SettingsTableName = F_APP_ID . "_settings"
+    $SettingsTableName = null
   ) {
-    self::$SettingsTableName = $SettingsTableName;
+    self::$SettingsTableName = $SettingsTableName ?: F_APP_ID . "_settings";
     self::$Names = $names;
     self::$GroupNames = $groupNames;
     self::$AdminNames = $adminNames;
@@ -40,6 +40,7 @@ class DiscuzXSettingService extends SettingService
   }
   static function init()
   {
+    self::$SettingsTableName = self::$SettingsTableName ?: F_APP_ID . "_settings";
     return (new DiscuzXSettingsModel(self::$SettingsTableName))->createTable();
   }
   public function __construct()

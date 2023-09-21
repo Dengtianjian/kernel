@@ -17,7 +17,7 @@ class AttachmentsModel extends Model
 -- Table structure for attachments
 -- ----------------------------
 DROP TABLE IF EXISTS `{$this->tableName}`;
-CREATE TABLE `{$this->tableName}`  (
+CREATE TABLE IF NOT EXISTS `{$this->tableName}`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
   `attachId` varchar(32) NOT NULL COMMENT '附件ID',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件（OSS）',

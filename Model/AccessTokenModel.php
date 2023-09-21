@@ -15,7 +15,7 @@ class AccessTokenModel extends Model
 -- ----------------------------
 -- Table structure for access_token
 -- ----------------------------
-CREATE TABLE `{$this->tableName}`  (
+CREATE TABLE IF NOT EXISTS `{$this->tableName}`  (
   `accessToken` text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'access_token',
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `platform` enum('wechatOfficialAccount','dingtalk') CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '所属第三方平台',
