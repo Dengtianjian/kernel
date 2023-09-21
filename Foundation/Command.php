@@ -52,10 +52,10 @@ class Command
         'pipe', 'r' // 标准输入，子进程从此管道中读取数
       ],
       [
-        'pipe', /*F_APP_ROOT . '/Data/outputs',*/ 'w' // 标准输出，子进程向此管道中写入数
+        'pipe', 'w' // 标准输出，子进程向此管道中写入数
       ],
       [
-        'pipe', /*F_APP_ROOT . '/Data/errors',*/ 'w' // 标准错误，写入到一个文件
+        'pipe', 'w' // 标准错误，写入到一个文件
       ]
     ];
     if (strpos(PHP_OS, "WIN") !== false) {
@@ -68,8 +68,8 @@ class Command
       throw new Exception("服务器错误", 500, "500:CommandError", "proc_open执行失败");
     }
 
-    stream_set_blocking($pipes[1], 0);
-    stream_set_blocking($pipes[2], 0);
+    stream_set_blocking($pipes[0], FALSE);
+    stream_set_blocking($pipes[1], FALSE);
 
     $this->pipes = &$pipes;
     $this->status = proc_get_status($process);
@@ -105,14 +105,36 @@ class Command
     fwrite($this->pipes[0], $command);
     fclose($this->pipes[0]);
 
-    $stdout = stream_get_contents($this->pipes[1]);
-    $stderr = stream_get_contents($this->pipes[2]);
+    $stdOutputs = "";
+    $stdErrors = "";
+
+    while (!feof($this->pipes[1])) {
+      $stdOutputs .= fgets($this->pipes[1], 1024);
+    }
+    fclose($this->pipes[1]);
+    while (!feof($this->pipes[2])) {
+      $stdErrors .= fgets($this->pipes[2], 1024);
+    }
+    fclose($this->pipes[2]);
+
+    // $stdout = stream_get_contents($this->pipes[1]);
+    // $stderr = stream_get_contents($this->pipes[2]);
+
+    // $stdout = implode("", $stdOutputs);
+    // $stderr = implode("", $stdErrors);
+
+    // fclose($this->pipes[1]);
+    // fclose($this->pipes[2]);
 
     $this->env = $oldEnv;
     $this->options = $oldOptions;
     $this->status = proc_get_status($this->process);
 
-    return $stderr ?: $stdout;
+    if (is_resource($this->process)) {
+      proc_close($this->process);
+    }
+
+    return $stdErrors ?: $stdOutputs;
   }
   /**
    * 切换目录
