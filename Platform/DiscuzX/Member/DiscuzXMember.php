@@ -459,6 +459,15 @@ class DiscuzXMember
 
     return $R->success(getuserbyuid($uid));
   }
+  public static function avatar($memberId, $size = 'middle', $returnsrc = 1, $real = FALSE, $static = FALSE, $ucenterurl = '', $class = '', $extra = '', $random = 0)
+  {
+    $avatarURL = avatar($memberId, $size, $returnsrc, $real, $static, $ucenterurl, $class, $extra, $random);
+    if (strpos($avatarURL, F_BASE_URL) === false) {
+      $avatarURL = preg_replace("/(https?:\/\/)?[0-9a-zA-Z\._-]+/", F_BASE_URL, $avatarURL, 1);
+    }
+
+    return $avatarURL;
+  }
   public static function credit($memberId = null)
   {
     if ($memberId === null) {
@@ -568,7 +577,7 @@ class DiscuzXMember
     global $_G;
     $_G['setting']['dynavt'] = 1;
     foreach ($members as &$MemberItem) {
-      $MemberItem['avatar'] = \avatar($MemberItem['uid'], "middle", true);
+      $MemberItem['avatar'] = self::avatar($MemberItem['uid']);
 
       if (isset($Groups[$MemberItem['groupid']])) {
         $MemberItem['group'] = $Groups[$MemberItem['groupid']];
@@ -604,7 +613,7 @@ class DiscuzXMember
     $CM->page($page, $limit);
     $Members = $CM->getAll();
     foreach ($Members as &$MemberItem) {
-      $MemberItem['avatar'] = avatar($MemberItem['uid'], "middle", 1);
+      $MemberItem['avatar'] = self::avatar($MemberItem['uid'], "middle", 1);
     }
     return [
       "list" => $Members,
