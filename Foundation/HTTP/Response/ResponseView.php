@@ -43,7 +43,7 @@ class ResponseView extends Response
       $viewFileDir = F_APP_ROOT;
     }
     $extension = ".php";
-    if (strpos($viewFile, ".") !== false) {
+    if (pathinfo($viewFile, PATHINFO_EXTENSION)) {
       $extension = "";
     }
     $this->viewFilePath = File::genPath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
