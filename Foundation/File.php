@@ -223,7 +223,7 @@ class File
    */
   public static function genPath(...$els)
   {
-    return implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
+    $path = implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
       // $lastText = $item[strlen($item) - 1];
       // if ($lastText === "/" || $lastText === "\\") {
       //   $item = substr($item, 0, strlen($item) - 1);
@@ -235,6 +235,14 @@ class File
     }, array_filter($els, function ($item) {
       return !empty(trim($item));
     })));
+    $path = str_replace([
+      "//",
+      "\\",
+      "/",
+      "\\\\"
+    ], DIRECTORY_SEPARATOR, $path);
+
+    return $path;
   }
   /**
    * 扫描目录
