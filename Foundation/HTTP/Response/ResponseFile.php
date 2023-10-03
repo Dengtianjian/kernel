@@ -75,7 +75,6 @@ class ResponseFile extends ResponseDownload
     imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
 
     $fileName = substr($fileName, 0, strrpos($fileName, ".")) . "." . $targetExt;
-    header('Content-type:image/' . $targetExt);
     header('Content-Length: ' . "", true);
     switch ($targetExt) {
       case "jpg":
