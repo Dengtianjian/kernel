@@ -15,16 +15,19 @@ class DiscuzXFile
    *
    * @param string $fileName 文件名称，包含扩展名
    * @param string $savePath 保存的目录，相对于data\plugindata\{F_APP_ID}下，默认是files，也就是data\plugindata\{F_APP_ID}\files
+   * @param boolean $remote 是否是远程附件
+   * @param boolean $auth 是否权限校验
    * @return string 文件ID
    */
-  static function genFileId($fileName, $savePath, $remote = false)
+  static function genFileId($fileName, $savePath, $remote = false, $auth = true)
   {
     return rawurlencode(base64_encode(implode("|", [
       uniqid("file:"),
       $savePath,
       $fileName,
       $remote,
-      getglobal("uid")
+      getglobal("uid"),
+      $auth
     ])));
   }
   /**
@@ -44,9 +47,10 @@ class DiscuzXFile
    * @param \File $file 被保存的文件
    * @param string $saveDir 保存到的目录，相对于data\plugindata\{F_APP_ID}下，默认是files，也就是data\plugindata\{F_APP_ID}\files
    * @param string $fileName 文件名称，不用带扩展名
+   * @param boolean $auth 是否校验权限
    * @return ReturnResult accessPath就是可以直接通过URL访问的路径，fileId是base46编码后的文件数据
    */
-  static function save($file, $saveDir = "files", $fileName = null)
+  static function save($file, $saveDir = "files", $fileName = null, $auth = true)
   {
     $saveBasePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir);
     $file = File::upload($file, $saveBasePath, $fileName);
@@ -62,7 +66,7 @@ class DiscuzXFile
     $accessPath = File::genPath("data", $file['relativePath'], $file['saveFileName']);
 
     $file['accessPath'] = $accessPath;
-    $file['fileId'] = self::genFileId($file['saveFileName'], $saveDir);
+    $file['fileId'] = self::genFileId($file['saveFileName'], $saveDir, false, $auth);
     return new ReturnResult($file);
   }
   /**
@@ -104,7 +108,7 @@ class DiscuzXFile
     if ($tag !== "file") {
       return new ReturnResult(false, 400, 400, "文件ID错误");
     }
-    list($uniqueId, $saveDir, $fileName, $remote, $userId) = explode("|", $fileId);
+    list($uniqueId, $saveDir, $fileName, $remote, $userId, $auth) = explode("|", $fileId);
     $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
     return new ReturnResult([
       "uniqueId" => $uniqueId,
@@ -112,7 +116,8 @@ class DiscuzXFile
       "fileName" => $fileName,
       "filePath" => $filePath,
       "remote" => $remote,
-      "userId" => $userId
+      "userId" => $userId,
+      "auth" => $auth,
     ]);
   }
 }
