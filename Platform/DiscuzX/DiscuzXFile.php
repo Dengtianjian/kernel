@@ -27,7 +27,7 @@ class DiscuzXFile
       $fileName,
       $remote,
       getglobal("uid"),
-      $auth
+      intval($auth)
     ])));
   }
   /**
@@ -103,6 +103,9 @@ class DiscuzXFile
    */
   static function decodeFileId($fileId)
   {
+    if (strpos($fileId, ".") !== false) {
+      $fileId = explode(".", $fileId)[0];
+    }
     list($tag, $fileId) = explode(":", base64_decode(rawurldecode($fileId)));
 
     if ($tag !== "file") {
