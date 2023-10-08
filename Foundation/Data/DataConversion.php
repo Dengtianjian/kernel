@@ -206,7 +206,7 @@ class DataConversion
             $type = "any";
           }
 
-          if (isset($this->data[$key])) {
+          if (array_key_exists($key, $this->data)) {
             if ($type instanceof DataConversion) {
               if (is_array($this->data[$key]) && !Arr::isAssoc($this->data[$key])) {
                 if (!isset($Data[$key])) {
