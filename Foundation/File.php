@@ -65,13 +65,13 @@ class File
         if (!$fileSize) {
           throw new Exception("文件保存失败", 500, "FileUpload:500001");
         }
-        $fileSourceName = $filePath;
+        $fileSourceName = basename($filePath);
       } else {
         if ($fileItem['error'] > 0) {
           $uploadResult[] = $fileItem['error'];
           continue;
         }
-        $fileSourceName = $fileItem['name'];
+        $fileSourceName = basename($fileItem['name']);
         $fileSize = $fileItem['size'];
         $filePath = $fileItem['tmp_name'];
       }
