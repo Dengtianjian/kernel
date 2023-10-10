@@ -108,6 +108,7 @@ class ResponseFile extends ResponseDownload
 
     if (File::isImage($this->filePath)) {
       if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r")) {
+        header_remove("Content-Length");
         $imageInfo = getimagesize($this->filePath);
         $sourceWidth = $imageInfo[0];
         $sourceHeight = $imageInfo[1];
