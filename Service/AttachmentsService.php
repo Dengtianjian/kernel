@@ -134,7 +134,7 @@ class AttachmentsService extends Service
 
     $SaveFilePath = File::genPath(F_APP_ROOT, $savePath);
     if (!is_dir($SaveFilePath)) {
-      File::mkdir($SaveFilePath);
+      File::mkdir([$SaveFilePath]);
     }
 
     $saveFileResult = File::upload($file, $SaveFilePath);
