@@ -75,7 +75,6 @@ class ResponseFile extends ResponseDownload
     imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
 
     $fileName = substr($fileName, 0, strrpos($fileName, ".")) . "." . $targetExt;
-    header('Content-Length: ' . "", true);
     switch ($targetExt) {
       case "jpg":
       case "jpeg":
@@ -103,7 +102,6 @@ class ResponseFile extends ResponseDownload
     header('Accept-Ranges: bytes');
     header('Content-Length: ' . $this->fileSize);
     header('Content-Disposition: inline; filename=' . urlencode($this->fileName));
-
     header('Content-type: ' . mime_content_type($this->filePath) . ';', true);
 
     if (File::isImage($this->filePath)) {
