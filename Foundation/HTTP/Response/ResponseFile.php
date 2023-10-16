@@ -13,13 +13,13 @@ class ResponseFile extends ResponseDownload
    *
    * @var integer
    */
-  private $imageQuality = -1;
-  public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = 0)
+  private $imageQuality = null;
+  public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = null)
   {
     $this->imageQuality = $imageQuality;
     parent::__construct($R, $filePath, $downloadFileName, false);
   }
-  private function createThumb($filePath, $fileName, $targetWdith, $targetHeight, $targetRatio)
+  private function createThumb($filePath, $fileName, $targetWdith, $targetHeight, $targetRatio, $NewExtension = null)
   {
     $targetExt = "webp";
     switch (exif_imagetype($filePath)) {
@@ -74,14 +74,21 @@ class ResponseFile extends ResponseDownload
 
     imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
 
+    $quality = $this->request->query->get("q") ?: $this->imageQuality;
+    $targetExt = $NewExtension ?: $targetExt;
     $fileName = substr($fileName, 0, strrpos($fileName, ".")) . "." . $targetExt;
     switch ($targetExt) {
       case "jpg":
       case "jpeg":
-        imagejpeg($targetImage, null, $this->imageQuality);
+        imagejpeg($targetImage, null, $quality);
         break;
       case "png":
-        imagepng($targetImage, null, $this->imageQuality);
+        if ($quality <= -1) {
+          $quality = -1;
+        } else if ($quality > 9) {
+          $quality = $quality / 10;
+        }
+        imagepng($targetImage, null, $quality);
         break;
       case "gif":
         imagegif($targetImage);
@@ -90,7 +97,7 @@ class ResponseFile extends ResponseDownload
         imagebmp($targetImage);
         break;
       default:
-        imagewebp($targetImage);
+        imagewebp($targetImage, null, $quality);
         break;
     }
 
@@ -103,6 +110,7 @@ class ResponseFile extends ResponseDownload
     header('Content-Length: ' . $this->fileSize);
     header('Content-Disposition: inline; filename=' . urlencode($this->fileName));
     header('Content-type: ' . mime_content_type($this->filePath) . ';', true);
+    $PathInfo = pathinfo($this->filePath);
 
     if (File::isImage($this->filePath)) {
       if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r")) {
@@ -113,6 +121,11 @@ class ResponseFile extends ResponseDownload
         $targetWdith = $this->request->query->get("w") ?: false;
         $targetHeight = $this->request->query->get("h") ?: false;
         $targetRatio = $this->request->query->get("r") ?: false;
+        $outputExtension = $this->request->query->get("ext") ?: false;
+        if ($outputExtension) {
+          header('Content-Disposition: inline; filename=' . urlencode($PathInfo['filename'] . ".{$outputExtension}"));
+          header("Content-type: image/{$outputExtension};", true);
+        }
 
         $fileTag = $this->filePath . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
         $fileTag = md5($fileTag);
@@ -128,7 +141,7 @@ class ResponseFile extends ResponseDownload
         header("etag: " . $fileTag);
         header("cache-control:no-cache");
 
-        $this->createThumb($this->filePath, $this->fileName, $targetWdith, $targetHeight, $targetRatio);
+        $this->createThumb($this->filePath, $this->fileName, $targetWdith, $targetHeight, $targetRatio, $outputExtension);
       } else {
         $this->printContent(false);
       }

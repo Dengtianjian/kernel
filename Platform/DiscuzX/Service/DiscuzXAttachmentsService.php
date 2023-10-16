@@ -11,14 +11,14 @@ use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentKeysModel;
 
 class DiscuzXAttachmentsService extends AttachmentsService
 {
-  static function getDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null, $ratio = null)
+  static private function getURLQueryString($uri, $attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $preview = false, $width = null, $height = null, $ratio = null, $outputExtension = null, $quality = null)
   {
     $QueryStrings = [
       "id" => F_APP_ID,
-      "uri" => "attachments/$attachmentId/download"
+      "uri" => $uri
     ];
     if ($withKey) {
-      $QueryStrings['key'] = self::getAccessKey($attachmentId, $userId, $periodSeconds, $preview, true, $width, $height, $ratio);
+      $QueryStrings['key'] = self::getAccessKey($attachmentId, $userId, $periodSeconds, $preview, $download, $width, $height, $ratio, $outputExtension, $quality);
     }
     if ($width) {
       $QueryStrings['w'] = $width;
@@ -29,32 +29,27 @@ class DiscuzXAttachmentsService extends AttachmentsService
     if ($ratio) {
       $QueryStrings['r'] = $ratio;
     }
-    return F_BASE_URL . "/plugin.php?" . http_build_query($QueryStrings);
+    if ($outputExtension) {
+      $QueryStrings['ext'] = $outputExtension;
+    }
+    if (!is_null($quality)) {
+      $QueryStrings['q'] = $quality;
+    }
+
+    return http_build_query($QueryStrings);
   }
-  static function getPreviewURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $width = null, $height = null, $ratio = null, $baseURL = F_BASE_URL)
+  static function getDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null, $ratio = null, $outputExtension = null, $quality = null)
   {
-    $QueryStrings = [
-      "id" => F_APP_ID,
-      "uri" => "attachments/$attachmentId/preview"
-    ];
-    if ($withKey) {
-      $QueryStrings['key'] = self::getAccessKey($attachmentId, $userId, $periodSeconds, true, $download, $width, $height, $ratio);
-    }
-    if ($width) {
-      $QueryStrings['w'] = $width;
-    }
-    if ($height) {
-      $QueryStrings['h'] = $height;
-    }
-    if ($ratio) {
-      $QueryStrings['r'] = $ratio;
-    }
-    return $baseURL . "/plugin.php?" . http_build_query($QueryStrings);
+    return F_BASE_URL . "/plugin.php?" . self::getURLQueryString("attachments/$attachmentId/download", $attachmentId, $withKey, $userId, $periodSeconds, true, false, $width, $height, $ratio, $outputExtension, $quality);
   }
-  static function getAccessKey($attachId, $userId = null, $periodSeconds = 300, $preview = true, $download = true, $width = 0, $height = 0, $ratio = null)
+  static function getPreviewURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $download = true, $width = null, $height = null, $ratio = null, $baseURL = F_BASE_URL, $outputExtension = null, $quality = null)
+  {
+    return F_BASE_URL . "/plugin.php?" . self::getURLQueryString("attachments/$attachmentId/preview", $attachmentId, $withKey, $userId, $periodSeconds, false, true, $width, $height, $ratio, $outputExtension, $quality);
+  }
+  static function getAccessKey($attachId, $userId = null, $periodSeconds = 300, $preview = true, $download = true, $width = 0, $height = 0, $ratio = null, $outputExtension = null, $quality = null)
   {
     $ExpirationTime = time() + $periodSeconds;
-    $key = self::generateAccessKey($attachId, $userId, $periodSeconds, $ExpirationTime, $preview, $download, $width, $height, $ratio);
+    $key = self::generateAccessKey($attachId, $userId, $periodSeconds, $ExpirationTime, $preview, $download, $width, $height, $ratio, $outputExtension, $quality);
     if ($key) {
       $KeyId = DiscuzXAttachmentKeysModel::singleton()->add($attachId, $key, $userId, $download, $preview, $ExpirationTime);
       if ($KeyId) {

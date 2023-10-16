@@ -78,7 +78,7 @@ class AttachmentsService extends Service
    * @param integer $ratio 比例，图片附件独有参数。如果传入该参数，当访问或者下载时通过URL获取到的比例与该参数不一致时会响应403
    * @return string 秘钥
    */
-  static function generateAccessKey($attachId, $userId = null, $periodSeconds = 300, $expirationTime = null, $preview = true, $download = true, $width = null, $height = null, $ratio = null)
+  static function generateAccessKey($attachId, $userId = null, $periodSeconds = 300, $expirationTime = null, $preview = true, $download = true, $width = null, $height = null, $ratio = null, $outputExtension = null, $quality = null)
   {
     $preview = boolval(intval($preview));
     $download = boolval(intval($download));
@@ -90,7 +90,9 @@ class AttachmentsService extends Service
       $download,
       $width,
       $height,
-      $ratio
+      $ratio,
+      $outputExtension,
+      $quality
     ], function ($item) {
       return !is_null($item);
     })));

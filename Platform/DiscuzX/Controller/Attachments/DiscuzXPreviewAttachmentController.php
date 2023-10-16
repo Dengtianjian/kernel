@@ -13,8 +13,10 @@ class DiscuzXPreviewAttachmentController extends DiscuzXController
   public $query = [
     "w" => "string",
     "h" => "string",
-    "r" => "string",
+    "r" => "double",
     "key" => "string",
+    "ext" => "string",
+    "q" => "double"
   ];
   public function data($attachmentId)
   {
@@ -54,13 +56,16 @@ class DiscuzXPreviewAttachmentController extends DiscuzXController
         $width = $this->query->has("w") ? $this->query->get("w") : null;
         $height = $this->query->has("h") ? $this->query->get("h") : null;
         $ratio = $this->query->has("r") ? $this->query->get("r") : null;
-        $rawKey = DiscuzXAttachmentsService::generateAccessKey($attachmentId, $KeyData['userId'], null, $KeyData['expirationTime'], $KeyData['preview'], $KeyData['download'], $width, $height, $ratio);
+        $outputExtension = $this->query->has("ext") ? $this->query->get("ext") : null;
+        $quality = $this->query->has("q") ? $this->query->get("q") : null;
+        $rawKey = DiscuzXAttachmentsService::generateAccessKey($attachmentId, $KeyData['userId'], null, $KeyData['expirationTime'], $KeyData['preview'], $KeyData['download'], $width, $height, $ratio, $outputExtension, $quality);
+
         if ($rawKey !== $Key) {
           return $this->response->error(403, 403007, "访问秘钥错误");
         }
       }
     }
 
-    return new ResponseFile($this->request, $FilePath, $Attachment['fileName']);
+    return new ResponseFile($this->request, $FilePath, $Attachment['fileName'], $quality);
   }
 }
