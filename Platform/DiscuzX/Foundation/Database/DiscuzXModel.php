@@ -87,6 +87,35 @@ class DiscuzXModel extends Model
     if ($this->returnSql) return $sql;
     return DiscuzXDB::batchInsert($this->query);
   }
+  function batchInsertIgnore($fieldNames, $values)
+  {
+    if (!count($values)) return null;
+    $Call = get_class($this);
+    if ($Call::$Timestamps) {
+      $now = time();
+      if ($Call::$CreatedAt) {
+        array_push($fieldNames, "createdAt");
+        foreach ($values as &$value) {
+          array_push($value, $now);
+        }
+      }
+      if ($Call::$UpdatedAt) {
+        array_push($fieldNames, "updatedAt");
+        foreach ($values as &$value) {
+          array_push($value, $now);
+        }
+      }
+
+      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+        foreach ($Call::$TimestampFields as $item) {
+          $data[$item] = $now;
+        }
+      }
+    }
+    $sql = $this->query->batchInsertIgnore($fieldNames, $values)->sql();
+    if ($this->returnSql) return $sql;
+    return DiscuzXDB::batchInsert($this->query);
+  }
   function update($data)
   {
     $Call = get_class($this);

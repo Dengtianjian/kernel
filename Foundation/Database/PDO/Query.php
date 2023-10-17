@@ -43,6 +43,9 @@ class Query extends BaseObject
       case "batchReplace":
         $sql .= SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
         break;
+      case "batchInsertIgnore":
+        $sql .= SQL::batchInsertIgnore($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
+        break;
       case "update":
         $sql = SQL::update($this->tableName, $this->options['updateData']);
         break;
@@ -304,6 +307,18 @@ class Query extends BaseObject
     } else {
       $this->executeType = "batchInsert";
     }
+    $this->options['batchInsert'] = [
+      "fields" => $fieldNames,
+      "values" => $values
+    ];
+
+    $this->sql = $this->generateSql();
+    $this->reset();
+    return $this;
+  }
+  function batchInsertIgnore($fieldNames, $values)
+  {
+    $this->executeType = "batchInsertIgnore";
     $this->options['batchInsert'] = [
       "fields" => $fieldNames,
       "values" => $values
