@@ -194,6 +194,19 @@ class SQL
     }
     return "$startSql `$tableName`($fields) VALUES$valueSql";
   }
+  static function batchInsertIgnore($tableName, $fields, $datas)
+  {
+    $fields = self::addQuote($fields);
+    $fields = \implode(",", $fields);
+    $valueSql = [];
+    foreach ($datas as $dataItem) {
+      $dataItem = self::addQuote($dataItem, "'", true);
+      $valueSql[] = "(" . \implode(",", $dataItem) . ")";
+    }
+    $valueSql = \implode(",", $valueSql);
+    $startSql = "INSERT IGNORE INTO";
+    return "$startSql `$tableName`($fields) VALUES$valueSql";
+  }
   static function delete($tableName, $condition)
   {
     return "DELETE FROM `$tableName` $condition";
