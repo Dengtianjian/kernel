@@ -143,12 +143,18 @@ class App
 
     //* 获取URL地址
     $url = "";
-    if (strtolower($_SERVER['REQUEST_SCHEME']) === 'https' && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] === 'on') {
-      $url .= "https://";
-    } else {
-      $url .= "http://";
+
+    if (array_key_exists("REQUEST_SCHEME", $_SERVER)) {
+      if (array_key_exists("HTTPS", $_SERVER) && $_SERVER['HTTPS'] === 'on') {
+        $url .= "https://";
+      } else {
+        $url .= "http://";
+      }
+
+      if (array_key_exists("HTTP_HOST", $_SERVER) && array_key_exists("SERVER_PORT", $_SERVER)) {
+        $url .= $_SERVER['HTTP_HOST'] . ":" . $_SERVER['SERVER_PORT'];
+      }
     }
-    $url .= $_SERVER['HTTP_HOST'] . ":" . $_SERVER['SERVER_PORT'];
     /**
      * APP的URL地址
      */
