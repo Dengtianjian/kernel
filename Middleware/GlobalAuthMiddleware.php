@@ -119,7 +119,8 @@ class GlobalAuthMiddleware extends Middleware
 
     Store::setApp([
       "auth" => $token,
-      "logged" => true
+      "logged" => true,
+      "userId" => $token['userId']
     ]);
     return $RR;
   }
