@@ -126,7 +126,7 @@ class GlobalAuthMiddleware extends Middleware
   public function handle(\Closure $next)
   {
     if (!($this->controller instanceof AuthController)) {
-      $Verified = $this->verifyToken();
+      $Verified = $this->verifyToken(false);
       if ($Verified->error) {
         return $Verified;
       }
