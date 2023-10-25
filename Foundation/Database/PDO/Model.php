@@ -196,6 +196,7 @@ class Model extends BaseObject
   }
   function update($data)
   {
+    if (!$data) return 0;
     $sql = $this->query->update($data)->sql();
     if ($this->returnSql) return $sql;
     $DB = $this->DB;
