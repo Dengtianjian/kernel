@@ -32,6 +32,25 @@ CREATE TABLE IF NOT EXISTS `{$this->tableName}` (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 SQL;
   }
+  /**
+   * 添加登入记录
+   *
+   * @param string $token 凭证
+   * @param int $expiration 过期时间
+   * @param int $userId 所属用户ID，整数数值
+   * @param string $appId 所属app
+   * @return int 记录ID
+   */
+  public function add($token, $expiration, $userId, $appId = F_APP_ID)
+  {
+    return $this->insert([
+      "id" => $this->genId(),
+      "token" => $token,
+      "expiration" => $expiration,
+      "userId" => $userId,
+      "appId" => $appId
+    ]);
+  }
   public function getByToken($token)
   {
     return $this->where([
