@@ -151,8 +151,8 @@ class App
         $url .= "http://";
       }
 
-      if (array_key_exists("HTTP_HOST", $_SERVER) && array_key_exists("SERVER_PORT", $_SERVER)) {
-        $url .= $_SERVER['HTTP_HOST'] . ":" . $_SERVER['SERVER_PORT'];
+      if (array_key_exists("HTTP_HOST", $_SERVER)) {
+        $url .= $_SERVER['HTTP_HOST'];
       }
     }
     /**
