@@ -83,44 +83,48 @@ class GlobalAuthMiddleware extends Middleware
     }
     $token = $token[1];
     $ULM = new $this->LoginsModel();
-    $token = $ULM->getByToken($token);
-    if ($token === null) {
+    $auth = $ULM->getByToken($token);
+    if ($auth === null) {
       header("Authorization", "");
       if ($strongCheck) {
         $RR->error(401, "Auth:401003", "请登录后重试", "无效的Token");
         return $RR;
       }
     }
-    if (!$token) {
+    if (!$auth) {
       return $RR;
     }
-    $expirationDate = $token['createdAt'] + $token['expiration'];
-    $diffDay = round((time() - $token['createdAt']) / 86400);
-    $expirationDay = round($token['expiration'] / 86400);
+    $expirationDate = $auth['createdAt'] + $auth['expiration'];
+    $diffDay = round((time() - $auth['createdAt']) / 86400);
+    $expirationDay = round($auth['expiration'] / 86400);
     if (time() > $expirationDate || $diffDay > $expirationDay) {
       $RR->error(401, "Auth:401004", "登录已失效，请重新登录", "Token已过期");
       return $RR;
     }
-    header("Authorization:" . $token['token'] . "/" . $expirationDate, true);
+    header("Authorization:" . $auth['token'] . "/" . $expirationDate, true);
     //* 如果token的有效期剩余20%，就自动刷新token
     if ($diffDay / $expirationDay > 0.8) {
       //* 自动刷新token
-      $newToken = AuthService::generateToken($token['userId']);
+      $newToken = AuthService::generateToken($auth['userId']);
       header("Authorization:" . $newToken['value'] . "/" . $newToken['expirationDate'], true);
       $ULM->deleteByToken($token['token']);
-      $ULM->insert([
+      $newAuth = [
         "id" => $ULM->genId(),
         "token" =>  $newToken['value'],
         "expiration" =>  $newToken['expiration'],
         "userId" => $token['userId']
-      ]);
-      $token = $newToken;
+      ];
+      $ULM->insert($newAuth);
+
+      $auth = array_merge($auth, $newAuth);
+      $token = $newToken['value'];
     }
 
     Store::setApp([
-      "auth" => $token,
+      "auth" => $auth,
+      "token" => $token,
       "logged" => true,
-      "userId" => $token['userId']
+      "userId" => $auth['userId']
     ]);
     return $RR;
   }
