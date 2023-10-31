@@ -92,7 +92,7 @@ class FileStoreService extends Service
       $file['relativePath'] = substr($file['relativePath'], 2);
     }
 
-    $accessPath = File::genPath("data", $file['relativePath'], $file['saveFileName']);
+    $accessPath = File::genPath($file['relativePath'], $file['saveFileName']);
 
     $file['accessPath'] = $accessPath;
     $file['fileId'] = self::genFileId($file['saveFileName'], $saveDir, false, $auth);
