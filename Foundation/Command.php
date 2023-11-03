@@ -201,7 +201,7 @@ class Command
    * @param string $options 选项，默认是 -s 符号链接（symbolic）的意思
    * @return void
    */
-  public function ln(string $source, string $target, string $options = "-s",)
+  public function ln(string $source, string $target, string $options = "-s")
   {
     return $this->exec("sudo ln $options $source $target");
   }
