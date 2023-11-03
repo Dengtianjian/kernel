@@ -29,21 +29,36 @@ class Iuu
     }
     return $this;
   }
-  public function upgrade()
+  public function upgrade($TargetVersion = null, $UpgradeCallback = null)
   {
     $UpgradeListFile = File::genPath(F_APP_ROOT, "Iuu", "UpgradeList.php");
     if (!file_exists($UpgradeListFile)) return true;
     $UpgradeList = include_once($UpgradeListFile);
-
+    ksort($UpgradeList);
+    $currentVersion = $this->fromVersion;
     foreach ($UpgradeList as $Version => $VersionCallback) {
-      if (version_compare($this->fromVersion, $Version, "<") === true) {
+      if ($TargetVersion && version_compare($Version, $TargetVersion, ">") === true) continue;
+      if (version_compare($currentVersion, $Version, ">=") === true) continue;
+
+      if (!is_null($VersionCallback)) {
         if (is_callable($VersionCallback)) {
           $VersionCallback();
         } else {
           new $VersionCallback();
         }
       }
+
+      $currentVersion = $Version;
+      if ($UpgradeCallback) {
+        $UpgradeCallback($currentVersion);
+      }
     }
+    if (!array_key_exists($TargetVersion, $UpgradeList)) {
+      if ($UpgradeCallback) {
+        $UpgradeCallback($TargetVersion);
+      }
+    }
+
     return $this;
   }
   public function uninstall()
