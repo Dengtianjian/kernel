@@ -382,9 +382,10 @@ class File
    * 递归扫描目标文件夹
    *
    * @param string $rootDir 被扫描的目标文件夹路径
+   * @param boolean $includeDir 包含文件夹路径
    * @return string[] 扫描后的文件列表，没有分层
    */
-  public static function recursionScanDir($rootDir)
+  public static function recursionScanDir($rootDir, $includeDir = false)
   {
     if (!is_dir($rootDir)) return [];
     $dirs = self::scandir($rootDir);
@@ -392,6 +393,9 @@ class File
     foreach ($dirs as $dir) {
       if (is_dir(File::genPath($rootDir, $dir))) {
         $allDirs = array_merge($allDirs, self::recursionScanDir(File::genPath($rootDir, $dir)));
+        if ($includeDir) {
+          array_push($allDirs, File::genPath($rootDir, $dir));
+        }
       } else {
         array_push($allDirs, File::genPath($rootDir, $dir));
       }
