@@ -130,7 +130,7 @@ class Router
    * @param string $type 路由类型
    * @param string $method 请求的方法
    * @param string $URI 路由的URI
-   * @param Controller|array $controller 命中后执行的控制器
+   * @param string|Controller|array $controller 命中后执行的控制器
    * @param array $middlewares 路由的中间件
    * @return Router
    */
@@ -185,7 +185,8 @@ class Router
     if ($HasParamsRoute) {
       $URIParts = explode("/", $URI);
       $URIParts = array_filter($URIParts, function ($item) {
-        if (empty(trim($item))) return false;
+        if (empty(trim($item)))
+          return false;
         return true;
       });
 
@@ -226,7 +227,7 @@ class Router
             if ($ParamPattern) {
               $ParamPattern = $NotEssential ? "/?($ParamPattern)?" : "/($ParamPattern)";
             } else {
-              $ParamPattern =  $NotEssential ? "/?(\w+)?" : "/(\w+)";
+              $ParamPattern = $NotEssential ? "/?(\w+)?" : "/(\w+)";
             }
             array_push($patterns, $ParamPattern);
           }
@@ -288,7 +289,7 @@ class Router
    * 注册get方法的路由
    *
    * @param string|Controller $URI URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -300,7 +301,7 @@ class Router
    * 注册post方法的路由
    *
    * @param string|Controller $URI URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -312,7 +313,7 @@ class Router
    * 注册put方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -324,7 +325,7 @@ class Router
    * 注册patch方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -336,7 +337,7 @@ class Router
    * 注册delete方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -348,7 +349,7 @@ class Router
    * 注册options方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -360,7 +361,7 @@ class Router
    * 注册async方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
@@ -372,7 +373,7 @@ class Router
    * 注册any方法的路由
    *
    * @param string|Controller $URIorController URI地址，如果是在same运行的闭包函数场景下，该值传入控制器类即可
-   * @param Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
+   * @param string|Controller|array $controller 控制器，如果传入的是数组，第一个参数是被实例化的控制器，第二个参数指定执行该控制器的方法名称
    * @param array $middlewares 路由中间件
    * @return Router
    */
