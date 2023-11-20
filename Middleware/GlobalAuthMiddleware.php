@@ -107,12 +107,12 @@ class GlobalAuthMiddleware extends Middleware
       //* 自动刷新token
       $newToken = AuthService::generateToken($auth['userId']);
       header("Authorization:" . $newToken['value'] . "/" . $newToken['expirationDate'], true);
-      $ULM->deleteByToken($token['token']);
+      $ULM->deleteByToken($auth['token']);
       $newAuth = [
         "id" => $ULM->genId(),
         "token" =>  $newToken['value'],
         "expiration" =>  $newToken['expiration'],
-        "userId" => $token['userId']
+        "userId" => $auth['userId']
       ];
       $ULM->insert($newAuth);
 
