@@ -50,15 +50,22 @@ class QCloud extends BaseObject
    * @param string $secretId 密钥对中的 SecretId
    * @param string $secretKey 原始的 SecretKey
    * @param string $service 操作的服务名称
+   * @param string $host 接口请求地址
    */
-  public function __construct($secretId, $secretKey, $service)
+  public function __construct($secretId, $secretKey, $service = null, $host = null)
   {
     $this->SecretId = $secretId;
     $this->SecretKey = $secretKey;
-    $this->Service = $service;
-    $this->Host = $service . "." . $this->Host;
+
+    if (!is_null($host)) {
+      $this->Host = $host;
+    }
+    if (!is_null($service)) {
+      $this->Service = $service;
+      $this->Host = $service . "." . $this->Host;
+    }
     $this->Curl = new Curl();
-    $this->Curl->https(false)->url("https://" . $this->Host);
+    $this->Curl->https(false)->url(strpos($this->Host, "http") === false ? "https://" . $this->Host : $this->Host);
   }
   /**
    * 生成授权信息
@@ -199,7 +206,7 @@ class QCloud extends BaseObject
     if ($ResponseData['Result'] < 0) {
       return $R->error(400, "400-" . $ResponseData['Result'], $ResponseData['Description'], $ResponseData);
     }
-    
+
     return $R->success($ResponseData);
   }
 }
