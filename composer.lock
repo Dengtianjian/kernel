@@ -4,8 +4,61 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "de7d46f74220803567b89a164fd6a697",
-    "packages": [],
+    "content-hash": "dec65fae03c4fa0b4682de34a99b438b",
+    "packages": [
+        {
+            "name": "qcloud_sts/qcloud-sts-sdk",
+            "version": "3.0.11",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tencentyun/qcloud-cos-sts-php-sdk.git",
+                "reference": "2754822f38fe73071702ac4e027b1b0548343f94"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tencentyun/qcloud-cos-sts-php-sdk/zipball/2754822f38fe73071702ac4e027b1b0548343f94",
+                "reference": "2754822f38fe73071702ac4e027b1b0548343f94",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "QCloud\\COSSTS\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "qcloudterminal",
+                    "email": "qcloudterminal@gmail.com"
+                },
+                {
+                    "name": "tuunalai",
+                    "email": "550566181@qq.com"
+                }
+            ],
+            "description": "PHP SDK for QCloud STS",
+            "homepage": "https://github.com/tencentyun/qcloud-cos-sts-sdk",
+            "keywords": [
+                "cos",
+                "php",
+                "qcloud",
+                "sts"
+            ],
+            "support": {
+                "issues": "https://github.com/tencentyun/qcloud-cos-sts-php-sdk/issues",
+                "source": "https://github.com/tencentyun/qcloud-cos-sts-php-sdk/tree/3.0.11"
+            },
+            "time": "2023-11-03T07:23:42+00:00"
+        }
+    ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
@@ -14,5 +67,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.2.0"
+    "plugin-api-version": "2.3.0"
 }

@@ -10,5 +10,8 @@
 		"psr-4": {
 			"kernel\\": ""
 		}
+	},
+	"require": {
+		"qcloud_sts/qcloud-sts-sdk": "^3.0"
 	}
 }
