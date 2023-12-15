@@ -109,13 +109,21 @@ class DiscuzXAttachmentsService extends AttachmentsService
     if (!$attachment) return null;
     return $attachment;
   }
-  static function useService()
+  /**
+   * 使用服务
+   *
+   * @param boolean $RegisterRoute 是否注册路由
+   * @return void
+   */
+  static function useService($RegisterRoute = true)
   {
-    //* 附件路由注册
-    Router::post("attachments", Attachments\DiscuzXUploadAttachmentController::class);
-    Router::get("attachments/{attachId:\w+}", Attachments\DiscuzXGetAttachmentController::class);
-    Router::delete("attachments/{attachId:\w+}", Attachments\DiscuzXDeleteAttachmentController::class);
-    Router::get("attachments/{attachId:\w+}/download", Attachments\DiscuzXDownloadAttachmentController::class);
-    Router::get("attachments/{attachId:\w+}/preview", Attachments\DiscuzXPreviewAttachmentController::class);
+    if ($RegisterRoute) {
+      //* 附件路由注册
+      Router::post("attachments", Attachments\DiscuzXUploadAttachmentController::class);
+      Router::get("attachments/{attachId:\w+}", Attachments\DiscuzXGetAttachmentController::class);
+      Router::delete("attachments/{attachId:\w+}", Attachments\DiscuzXDeleteAttachmentController::class);
+      Router::get("attachments/{attachId:\w+}/download", Attachments\DiscuzXDownloadAttachmentController::class);
+      Router::get("attachments/{attachId:\w+}/preview", Attachments\DiscuzXPreviewAttachmentController::class);
+    }
   }
 }
