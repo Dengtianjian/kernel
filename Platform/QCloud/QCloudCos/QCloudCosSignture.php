@@ -147,13 +147,13 @@ class QCloudCosSignture extends QCloudCos
 
     $SkipHeaderKeys = [];
     foreach ($Headers as $HeaderKey => $HeaderValue) {
-      if (!(strpos($HeaderKey, "x-cos-") !== false && strpos($HeaderKey, "x-cos-") === 0)) {
-        array_push($SkipHeaderKeys, $HeaderKey);
-      }
-      if (!in_array($HeaderKey, $this->SignHeader)) {
-        array_push($SkipHeaderKeys, $HeaderKey);
+      if (strpos($HeaderKey, "x-cos-") === false || (strpos($HeaderKey, "x-cos-") !== false && strpos($HeaderKey, "x-cos-") !== 0)) {
+        if (!in_array($HeaderKey, $this->SignHeader)) {
+          array_push($SkipHeaderKeys, $HeaderKey);
+        }
       }
     }
+
     $HeaderList = $this->object2List($Headers, $SkipHeaderKeys);
     $HeaderKeys = array_keys($HeaderList);
     $HeaderStringList = array_values($HeaderList);
@@ -182,7 +182,7 @@ class QCloudCosSignture extends QCloudCos
       "q-ak" => $this->SecretId,
       "q-sign-time" => $KeyTime,
       "q-key-time" => $KeyTime,
-      "q-header-list" => rawurlencode($HeaderKeyString),
+      "q-header-list" => $HeaderKeyString,
       "q-signature" => $Signature,
       "q-url-param-list" => rawurlencode($URLParameterKeyString)
     ];
