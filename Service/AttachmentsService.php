@@ -19,7 +19,7 @@ class AttachmentsService extends Service
    * @param string $fileName 文件名称（含扩展名）
    * @return string
    */
-  protected static function genAttachId($savePath, $fileName)
+  static function genAttachId($savePath, $fileName)
   {
     $savePath = substr($savePath, stripos($savePath, "/") + 1);
     return md5($savePath . "/" . $fileName . ":" . uniqid("attachment"));
