@@ -98,4 +98,18 @@ class QCloudCos extends QCloud
 
     return "https://{$this->Host}{$objectName}?{$Authorization}";
   }
+  /**
+   * 通过路径和文件名称组合成对象名
+   *
+   * @param string $filePath 路径
+   * @param string $fileName 文件名称
+   * @return string
+   */
+  static function composeObjectName($filePath, $fileName)
+  {
+    return implode("/", [
+      $filePath,
+      $fileName
+    ]);
+  }
 }
