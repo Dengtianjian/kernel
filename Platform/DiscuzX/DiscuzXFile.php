@@ -112,7 +112,12 @@ class DiscuzXFile
       return new ReturnResult(false, 400, 400, "文件ID错误");
     }
     list($uniqueId, $saveDir, $fileName, $remote, $userId, $auth) = explode("|", $fileId);
-    $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
+    if ($remote) {
+      $filePath = $saveDir;
+    } else {
+      $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
+    }
+
     return new ReturnResult([
       "uniqueId" => $uniqueId,
       "saveDir" => $saveDir,
