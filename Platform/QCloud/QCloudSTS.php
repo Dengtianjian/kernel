@@ -54,10 +54,10 @@ class QCloudSTS extends BaseObject
    *
    * @param string $SecretId 云 API 密钥 Id
    * @param string $SecretKey 云 API 密钥 key
+   * @param string $Region 存储桶所属地域，如 ap-guangzhou
    * @param string $Bucket 存储桶所属地域，如 ap-guangzhou
-   * @param string $Region STS类实例
    */
-  function __construct($SecretId, $SecretKey, $Bucket, $Region)
+  function __construct($SecretId, $SecretKey, $Region, $Bucket)
   {
     $this->STSInstance = new Sts();
 

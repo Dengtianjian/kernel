@@ -2,16 +2,14 @@
 
 namespace kernel\Platform\QCloud\QCloudCos;
 
-use kernel\Foundation\BaseObject;
-
-class QCloudCosSignture extends QCloudCos
+class QCloudCosSignture extends QCloudCosBase
 {
   /**
    * host开关
    *
    * @var boolean
    */
-  protected $signHost = false;
+  protected $SignHost = false;
 
   /**
    * 允许的头部键名
@@ -44,14 +42,28 @@ class QCloudCosSignture extends QCloudCos
     'versionid',
   ];
 
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $host = null)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken = null)
   {
+    $this->SignHost = !is_null($host);
+    $this->SecurityToken = $SecurityToken;
 
-    $this->signHost = !is_null($host);
-
-    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $host = null);
+    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken);
   }
 
+  protected function getObjectKeys($object)
+  {
+    $keys = [];
+
+    foreach ($object as $key => $value) {
+      if (is_numeric($key)) {
+        array_push($keys, $value);
+      } else {
+        array_push($keys, $key);
+      }
+    }
+
+    return $keys;
+  }
   /**
    * 对象转对象字符串，每个键值对用 & 连接  
    * ["a"=>1,"b"=>2] => a=1&b=2
@@ -65,15 +77,20 @@ class QCloudCosSignture extends QCloudCos
   {
     $List = [];
     foreach ($Object as $key => $value) {
+      if (is_numeric($key)) {
+        $key = $value;
+        $value = "";
+      }
+
       if (in_array($key, $SkipKeys)) {
         continue;
       }
 
       if ($keyEnCode) {
-        $key = rawurlencode($key);
+        $key = rawurlencode(urlencode($key));
       }
 
-      $List[$key] = "{$key}=" . ($value ?: '');
+      $List[$key] = "{$key}={$value}";
     }
 
     return implode("&", $List);
@@ -84,29 +101,31 @@ class QCloudCosSignture extends QCloudCos
    *
    * @param array $Object 对象数组
    * @param array $SkipKeys 跳过的键名
-   * @param boolean $keyEnCode 是否对键名进行编码
-   * @param boolean $sort 是否排序
    * @return array
    */
-  protected function object2List($Object, $SkipKeys = [], $keyEnCode = true, $sort = true)
+  protected function object2List($Object, $SkipKeys = [])
   {
     $List = [];
     foreach ($Object as $key => $value) {
       if (in_array($key, $SkipKeys)) {
         continue;
       }
-
-      if ($keyEnCode) {
-        $key = rawurlencode($key);
+      if (is_int($key)) {
+        $key = $value;
+        $value = "";
       }
 
-      $key = strtolower($key);
+      $key = strtolower(urlencode($key));
 
-      $List[$key] = "{$key}=" . ($value ?: '');
+      if ($value) {
+        $value = rawurlencode($value);
+      } else {
+        $value = "";
+      }
+
+      $List[$key] = "{$key}={$value}";
     }
-    if ($sort) {
-      ksort($List);
-    }
+    ksort($List);
 
     return $List;
   }
@@ -133,17 +152,16 @@ class QCloudCosSignture extends QCloudCos
 
     $SignAlgorithm = "sha1";
 
-    if ($this->signHost) {
+    if ($this->SignHost) {
       if (!array_key_exists("host", $Headers)) {
         $Headers['host'] = $this->Host;
       }
     }
 
-    $URLParamList = $this->object2List($URLParams, []);
-    $URLParamKeys = array_keys($URLParamList);
-    $URLParameterStringList = array_values($URLParamList);
-    $URLParameterString = implode("&", $URLParameterStringList);
-    $URLParameterKeyString = implode(";", $URLParamKeys);
+    $URLParamList = $this->object2List($URLParams);
+    $URLParamKeys = $this->getObjectKeys($URLParams);
+    $URLParameterString = implode("&", array_values($URLParamList));
+    $URLParameterKeyString = implode(";", array_keys($URLParamList));
 
     $SkipHeaderKeys = [];
     foreach ($Headers as $HeaderKey => $HeaderValue) {
@@ -154,19 +172,18 @@ class QCloudCosSignture extends QCloudCos
       }
     }
 
-    $HeaderList = $this->object2List($Headers, $SkipHeaderKeys);
-    $HeaderKeys = array_keys($HeaderList);
-    $HeaderStringList = array_values($HeaderList);
-    $HeaderString = implode("&", $HeaderStringList);
-    $HeaderKeyString = implode(";", $HeaderKeys);
+    $HeaderList = $this->object2List($Headers, $SkipHeaderKeys, false);
+    $HeaderKeys = $this->getObjectKeys($HeaderList);
+    $HeaderString = implode("&", array_values($HeaderList));
+    $HeaderKeyString = implode(";", array_keys($HeaderList));
 
-    $HTTPString = implode("\n", [
+    $HTTPString = strtolower(implode("\n", [
       $HTTPMethod,
-      $objectName,
+      urldecode($objectName),
       $URLParameterString,
       $HeaderString,
       ""
-    ]);
+    ]));
 
     $StringToSign = implode("\n", [
       $SignAlgorithm,
@@ -187,8 +204,14 @@ class QCloudCosSignture extends QCloudCos
       "q-url-param-list" => rawurlencode($URLParameterKeyString)
     ];
 
-    $QueryStrings = array_merge($QueryStrings, $URLParams);
+    if ($this->SecurityToken) {
+      $QueryStrings['x-cos-security-token'] = $this->SecurityToken;
+    }
 
-    return $this->object2String($QueryStrings);
+    $QueryStrings = array_merge($QueryStrings, array_map(function ($item) {
+      return urlencode($item);
+    }, $URLParams));
+
+    return $this->object2String($QueryStrings, [], 0);
   }
 }
