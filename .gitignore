@@ -3,3 +3,5 @@
 /Data/
 gstudio_kernel.inc.php
 .DS_Store
+
+composer.lock

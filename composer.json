@@ -6,6 +6,9 @@
 			"email": "mail@isdtj.com"
 		}
 	],
+	"config": {
+		"platform-check": false
+	},
 	"autoload": {
 		"psr-4": {
 			"kernel\\": ""
@@ -13,6 +16,6 @@
 	},
 	"require": {
 		"qcloud_sts/qcloud-sts-sdk": "^3.0",
-		"qcloud/cos-sdk-v5": "^2.6"
+		"qcloud/cos-sdk-v5": "2.*"
 	}
 }
