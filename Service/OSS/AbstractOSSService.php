@@ -79,19 +79,20 @@ abstract class AbstractOSSService extends Service
    * 获取对象访问链接地址
    *
    * @param string $objectName 对象名称
-   * @param integer $expires 签名有效期
+   * @param integer $DurationSeconds 签名有效期
    * @param array $URLParams URL的query参数
    * @param array $Headers 请求头部
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getObjectURL($objectName, $expires = 600, $URLParams = [], $Headers = []);
+  abstract function getObjectURL($objectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = []);
 
   /**
    * 获取对象授权信息
    *
    * @param string $objectName 对象名称
    * @param string $HTTPMethod 调用的服务所使用的请求方法
-   * @param integer $expires 有效期，秒级
+   * @param integer $DurationSeconds 有效期，秒级
    * @param array $URLParams URL的query参数
    * @param array $Headers 请求头部
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
@@ -99,7 +100,7 @@ abstract class AbstractOSSService extends Service
   abstract function getObjectAuth(
     $objectName,
     $HTTPMethod = "get",
-    $expires = 600,
+    $DurationSeconds = 600,
     $URLParams = [],
     $Headers = []
   );
