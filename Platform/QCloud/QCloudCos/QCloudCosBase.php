@@ -19,12 +19,6 @@ class QCloudCosBase extends QCloud
    */
   protected $Bucket = null;
   /**
-   * 安全令牌。使用临时SecretId、SecretKey时该值不可为空
-   *
-   * @var string
-   */
-  protected $SecurityToken = null;
-  /**
    * 实例化腾讯云OSS存储类
    *
    * @param string $SecretId 云 API 密钥 Id
@@ -32,18 +26,19 @@ class QCloudCosBase extends QCloud
    * @param string $Region 存储桶所属地域，如 ap-guangzhou
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
    * @param string $host host开关
-   * @param string $SecurityToken 安全令牌，如果使用临时秘钥，需要传入该参数
+   * @param string $SecurityToken 安全令牌。使用临时SecretId、SecretKey时该值不可为空
+   * @param string $TmpSecretId 临时的 SecretId，优先使用该值
+   * @param string $TmpSecretKey 临时的 SecretKey，优先使用该值
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken = null)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken = null, $TmpSecretId = null, $TmpSecretKey = null)
   {
     if (is_null($host)) {
       $host = "{$Bucket}.cos.{$Region}.myqcloud.com";
     }
     $this->Region = $Region;
     $this->Bucket = $Bucket;
-    $this->SecurityToken = $SecurityToken;
 
-    parent::__construct($SecretId, $SecretKey, null, $host);
+    parent::__construct($SecretId, $SecretKey, null, $host, $SecurityToken, $TmpSecretId, $TmpSecretKey);
   }
   /**
    * @deprecated 
@@ -70,7 +65,7 @@ class QCloudCosBase extends QCloud
    */
   function getAuth($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null)
   {
-    $QCCS = new QCloudCosSignture($this->SecretId, $this->SecretKey, $this->Region, $this->Bucket, $this->Host, $this->SecurityToken);
+    $QCCS = new QCloudCosSignture($this->getSecretId(), $this->getSecretKey(), $this->Region, $this->Bucket, $this->Host, $this->SecurityToken);
 
     if (strpos($objectName, "/") !== 0) {
       $objectName = "/" . $objectName;
