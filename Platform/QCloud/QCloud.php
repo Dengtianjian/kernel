@@ -15,11 +15,31 @@ class QCloud extends BaseObject
    */
   protected $SecretId = null;
   /**
+   * 临时的 SecretId  
+   * 如果该值存在，优先使用该值
+   *
+   * @var string
+   */
+  protected $TmpSecretId = null;
+  /**
    * 原始的 SecretKey
    *
    * @var string
    */
   protected $SecretKey = null;
+  /**
+   * 临时的 SecretKey
+   * 如果该值存在，优先使用该值
+   *
+   * @var string
+   */
+  protected $TmpSecretKey = null;
+  /**
+   * 安全令牌。使用临时SecretId、SecretKey时该值不可为空
+   *
+   * @var string
+   */
+  protected $SecurityToken = null;
   /**
    * 请求的主机，腾讯云的
    *
@@ -47,25 +67,125 @@ class QCloud extends BaseObject
   /**
    * 实例化腾讯云类
    *
-   * @param string $secretId 密钥对中的 SecretId
-   * @param string $secretKey 原始的 SecretKey
-   * @param string $service 操作的服务名称
-   * @param string $host 接口请求地址
+   * @param string $SecretId 密钥对中的 SecretId
+   * @param string $SecretKey 原始的 SecretKey
+   * @param string $Service 操作的服务名称
+   * @param string $Host 接口请求地址
+   * @param string $SecurityToken 安全令牌。使用临时SecretId、SecretKey时该值不可为空
+   * @param string $TmpSecretId 临时的 SecretId，优先使用该值
+   * @param string $TmpSecretKey 临时的 SecretKey，优先使用该值
    */
-  public function __construct($secretId, $secretKey, $service = null, $host = null)
+  public function __construct($SecretId, $SecretKey, $Service = null, $Host = null, $SecurityToken = null, $TmpSecretId = null, $TmpSecretKey = null)
   {
-    $this->SecretId = $secretId;
-    $this->SecretKey = $secretKey;
+    $this->SecretId = $SecretId;
+    $this->SecretKey = $SecretKey;
+    $this->SecurityToken = $SecurityToken;
+    $this->TmpSecretId = $TmpSecretId;
+    $this->TmpSecretKey = $TmpSecretKey;
 
-    if (!is_null($host)) {
-      $this->Host = $host;
+    if (!is_null($Host)) {
+      $this->Host = $Host;
     }
-    if (!is_null($service)) {
-      $this->Service = $service;
-      $this->Host = $service . "." . $this->Host;
+    if (!is_null($Service)) {
+      $this->Service = $Service;
+      $this->Host = $Service . "." . $this->Host;
     }
     $this->Curl = new Curl();
     $this->Curl->https(false)->url(strpos($this->Host, "http") === false ? "https://" . $this->Host : $this->Host);
+  }
+
+  /**
+   * 设置临时SecretId
+   *
+   * @param string $tmpSecretId 新的临时SecretId，如果传入null，即为使用永久的SecretId
+   * @return this
+   */
+  function tmpSecretId($tmpSecretId = null)
+  {
+    $this->TmpSecretId = $tmpSecretId;
+
+    return $this;
+  }
+  /**
+   * 设置临时SecretKey
+   *
+   * @param string $tmpSecretKey 新的临时SecretKey，如果传入null，即为使用永久的SecretKey
+   * @return this
+   */
+  function tmpSecretKey($tmpSecretKey = null)
+  {
+    $this->TmpSecretKey = $tmpSecretKey;
+
+    return $this;
+  }
+  /**
+   * 设置安全令牌
+   *
+   * @param string $securityToken 新的安全令牌，如果传入null，即为不使用安全令牌
+   * @return this
+   */
+  function securityToken($securityToken = null)
+  {
+    $this->SecurityToken = $securityToken;
+
+    return $this;
+  }
+  /**
+   * 设置临时凭证
+   *
+   * @param string $tmpSecretId  临时SecretId
+   * @param string $tmpSecretKey 临时SecretKey
+   * @param string $securityToken 安全令牌
+   * @return this
+   */
+  function tmpCredentials($tmpSecretId, $tmpSecretKey, $securityToken)
+  {
+    $this->TmpSecretId = $tmpSecretId;
+    $this->TmpSecretKey = $tmpSecretKey;
+    $this->SecurityToken = $securityToken;
+
+    return $this;
+  }
+  /**
+   * 取消使用临时凭证，使用会永久凭证
+   *
+   * @return this
+   */
+  function cancelTmpCredentials()
+  {
+    $this->TmpSecretId = null;
+    $this->TmpSecretKey = null;
+    $this->SecurityToken = null;
+
+    return $this;
+  }
+  /**
+   * 获取实际使用的SecretId  
+   * 如果存在临时SecretId就返回临时的，否则返回默认的
+   *
+   * @return string
+   */
+  protected function getSecretId()
+  {
+    if ($this->TmpSecretId) {
+      return $this->TmpSecretId;
+    }
+
+    return $this->SecretId;
+  }
+  /**
+   * 获取实际使用的SecretKey
+   * 如果存在临时SecretKey就返回临时的，否则返回默认的
+   *
+   * @return string
+   */
+  protected function getSecretKey()
+  {
+    if ($this->TmpSecretKey) {
+      return $this->TmpSecretKey;
+    }
+
+    return $this->SecretKey;
   }
   /**
    * 生成授权信息
