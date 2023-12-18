@@ -4,9 +4,6 @@ namespace kernel\Service\OSS;
 
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Service;
-use kernel\Platform\QCloud\QCloudCos\QCloudCosBase;
-use kernel\Platform\QCloud\QCloudSTS;
-use Qcloud\Cos as SDKQcloudCos;
 
 class OSSService extends Service
 {
@@ -27,6 +24,33 @@ class OSSService extends Service
       $filePath,
       $fileName
     ]);
+  }
+  /**
+   * 生成对象键名
+   *
+   * @param string $SourceFileName 原文件名
+   * @param string $FilePath  保存的文件路径
+   * @param string $extension 文件扩展名，如果该值为空，将会从原文件名中获取扩展名
+   * @return string
+   */
+  static function generateObjectFileName($SourceFileName, $FilePath, $extension = null)
+  {
+    $objectName = md5(implode("/", [
+      $FilePath,
+      $SourceFileName,
+      time()
+    ]));
+
+    if (is_null($extension)) {
+      $extension = pathinfo($SourceFileName, PATHINFO_EXTENSION);
+    }
+
+    $objectKey = implode("/", [
+      $FilePath,
+      $objectName
+    ]);
+
+    return "{$objectKey}.{$extension}";
   }
 
   /**
@@ -79,11 +103,12 @@ class OSSService extends Service
    * @param integer $expires 有效期，秒级
    * @param array $URLParams URL的query参数
    * @param array $Headers 请求头
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string 对象访问URL链接地址
    */
-  function getObjectURL($objectName, $expires = 600, $URLParams = [], $Headers = [])
+  function getObjectURL($objectName, $expires = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [])
   {
-    return $this->OSS->getObjectURL($objectName, $expires, $URLParams, $Headers);
+    return $this->OSS->getObjectURL($objectName, $expires, $URLParams, $Headers, $TempKeyPolicyStatement);
   }
   /**
    * 获取访问对象授权信息
