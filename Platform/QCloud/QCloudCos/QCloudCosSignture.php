@@ -177,13 +177,13 @@ class QCloudCosSignture extends QCloudCosBase
     $HeaderString = implode("&", array_values($HeaderList));
     $HeaderKeyString = implode(";", array_keys($HeaderList));
 
-    $HTTPString = strtolower(implode("\n", [
+    $HTTPString = implode("\n", [
       $HTTPMethod,
       urldecode($objectName),
-      $URLParameterString,
-      $HeaderString,
+      strtolower($URLParameterString),
+      strtolower($HeaderString),
       ""
-    ]));
+    ]);
 
     $StringToSign = implode("\n", [
       $SignAlgorithm,
