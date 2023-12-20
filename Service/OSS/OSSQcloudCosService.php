@@ -41,7 +41,7 @@ class OSSQcloudCosService extends AbstractOSSService
     $this->OSSSTSClient = new QCloudSTS($SecretId, $SecretKey, $Region, $Bucket);
     $this->OSSSDKClient = new SDKQcloudCos\Client([
       'region' => $Region,
-      'scheme' => 'https',
+      'scheme' => 'http',
       'credentials' => [
         'secretId' => $SecretId,
         'secretKey' => $SecretKey
