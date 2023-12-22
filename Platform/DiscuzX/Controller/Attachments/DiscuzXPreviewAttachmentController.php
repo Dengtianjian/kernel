@@ -20,10 +20,7 @@ class DiscuzXPreviewAttachmentController extends DiscuzXController
   ];
   public function data($attachmentId)
   {
-    global $_G;
-    if (!$_G['group']['allowgetimage']) {
-      return $this->response->error(403, 403001, "抱歉，您无权预览附件");
-    }
+
     $Attachment = DiscuzXAttachmentsService::getAttachment($attachmentId);
     if (!$Attachment) {
       return $this->response->error(404, 404001, "附件不存在或已被删除");

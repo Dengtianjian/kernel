@@ -11,9 +11,6 @@ use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentsService;
 class DiscuzXDownloadAttachmentController extends DiscuzXController
 {
   public $query = [
-    "w" => "string",
-    "h" => "string",
-    "r" => "string",
     "key" => "string",
   ];
   public function data($attachmentId)
@@ -51,10 +48,7 @@ class DiscuzXDownloadAttachmentController extends DiscuzXController
         // if ($KeyData['userId'] != "0" && $KeyData['userId'] != getglobal("uid")) {
         //   return $this->response->error(403, 403006, "无权下载该附件");
         // }
-        $width = $this->query->has("w") ? $this->query->get("w") : null;
-        $height = $this->query->has("h") ? $this->query->get("h") : null;
-        $ratio = $this->query->has("r") ? $this->query->get("r") : null;
-        $rawKey = DiscuzXAttachmentsService::generateAccessKey($attachmentId, $KeyData['userId'], null, $KeyData['expirationTime'], $KeyData['preview'], $KeyData['download'], $width, $height, $ratio);
+        $rawKey = DiscuzXAttachmentsService::generateAccessKey($attachmentId, $KeyData['userId'], null, $KeyData['expirationTime'], $KeyData['preview'], $KeyData['download']);
         if ($rawKey !== $Key) {
           return $this->response->error(403, 403007, "访问秘钥错误");
         }
