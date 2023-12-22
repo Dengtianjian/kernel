@@ -83,9 +83,10 @@ abstract class AbstractOSSService extends Service
    * @param array $URLParams URL的query参数
    * @param array $Headers 请求头部
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @param boolean $Download 链接打开是下载文件
    * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getObjectURL($objectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = []);
+  abstract function getObjectURL($objectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false);
 
   /**
    * 获取对象授权信息

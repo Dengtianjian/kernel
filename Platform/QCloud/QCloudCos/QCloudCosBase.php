@@ -82,11 +82,17 @@ class QCloudCosBase extends QCloud
    * @param array $Headers  请求头部
    * @param int $StartTime 授权开始时间，秒级时间戳
    * @param int $EndTime 授权结束时间，秒级时间戳
+   * @param boolean $Download 链接打开是下载文件
    * @return string https协议的对象访问URL
    */
-  function getObjectAuthUrl($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null)
+  function getObjectAuthUrl($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null, $Download = false)
   {
     $objectName = trim($objectName);
+
+    if ($Download) {
+      $URLParams['response-content-disposition'] = 'attachment';
+    }
+
     $Authorization = $this->getAuth($objectName, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
 
     if (strpos($objectName, "/") !== 0) {

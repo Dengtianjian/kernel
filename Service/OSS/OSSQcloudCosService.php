@@ -58,7 +58,7 @@ class OSSQcloudCosService extends AbstractOSSService
       'Key' => $ObjectKey
     ]);
   }
-  function getObjectURL($ObjectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [])
+  function getObjectURL($ObjectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false)
   {
     $startTime = time();
     $endTime = $startTime + $DurationSeconds;
@@ -67,7 +67,7 @@ class OSSQcloudCosService extends AbstractOSSService
       $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
     }
 
-    return $this->OSSClient->getObjectAuthUrl($ObjectName, "get", $URLParams, $Headers, $startTime, $endTime);
+    return $this->OSSClient->getObjectAuthUrl($ObjectName, "get", $URLParams, $Headers, $startTime, $endTime, $Download);
   }
   function getObjectAuth(
     $ObjectName,

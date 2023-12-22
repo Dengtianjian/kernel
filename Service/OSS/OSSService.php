@@ -104,11 +104,12 @@ class OSSService extends Service
    * @param array $URLParams URL的query参数
    * @param array $Headers 请求头
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @param boolean $Download 链接打开是下载文件
    * @return string 对象访问URL链接地址
    */
-  function getObjectURL($objectName, $expires = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [])
+  function getObjectURL($objectName, $expires = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false)
   {
-    return $this->OSS->getObjectURL($objectName, $expires, $URLParams, $Headers, $TempKeyPolicyStatement);
+    return $this->OSS->getObjectURL($objectName, $expires, $URLParams, $Headers, $TempKeyPolicyStatement, $Download);
   }
   /**
    * 获取访问对象授权信息
