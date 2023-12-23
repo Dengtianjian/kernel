@@ -74,7 +74,7 @@ SQL;
   }
   public function add($attachId, $userId, $sourceFileName, $fileName, $fileSize, $filePath, $width, $height, $extension, $belongsId = null, $belongsType = null, $remote = false, $withKey = false)
   {
-    return $this->insert([
+    return $this->insert(array_filter([
       "attachId" => $attachId,
       "remote" => $remote,
       "belongsId" => $belongsId,
@@ -88,6 +88,8 @@ SQL;
       "height" => $height,
       "extension" => $extension,
       "key" => $withKey,
-    ]);
+    ], function ($item) {
+      return !is_null($item);
+    }));
   }
 }
