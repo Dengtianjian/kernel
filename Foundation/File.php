@@ -9,6 +9,10 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
+/**
+ * 文件操作类
+ * @deprecated
+ */
 class File
 {
   /**
@@ -19,7 +23,7 @@ class File
    */
   public static function isVideo($fileName)
   {
-    $Mine = mime_content_type("a.mp4");
+    $Mine = mime_content_type($fileName);
     if (!$Mine) return false;
     return explode("/", $Mine)[0] === "video";
   }
