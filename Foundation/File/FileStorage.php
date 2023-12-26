@@ -303,16 +303,20 @@ class FileStorage
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
+   * @param string $AuthId 授权ID。一般用于场景是，当前签名只允许给某个用户使用，就可传入该值；校验签名时也需要传入该值，并且校验请求参数的AuthId是否和传入的AuthId一致，不一致就是校验不通过。
    * @param string $HTTPMethod 请求方式
    * @param string $ACL 访问权限控制
    * @return string 授权信息
    */
-  static function generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ACL = self::PRIVATE)
+  static function generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE)
   {
     $FSS = new FileStorageSignature($SignatureKey);
     $FileKey = self::combinedFileKey($FilePath, $FileName);
 
     $URLParams['acl'] = $ACL;
+    if ($AuthId) {
+      $URLParams['authId'] = $AuthId;
+    }
 
     $Signature = $FSS->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, false);
 
@@ -325,15 +329,16 @@ class FileStorage
    * @param string $FileKey 文件名称
    * @param array $RawURLParams 请求参数
    * @param array $RawHeaders 请求头
+   * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
    * @return boolean true验证通过，false失败
    */
-  static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
+  static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     foreach ($URLParamKeys as $key) {
       if (!array_key_exists($key, $RawURLParams)) {
-        return 0;
+        return false;
       }
     }
     $SignAlgorithm = $RawURLParams['sign-algorithm'];
@@ -341,10 +346,13 @@ class FileStorage
     $KeyTime = $RawURLParams['key-time'];
     $HeaderList = explode(";", urldecode($RawURLParams['header-list']));
     $URLParamList = explode(";", rawurldecode(urldecode($RawURLParams['url-param-list'])));
+    $URLAuthId = rawurldecode(urldecode($RawURLParams['authId']));
     $Signature = $RawURLParams['signature'];
 
-    if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return 1;
-    if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return 2;
+    if ((!is_null($AuthId) || array_key_exists("authId", $RawURLParams)) && $URLAuthId !== !$AuthId) return false;
+
+    if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return false;
+    if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return false;
     list($startTime, $endTime) = explode(";", $SignTime);
     $startTime = intval($startTime);
     $endTime = intval($endTime);
@@ -356,7 +364,7 @@ class FileStorage
       $key = rawurldecode(urldecode($key));
       $value = rawurldecode(urldecode($value));
       if (!array_key_exists($key, $HeaderList)) {
-        return 3;
+        return false;
       }
       $Headers[$key] = $value;
     }
@@ -367,7 +375,7 @@ class FileStorage
       $value = rawurldecode(urldecode($value));
       if (!in_array($key, $URLParamList)) {
         if (!in_array($key, $URLParamKeys)) {
-          return 4;
+          return false;
         }
       }
       if (!in_array($key, $URLParamKeys)) {
@@ -385,16 +393,17 @@ class FileStorage
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 有效期，秒级
    * @param array $URLParams 请求参数
+   * @param string $AuthId 授权ID。一般用于场景是，当前签名只允许给某个用户使用，就可传入该值；校验签名时也需要传入该值，并且校验请求参数的AuthId是否和传入的AuthId一致，不一致就是校验不通过。
    * @param string $HTTPMethod 请求方式
    * @param string $ACL 访问控制
    * @return string 访问URL
    */
-  static function generateAccessURL($FilePath, $FileName, $SignatureKey = null, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ACL = self::PRIVATE)
+  static function generateAccessURL($FilePath, $FileName, $SignatureKey = null, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE)
   {
-    $FileKey = self::combinedFileKey($FilePath, $FileName);
+    $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
     $queryString = "";
     if ($SignatureKey) {
-      $queryString = "?" . self::generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires, $URLParams, $HTTPMethod, $ACL);
+      $queryString = "?" . self::generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, $ACL);
     }
 
     return F_BASE_URL . "/files/{$FileKey}{$queryString}";
