@@ -43,7 +43,7 @@ class FileStorage
    */
   public static function upload($files, $savePath, $fileName = null)
   {
-    if (!$files || is_array($files) && empty($files)) return false;
+    if (!$files) return false;
     $uploadResult = [];
     $onlyOne = false;
     if (is_array($files) && Arr::isAssoc($files) || is_string($files)) {
@@ -98,13 +98,14 @@ class FileStorage
       }
       $relativePath = str_replace(\F_APP_ROOT, "", $savePath);
       $fileInfo = [
-        "path" => $savePath,
-        "extension" => $fileExtension,
+        "fileKey" => self::combinedFileKey($relativePath, $saveFullFileName),
         "sourceFileName" => $fileSourceName,
-        "saveFileName" => $saveFullFileName,
+        "path" => FileHelper::optimizedPath($savePath),
+        "fileName" => $saveFullFileName,
+        "extension" => $fileExtension,
         "size" => $fileSize,
-        "fullPath" => $saveFullPath,
-        "relativePath" => $relativePath,
+        "fullPath" => FileHelper::optimizedPath($saveFullPath),
+        "relativePath" => FileHelper::optimizedPath($relativePath),
         "width" => 0,
         "height" => 0
       ];
@@ -290,10 +291,15 @@ class FileStorage
     $filePath = str_replace("\\", "/", $filePath);
     $fileName = str_replace("\\", "/", $fileName);
 
-    return implode("/", [
+    $fileKey = implode("/", [
       $filePath,
       $fileName
     ]);
+    if (substr($fileKey, 0, 1) === "/") {
+      $fileKey = substr($fileKey, 1);
+    }
+
+    return $fileKey;
   }
   /**
    * 生成访问授权信息
@@ -401,6 +407,7 @@ class FileStorage
   static function generateAccessURL($FilePath, $FileName, $SignatureKey = null, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE)
   {
     $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
+    // $FileKey = self::combinedFileKey($FilePath, $FileName);
     $queryString = "";
     if ($SignatureKey) {
       $queryString = "?" . self::generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, $ACL);
