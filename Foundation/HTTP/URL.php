@@ -172,6 +172,35 @@ class URL
     ]);
   }
   /**
+   * 组合成一个路径名称
+   *
+   * @param string[] ...$paths 路径元素
+   * @return string
+   */
+  static function combinedPathName(...$paths)
+  {
+    $path = implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
+      // $lastText = $item[strlen($item) - 1];
+      // if ($lastText === "/" || $lastText === "\\") {
+      //   $item = substr($item, 0, strlen($item) - 1);
+      // }
+      // if ($item[0] === "/" || $item[0] === "\\") {
+      //   $item = substr($item, 1, strlen($item));
+      // }
+      return $item;
+    }, array_filter($paths, function ($item) {
+      return !empty(trim($item));
+    })));
+    $path = str_replace([
+      "//",
+      "\\",
+      "/",
+      "\\\\"
+    ], "/", $path);
+
+    return $path;
+  }
+  /**
    * 字符串化URL所有参数，也就是把所有参数组合成一个URL
    *
    * @return string
