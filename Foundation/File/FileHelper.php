@@ -65,6 +65,19 @@ class FileHelper
     return $path;
   }
   /**
+   * 优化文件路径。修改路径中分隔符与当前运行系统的分隔符一直
+   *
+   * @param string $path
+   * @return string 优化后的文件路径
+   */
+  static function optimizedPath($path)
+  {
+    return str_replace([
+      "/",
+      "\\"
+    ], DIRECTORY_SEPARATOR, $path);
+  }
+  /**
    * 扫描目录
    *
    * @param string $targetPath 被扫描的目录路径
