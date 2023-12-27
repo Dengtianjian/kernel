@@ -5,6 +5,10 @@ namespace kernel\Platform\DiscuzX\Controller\Attachments;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentsService;
 
+/**
+ * 上传附件
+ * @deprecated
+ */
 class DiscuzXUploadAttachmentController extends DiscuzXController
 {
   public $Auth = true;

@@ -5,6 +5,10 @@ namespace kernel\Platform\DiscuzX\Controller\Attachments;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentsService;
 
+/**
+ * 获取附件信息
+ * @deprecated
+ */
 class DiscuzXGetAttachmentController extends DiscuzXController
 {
   public $serializes = [

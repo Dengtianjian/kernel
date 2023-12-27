@@ -5,6 +5,10 @@ namespace kernel\Platform\DiscuzX\Controller\Attachments;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentsService;
 
+/**
+ * 删除附件
+ * @deprecated
+ */
 class DiscuzXDeleteAttachmentController extends DiscuzXController
 {
   public function data($attachmentId)

@@ -9,6 +9,10 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentKeysModel;
 use kernel\Platform\DiscuzX\Service\DiscuzXAttachmentsService;
 
+/**
+ * 预览附件
+ * @deprecated
+ */
 class DiscuzXPreviewAttachmentController extends DiscuzXController
 {
   public $query = [
