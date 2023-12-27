@@ -10,11 +10,11 @@ class DeleteFileController extends Controller
 {
   public $query = [
     "signature" => "string",
-    "sign-algorithm"=>"string",
-    "sign-time"=>"string",
-    "key-time"=>"string",
-    "header-list"=>"string",
-    "url-param-list"=>"string",
+    "sign-algorithm" => "string",
+    "sign-time" => "string",
+    "key-time" => "string",
+    "header-list" => "string",
+    "url-param-list" => "string",
   ];
   public function data($fileKey)
   {
@@ -24,9 +24,11 @@ class DeleteFileController extends Controller
     $SignatureKey = Config::get("signatureKey") ?: "";
     $Signature = $this->query->get("signature");
     $HTTPMethod = $this->request->method;
-    $URLParams = $this->query->some();
+    $URLParams = $this->request->query->some();
+    unset($URLParams['id'], $URLParams['uri']);
     $Headers = $this->request->header->some();
     $AuthId = $this->query->get("authId");
+    
     return FileStorageService::deleteFile($fileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $HTTPMethod);
   }
 }

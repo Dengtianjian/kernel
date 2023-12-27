@@ -345,7 +345,7 @@ class FileStorage
    * @param array $RawHeaders 请求头
    * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
-   * @return boolean truly验证通过，falsly失败
+   * @return boolean truly验证通过，返回false或者数字就是验证失败
    */
   static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {

@@ -71,30 +71,31 @@ class FileStorageService extends Service
     return $R;
   }
   /**
-   * 删除文件
+   * 获取文件信息
    *
    * @param string $FileKey 文件名
-   * @param string $SignatureKey 签名秘钥，如果传入该值，就会进行签名校验，需要传入后面的所有参数
-   * @param string $Signature 签名
+   * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
+   * @param string $SignatureKey 签名秘钥
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
    * @param string $AuthId 授权ID
    * @param string $HTTPMethod 请求方式
-   * @return ReturnResult{boolean|array} 是否已删除，true=删除完成，false=删除失败
+   * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 文件信息
    */
-  static function getFileInfo($FileKey, $SignatureKey = null, $Signature = null, $RawURLParams = [], $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
+  static function getFileInfo($FileKey, $Signature = null, $SignatureKey = null, $RawURLParams = [], $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {
     $R = new ReturnResult(true);
-    if ($SignatureKey) {
+    if ($Signature) {
       if (!array_key_exists("signature", $RawURLParams)) {
         $RawURLParams['signature'] = $Signature;
       }
-      if (!FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod)) return $R->error(403, 403, "签名错误");
+      $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod);
+      if ($verifyResult !== true) return $R->error(403, 403, "签名错误", $verifyResult);
     }
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_ROOT, $FileKey));
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
     if (!file_exists($FilePath)) {
-      return $R->error(404, 404, "文件不存在");
+      return $R->error(404, 404, "文件不存在", [], false);
     }
 
     $FileInfo = pathinfo($FilePath);
