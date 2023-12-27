@@ -2,18 +2,18 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Files;
 
-use kernel\Foundation\HTTP\Response\ResponseError;
-use kernel\Platform\DiscuzX\DiscuzXFile;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
+use kernel\Controller\Main\Files\UploadFilesController;
+use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 
-class UploadFilesController extends DiscuzXController
+class DiscuzXUploadFileController extends UploadFilesController
 {
-  public $query = [
-    "auth" => "boolean"
-  ];
   public function data()
   {
     global $_G;
+
+    if (count($_FILES) === 0 || !$_FILES['file']) {
+      return $this->response->error(400, "UploadFile:400001", "请上传文件", $_FILES);
+    }
     if ($_G['group']['allowpostattach'] == "0") {
       return $this->response->error(403, 403, "抱歉，您目前没有权限上传附件");
     }
@@ -27,9 +27,9 @@ class UploadFilesController extends DiscuzXController
         return $this->response->error(400, 400, "抱歉，您只可以上传以下 " . $_G['group']['attachextensions'] . " 类型的附件");
       }
     }
-    if (count($_FILES) === 0 || !$_FILES['file']) {
-      return new ResponseError(400, "UploadFile:400001", "请上传文件", $_FILES);
-    }
-    return DiscuzXFile::save($_FILES['file'], "files", null, $this->query->has("auth") ? $this->query->get("auth") : true);
+    $UploadedResult = DiscuzXFileStorageService::upload($File, "files");
+    if ($UploadedResult->error) return $UploadedResult;
+
+    return $UploadedResult->getData("fileKey");
   }
 }

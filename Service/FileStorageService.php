@@ -77,7 +77,7 @@ EOT;
    * @param string $SignatureKey 签名秘钥
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
-   * @param string $AuthId 授权ID
+   * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<boolean> 是否已删除，true=删除完成，false=删除失败
    */
@@ -108,7 +108,7 @@ EOT;
    * @param string $SignatureKey 签名秘钥
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
-   * @param string $AuthId 授权ID
+   * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 文件信息
    */

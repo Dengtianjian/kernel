@@ -58,7 +58,7 @@ class Controller
   /**
    * 控制器执行完data方法后返回的响应实例
    *
-   * @var \kernel\Foundation\HTTP\Response
+   * @var ControllerResponse
    */
   public $response = null;
 

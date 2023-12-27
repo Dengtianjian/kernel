@@ -11,6 +11,10 @@ use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files as FilesNamespace;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 
+/**
+ * DiscuzX!平台的文件类
+ * @deprecated
+ */
 class DiscuzXFile
 {
   /**
