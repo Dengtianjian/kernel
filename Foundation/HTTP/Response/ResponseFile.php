@@ -2,9 +2,8 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\Output;
 
 class ResponseFile extends ResponseDownload
 {
@@ -14,6 +13,14 @@ class ResponseFile extends ResponseDownload
    * @var integer
    */
   private $imageQuality = null;
+  /**
+   * 文件格式输出响应
+   *
+   * @param Request $R 请求体
+   * @param string $filePath 下载的文件绝对路径
+   * @param ?string $downloadFileName 下载到下载者设备时保存的文件名
+   * @param int $imageQuality 如果是图片类型文件，该值将影响输出的图片质量
+   */
   public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = null)
   {
     $this->imageQuality = $imageQuality;
@@ -112,7 +119,7 @@ class ResponseFile extends ResponseDownload
     header('Content-type: ' . mime_content_type($this->filePath) . ';', true);
     $PathInfo = pathinfo($this->filePath);
 
-    if (File::isImage($this->filePath)) {
+    if (FileHelper::isImage($this->filePath)) {
       if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r")) {
         header_remove("Content-Length");
         $imageInfo = getimagesize($this->filePath);
