@@ -358,7 +358,7 @@ class App
     "shutdown" => []
   ];
   /**
-   * 运行开始，配置、请求已经获取到之后，执行中间件、控制器之前
+   * 运行开始，配置、请求已经获取到之后，匹配路由、执行中间件、控制器之前
    *
    * @param callback|Closure|string $callback 回调函数
    * @return this
@@ -395,9 +395,6 @@ class App
       // $this->setMiddlware(kernel\Foundation\GlobalExtensionsMiddleware::class);
     }
 
-    //* 路由
-    $Route = Router::match($this->request);
-
     //* 调用生命周期“启动”钩子
     if ($this->LifeCycle['bootUp']) {
       foreach ($this->LifeCycle['bootUp'] as $item) {
@@ -408,6 +405,9 @@ class App
         }
       }
     }
+
+    //* 路由
+    $Route = Router::match($this->request);
 
     if (!$Route) {
       throw new Exception("路由不存在", 404, 404, [
