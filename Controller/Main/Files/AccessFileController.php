@@ -3,20 +3,14 @@
 namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Response\ResponseFile;
 use kernel\Service\FileStorageService;
+use kernel\Traits\FileControllerTrait;
 
-class AccessFileController extends Controller
+class AccessFileController extends AuthController
 {
-  public $query = [
-    "signature" => "string",
-    "sign-algorithm" => "string",
-    "sign-time" => "string",
-    "key-time" => "string",
-    "header-list" => "string",
-    "url-param-list" => "string"
-  ];
+  use FileControllerTrait;
 
   /**
    * 主体

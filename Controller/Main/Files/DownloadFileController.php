@@ -3,20 +3,14 @@
 namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Response\ResponseDownload;
 use kernel\Service\FileStorageService;
+use kernel\Traits\FileControllerTrait;
 
-class DownloadFileController extends Controller
+class DownloadFileController extends AuthController
 {
-  public $query = [
-    "signature" => "string",
-    "sign-algorithm" => "string",
-    "sign-time" => "string",
-    "key-time" => "string",
-    "header-list" => "string",
-    "url-param-list" => "string"
-  ];
+  use FileControllerTrait;
 
   public function data($FileKey)
   {

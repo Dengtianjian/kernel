@@ -3,19 +3,14 @@
 namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Service\FileStorageService;
+use kernel\Traits\FileControllerTrait;
 
-class DeleteFileController extends Controller
+class DeleteFileController extends AuthController
 {
-  public $query = [
-    "signature" => "string",
-    "sign-algorithm" => "string",
-    "sign-time" => "string",
-    "key-time" => "string",
-    "header-list" => "string",
-    "url-param-list" => "string",
-  ];
+  use FileControllerTrait;
+
   public function data($fileKey)
   {
     if (!$this->query->has("signature")) {
@@ -28,7 +23,7 @@ class DeleteFileController extends Controller
     unset($URLParams['id'], $URLParams['uri']);
     $Headers = $this->request->header->some();
     $AuthId = $this->query->get("authId");
-    
+
     return FileStorageService::deleteFile($fileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $HTTPMethod);
   }
 }

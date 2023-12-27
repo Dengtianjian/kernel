@@ -2,11 +2,10 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Service\FileStorageService;
 
-class UploadFilesController extends Controller
+class UploadFileController extends AuthController
 {
   public function data()
   {
