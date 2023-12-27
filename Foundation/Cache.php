@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation;
 
-use kernel\Foundation\Data\Arr;
+use kernel\Foundation\File\FileHelper;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
@@ -96,7 +96,7 @@ class Cache
     if (!is_dir(self::$SaveBasePath)) {
       mkdir(self::$SaveBasePath, 0777, true);
     }
-    $targetPath = File::genPath(self::$SaveBasePath, "$id.txt");
+    $targetPath = FileHelper::combinedFilePath(self::$SaveBasePath, "$id.txt");
     $expired = is_null($expiresIn) || $expiresIn <= 0 ? 0 : round(time() + self::$DaySeconeds * $expiresIn);
     $cache = [
       "content" => [],

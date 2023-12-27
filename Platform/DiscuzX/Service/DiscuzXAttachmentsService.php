@@ -3,10 +3,12 @@
 namespace kernel\Platform\DiscuzX\Service;
 
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentsModel;
 use kernel\Service\AttachmentsService;
 use kernel\Platform\DiscuzX\Controller\Attachments as Attachments;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXAttachmentKeysModel;
 
 class DiscuzXAttachmentsService extends AttachmentsService
@@ -62,12 +64,12 @@ class DiscuzXAttachmentsService extends AttachmentsService
   {
     if (!$file) return 0;
 
-    $SaveFilePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $savePath);
+    $SaveFilePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $savePath);
     if (!is_dir($SaveFilePath)) {
-      File::mkdir($SaveFilePath);
+      mkdir($SaveFilePath);
     }
 
-    $saveFileResult = File::upload($file, $SaveFilePath);
+    $saveFileResult = DiscuzXFileStorage::upload($file, $SaveFilePath);
     if (!$saveFileResult) return $saveFileResult;
     if (!$savePath) {
       $savePath = $saveFileResult['relativePath'];
@@ -83,7 +85,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
     $AM = new DiscuzXAttachmentsModel();
     $attachment = self::getAttachment($attachmentId);
     if ($attachment) {
-      $attachmentSavePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $attachment['filePath'], $attachment['fileName']);
+      $attachmentSavePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $attachment['filePath'], $attachment['fileName']);
       unlink($attachmentSavePath);
       $AM->deleteItem(null, $attachmentId);
     }
@@ -94,7 +96,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
     $Attachs = DiscuzXAttachmentsModel::singleton()->field("filePath", "fileName")->list(null, null, null, $belongsId, $belongsType);
     if (count($Attachs)) {
       foreach ($Attachs as $item) {
-        $attachmentSavePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $item['filePath'], $item['fileName']);
+        $attachmentSavePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $item['filePath'], $item['fileName']);
         unlink($attachmentSavePath);
       }
       DiscuzXAttachmentsModel::singleton()->deleteBelongsSameIdType($belongsId, $belongsType);

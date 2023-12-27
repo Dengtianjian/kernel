@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\File\FileHelper;
 use ZipArchive;
 
 class Zip
@@ -24,12 +25,12 @@ class Zip
   }
   public function folderToZip(&$zip, $folder,  $removedLength, $localRootPath = null)
   {
-    $dirs = File::scandir($folder);
+    $dirs = FileHelper::scandir($folder);
     foreach ($dirs as $dirItem) {
       if (\in_array($dirItem, $this->packageFileBlackList)) {
         continue;
       }
-      $sourceFilePath = File::genPath($folder, $dirItem);
+      $sourceFilePath = FileHelper::combinedFilePath($folder, $dirItem);
       $localPath = \substr($sourceFilePath, $removedLength + 1);
       if (\is_file($sourceFilePath)) {
         $zip->addFile($sourceFilePath, $localPath);
@@ -48,7 +49,7 @@ class Zip
       $zip->open($outputPath, \ZipArchive::CREATE);
     }
     $pathInfo = \pathinfo($sourcePath);
-    $this->folderToZip($zip, $sourcePath,  \strlen(File::genPath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
+    $this->folderToZip($zip, $sourcePath, \strlen(FileHelper::combinedFilePath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
 
     $zip->close();
   }

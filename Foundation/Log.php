@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\File\FileHelper;
+
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
@@ -16,7 +18,7 @@ class Log
    */
   static private function genLogPath(...$path)
   {
-    return File::genPath(F_APP_DATA, "Logs", ...$path);
+    return FileHelper::combinedFilePath(F_APP_DATA, "Logs", ...$path);
   }
   /**
    * 记录日志
@@ -35,7 +37,7 @@ class Log
       mkdir($logDir, 0757, true);
     }
     $logFileName = date("d") . ".yml";
-    $logFilePath = File::genPath($logDir, $logFileName);
+    $logFilePath = FileHelper::combinedFilePath($logDir, $logFileName);
     if (is_array($content)) $content = json_encode($content, JSON_UNESCAPED_UNICODE);
     $content = strval($content);
     $time = date("Y-m-d h:i:s");
@@ -66,7 +68,7 @@ EOT;
     }
     if ($month === null && $day === null) {
       //* 读取年下的多少个月日志文件夹
-      return File::scandir($directoryPath);
+      return FileHelper::scandir($directoryPath);
     }
     if ($month === null) {
       $month = date("m");
@@ -76,7 +78,7 @@ EOT;
           return [];
         }
         //* 读取月下有多少日志文件
-        return File::scandir($directoryPath);
+        return FileHelper::scandir($directoryPath);
       }
     } else if ($month < 10) {
       $month = "0$month";

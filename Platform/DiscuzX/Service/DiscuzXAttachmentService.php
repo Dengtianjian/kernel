@@ -9,11 +9,13 @@ if (!defined("F_KERNEL")) {
 use forum_upload;
 use kernel\Foundation\Config;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Platform\DiscuzX\Controller\Attachment as AttachmentNamespace;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 
 class DiscuzXAttachmentService extends Service
 {
@@ -28,12 +30,12 @@ class DiscuzXAttachmentService extends Service
   {
     $savePath = Config::get("attachmentPath");
     if (!$savePath) {
-      $savePath = File::genPath("data", "plugindata", F_APP_ID, "attachments", $saveDir);
+      $savePath = FileHelper::combinedFilePath("data", "plugindata", F_APP_ID, "attachments", $saveDir);
       if (!is_dir($savePath)) {
         mkdir($savePath, 0777, true);
       }
     }
-    return new ReturnResult(File::upload($files, $savePath));
+    return new ReturnResult(DiscuzXFileStorage::upload($files, $savePath));
   }
   /**
    * 上传文件

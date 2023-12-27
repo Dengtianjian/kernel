@@ -9,6 +9,7 @@ if (!defined("F_KERNEL")) {
 use kernel\Foundation\Config;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Log;
 use kernel\Foundation\Output;
 use kernel\Foundation\HTTP\Response;
@@ -71,7 +72,7 @@ class DiscuzXExceptionHandler
         exit;
       } else {
         $View = new ResponseView("error", [], "Views", "page", F_KERNEL_ROOT);
-        $View->render(File::genPath(F_KERNEL_ROOT, "Views", "error.php"), [
+        $View->render(FileHelper::combinedFilePath(F_KERNEL_ROOT, "Views", "error.php"), [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails
         ]);

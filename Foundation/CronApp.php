@@ -2,15 +2,7 @@
 
 namespace kernel\Foundation;
 
-use Exception as GlobalException;
-use gstudio_kernel\Foundation\ReturnResult\ReturnList;
-use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\Router;
-use kernel\Foundation\Config;
-use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Exception\ErrorCode;
-use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\HTTP\Response\ResponsePagination;
+use kernel\Foundation\File\FileHelper;
 
 /**
  * KERNEL标识符
@@ -29,14 +21,14 @@ class CronApp extends App
   }
   protected function loadTasks()
   {
-    $CronInstallFile = File::genPath(F_APP_ROOT, "crons.php");
+    $CronInstallFile = FileHelper::combinedFilePath(F_APP_ROOT, "crons.php");
     if (file_exists($CronInstallFile)) {
       include_once($CronInstallFile);
     }
 
-    $CronsDirectoryPath = File::genPath(F_APP_ROOT, "Crons");
+    $CronsDirectoryPath = FileHelper::combinedFilePath(F_APP_ROOT, "Crons");
     if (is_dir($CronsDirectoryPath)) {
-      $CronInstallFiles = File::recursionScanDir($CronsDirectoryPath);
+      $CronInstallFiles = FileHelper::recursionScanDir($CronsDirectoryPath);
       foreach ($CronInstallFiles as $FileItem) {
         include_once($FileItem);
       }

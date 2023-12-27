@@ -2,9 +2,8 @@
 
 namespace kernel\Controller\Main\Attachments;
 
-use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseFile;
-use kernel\Foundation\Output;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Service\AttachmentsService;
 
@@ -16,7 +15,7 @@ class PreviewAttachmentController extends DiscuzXController
     if (!$Attachment) {
       return $this->response->error(404, 404001, "附件不存在或已被删除");
     }
-    $FilePath = File::genPath(F_APP_ROOT, $Attachment['filePath'], $Attachment['fileName']);
+    $FilePath = FileHelper::combinedFilePath(F_APP_ROOT, $Attachment['filePath'], $Attachment['fileName']);
     if (!$FilePath || !file_exists($FilePath)) {
       return $this->response->error(404, 404002, "附件不存在或已被删除");
     }

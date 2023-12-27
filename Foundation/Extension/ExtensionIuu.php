@@ -8,6 +8,7 @@ if (!defined('F_KERNEL')) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\Iuu;
 
 include_once \libfile("function/plugin");
@@ -131,7 +132,7 @@ class ExtensionIuu extends Iuu
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return File::deleteDirectory($this->extensionsPath . "/Iuu");
+    return FileStorage::deleteDirectory($this->extensionsPath . "/Iuu");
   }
   /**
    * 清除扩展IUU下的Install文件和文件夹，以及Install文件夹
@@ -140,7 +141,7 @@ class ExtensionIuu extends Iuu
    */
   public function cleanInstall()
   {
-    return File::deleteDirectory($this->extensionsPath . "/Iuu/Install");
+    return FileStorage::deleteDirectory($this->extensionsPath . "/Iuu/Install");
   }
   /**
    * 清除扩展IUU下的Upgrade文件夹，以及Upgrade文件夹
@@ -149,6 +150,6 @@ class ExtensionIuu extends Iuu
    */
   public function cleanUpgrade()
   {
-    return File::deleteDirectory($this->extensionsPath . "/Iuu/Upgrade");
+    return FileStorage::deleteDirectory($this->extensionsPath . "/Iuu/Upgrade");
   }
 }

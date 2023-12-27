@@ -7,6 +7,8 @@ use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Controller\Main\Files as FilesNamespace;
+use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileStorage;
 
 /**
  * 文件存储服务
@@ -52,7 +54,7 @@ class FileStoreService extends Service
       return new ReturnResult(false, 400, 400, "文件ID错误");
     }
     list($uniqueId, $saveDir, $fileName, $remote, $userId, $auth) = explode("|", $fileId);
-    $filePath = File::genPath(F_APP_DATA, $saveDir, $fileName);
+    $filePath = FileHelper::combinedFilePath(F_APP_DATA, $saveDir, $fileName);
     return new ReturnResult([
       "uniqueId" => $uniqueId,
       "saveDir" => $saveDir,
@@ -85,8 +87,8 @@ class FileStoreService extends Service
    */
   static function save($file, $saveDir = "files", $fileName = null, $auth = true)
   {
-    $saveBasePath = File::genPath(F_APP_DATA, $saveDir);
-    $file = File::upload($file, $saveBasePath, $fileName);
+    $saveBasePath = FileHelper::combinedFilePath(F_APP_DATA, $saveDir);
+    $file = FileStorage::upload($file, $saveBasePath, $fileName);
 
     $file['relativePath'] = str_replace(F_APP_DATA, "", $file['relativePath']);
     if ($file['relativePath'][0] === "\\") {
@@ -96,7 +98,7 @@ class FileStoreService extends Service
       $file['relativePath'] = substr($file['relativePath'], 2);
     }
 
-    $accessPath = File::genPath($file['relativePath'], $file['saveFileName']);
+    $accessPath = FileHelper::combinedFilePath($file['relativePath'], $file['saveFileName']);
 
     $file['accessPath'] = $accessPath;
     $file['fileId'] = self::genFileId($file['saveFileName'], $saveDir, false, $auth);

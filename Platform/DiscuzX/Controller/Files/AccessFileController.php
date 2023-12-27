@@ -4,6 +4,7 @@ namespace kernel\Platform\DiscuzX\Controller\Files;
 
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response\ResponseFile;
 use kernel\Platform\DiscuzX\DiscuzXFile;
@@ -20,7 +21,7 @@ class AccessFileController extends Controller
     global $_G;
     $decodeData = $decodeData->getData();
     if (isset($decodeData['auth']) && $decodeData['auth']) {
-      if (File::isImage($decodeData["filePath"])) {
+      if (FileHelper::isImage($decodeData["filePath"])) {
         if ($_G['group']['allowgetimage'] == "0" && $_G['adminid'] != 1) {
           if ($decodeData['userId'] && $decodeData['userId'] != $_G['uid']) {
             showmessage("抱歉，您没有权限获取图片信息");

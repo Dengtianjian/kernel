@@ -8,6 +8,8 @@ use kernel\Foundation\Service;
 use kernel\Model\AttachmentsModel;
 
 use kernel\Controller\Main\Attachments as Attachments;
+use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileStorage;
 use kernel\Model\AttachmentKeysModel;
 
 class AttachmentsService extends Service
@@ -134,12 +136,12 @@ class AttachmentsService extends Service
   {
     if (!$file) return 0;
 
-    $SaveFilePath = File::genPath(F_APP_ROOT, $savePath);
+    $SaveFilePath = FileHelper::combinedFilePath(F_APP_ROOT, $savePath);
     if (!is_dir($SaveFilePath)) {
-      File::mkdir([$SaveFilePath]);
+      mkdir($SaveFilePath, 0777, true);
     }
 
-    $saveFileResult = File::upload($file, $SaveFilePath);
+    $saveFileResult = FileStorage::upload($file, $SaveFilePath);
     if (!$saveFileResult) return $saveFileResult;
     if (!$savePath) {
       $savePath = $saveFileResult['relativePath'];
@@ -160,7 +162,7 @@ class AttachmentsService extends Service
     $AM = new AttachmentsModel();
     $attachment = self::getAttachment($attachmentId);
     if ($attachment) {
-      $attachmentSavePath = File::genPath(F_APP_ROOT, $attachment['filePath'], $attachment['fileName']);
+      $attachmentSavePath = FileHelper::combinedFilePath(F_APP_ROOT, $attachment['filePath'], $attachment['fileName']);
       unlink($attachmentSavePath);
       $AM->deleteItem(null, $attachmentId);
     }

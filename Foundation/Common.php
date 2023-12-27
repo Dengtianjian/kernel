@@ -1,7 +1,7 @@
 <?php
 
 use kernel\Foundation\App;
-use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Output;
 
 /**
@@ -13,7 +13,7 @@ use kernel\Foundation\Output;
  */
 function Import($fileName, $args = [])
 {
-  $RealFilePath = File::genPath(F_APP_ROOT, $fileName . ".php");
+  $RealFilePath = FileHelper::combinedFilePath(F_APP_ROOT, $fileName . ".php");
   if (!file_exists($RealFilePath)) {
     return false;
   }

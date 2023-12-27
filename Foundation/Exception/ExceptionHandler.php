@@ -8,6 +8,7 @@ if (!defined("F_KERNEL")) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Log;
 use kernel\Foundation\Output;
 use kernel\Foundation\HTTP\Response;
@@ -72,12 +73,12 @@ class ExceptionHandler
         $Response->output();
         exit;
       } else {
-        $errorPagePath = File::genPath(F_APP_ROOT, "Views", "error.php");
+        $errorPagePath = FileHelper::combinedFilePath(F_APP_ROOT, "Views", "error.php");
         if (file_exists($errorPagePath)) {
           $View = new ResponseView("error");
         } else {
           $View = new ResponseView("error", [], "Views", "kernel_page", F_KERNEL_ROOT);
-          $errorPagePath = File::genPath(F_KERNEL_ROOT, "Views", "error.php");
+          $errorPagePath = FileHelper::combinedFilePath(F_KERNEL_ROOT, "Views", "error.php");
         }
         $View->render($errorPagePath, [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,

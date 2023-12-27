@@ -5,6 +5,7 @@ namespace kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Output;
 use kernel\Foundation\Store;
@@ -46,7 +47,7 @@ class ResponseView extends Response
     if (pathinfo($viewFile, PATHINFO_EXTENSION)) {
       $extension = "";
     }
-    $this->viewFilePath = File::genPath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
+    $this->viewFilePath = FileHelper::combinedFilePath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
     if (!file_exists($this->viewFilePath)) {
       throw new Exception("模板文件不存在 - " . $this->viewFilePath, 500, 500, $this->viewFilePath);
     }
@@ -74,7 +75,7 @@ class ResponseView extends Response
     ]);
 
     $this->templateId = $templateId;
-    $this->viewFilePath = File::genPath(F_APP_ROOT, $fileBaseDir, $layout . ".php");
+    $this->viewFilePath = FileHelper::combinedFilePath(F_APP_ROOT, $fileBaseDir, $layout . ".php");
     $this->viewFileBaseDir = $fileBaseDir;
     $this->ResponseData = $viewData;
 
@@ -166,10 +167,10 @@ PHP;
   {
     if (is_array($viewFiles)) {
       foreach ($viewFiles as &$fileItem) {
-        $fileItem = File::genPath(F_APP_ROOT, $viewFileBaseDir, "$fileItem.php");
+        $fileItem = FileHelper::combinedFilePath(F_APP_ROOT, $viewFileBaseDir, "$fileItem.php");
       }
     } else {
-      $viewFiles = File::genPath(F_APP_ROOT, $viewFileBaseDir, "$viewFiles.php");
+      $viewFiles = FileHelper::combinedFilePath(F_APP_ROOT, $viewFileBaseDir, "$viewFiles.php");
     }
     return static::render($viewFiles, $viewData, $templateId);
   }

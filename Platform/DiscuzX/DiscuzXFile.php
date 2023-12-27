@@ -3,10 +3,13 @@
 namespace kernel\Platform\DiscuzX;
 
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files as FilesNamespace;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 
 class DiscuzXFile
 {
@@ -52,8 +55,8 @@ class DiscuzXFile
    */
   static function save($file, $saveDir = "files", $fileName = null, $auth = true)
   {
-    $saveBasePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir);
-    $file = File::upload($file, $saveBasePath, $fileName);
+    $saveBasePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $saveDir);
+    $file = DiscuzXFileStorage::upload($file, $saveBasePath, $fileName);
 
     $file['relativePath'] = str_replace(F_DISCUZX_DATA, "", $file['relativePath']);
     if ($file['relativePath'][0] === "\\") {
@@ -63,7 +66,7 @@ class DiscuzXFile
       $file['relativePath'] = substr($file['relativePath'], 2);
     }
 
-    $accessPath = File::genPath("data", $file['relativePath'], $file['saveFileName']);
+    $accessPath = FileHelper::combinedFilePath("data", $file['relativePath'], $file['saveFileName']);
 
     $file['accessPath'] = $accessPath;
     $file['fileId'] = self::genFileId($file['saveFileName'], $saveDir, false, $auth);
@@ -115,7 +118,7 @@ class DiscuzXFile
     if ($remote) {
       $filePath = $saveDir;
     } else {
-      $filePath = File::genPath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
+      $filePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $saveDir, $fileName);
     }
 
     return new ReturnResult([

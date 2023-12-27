@@ -7,8 +7,7 @@ if (!defined("F_KERNEL")) {
 }
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Request;
-use kernel\Foundation\File;
+use kernel\Foundation\File\FileStorage;
 use kernel\Model\ExtensionsModel;
 
 /**
@@ -35,7 +34,7 @@ class UninstallExtensionController extends AuthController
     $result = $EM->where("extension_id", $extensionId)->delete(true);
     if ($result) {
       $extensionRootPath = \DISCUZ_ROOT . $extension['path'];
-      File::deleteDirectory($extensionRootPath);
+      FileStorage::deleteDirectory($extensionRootPath);
     }
     return $result;
   }

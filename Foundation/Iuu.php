@@ -2,6 +2,9 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileStorage;
+
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
@@ -31,7 +34,7 @@ class Iuu
   }
   public function upgrade($TargetVersion = null, $UpgradeCallback = null)
   {
-    $UpgradeListFile = File::genPath(F_APP_ROOT, "Iuu", "UpgradeList.php");
+    $UpgradeListFile = FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "UpgradeList.php");
     if (!file_exists($UpgradeListFile)) return true;
     $UpgradeList = include_once($UpgradeListFile);
     ksort($UpgradeList);
@@ -69,20 +72,20 @@ class Iuu
       $className = "\\" . F_APP_ID . "\Iuu\Uninstall\Uninstall";
       new $className();
     }
-    // File::deleteDirectory(F_APP_DATA);
+    // FileStorage::deleteDirectory(F_APP_DATA);
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return File::deleteDirectory(F_APP_ROOT . "/Iuu");
+    return FileStorage::deleteDirectory(F_APP_ROOT . "/Iuu");
   }
   public function cleanInstall()
   {
-    return File::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
+    return FileStorage::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
   }
   public function cleanUpgrade()
   {
-    return File::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
+    return FileStorage::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
   }
 }

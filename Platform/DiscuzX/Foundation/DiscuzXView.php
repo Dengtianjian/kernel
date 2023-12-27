@@ -10,6 +10,7 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Response;
 use kernel\Foundation\Store;
@@ -38,9 +39,9 @@ class DiscuzXView extends ResponseView
       return template($viewFile, implode("_", [
         F_APP_ID,
         $templateId
-      ]), File::genPath($dir, $viewFileDirBaseProject));
+      ]), FileHelper::combinedFilePath($dir, $viewFileDirBaseProject));
     } else {
-      return File::genPath($dir, $viewFileDirBaseProject, $viewFile);
+      return FileHelper::combinedFilePath($dir, $viewFileDirBaseProject, $viewFile);
     }
   }
   public function page($viewFile, $viewData, $viewFileDirBaseProject = "Views", $templateId = "page", $viewFileDir = null)
@@ -64,7 +65,7 @@ class DiscuzXView extends ResponseView
     $this->viewFilePath = template($layout, implode("_", [
       F_APP_ID,
       $templateId
-    ]), File::genPath(F_APP_DIR, $fileBaseDir));
+    ]), FileHelper::combinedFilePath(F_APP_DIR, $fileBaseDir));
 
     $this->viewFileBaseDir = $fileBaseDir;
     $this->ResponseData = $viewData;

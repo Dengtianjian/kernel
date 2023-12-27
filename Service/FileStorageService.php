@@ -22,15 +22,15 @@ class FileStorageService extends Service
   {
     Router::post("files", FilesNamespace\UploadFilesController::class);
     Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
-    Router::get("files/{fileId:.+?}", FilesNamespace\AccessFileController::class);
+    Router::get("files/{fileId:.+?}/preview", FilesNamespace\AccessFileController::class);
     Router::get("files/{fileId:.+?}/download", FilesNamespace\DownloadFileController::class);
-    Router::get("files/{fileId:.+?}/info", FilesNamespace\GetFileController::class);
+    Router::get("files/{fileId:.+?}", FilesNamespace\GetFileController::class);
   }
   static function init()
   {
     $SQL = <<<EOT
-DROP TABLE IF EXISTS `pre_gstudio_super_app_files`;
-CREATE TABLE `pre_gstudio_super_app_files`  (
+DROP TABLE IF EXISTS `files`;
+CREATE TABLE `files`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
   `key` text NOT NULL COMMENT '文件名',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
