@@ -20,7 +20,7 @@ class FileStorageService extends Service
    */
   static function useService()
   {
-    Router::post("files", FilesNamespace\UploadFilesController::class);
+    Router::post("files", FilesNamespace\UploadFileController::class);
     Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
     Router::get("files/{fileId:.+?}/preview", FilesNamespace\AccessFileController::class);
     Router::get("files/{fileId:.+?}/download", FilesNamespace\DownloadFileController::class);
@@ -91,6 +91,13 @@ EOT;
       $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod);
       if ($verifyResult !== false)
         return $R->error(403, 403, "签名错误", $verifyResult);
+    } else if ($AuthId) {
+      if (!array_key_exists("authId", $RawURLParams)) {
+        return $R->error(403, 403002, "无权访问");
+      }
+      if ($RawURLParams['authId'] != $AuthId) {
+        return $R->error(403, 403003, "无权访问");
+      }
     }
 
     $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
@@ -110,7 +117,7 @@ EOT;
    * @param array $RawHeaders 请求头
    * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
-   * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 文件信息
+   * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int,authId:string}> 文件信息
    */
   static function getFileInfo($FileKey, $Signature = null, $SignatureKey = null, $RawURLParams = [], $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {
@@ -121,12 +128,24 @@ EOT;
       }
       $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod);
       if ($verifyResult !== true)
-        return $R->error(403, 403, "签名错误", $verifyResult);
+        return $R->error(403, 403001, "签名错误", $verifyResult);
+    } else if ($AuthId) {
+      if (!array_key_exists("authId", $RawURLParams)) {
+        return $R->error(403, 403002, "无权访问");
+      }
+      if ($RawURLParams['authId'] != $AuthId) {
+        return $R->error(403, 403003, "无权访问");
+      }
     }
 
     $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
     if (!file_exists($FilePath)) {
       return $R->error(404, 404, "文件不存在", [], false);
+    }
+
+    $authId = null;
+    if (!array_key_exists("authId", $RawURLParams)) {
+      $RawURLParams['authId'] = $RawURLParams['authId'];
     }
 
     $FileInfo = pathinfo($FilePath);
@@ -137,6 +156,7 @@ EOT;
       "size" => filesize($FilePath),
       "fullPath" => $FilePath,
       "relativePath" => FileHelper::optimizedPath(dirname($FileKey)),
+      "authId" => $authId,
       "width" => 0,
       "height" => 0
     ];

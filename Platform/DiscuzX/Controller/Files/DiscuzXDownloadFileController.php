@@ -2,31 +2,36 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Files;
 
-use kernel\Controller\Main\Files\DownloadFileController;
 use kernel\Foundation\Config;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Service\FileStorageService;
+use kernel\Traits\FileControllerTrait;
 
-class DiscuzXDownloadFileController extends DownloadFileController
+class DiscuzXDownloadFileController extends DiscuzXController
 {
-  public $query = [
-    "signature" => "string",
-    "sign-algorithm" => "string",
-    "sign-time" => "string",
-    "key-time" => "string",
-    "header-list" => "string",
-    "url-param-list" => "string"
-  ];
+  use FileControllerTrait;
 
   public function data($FileKey)
   {
-    if (!$this->query->has("signature")) {
-      return $this->response->error(403, 403, "无权操作");
+    $Signature = $this->query->get("signature");
+    $URLParams = $this->request->query->some();
+
+    global $_G;
+    $authId = null;
+    if ($_G['adminid'] != 1) {
+      if (array_key_exists("authId", $URLParams)) {
+        $authId = getglobal("uid");
+      }
+      if (!$Signature) {
+        showmessage("抱歉，您没有权限下载该文件");
+      }
+    } else {
+      $Signature = null;
+      unset($URLParams['authId']);
     }
 
     $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
     $Headers = $this->request->header->some();
-    $URLParams = $this->request->query->some();
     unset($URLParams['id'], $URLParams['uri']);
 
     $authId = null;

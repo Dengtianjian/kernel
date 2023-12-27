@@ -2,18 +2,19 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Files;
 
-use kernel\Controller\Main\Files\UploadFilesController;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 
-class DiscuzXUploadFileController extends UploadFilesController
+class DiscuzXUploadFileController extends DiscuzXController
 {
   public function data()
   {
-    global $_G;
-
     if (count($_FILES) === 0 || !$_FILES['file']) {
       return $this->response->error(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
+
+    global $_G;
+
     if ($_G['group']['allowpostattach'] == "0") {
       return $this->response->error(403, 403, "抱歉，您目前没有权限上传附件");
     }
