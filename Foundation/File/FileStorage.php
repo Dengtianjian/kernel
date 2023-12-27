@@ -345,42 +345,50 @@ class FileStorage
    * @param array $RawHeaders 请求头
    * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
-   * @return boolean true验证通过，false失败
+   * @return boolean truly验证通过，falsly失败
    */
   static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     foreach ($URLParamKeys as $key) {
       if (!array_key_exists($key, $RawURLParams)) {
-        return false;
+        return 0;
       }
     }
     $SignAlgorithm = $RawURLParams['sign-algorithm'];
     $SignTime = $RawURLParams['sign-time'];
     $KeyTime = $RawURLParams['key-time'];
-    $HeaderList = explode(";", urldecode($RawURLParams['header-list']));
-    $URLParamList = explode(";", rawurldecode(urldecode($RawURLParams['url-param-list'])));
+    $HeaderList = $RawURLParams['header-list'] ? explode(";", urldecode($RawURLParams['header-list'])) : [];
+    $URLParamList = $RawURLParams['url-param-list'] ? explode(";", rawurldecode(urldecode($RawURLParams['url-param-list']))) : [];
     $URLAuthId = rawurldecode(urldecode($RawURLParams['authId']));
     $Signature = $RawURLParams['signature'];
 
-    if ((!is_null($AuthId) || array_key_exists("authId", $RawURLParams)) && $URLAuthId !== !$AuthId) return false;
+    if ((!is_null($AuthId) || array_key_exists("authId", $RawURLParams)) && $URLAuthId !== !$AuthId) return 1;
 
-    if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return false;
-    if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return false;
+    if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return 2;
+    if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return 3;
+    if ($SignTime !== $KeyTime) return 4;
     list($startTime, $endTime) = explode(";", $SignTime);
+    list($keyStartTime, $keyEndTime) = explode(";", $KeyTime);
     $startTime = intval($startTime);
     $endTime = intval($endTime);
-    if ($endTime < $startTime) return false;
-    if ($endTime < time()) return false;
+    $keyStartTime = intval($keyStartTime);
+    $keyEndTime = intval($keyEndTime);
+    if ($endTime < $startTime) return 5;
+    if ($endTime < time()) return 6;
+    if ($keyEndTime < $keyStartTime) return 7;
+    if ($keyEndTime < time()) return 8;
 
     $Headers = [];
-    foreach ($RawHeaders as $key => $value) {
-      $key = rawurldecode(urldecode($key));
-      $value = rawurldecode(urldecode($value));
-      if (!array_key_exists($key, $HeaderList)) {
-        return false;
+    if($HeaderList){
+      foreach ($RawHeaders as $key => $value) {
+        $key = rawurldecode(urldecode($key));
+        $value = rawurldecode(urldecode($value));
+        if (!array_key_exists($key, $HeaderList)) {
+          return 9;
+        }
+        $Headers[$key] = $value;
       }
-      $Headers[$key] = $value;
     }
 
     $URLParams = [];
@@ -389,7 +397,7 @@ class FileStorage
       $value = rawurldecode(urldecode($value));
       if (!in_array($key, $URLParamList)) {
         if (!in_array($key, $URLParamKeys)) {
-          return false;
+          return 10;
         }
       }
       if (!in_array($key, $URLParamKeys)) {

@@ -44,25 +44,26 @@ class FileStorageService extends Service
    * 删除文件
    *
    * @param string $FileKey 文件名
-   * @param string $SignatureKey 签名秘钥，如果传入该值，就会进行签名校验，需要传入后面的所有参数
-   * @param string $Signature 签名
+   * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
+   * @param string $SignatureKey 签名秘钥
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
    * @param string $AuthId 授权ID
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<boolean> 是否已删除，true=删除完成，false=删除失败
    */
-  static function deleteFile($FileKey, $SignatureKey = null, $Signature = null, $RawURLParams = [], $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
+  static function deleteFile($FileKey, $Signature = null, $SignatureKey = null,  $RawURLParams = [], $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
   {
     $R = new ReturnResult(true);
-    if ($SignatureKey) {
+    if ($Signature) {
       if (!array_key_exists("signature", $RawURLParams)) {
         $RawURLParams['signature'] = $Signature;
       }
-      if (!FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod)) return $R->error(403, 403, "签名错误");
+      $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $AuthId, $HTTPMethod);
+      if ($verifyResult !== false) return $R->error(403, 403, "签名错误", $verifyResult);
     }
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_ROOT, $FileKey));
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
     if (file_exists($FilePath)) {
       unlink($FilePath);
     }
@@ -132,7 +133,7 @@ class FileStorageService extends Service
     $R = new ReturnResult(true);
 
     $FileKeyInfo = pathinfo($FileKey);
-    $AccessAuth = FileStorage::generateAccessURL($FileKeyInfo['dirname'], $FileKeyInfo['basename'], $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, $ACL);
+    $AccessAuth = FileStorage::generateAccessAuth($FileKeyInfo['dirname'], $FileKeyInfo['basename'], $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, $ACL);
 
     return $R->success($AccessAuth);
   }
