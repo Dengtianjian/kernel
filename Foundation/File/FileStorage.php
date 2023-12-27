@@ -37,9 +37,9 @@ class FileStorage
    * 上传文件，并且保存在服务器
    *
    * @param array|string $files 文件或者多个文件数组
-   * @param string $savePath 保存的完整路径
-   * @param string $fileName 文件名称，不含扩展名
-   * @return array
+   * @param string $savePath 保存的路径，相对于F_APP_STORAGE
+   * @param string $fileName 存储的文件名称。如果未传入该值，将会自动生成新的文件名称
+   * @return false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}
    */
   public static function upload($files, $savePath, $fileName = null)
   {
@@ -75,12 +75,18 @@ class FileStorage
       }
 
       $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
-      $fileName = $fileName ?: uniqid();
+      if ($fileName) {
+        $fileNameInfo = pathinfo($fileName);
+        $fileName = $fileNameInfo['filename'];
+      } else {
+        $fileName = uniqid();
+      }
 
-      $saveFullFileName = $fileName . "." . $fileExtension;
-      $saveFullPath = $savePath . "/" . $saveFullFileName;
+      $saveFullFileName = "{$fileName}.{$fileExtension}";
+      $FilePath = FileHelper::combinedFilePath($savePath, $saveFullFileName);
+      $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $FilePath);
       if (!is_dir($savePath)) {
-        mkdir($savePath, 707, true);
+        mkdir($savePath, 770, true);
       }
       if (is_string($fileItem)) {
         if (!file_exists($fileItem)) return false;
@@ -96,16 +102,16 @@ class FileStorage
           "filePath" => $filePath,
         ]);
       }
-      $relativePath = str_replace(\F_APP_ROOT, "", $savePath);
+
       $fileInfo = [
-        "fileKey" => self::combinedFileKey($relativePath, $saveFullFileName),
+        "fileKey" => $FilePath,
         "sourceFileName" => $fileSourceName,
         "path" => FileHelper::optimizedPath($savePath),
         "fileName" => $saveFullFileName,
         "extension" => $fileExtension,
         "size" => $fileSize,
         "fullPath" => FileHelper::optimizedPath($saveFullPath),
-        "relativePath" => FileHelper::optimizedPath($relativePath),
+        "relativePath" => FileHelper::optimizedPath($FilePath),
         "width" => 0,
         "height" => 0
       ];
@@ -314,12 +320,14 @@ class FileStorage
    * @param string $ACL 访问权限控制
    * @return string 授权信息
    */
-  static function generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE)
+  static function generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = null)
   {
     $FSS = new FileStorageSignature($SignatureKey);
     $FileKey = self::combinedFileKey($FilePath, $FileName);
 
-    $URLParams['acl'] = $ACL;
+    if ($ACL) {
+      $URLParams['acl'] = $ACL;
+    }
     if ($AuthId) {
       $URLParams['authId'] = $AuthId;
     }

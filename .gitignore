@@ -1,6 +1,7 @@
 /vendor/
 /Logs/
 /Data/
+/Storage/
 gstudio_kernel.inc.php
 .DS_Store
 

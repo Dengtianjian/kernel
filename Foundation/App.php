@@ -10,6 +10,7 @@ use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponsePagination;
 
 /**
@@ -105,6 +106,10 @@ class App
      * 当前运行的项目Data目录，绝对路径
      */
     define("F_APP_DATA", F_APP_ROOT . DIRECTORY_SEPARATOR . "Data");
+    /**
+     * 当前运行的项目Storage目录，绝对路径，用于存储文件
+     */
+    define("F_APP_STORAGE", FileHelper::combinedFilePath(F_APP_ROOT, "Storage"));
 
     $KernelRelativePath = "";
     $AppRelativePath = "";

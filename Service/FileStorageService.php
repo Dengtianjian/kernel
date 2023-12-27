@@ -28,15 +28,12 @@ class FileStorageService extends Service
    *
    * @param array|string $Files 文件或者多个文件数组
    * @param string $SavePath 保存的完整路径
-   * @param string $saveFileName 保存的文件名称，不含扩展名
-   * @return ReturnResult<array|false> 上传失败会返回false，成功返回文件信息
+   * @param string $saveFileName 保存的文件名称。如果未传入该值，将会自动生成新的文件名称
+   * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 上传失败会返回false，成功返回文件信息
    */
   static function upload($Files, $SavePath, $saveFileName = null)
   {
     $R = new ReturnResult(true);
-    if ($saveFileName) {
-      $saveFileName = pathinfo($saveFileName)['filename'];
-    }
     $UploadedResult = FileStorage::upload($Files, $SavePath, $saveFileName);
     if (is_bool($UploadedResult) && $UploadedResult === false) {
       return $R->error(500, 500, "上传失败", [], false);
