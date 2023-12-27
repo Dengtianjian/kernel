@@ -104,7 +104,7 @@ class FileStorage
       }
 
       $fileInfo = [
-        "fileKey" => $FilePath,
+        "fileKey" => self::combinedFileKey($savePath, $saveFullFileName),
         "sourceFileName" => $fileSourceName,
         "path" => FileHelper::optimizedPath($savePath),
         "fileName" => $saveFullFileName,
