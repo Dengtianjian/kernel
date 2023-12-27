@@ -96,13 +96,13 @@ class DiscuzXApp extends App
     if (!defined("F_APP_DATA")) {
       define("F_APP_DATA", FileHelper::combinedFilePath(F_APP_ROOT, "Data"));
     }
-    define("F_APP_STORAGE", FileHelper::combinedFilePath(F_APP_ROOT, "Storage"));
     /**
      * DiscuzX Data下存放插件数据的目录
      */
     if (!defined("F_DISCUZX_DATA_PLUGIN")) {
       define("F_DISCUZX_DATA_PLUGIN", FileHelper::combinedFilePath(F_ROOT, "data", "plugindata", F_APP_ID));
     }
+    define("F_APP_STORAGE", F_DISCUZX_DATA_PLUGIN);
     /**
      * 内核目录，相对路径
      */
