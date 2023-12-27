@@ -22,6 +22,7 @@ class FileStorageService extends Service
     Router::post("files", FilesNamespace\UploadFilesController::class);
     Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
     Router::get("files/{fileId:.+?}", FilesNamespace\AccessFileController::class);
+    Router::get("files/{fileId:.+?}/download", FilesNamespace\DownloadFileController::class);
   }
   /**
    * 上传文件
