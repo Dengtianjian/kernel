@@ -47,7 +47,7 @@ class App
     //* 定义常量
     $this->defineConstants();
 
-    include_once(File::genPath(F_KERNEL_ROOT . "/Foundation/Common.php"));
+    include_once(FileHelper::combinedFilePath(F_KERNEL_ROOT . "/Foundation/Common.php"));
 
     //* 初始化配置
     $this->initConfig();
@@ -60,7 +60,7 @@ class App
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
 
-    ErrorCode::load(File::genPath(F_KERNEL_ROOT, "ErrorCodes.php")); //* 加载错误码
+    ErrorCode::load(FileHelper::combinedFilePath(F_KERNEL_ROOT, "ErrorCodes.php")); //* 加载错误码
 
     //* 载入路由
     $this->loadRoutes();
@@ -172,12 +172,12 @@ class App
    */
   protected function initConfig()
   {
-    $ConfigFilesDir = File::genPath(F_APP_ROOT, "Configs");
+    $ConfigFilesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Configs");
     if (!is_dir($ConfigFilesDir)) return true;
-    $ConfigFiles = File::scandir($ConfigFilesDir);
+    $ConfigFiles = FileHelper::scandir($ConfigFilesDir);
 
     if (in_array("Config.php", $ConfigFiles)) {
-      Config::read(File::genPath($ConfigFilesDir, "Config.php"));
+      Config::read(FileHelper::combinedFilePath($ConfigFilesDir, "Config.php"));
     }
     $CurrentMode = Config::get("mode");
     $WalkModes = [$CurrentMode];
@@ -193,7 +193,7 @@ class App
         define("F_APP_MODE", Config::get("mode"));
       }
       if (in_array("Config.$CurrentMode.php", $ConfigFiles)) {
-        Config::read(File::genPath($ConfigFilesDir, "Config.$CurrentMode.php"));
+        Config::read(FileHelper::combinedFilePath($ConfigFilesDir, "Config.$CurrentMode.php"));
       } else {
         break;
       }
@@ -212,19 +212,19 @@ class App
   protected function loadRoutes()
   {
     $LocaRouteFiles = [];
-    $KernelRoutesDir = File::genPath(F_KERNEL_ROOT, "Routes");
+    $KernelRoutesDir = FileHelper::combinedFilePath(F_KERNEL_ROOT, "Routes");
     if (is_dir($KernelRoutesDir)) {
       //* 载入kernel路由
-      $KernelRouteFiles = File::recursionScanDir($KernelRoutesDir);
+      $KernelRouteFiles = FileHelper::recursionScanDir($KernelRoutesDir);
       if (count($KernelRouteFiles)) {
         $LocaRouteFiles = array_merge($LocaRouteFiles, $KernelRouteFiles);
       }
     }
 
-    $AppRoutesDir = File::genPath(F_APP_ROOT, "Routes");
+    $AppRoutesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Routes");
     if (is_dir($AppRoutesDir)) {
       //* 载入App的路由
-      $AppRouteFiles = File::recursionScanDir($AppRoutesDir);
+      $AppRouteFiles = FileHelper::recursionScanDir($AppRoutesDir);
       if (count($AppRouteFiles)) {
         $LocaRouteFiles = array_merge($LocaRouteFiles, $AppRouteFiles);
       }
@@ -247,7 +247,7 @@ class App
     // $EM = new ExtensionsModel();
     // $enabledExtensions = $EM->where("enabled", 1)->getOne();
     // foreach ($enabledExtensions as $extensionItem) {
-    //   $mainFilepath = File::genPath(F_APP_ROOT, $extensionItem['path'], "Main.php");
+    //   $mainFilepath = FileHelper::combinedFilePath(F_APP_ROOT, $extensionItem['path'], "Main.php");
     //   if (!\file_exists($mainFilepath)) {
     //     Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
     //   }
@@ -265,10 +265,10 @@ class App
    */
   protected function loadEvents()
   {
-    if (!file_exists(File::genPath(F_APP_ROOT, "Events"))) {
+    if (!file_exists(FileHelper::combinedFilePath(F_APP_ROOT, "Events"))) {
       return;
     }
-    $EventFiles = File::recursionScanDir(File::genPath(F_APP_ROOT, "Events"));
+    $EventFiles = FileHelper::recursionScanDir(FileHelper::combinedFilePath(F_APP_ROOT, "Events"));
     foreach ($EventFiles as $item) {
       include_once($item);
     }
@@ -347,6 +347,40 @@ class App
       }
     }
   }
+
+  /**
+   * 生命周期回调函数
+   *
+   * @var array
+   */
+  protected $LifeCycle = [
+    "bootUp" => [],
+    "shutdown" => []
+  ];
+  /**
+   * 运行开始，配置、请求已经获取到之后，执行中间件、控制器之前
+   *
+   * @param callback|Closure|string $callback 回调函数
+   * @return this
+   */
+  public function bootUp($callback)
+  {
+    array_push($this->LifeCycle['bootUp'], $callback);
+
+    return $this;
+  }
+  /**
+   * 运行结束之前，已经从控制器输出中获取到响应数据之后
+   *
+   * @param callback|Closure|string $callback 回调函数
+   * @return this
+   */
+  public function shutdown($callback)
+  {
+    array_push($this->LifeCycle['shutdown'], $callback);
+
+    return $this;
+  }
   public function run()
   {
     header("Access-Control-Allow-Origin:*");
@@ -363,6 +397,17 @@ class App
 
     //* 路由
     $Route = Router::match($this->request);
+
+    //* 调用生命周期“启动”钩子
+    if ($this->LifeCycle['bootUp']) {
+      foreach ($this->LifeCycle['bootUp'] as $item) {
+        if (is_callable($item)) {
+          $item($this->request);
+        } else {
+          new $item($this->request);
+        }
+      }
+    }
 
     if (!$Route) {
       throw new Exception("路由不存在", 404, 404, [
@@ -428,6 +473,18 @@ class App
         "requiredTime" => $endTime - $this->startTime . "ms"
       ]);
     }
+
+    //* 调用生命周期“结束”钩子
+    if ($this->LifeCycle['shutdown']) {
+      foreach ($this->LifeCycle['shutdown'] as $item) {
+        if (is_callable($item)) {
+          $item($Controller->response);
+        } else {
+          new $item($Controller->response);
+        }
+      }
+    }
+
     if (is_callable($Controller->response->getData())) {
       call_user_func_array($Controller->response->getData(), []);
     } else {
