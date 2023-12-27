@@ -65,7 +65,7 @@ class Controller
   function __construct(Request $request)
   {
     $this->request = $request;
-    $this->response = new Response(null);
+    $this->response = new ControllerResponse(null);
     $this->query = new ControllerQuery($request, $this->query, $this->queryValidator);
     $this->body = new ControllerBody($request, $this->body, $this->bodyValidator);
   }
