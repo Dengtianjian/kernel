@@ -46,7 +46,7 @@ class ResponseDownload extends Response
    */
   protected $request = null;
   /**
-   * 下载响应
+   * 下载文件响应
    *
    * @param Request $R 请求体
    * @param string $filePath 下载的文件绝对路径
