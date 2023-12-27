@@ -2,23 +2,34 @@
 
 namespace kernel\Controller\Main\Files;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Response\ResponseFile;
-use kernel\Service\FileStoreService;
+use kernel\Service\FileStorageService;
 
 class AccessFileController extends Controller
 {
-  public function data($FileId)
+  public $query = [
+    "signature" => "string",
+    "sign-algorithm" => "string",
+    "sign-time" => "string",
+    "key-time" => "string",
+    "header-list" => "string",
+    "url-param-list" => "string"
+  ];
+
+  public function data($FileKey)
   {
-    $decodeData = FileStoreService::decodeFileId($FileId);
-    if ($decodeData->error) {
-      return $this->$decodeData->errorMessage();
-    }
-    $decodeData = $decodeData->getData();
-    // if (isset($decodeData['auth']) && $decodeData['auth']) {
+    $SignatureKey = Config::get("signatureKey") ?: "";
+    $Signature = $this->query->get("signature");
+    $URLParams = $this->request->query->some();
+    $Headers = $this->request->header->some();
+    $AuthId = $this->query->get("authId");
+    unset($URLParams['id'], $URLParams['uri']);
 
-    // }
+    $File = FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId);
+    if ($File->error) return $File;
 
-    return new ResponseFile($this->request, $decodeData["filePath"]);
+    return new ResponseFile($this->request, $File->getData("fullPath"));
   }
 }
