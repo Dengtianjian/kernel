@@ -8,6 +8,10 @@ use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Controller\Main\Files as FilesNamespace;
 
+/**
+ * 文件存储服务
+ * @deprecated
+ */
 class FileStoreService extends Service
 {
   /**
