@@ -18,6 +18,12 @@ class AccessFileController extends Controller
     "url-param-list" => "string"
   ];
 
+  /**
+   * 主体
+   *
+   * @param string $FileKey 文件名
+   * @return mixed
+   */
   public function data($FileKey)
   {
     $SignatureKey = Config::get("signatureKey") ?: "";
