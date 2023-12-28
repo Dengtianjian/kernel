@@ -212,17 +212,27 @@ class URL
   /**
    * 设置请求参数
    *
-   * @param string $value 参数值
+   * @param string|array $value 参数值
    * @param string $key 参数名
    * @return this
    */
   public function queryParam($value, $key = null)
   {
-    if (!$key) {
-      $key = $value;
-      $value = "";
+    if (is_array($value)) {
+      foreach ($value as $key => $item) {
+        if (!is_numeric($key)) {
+          $key = $item;
+          $item = null;
+        }
+        $this->queryParam($item, $key);
+      }
+    } else {
+      if (!$key) {
+        $key = $value;
+        $value = "";
+      }
+      $this->queryParams[$key] = $value;
     }
-    $this->queryParams[$key] = $value;
 
     return $this;
   }
