@@ -17,13 +17,14 @@ CREATE TABLE `files`  (
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
   `belongsId` varchar(34) NULL DEFAULT NULL COMMENT '所属ID',
   `belongsType` varchar(32) NULL DEFAULT NULL COMMENT '所属ID类型',
-  `authId` varchar(32) NOT NULL DEFAULT '0' COMMENT '授权ID',
+  `ownerId` varchar(32) NULL DEFAULT NULL COMMENT '文件所有者ID',
   `sourceFileName` varchar(255) NOT NULL COMMENT '原本的文件名称',
   `fileName` varchar(255) NOT NULL COMMENT '保存后的文件名称',
   `fileSize` double NOT NULL COMMENT '文件尺寸',
   `filePath` text NOT NULL COMMENT '保存的文件路径',
   `width` double NULL DEFAULT 0 COMMENT '宽度（媒体文件才有该值）',
   `height` double NULL DEFAULT 0 COMMENT '高度（媒体文件才有该值）',
+  `acl` varchar(64) NOT NULL DEFAULT 'private' COMMENT '访问权限控制',
   `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
   `createdAt` varchar(12) NOT NULL COMMENT '创建时间',
   `updatedAt` varchar(12) NOT NULL COMMENT '最后更新时间',
@@ -32,7 +33,7 @@ CREATE TABLE `files`  (
 ) COMMENT = '文件';
 SQL;
   }
-  function add($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $AuthId = null, $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
+  function add($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
   {
     return $this->insert([
       "key" => $FileKey,
@@ -44,9 +45,10 @@ SQL;
       "remote" => $Remote,
       "belongsId" => $BelongsId,
       "belongsType" => $BelongsType,
-      "authId" => $AuthId,
+      "ownerId" => $OwnerId,
       "width" => $Width,
       "height" => $Height,
+      "acl" => $ACL
     ]);
   }
   function save($Data, $FileKey = null, $Id = null)
@@ -63,12 +65,12 @@ SQL;
       "belongsType" => $BelongsType,
     ], $FileKey, $Id);
   }
-  function item($FileKey = null, $BelongsId = null, $BelongsType, $AuthId = null, $Id = null)
+  function item($FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
   {
     return $this->filterNullWhere([
       "id" => $Id,
       "key" => $FileKey,
-      "authId" => $AuthId,
+      "ownerId" => $OwnerId,
       "belongsId" => $BelongsId,
       "belongsType" => $BelongsType,
     ])->getOne();
@@ -78,12 +80,12 @@ SQL;
   {
     return $this->ListTotal;
   }
-  function list($Page = 1, $PerPage = 10, $FileKey = null, $BelongsId = null, $BelongsType, $AuthId = null, $Id = null)
+  function list($Page = 1, $PerPage = 10, $FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
   {
     $this->ListTotal = $this->filterNullWhere([
       "id" => $Id,
       "key" => $FileKey,
-      "authId" => $AuthId,
+      "ownerId" => $OwnerId,
       "belongsId" => $BelongsId,
       "belongsType" => $BelongsType,
     ])->reset(false)->count();
@@ -92,12 +94,12 @@ SQL;
 
     return $this->getAll();
   }
-  function remove($directly = false, $FileKey = null, $BelongsId = null, $BelongsType, $AuthId = null, $Id = null)
+  function remove($directly = false, $FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
   {
     return $this->filterNullWhere([
       "id" => $Id,
       "key" => $FileKey,
-      "authId" => $AuthId,
+      "ownerId" => $OwnerId,
       "belongsId" => $BelongsId,
       "belongsType" => $BelongsType,
     ])->delete($directly);
