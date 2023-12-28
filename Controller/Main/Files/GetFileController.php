@@ -4,7 +4,7 @@ namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
-use kernel\Service\FileStorageService;
+use kernel\Service\File\FileService;
 use kernel\Traits\FileControllerTrait;
 
 class GetFileController extends AuthController
@@ -24,6 +24,6 @@ class GetFileController extends AuthController
     $AuthId = $this->query->get("authId");
     unset($URLParams['id'], $URLParams['uri']);
 
-    return FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId);
+    return FileService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId);
   }
 }

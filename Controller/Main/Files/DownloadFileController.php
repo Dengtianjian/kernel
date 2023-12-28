@@ -5,7 +5,7 @@ namespace kernel\Controller\Main\Files;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Response\ResponseDownload;
-use kernel\Service\FileStorageService;
+use kernel\Service\File\FileService;
 use kernel\Traits\FileControllerTrait;
 
 class DownloadFileController extends AuthController
@@ -25,9 +25,9 @@ class DownloadFileController extends AuthController
     $AuthId = $this->query->get("authId");
     unset($URLParams['id'], $URLParams['uri']);
 
-    $File = FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId);
+    $File = FileService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId);
     if ($File->error) return $File;
 
-    return new ResponseDownload($this->request, $File->getData("fullPath"));
+    return $this->response->download($File->getData("fullPath"));
   }
 }

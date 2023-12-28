@@ -4,7 +4,7 @@ namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
-use kernel\Service\FileStorageService;
+use kernel\Service\File\FileService;
 use kernel\Traits\FileControllerTrait;
 
 class DeleteFileController extends AuthController
@@ -24,6 +24,6 @@ class DeleteFileController extends AuthController
     $Headers = $this->request->header->some();
     $AuthId = $this->query->get("authId");
 
-    return FileStorageService::deleteFile($fileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $HTTPMethod);
+    return FileService::deleteFile($fileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $HTTPMethod);
   }
 }
