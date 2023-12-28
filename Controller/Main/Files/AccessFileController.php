@@ -4,9 +4,7 @@ namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\HTTP\Response\ResponseFile;
 use kernel\Service\File\FileService;
-use kernel\Service\FileStorageService;
 use kernel\Traits\FileControllerTrait;
 
 class AccessFileController extends AuthController
