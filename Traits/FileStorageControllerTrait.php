@@ -2,7 +2,7 @@
 
 namespace kernel\Traits;
 
-trait FileControllerTrait
+trait FileStorageControllerTrait
 {
   public function __constcutor($R)
   {
