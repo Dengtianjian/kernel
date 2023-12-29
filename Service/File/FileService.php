@@ -78,7 +78,7 @@ class FileService extends Service
     $FileInfo = pathinfo($FilePath);
     $File = [
       "fileKey" => $FileKey,
-      "path" => $FileInfo['dirname'],
+      "path" => dirname($FileKey),
       "fileName" => $FileInfo['filename'],
       "extension" => $FileInfo['extension'],
       "size" => filesize($FilePath),
