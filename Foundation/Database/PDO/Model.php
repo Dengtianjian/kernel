@@ -10,21 +10,56 @@ use mysqli_result;
 
 class Model extends BaseObject
 {
+  /**
+   * 数据表名称
+   *
+   * @var string
+   */
   public $tableName = "";
+  /**
+   * 数据表结构SQL
+   *
+   * @var string
+   */
   public $tableStructureSQL = "";
+  /**
+   * 查询示例
+   *
+   * @var Query
+   */
   protected $query;
+  /**
+   * 查询是否不执行，而是返回SQL
+   *
+   * @var boolean
+   */
   protected $returnSql = false;
+  /**
+   * DB静态类
+   *
+   * @var DB
+   */
   protected $DB = null;
   protected $prefixReplaces = [
     "{AppId}" => F_APP_ID
   ];
 
+  /**
+   * 时间戳维护
+   *
+   * @var boolean
+   */
   public static $Timestamps = true;
   public static $CreatedAt = "createdAt";
   public static $UpdatedAt = "updatedAt";
   public static $DeletedAt = "deletedAt";
   public static $TimestampFields = [];
 
+  /**
+   * 构建模型
+   *
+   * @param string $tableName 数据表名称
+   */
   function __construct($tableName = null)
   {
     if ($tableName) {
