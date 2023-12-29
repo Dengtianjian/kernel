@@ -3,18 +3,23 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\File\FileStorage;
+use kernel\Foundation\HTTP\URL;
 
 class DiscuzXFileStorage extends FileStorage
 {
-  static function generateAccessURL($FilePath, $FileName, $SignatureKey = null, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE)
+  static function generateAccessURL($FileKey, $URLParams = [], $SignatureKey = null, $Expires = 600,  $HTTPMethod = "get")
   {
-    $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
-    // $FileKey = self::combinedFileKey($FilePath, $FileName);
-    $queryString = "";
     if ($SignatureKey) {
-      $queryString = "?" . self::generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, $ACL);
+      $URLParams = array_merge($URLParams, self::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $HTTPMethod, false));
     }
 
-    return F_BASE_URL . "plugin.php?id=" . F_APP_ID . "&uri=files/{$FileKey}{$queryString}";
+    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL->pathName = "plugin.php";
+    $AccessURL->pathName = "files/{$FileKey}";
+
+    $URLParams['uri'] = "files/{$FileKey}";
+    $AccessURL->queryParam($URLParams);
+
+    return $AccessURL->toString();
   }
 }

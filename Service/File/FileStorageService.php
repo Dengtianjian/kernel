@@ -3,19 +3,13 @@
 namespace kernel\Service\File;
 
 use kernel\Controller\Main\Files\FileStorage as FileStorageNamespace;
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Data\Serializer;
-use kernel\Foundation\Database\PDO\DB;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
-use kernel\Foundation\Service;
 use kernel\Model\FilesModel;
-use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileService;
-use Qcloud\Cos\Signature;
 
 class FileStorageService extends FileService
 {
@@ -103,7 +97,7 @@ class FileStorageService extends FileService
       foreach ($URLParams as $key => $value) {
         $U->queryParam($value, $key);
       }
-      return $U->toString();
+      $accessURL = $U->toString();
     }
 
     return $R->success($accessURL);
@@ -127,7 +121,7 @@ class FileStorageService extends FileService
     if ($UploadedResult->error) return $UploadedResult;
     $UploadFileInfo = $UploadedResult->getData();
 
-    $FS = new DiscuzXFilesModel();
+    $FS = new FilesModel();
     return $UploadedResult->success($FS->add($FileKey, $UploadFileInfo['sourceFileName'], $UploadFileInfo['fileName'], $UploadFileInfo['path'], $UploadFileInfo['size'], $UploadFileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $UploadFileInfo['width'], $UploadFileInfo['height']));
   }
   /**
@@ -154,7 +148,7 @@ class FileStorageService extends FileService
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $File = DiscuzXFilesModel::singleton()->item($FileKey);
+    $File = FilesModel::singleton()->item($FileKey);
     if (!$File) {
       return $R->error(404, 404001, "文件不存在", [], false);
     }
@@ -219,7 +213,7 @@ class FileStorageService extends FileService
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $FS = new DiscuzXFilesModel();
+    $FS = new FilesModel();
 
     $File = $FS->item($FileKey);
     if (!$File) {
