@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\File;
 
-use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\HTTP\URL;
 
@@ -15,97 +14,85 @@ class Files
   /**
    * 上传文件，并且保存在服务器
    *
-   * @param array|string $files 文件或者多个文件数组
+   * @param File|string $file 文件
    * @param string $savePath 保存的路径，相对于F_APP_STORAGE
    * @param string $fileName 存储的文件名称。如果未传入该值，将会自动生成新的文件名称
    * @return false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}
    */
-  public static function upload($files, $savePath, $fileName = null)
+  public static function upload($file, $savePath, $fileName = null)
   {
-    if (!$files) return false;
-    $uploadResult = [];
-    $onlyOne = false;
-    if (is_array($files) && Arr::isAssoc($files) || is_string($files)) {
-      $onlyOne = true;
-      $files = [$files];
+    if (!$file) return false;
+    $filePath = "";
+    $fileSize = 0;
+    $fileSourceName = "";
+
+    if (is_string($file)) {
+      $filePath = $file;
+      $fileSize = filesize($filePath);
+      if (!$fileSize) {
+        throw new Exception("文件保存失败", 500, "FileUpload:500001");
+      }
+      $fileSourceName = basename($filePath);
     } else {
-      $files = array_values($files);
+      if ($file['error'] > 0) {
+        throw new Exception("文件保存失败", 400, "FileUpload:400001:", $file['error']);
+      }
+      $fileSourceName = basename($file['name']);
+      $fileSize = $file['size'];
+      $filePath = $file['tmp_name'];
     }
 
-    foreach ($files as $fileItem) {
-      $filePath = "";
-      $fileSize = 0;
-      $fileSourceName = "";
-      if (is_string($fileItem)) {
-        $filePath = $fileItem;
-        $fileSize = filesize($filePath);
-        if (!$fileSize) {
-          throw new Exception("文件保存失败", 500, "FileUpload:500001");
-        }
-        $fileSourceName = basename($filePath);
-      } else {
-        if ($fileItem['error'] > 0) {
-          $uploadResult[] = $fileItem['error'];
-          continue;
-        }
-        $fileSourceName = basename($fileItem['name']);
-        $fileSize = $fileItem['size'];
-        $filePath = $fileItem['tmp_name'];
-      }
-
-      $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
-      if ($fileName) {
-        $fileNameInfo = pathinfo($fileName);
-        $fileName = $fileNameInfo['filename'];
-      } else {
-        $fileName = uniqid();
-      }
-
-      $saveFullFileName = "{$fileName}.{$fileExtension}";
-      $FilePath = FileHelper::combinedFilePath($savePath, $saveFullFileName);
-      $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $FilePath);
-      if (!is_dir($savePath)) {
-        mkdir($savePath, 770, true);
-      }
-      if (is_string($fileItem)) {
-        if (!file_exists($fileItem)) return false;
-        $saveResult = copy($filePath, $saveFullPath);
-        unlink($filePath);
-      } else {
-        $saveResult = \move_uploaded_file($filePath, $saveFullPath);
-      }
-
-      if (!$saveResult) {
-        throw new Exception("文件保存失败", 500, "FileSave:500001", [
-          "saveFullPath" => $saveFullPath,
-          "filePath" => $filePath,
-        ]);
-      }
-
-      $fileInfo = [
-        "fileKey" => self::combinedFileKey($savePath, $saveFullFileName),
-        "sourceFileName" => $fileSourceName,
-        "path" => FileHelper::optimizedPath($savePath),
-        "fileName" => $saveFullFileName,
-        "extension" => $fileExtension,
-        "size" => $fileSize,
-        "fullPath" => FileHelper::optimizedPath($saveFullPath),
-        "relativePath" => FileHelper::optimizedPath($FilePath),
-        "width" => 0,
-        "height" => 0
-      ];
-      if (FileHelper::isImage($saveFullPath)) {
-        $imageInfo = \getimagesize($saveFullPath);
-        $fileInfo['width'] = $imageInfo[0];
-        $fileInfo['height'] = $imageInfo[1];
-      }
-      $uploadResult[] = $fileInfo;
-    }
-    if ($onlyOne) {
-      return $uploadResult[0];
+    $fileExtension = \pathinfo($fileSourceName, \PATHINFO_EXTENSION);
+    if ($fileName) {
+      $fileNameInfo = pathinfo($fileName);
+      $fileName = $fileNameInfo['filename'];
+      $fileExtension = $fileNameInfo['extension'];
+    } else {
+      $fileName = uniqid();
     }
 
-    return $uploadResult;
+    $saveFullFileName = "{$fileName}.{$fileExtension}";
+    $FilePath = FileHelper::combinedFilePath($savePath, $saveFullFileName);
+    $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $FilePath);
+    if (!is_dir($savePath)) {
+      mkdir($savePath, 770, true);
+    }
+    if (is_string($file)) {
+      if (!file_exists($file)) {
+        throw new Exception("文件保存失败", 500, "FileUpload:500002");
+      }
+      $saveResult = copy($filePath, $saveFullPath);
+      unlink($filePath);
+    } else {
+      $saveResult = \move_uploaded_file($filePath, $saveFullPath);
+    }
+
+    if (!$saveResult) {
+      throw new Exception("文件保存失败", 500, "FileSave:500003", [
+        "saveFullPath" => $saveFullPath,
+        "filePath" => $filePath,
+      ]);
+    }
+
+    $fileInfo = [
+      "fileKey" => self::combinedFileKey($savePath, $saveFullFileName),
+      "sourceFileName" => $fileSourceName,
+      "path" => FileHelper::optimizedPath($savePath),
+      "fileName" => $saveFullFileName,
+      "extension" => $fileExtension,
+      "size" => $fileSize,
+      "fullPath" => FileHelper::optimizedPath($saveFullPath),
+      "relativePath" => FileHelper::optimizedPath($FilePath),
+      "width" => 0,
+      "height" => 0
+    ];
+    if (FileHelper::isImage($saveFullPath)) {
+      $imageInfo = \getimagesize($saveFullPath);
+      $fileInfo['width'] = $imageInfo[0];
+      $fileInfo['height'] = $imageInfo[1];
+    }
+
+    return $fileInfo;
   }
   /**
    * 克隆目录。把指定目录下的文件和文件夹复制到指定目录
@@ -269,9 +256,10 @@ class Files
    *
    * @param string $filePath 文件路径
    * @param string $fileName 文件名称
+   * @param boolean $encode 对文件名进行编码
    * @return string 文件键名
    */
-  static function combinedFileKey($filePath, $fileName)
+  static function combinedFileKey($filePath, $fileName, $encode = false)
   {
     $filePath = str_replace("\\", "/", $filePath);
     $fileName = str_replace("\\", "/", $fileName);
@@ -282,6 +270,10 @@ class Files
     ]);
     if (substr($fileKey, 0, 1) === "/") {
       $fileKey = substr($fileKey, 1);
+    }
+
+    if ($encode) {
+      $fileKey = rawurlencode($fileKey);
     }
 
     return $fileKey;
