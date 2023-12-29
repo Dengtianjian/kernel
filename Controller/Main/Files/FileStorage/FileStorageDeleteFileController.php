@@ -11,7 +11,7 @@ class FileStorageDeleteFileController extends DeleteFileController
 {
   use FileStorageControllerTrait;
 
-  public function data($fileKey)
+  public function data($FileKey)
   {
     if (!$this->query->has("signature")) {
       return $this->response->error(403, 403, "无权操作");
@@ -22,8 +22,7 @@ class FileStorageDeleteFileController extends DeleteFileController
     $URLParams = $this->request->query->some();
     unset($URLParams['id'], $URLParams['uri']);
     $Headers = $this->request->header->some();
-    $AuthId = $this->query->get("authId");
 
-    return FileStorageService::deleteFile($fileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $this->request->method);
+    return FileStorageService::deleteFile($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
   }
 }

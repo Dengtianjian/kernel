@@ -15,6 +15,7 @@ use kernel\Foundation\Service;
 use kernel\Model\FilesModel;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileService;
+use Qcloud\Cos\Signature;
 
 class FileStorageService extends FileService
 {
@@ -206,7 +207,7 @@ class FileStorageService extends FileService
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<boolean> 是否已删除，true=删除完成，false=删除失败
    */
-  static function deleteFile($FileKey, $Signature = null, $SignatureKey = null, $RawURLParams = [], $RawHeaders = [], $CurrentAuthId = null, $HTTPMethod = "get")
+  static function deleteFile($FileKey, $Signature = null, $SignatureKey = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
   {
     $R = new ReturnResult(true);
     if ($Signature) {
@@ -214,11 +215,13 @@ class FileStorageService extends FileService
         $RawURLParams['signature'] = $Signature;
       }
       $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
-      if ($verifyResult !== false)
+      if ($verifyResult !== true)
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $File = DiscuzXFilesModel::singleton()->item($FileKey);
+    $FS = new DiscuzXFilesModel();
+
+    $File = $FS->item($FileKey);
     if (!$File) {
       return $R->error(404, 404001, "文件不存在", [], false);
     }
@@ -228,13 +231,9 @@ class FileStorageService extends FileService
         return $R->error(403, 403002, "无权删除", [], $File['acl']);
       }
     } else {
-      if ($File['acl'] !== FileStorage::PUBLIC_READ_WRITE) {
-        if ($File['ownerId']) {
-          if ($File['ownerId'] !== $CurrentAuthId) {
-            return $R->error(403, 403002, "无权删除", [], $File['acl']);
-          }
-        } else if ($File['acl'] === FileStorage::AUTHENTICATED_READ_WRITE && !$Signature) {
-          return $R->error(403, 403003, "无权删除", [], $File['acl']);
+      if ($File['acl'] !== FileStorage::PUBLIC_READ_WRITE && $File['acl'] !== FileStorage::AUTHENTICATED_READ_WRITE) {
+        if ($File['ownerId'] !== $CurrentAuthId) {
+          return $R->error(403, 403002, "无权删除", [], $File['acl']);
         }
       }
     }
@@ -243,6 +242,7 @@ class FileStorageService extends FileService
     if (file_exists($FilePath)) {
       unlink($FilePath);
     }
+    $FS->remove(true, $FileKey);
 
     return $R;
   }
