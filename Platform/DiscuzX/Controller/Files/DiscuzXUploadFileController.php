@@ -3,6 +3,7 @@
 namespace kernel\Platform\DiscuzX\Controller\Files;
 
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
+use kernel\Platform\DiscuzX\Service\DiscuzXFileService;
 use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 
 class DiscuzXUploadFileController extends DiscuzXController
@@ -28,7 +29,7 @@ class DiscuzXUploadFileController extends DiscuzXController
         return $this->response->error(400, 400, "抱歉，您只可以上传以下 " . $_G['group']['attachextensions'] . " 类型的附件");
       }
     }
-    $UploadedResult = DiscuzXFileStorageService::upload($File, "files");
+    $UploadedResult = DiscuzXFileService::upload($File, "files");
     if ($UploadedResult->error) return $UploadedResult;
 
     return $UploadedResult->getData("fileKey");

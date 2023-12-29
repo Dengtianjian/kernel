@@ -8,7 +8,7 @@ use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files as DiscuzXFilesNamespace;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
-use kernel\Service\FileStorageService;
+use kernel\Service\File\FileStorageService;
 
 class DiscuzXFileStorageService extends FileStorageService
 {
