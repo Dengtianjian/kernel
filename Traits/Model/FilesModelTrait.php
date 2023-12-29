@@ -38,7 +38,7 @@ trait FilesModelTrait
       "belongsType" => $BelongsType,
     ], $FileKey, $Id);
   }
-  function item($FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
+  function item($FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null)
   {
     return $this->filterNullWhere([
       "id" => $Id,
@@ -53,7 +53,7 @@ trait FilesModelTrait
   {
     return $this->ListTotal;
   }
-  function list($Page = 1, $PerPage = 10, $FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
+  function list($Page = 1, $PerPage = 10, $FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null)
   {
     $this->ListTotal = $this->filterNullWhere([
       "id" => $Id,
@@ -67,7 +67,7 @@ trait FilesModelTrait
 
     return $this->getAll();
   }
-  function remove($directly = false, $FileKey = null, $BelongsId = null, $BelongsType, $OwnerId = null, $Id = null)
+  function remove($directly = false, $FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null)
   {
     return $this->filterNullWhere([
       "id" => $Id,

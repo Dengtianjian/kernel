@@ -11,6 +11,16 @@ class FileStorageGetFileController extends GetFileController
 {
   use FileStorageControllerTrait;
 
+  public $serializes = [
+    "fileKey" => "string",
+    "path" => "string",
+    "extension" => "string",
+    "size" => "int",
+    "relativePath" => "string",
+    "ownerId" => "string",
+    "width" => "double",
+    "height" => "double"
+  ];
   public function data($FileKey)
   {
     if (!$this->query->has("signature")) {
@@ -21,9 +31,8 @@ class FileStorageGetFileController extends GetFileController
     $Signature = $this->query->get("signature");
     $URLParams = $this->request->query->some();
     $Headers = $this->request->header->some();
-    $AuthId = $this->query->get("authId");
     unset($URLParams['id'], $URLParams['uri']);
 
-    return FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $this->request->method);
+    return FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
   }
 }

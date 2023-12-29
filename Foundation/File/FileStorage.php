@@ -41,26 +41,17 @@ class FileStorage extends Files
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
-   * @param string $AuthId 授权ID。一般用于场景是，当前签名只允许给某个用户使用，就可传入该值；校验签名时也需要传入该值，并且校验请求参数的AuthId是否和传入的AuthId一致，不一致就是校验不通过。
    * @param string $HTTPMethod 请求方式
-   * @param string $ACL 访问权限控制
    * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string|array 授权信息
    */
-  static function generateAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE, $toString = false)
+  static function generateAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $toString = false)
   {
     if (!$FileKey) {
       throw new Exception("文件名不可为空", 400, 400);
     }
 
     $FSS = new FileStorageSignature($SignatureKey);
-
-    if ($AuthId) {
-      $URLParams['authId'] = $AuthId;
-    }
-    if ($ACL) {
-      $URLParams['acl'] = $ACL;
-    }
 
     return $FSS->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, $toString);
   }
@@ -71,11 +62,10 @@ class FileStorage extends Files
    * @param string $FileKey 文件名称
    * @param array $RawURLParams 请求参数
    * @param array $RawHeaders 请求头
-   * @param string $AuthId 授权ID，用于校验请求参数中的AuthId是否与当前值一致
    * @param string $HTTPMethod 请求方式
    * @return boolean truly验证通过，返回false或者数字就是验证失败
    */
-  static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $AuthId = null, $HTTPMethod = "get")
+  static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     foreach ($URLParamKeys as $key) {
@@ -88,10 +78,8 @@ class FileStorage extends Files
     $KeyTime = $RawURLParams['key-time'];
     $HeaderList = $RawURLParams['header-list'] ? explode(";", urldecode($RawURLParams['header-list'])) : [];
     $URLParamList = $RawURLParams['url-param-list'] ? explode(";", rawurldecode(urldecode($RawURLParams['url-param-list']))) : [];
-    $URLAuthId = rawurldecode(urldecode($RawURLParams['authId']));
     $Signature = $RawURLParams['signature'];
 
-    if ((!is_null($AuthId) || array_key_exists("authId", $RawURLParams)) && $URLAuthId !== !$AuthId) return 1;
 
     if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return 2;
     if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return 3;
@@ -142,14 +130,13 @@ class FileStorage extends Files
    * @param array $URLParams 请求参数
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 有效期，秒级
-   * @param string $AuthId 授权ID。一般用于场景是，当前签名只允许给某个用户使用，就可传入该值；校验签名时也需要传入该值，并且校验请求参数的AuthId是否和传入的AuthId一致，不一致就是校验不通过。
    * @param string $HTTPMethod 请求方式
    * @return string 访问URL
    */
-  static function generateAccessURL($FileKey, $URLParams = [], $SignatureKey = null, $Expires = 600, $AuthId = null, $HTTPMethod = "get")
+  static function generateAccessURL($FileKey, $URLParams = [], $SignatureKey = null, $Expires = 600,  $HTTPMethod = "get")
   {
     if ($SignatureKey) {
-      $URLParams = array_merge($URLParams, self::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, false));
+      $URLParams = array_merge($URLParams, self::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $HTTPMethod, false));
     }
 
     $AccessURL = new URL(F_BASE_URL);
