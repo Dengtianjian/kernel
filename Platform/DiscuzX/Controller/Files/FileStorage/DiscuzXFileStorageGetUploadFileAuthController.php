@@ -1,17 +1,15 @@
 <?php
 
-namespace kernel\Controller\Main\Files\FileStorage;
+namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\File\FileStorage;
-use kernel\Service\File\FileStorageService;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
+use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
-class FileStorageGetUploadFileAuthController extends AuthController
+class DiscuzXFileStorageGetUploadFileAuthController extends DiscuzXController
 {
-  use FileStorageControllerTrait;
-
   public $body = [
     "fileName" => "string",
     "filePath" => "string",
@@ -27,8 +25,8 @@ class FileStorageGetUploadFileAuthController extends AuthController
       $FileInfo = pathinfo($sourceFileName);
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
-    $FileKey = FileStorage::combinedFileKey($Body['filePath'], $fileName);
-    $Auth = FileStorageService::getAccessAuth($FileKey, $SignatureKey, 600, [], "post", true);
+    $FileKey = DiscuzXFileStorage::combinedFileKey($Body['filePath'], $fileName);
+    $Auth = DiscuzXFileStorageService::getAccessAuth($FileKey, $SignatureKey, 600, [], "post", true);
     if ($Auth->error) return $Auth;
 
     return [

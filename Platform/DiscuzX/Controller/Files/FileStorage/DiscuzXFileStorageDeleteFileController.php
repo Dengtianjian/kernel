@@ -1,13 +1,13 @@
 <?php
 
-namespace kernel\Controller\Main\Files\FileStorage;
+namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
-use kernel\Controller\Main\Files\DeleteFileController;
 use kernel\Foundation\Config;
-use kernel\Service\File\FileStorageService;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
+use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
-class FileStorageDeleteFileController extends DeleteFileController
+class DiscuzXFileStorageDeleteFileController extends DiscuzXController
 {
   use FileStorageControllerTrait;
 
@@ -19,6 +19,6 @@ class FileStorageDeleteFileController extends DeleteFileController
     unset($URLParams['id'], $URLParams['uri']);
     $Headers = $this->request->header->some();
 
-    return FileStorageService::deleteFile($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    return DiscuzXFileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
   }
 }

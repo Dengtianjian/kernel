@@ -1,13 +1,13 @@
 <?php
 
-namespace kernel\Controller\Main\Files\FileStorage;
+namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
-use kernel\Controller\Main\Files\AccessFileController;
 use kernel\Foundation\Config;
-use kernel\Service\File\FileStorageService;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
+use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
-class FileStorageAccessFileController extends AccessFileController
+class DiscuzXFileStorageAccessFileController extends DiscuzXController
 {
   use FileStorageControllerTrait;
 
@@ -19,7 +19,7 @@ class FileStorageAccessFileController extends AccessFileController
     $Headers = $this->request->header->some();
     unset($URLParams['id'], $URLParams['uri']);
 
-    $File = FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
     if ($File->error) return $File;
 
     return $this->response->file($File->getData("fullPath"));

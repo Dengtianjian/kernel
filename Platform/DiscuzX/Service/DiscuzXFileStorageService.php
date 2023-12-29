@@ -6,10 +6,11 @@ use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
-use kernel\Platform\DiscuzX\Controller\Files as DiscuzXFilesNamespace;
+use kernel\Platform\DiscuzX\Controller\Files\FileStorage as DiscuzXFileStorageNamespace;
 use kernel\Platform\DiscuzX\DiscuzXURL;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
+use kernel\Service\File\FileService;
 use kernel\Service\File\FileStorageService;
 
 class DiscuzXFileStorageService extends FileStorageService
@@ -20,11 +21,14 @@ class DiscuzXFileStorageService extends FileStorageService
   }
   static function useService()
   {
-    Router::post("fileStorage", DiscuzXFilesNamespace\DiscuzXUploadFileController::class);
-    Router::delete("fileStorage/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXDeleteFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/preview", DiscuzXFilesNamespace\DiscuzXAccessFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/download", DiscuzXFilesNamespace\DiscuzXDownloadFileController::class);
-    Router::get("fileStorage/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXGetFileController::class);
+    Router::post("fileStorage/upload/auth", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetUploadFileAuthController::class);
+    Router::post("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageUploadFileController::class);
+    Router::delete("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageDeleteFileController::class);
+
+    Router::get("fileStorage/{fileId:.+?}/preview", DiscuzXFileStorageNamespace\DiscuzXFileStorageAccessFileController::class);
+    Router::get("fileStorage/{fileId:.+?}/download", DiscuzXFileStorageNamespace\DiscuzXFileStorageDownloadFileController::class);
+    
+    Router::get("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetFileController::class);
   }
   static function getAccessURL($FileKey, $URLParams = [], $SignatureKey = NULL, $Expires = 600, $HTTPMethod = "get")
   {
@@ -47,7 +51,7 @@ class DiscuzXFileStorageService extends FileStorageService
   static function upload($File, $FileKey, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = 'private')
   {
     $FileInfo = pathinfo($FileKey);
-    $UploadedResult = parent::upload($File, $FileInfo['dirname'], $FileInfo['basename']);
+    $UploadedResult = FileService::upload($File, $FileInfo['dirname'], $FileInfo['basename']);
     if ($UploadedResult->error) return $UploadedResult;
     $UploadFileInfo = $UploadedResult->getData();
 
