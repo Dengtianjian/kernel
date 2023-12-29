@@ -37,8 +37,7 @@ class FileStorage extends Files
   /**
    * 生成访问授权信息
    *
-   * @param string $FilePath 文件路径
-   * @param string $FileName 文件名称
+   * @param string $FileKey 文件名
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
@@ -48,13 +47,19 @@ class FileStorage extends Files
    * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string|array 授权信息
    */
-  static function generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $toString = false)
+  static function generateAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $AuthId = null, $HTTPMethod = "get", $ACL = self::PRIVATE, $toString = false)
   {
+    if (!$FileKey) {
+      throw new Exception("文件名不可为空", 400, 400);
+    }
+
     $FSS = new FileStorageSignature($SignatureKey);
-    $FileKey = self::combinedFileKey($FilePath, $FileName);
 
     if ($AuthId) {
       $URLParams['authId'] = $AuthId;
+    }
+    if ($ACL) {
+      $URLParams['acl'] = $ACL;
     }
 
     return $FSS->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, $toString);
@@ -133,8 +138,7 @@ class FileStorage extends Files
   /**
    * 生成访问链接
    *
-   * @param string $FilePath 文件路径
-   * @param string $FileName 文件名称
+   * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 有效期，秒级
@@ -142,11 +146,10 @@ class FileStorage extends Files
    * @param string $HTTPMethod 请求方式
    * @return string 访问URL
    */
-  static function generateAccessURL($FilePath, $FileName, $URLParams = [], $SignatureKey = null, $Expires = 600, $AuthId = null, $HTTPMethod = "get")
+  static function generateAccessURL($FileKey, $URLParams = [], $SignatureKey = null, $Expires = 600, $AuthId = null, $HTTPMethod = "get")
   {
-    $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
     if ($SignatureKey) {
-      $URLParams = array_merge($URLParams, self::generateAccessAuth($FilePath, $FileName, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, false));
+      $URLParams = array_merge($URLParams, self::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $AuthId, $HTTPMethod, false));
     }
 
     $AccessURL = new URL(F_BASE_URL);
