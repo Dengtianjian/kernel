@@ -21,10 +21,9 @@ class FileStorageDownloadFileController extends DownloadFileController
     $Signature = $this->query->get("signature");
     $URLParams = $this->request->query->some();
     $Headers = $this->request->header->some();
-    $AuthId = $this->query->get("authId");
     unset($URLParams['id'], $URLParams['uri']);
 
-    $File = FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $AuthId, $this->request->method);
+    $File = FileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
     if ($File->error) return $File;
 
     return $this->response->download($File->getData("fullPath"));
