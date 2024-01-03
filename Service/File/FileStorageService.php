@@ -9,7 +9,6 @@ use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
-use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileService;
 
 class FileStorageService extends FileService
@@ -214,7 +213,7 @@ class FileStorageService extends FileService
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $FS = new DiscuzXFilesModel();
+    $FS = new FilesModel();
 
     $File = $FS->item($FileKey);
     if (!$File) {

@@ -6,7 +6,7 @@ use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\File\FileRemoteStorage;
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\Validate\ValidateRules;
-use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
+use kernel\Model\FilesModel;
 use kernel\Service\OSS\OSSService;
 
 class FileRemoteStorageOSSGetUploadAuthController extends AuthController
@@ -48,7 +48,7 @@ class FileRemoteStorageOSSGetUploadAuthController extends AuthController
     if ($Auth->error) return $Auth;
     $FileName = $FilePathInfo['basename'];
 
-    DiscuzXFilesModel::singleton()->add($FileKey, $Body['sourceFileName'], $ObjectFileName, $Body['filePath'], $Body['size'], $FilePathInfo['extension'], null, FileStorage::PRIVATE, true);
+    FilesModel::singleton()->add($FileKey, $Body['sourceFileName'], $ObjectFileName, $Body['filePath'], $Body['size'], $FilePathInfo['extension'], null, FileStorage::PRIVATE, true);
 
     return [
       "fileKey" => $FileKey,

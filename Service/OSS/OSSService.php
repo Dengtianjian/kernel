@@ -10,7 +10,6 @@ use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
-use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileRemoteStorage\FileRemoteStorageService;
 
 class OSSService extends FileRemoteStorageService
@@ -66,14 +65,14 @@ class OSSService extends FileRemoteStorageService
       $extension = pathinfo($SourceFileName, PATHINFO_EXTENSION);
     }
 
-    return DiscuzXFilesModel::singleton()->add($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height);
+    return FilesModel::singleton()->add($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height);
   }
 
   static function deleteFile($FileKey, $Signature = null, $SignatureKey = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "delete")
   {
     $R = new ReturnResult(true);
 
-    $FS = new DiscuzXFilesModel();
+    $FS = new FilesModel();
     $File = $FS->item($FileKey);
     if (!$File) {
       return $R->error(404, 404001, "文件不存在", [], false);
@@ -98,7 +97,7 @@ class OSSService extends FileRemoteStorageService
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $File = DiscuzXFilesModel::singleton()->item($FileKey);
+    $File = FilesModel::singleton()->item($FileKey);
     if (!$File) {
       return $R->error(404, 404001, "文件不存在", [], false);
     }
@@ -132,7 +131,7 @@ class OSSService extends FileRemoteStorageService
           $height = (int)$ImageInfo['height'];
           $size = (float)$ImageInfo['size'];
 
-          DiscuzXFilesModel::singleton()->update([
+          FilesModel::singleton()->update([
             "width" => $width,
             "height" => $height,
             "fileSize" => $size
@@ -153,7 +152,7 @@ class OSSService extends FileRemoteStorageService
           $height = (int)$ImageInfo[1];
           $size = (float)filesize($FilePath);
 
-          DiscuzXFilesModel::singleton()->update([
+          FilesModel::singleton()->update([
             "width" => $width,
             "height" => $height,
             "fileSize" => $size
