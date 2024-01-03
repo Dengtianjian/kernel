@@ -5,8 +5,7 @@ namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 use kernel\Foundation\Config;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
-use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
-use kernel\Traits\FileStorageControllerTrait;
+use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 
 class DiscuzXFileStorageGetUploadFileAuthController extends DiscuzXController
 {

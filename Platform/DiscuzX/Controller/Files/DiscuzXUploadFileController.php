@@ -3,8 +3,7 @@
 namespace kernel\Platform\DiscuzX\Controller\Files;
 
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
-use kernel\Platform\DiscuzX\Service\DiscuzXFileService;
-use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
+use kernel\Platform\DiscuzX\Service\File\DiscuzXFileService;
 
 class DiscuzXUploadFileController extends DiscuzXController
 {

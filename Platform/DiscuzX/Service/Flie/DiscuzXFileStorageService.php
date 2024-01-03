@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\DiscuzX\Service;
+namespace kernel\Platform\DiscuzX\Service\File;
 
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\URL;

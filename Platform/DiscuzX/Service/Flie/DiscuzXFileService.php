@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\DiscuzX\Service;
+namespace kernel\Platform\DiscuzX\Service\File;
 
 use kernel\Foundation\Router;
 use kernel\Service\File\FileService;

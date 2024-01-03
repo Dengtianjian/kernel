@@ -4,7 +4,7 @@ namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
 use kernel\Foundation\Config;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
-use kernel\Platform\DiscuzX\Service\DiscuzXFileStorageService;
+use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
 class DiscuzXFileStorageDeleteFileController extends DiscuzXController
