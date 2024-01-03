@@ -2,6 +2,7 @@
 
 namespace kernel\Service\OSS;
 
+use kernel\Foundation\Log;
 use kernel\Platform\QCloud\QCloudCos\QCloudCosBase;
 use kernel\Platform\QCloud\QCloudSTS;
 use Qcloud\Cos as SDKQcloudCos;
@@ -80,5 +81,27 @@ class OSSQcloudCosService extends AbstractOSSService
     $EndTime = $StartTime + $DurationSeconds;
 
     return $this->OSSClient->getAuth($ObjectName, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
+  }
+  /**
+   * 获取图片信息
+   *
+   * @param string $ObjectKey 对象键名
+   * @return array|false
+   */
+  function getImageInfo($ObjectKey)
+  {
+    try {
+      $Response = $this->OSSSDKClient->ImageInfo([
+        "Bucket" => $this->OSSBucketName,
+        'Key' => $ObjectKey
+      ]);
+      return json_decode($Response['Data'], true);
+    } catch (SDKQcloudCos\Exception\ServiceResponseException $e) {
+      if ($e->getCosErrorCode() === "InvalidImageFormat") {
+        return null;
+      }
+      Log::record($e->getMessage());
+      return false;
+    }
   }
 }
