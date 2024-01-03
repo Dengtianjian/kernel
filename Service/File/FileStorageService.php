@@ -9,6 +9,7 @@ use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
+use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileService;
 
 class FileStorageService extends FileService
@@ -58,7 +59,7 @@ class FileStorageService extends FileService
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
    * @param string $HTTPMethod 请求方式
-   * @param string $ToString 字符串格式返回
+   * @param boolean $ToString 字符串格式返回
    * @return ReturnResult{string} URL请求参数格式的授权信息字符串
    */
   static function getAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ToString = false)
@@ -213,7 +214,7 @@ class FileStorageService extends FileService
         return $R->error(403, 403001, "签名错误", $verifyResult);
     }
 
-    $FS = new FilesModel();
+    $FS = new DiscuzXFilesModel();
 
     $File = $FS->item($FileKey);
     if (!$File) {
