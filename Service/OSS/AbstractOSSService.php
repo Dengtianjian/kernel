@@ -59,7 +59,7 @@ abstract class AbstractOSSService extends Service
    */
   public function __construct($OSSPlatoform, $SecretId, $SecretKey, $Region, $Bucket)
   {
-    if (!in_array($OSSPlatoform, OSSService::OSS_PLATFORMS)) {
+    if (!in_array($OSSPlatoform, ObjectStorageService::OSS_PLATFORMS)) {
       throw new Exception("该OSS平台不支持");
     }
     $this->OSSPlatoform = $OSSPlatoform;
@@ -105,4 +105,11 @@ abstract class AbstractOSSService extends Service
     $URLParams = [],
     $Headers = []
   );
+  /**
+   * 获取图片信息
+   *
+   * @param string $ObjectKey 对象键名
+   * @return array|false
+   */
+  abstract function getImageInfo($ObjectKey);
 }

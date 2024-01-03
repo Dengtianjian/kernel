@@ -59,7 +59,7 @@ class OSSQcloudCosService extends AbstractOSSService
       'Key' => $ObjectKey
     ]);
   }
-  function getObjectURL($ObjectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false)
+  function getObjectURL($ObjectKey, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false)
   {
     $startTime = time();
     $endTime = $startTime + $DurationSeconds;
@@ -68,10 +68,10 @@ class OSSQcloudCosService extends AbstractOSSService
       $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
     }
 
-    return $this->OSSClient->getObjectAuthUrl($ObjectName, "get", $URLParams, $Headers, $startTime, $endTime, $Download);
+    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, $Headers, $startTime, $endTime, $Download);
   }
   function getObjectAuth(
-    $ObjectName,
+    $ObjectKey,
     $HTTPMethod = "get",
     $DurationSeconds = 600,
     $URLParams = [],
@@ -80,14 +80,8 @@ class OSSQcloudCosService extends AbstractOSSService
     $StartTime = time();
     $EndTime = $StartTime + $DurationSeconds;
 
-    return $this->OSSClient->getAuth($ObjectName, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
+    return $this->OSSClient->getAuth($ObjectKey, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
   }
-  /**
-   * 获取图片信息
-   *
-   * @param string $ObjectKey 对象键名
-   * @return array|false
-   */
   function getImageInfo($ObjectKey)
   {
     try {
