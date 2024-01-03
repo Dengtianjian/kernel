@@ -2,17 +2,14 @@
 
 namespace kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\File\FileRemoteStorage;
-use kernel\Foundation\File\Files;
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\Validate\ValidateRules;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
-use kernel\Service\OSS\ObjectStorageService;
 use kernel\Service\OSS\OSSService;
 
-class FileRemoteStorageOSSGetUploadAuthController extends DiscuzXController
+class FileRemoteStorageOSSGetUploadAuthController extends AuthController
 {
   public $body = [
     "filePath" => "string",
