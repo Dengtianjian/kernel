@@ -209,6 +209,10 @@ class URL
   {
     return self::buildURL($this->host, $this->pathName, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
   }
+  public function __toString()
+  {
+    return $this->toString();
+  }
   /**
    * 设置请求参数
    *
