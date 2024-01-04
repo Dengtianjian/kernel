@@ -28,7 +28,7 @@ class FileService extends Service
   /**
    * 上传文件
    *
-   * @param File|string $File 文件
+   * @param File $File 文件
    * @param string $SavePath 保存的完整路径
    * @param string $saveFileName 保存的文件名称。如果未传入该值，将会自动生成新的文件名称
    * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 上传失败会返回false，成功返回文件信息
@@ -108,7 +108,6 @@ class FileService extends Service
 
     $FileInfo = pathinfo($FileKey);
     $AccessURL = Files::generateAccessURL($FileInfo['dirname'], $FileInfo['filename'], $URLParams);
-
 
     return $R->success($AccessURL);
   }

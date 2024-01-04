@@ -19,13 +19,19 @@ class FileStorageService extends FileService
    * @var FileStorage
    */
   protected static $FileStorageInstance = null;
+  /**
+   * 文件存储表模型实例
+   *
+   * @var FilesModel
+   */
+  protected static $FilesModelInstance = null;
 
   /**
    * 使用服务
    *
    * @return void
    */
-  static function useService($SaveFolder = null, $SignatureKey = null)
+  static function useService($SignatureKey = null)
   {
     Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
     Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
@@ -34,7 +40,8 @@ class FileStorageService extends FileService
     Router::get("fileStorage/{fileId:.+?}/download", FileStorageNamespace\FileStorageDownloadFileController::class);
     Router::get("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageGetFileController::class);
 
-    self::$FileStorageInstance = new FileStorage($SaveFolder, $SignatureKey);
+    self::$FileStorageInstance = new FileStorage($SignatureKey);
+    self::$FilesModelInstance = new FilesModel();
   }
   static function init()
   {
@@ -163,15 +170,59 @@ class FileStorageService extends FileService
     if (is_numeric($FileInfo)) {
       switch ($FileInfo) {
         case 0:
-          return $R->error(403, 403001, "签名错误", $FileInfo);
+          return $R->error(403, 403001, "无权获取文件信息", $FileInfo);
         case 1:
           return $R->error(404, 404001, "文件不存在", [], false);
         case 2:
-          return $R->error(403, 403002, "无权访问");
+          return $R->error(403, 403002, "无权获取文件信息");
         case 3:
-          return $R->error(403, 403003, "无权访问");
+          return $R->error(403, 403003, "无权获取文件信息");
         case 4:
           return $R->error(404, 404002, "文件不存在");
+      }
+    }
+
+    $width = $FileInfo['width'];
+    $height = $FileInfo['height'];
+    $size = $FileInfo['fileSize'];
+    if ($FileInfo['remote']) {
+      if (!$width || !$height) {
+        $ImageInfo = self::$FileStorageInstance->getImageInfo($FileKey);
+        if ($ImageInfo === false) {
+          return $R->error(500, 500, "获取远程文件信息失败", [], $ImageInfo);
+        }
+        if (!is_null($ImageInfo)) {
+          $FileInfo['width'] = $width = (int)$ImageInfo['width'];
+          $FileInfo['height'] = $height = (int)$ImageInfo['height'];
+          $FileInfo['fileSize'] = $size = (float)$ImageInfo['size'];
+
+          self::$FilesModelInstance->update([
+            "width" => $width,
+            "height" => $height,
+            "fileSize" => $size
+          ]);
+        }
+      }
+    } else {
+      $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+
+      if (!file_exists($FilePath)) {
+        return $R->error(404, 404003, "文件不存在", [], false);
+      }
+
+      if (FileHelper::isImage($FilePath) && (!$width || !$height)) {
+        $ImageInfo = getimagesize($FilePath);
+        if ($ImageInfo) {
+          $FileInfo['width'] = $width = (int)$ImageInfo[0];
+          $FileInfo['height'] = $height = (int)$ImageInfo[1];
+          $FileInfo['fileSize'] = $size = (float)filesize($FilePath);
+
+          self::$FilesModelInstance->update([
+            "width" => $width,
+            "height" => $height,
+            "fileSize" => $size
+          ]);
+        }
       }
     }
 

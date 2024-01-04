@@ -33,9 +33,6 @@ class FileStorage
    */
   const AUTHENTICATED_READ_WRITE = "authenticated-read-write";
 
-  protected $saveFolder = null;
-  protected $signatureKey = null;
-
   /**
    * 文件存储签名实例
    *
@@ -43,15 +40,21 @@ class FileStorage
    */
   protected $signature = null;
   /**
+   * 签名秘钥
+   *
+   * @var string
+   */
+  protected $signatureKey = null;
+
+  /**
    * 文件存储表实例
    *
    * @var FilesModel
    */
   protected $filesModel = null;
 
-  function __construct($SaveFolder, $SignatureKey)
+  function __construct($SignatureKey)
   {
-    $this->saveFolder = $SaveFolder;
     $this->signatureKey = $SignatureKey;
 
     $this->signature = new FileStorageSignature($SignatureKey);
@@ -102,10 +105,7 @@ class FileStorage
     $FileInfo = pathinfo($FileKey);
 
     $fileName = "{$FileInfo['basename']}.{$FileInfo['extension']}";
-    $fileSavePath = $FileInfo['dirname'];
-    if (!is_null($this->saveFolder)) {
-      $fileSavePath = FileHelper::combinedFilePath($this->saveFolder, $fileSavePath);
-    }
+    $fileSavePath = FileHelper::combinedFilePath(F_APP_STORAGE, $FileInfo['dirname']);
 
     $UploadedResult = Files::upload($File, $fileSavePath, $fileName);
     if (is_bool($UploadedResult) && $UploadedResult === false) {
@@ -327,5 +327,24 @@ class FileStorage
     }
 
     return $this->filesModel->remove(true, $FileKey);
+  }
+  /**
+   * 获取图片信息
+   *
+   * @param string $FileKey 文件名
+   * @return array{width:int,height:int,mime:string,bits:int}
+   */
+  function getImageInfo($FileKey)
+  {
+    $FilePath = FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey);
+    if (!file_exists($FilePath)) return false;
+
+    $ImageInfo = getimagesize($FilePath);
+    return [
+      "width" => $ImageInfo[0],
+      "height" => $ImageInfo[1],
+      "mime" => $ImageInfo['mime'],
+      "bits" => $ImageInfo['bits']
+    ];
   }
 }

@@ -47,11 +47,39 @@ class FileRemoteOSSStorage extends FileRemoteStorage
    * 删除文件
    *
    * @param string $FileKey — 文件名
-   * @return mixed
+   * @return int
    */
   public function deleteFile($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
   {
-    return $this->RemoteStorageInstance->deleteObject($FileKey);
+    if ($Signature) {
+      if (!array_key_exists("signature", $RawURLParams)) {
+        $RawURLParams['signature'] = $Signature;
+      }
+      $verifyResult = $this->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
+      if ($verifyResult !== true)
+        return 0;
+    }
+
+    $File = $this->filesModel->item($FileKey);
+    if (!$File) {
+      return 1;
+    }
+
+    if ($File['acl'] === self::PRIVATE) {
+      if ($File['ownerId'] && $File['ownerId'] !== $CurrentAuthId) {
+        return 2;
+      }
+    } else {
+      if ($File['acl'] !== self::PUBLIC_READ_WRITE && $File['acl'] !== self::AUTHENTICATED_READ_WRITE) {
+        if ($File['ownerId'] !== $CurrentAuthId) {
+          return 3;
+        }
+      }
+    }
+
+    $this->RemoteStorageInstance->deleteObject($FileKey);
+
+    return  $this->filesModel->remove(true, $FileKey);
   }
 
   /**
@@ -87,7 +115,7 @@ class FileRemoteOSSStorage extends FileRemoteStorage
    * 获取图片信息
    *
    * @param string $ObjectKey 对象键名
-   * @return array|false
+   * @return array{width:int,height:int,size:int}|false
    */
   function getImageInfo($ObjectKey)
   {

@@ -7,10 +7,8 @@ use kernel\Controller\Main\Files\FileStorage as FileStorageNamespace;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\File\FileRemoteOSSStorage;
-use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
-use kernel\Model\FilesModel;
 use kernel\Service\File\FileRemoteStorageService;
 
 class FileOSSStorageService extends FileRemoteStorageService
@@ -61,95 +59,6 @@ class FileOSSStorageService extends FileRemoteStorageService
     self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
 
     parent::useService(null, $SignatureKey);
-  }
-
-  static function deleteFile($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "delete")
-  {
-    $R = new ReturnResult(true);
-
-    if ($Signature && !self::$FileStorageInstance->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod)) {
-      return $R->error(403, 403, "无权删除");
-    }
-
-    return $R->success(self::$FileStorageInstance->deleteFile($FileKey, $Signature, $CurrentAuthId, $RawURLParams, $RawHeaders, $HTTPMethod));
-  }
-
-  static function getFileInfo($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
-  {
-    $R = new ReturnResult(true);
-
-    if ($Signature && !self::$FileStorageInstance->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod)) {
-      if (!array_key_exists("signature", $RawURLParams)) {
-        $RawURLParams['signature'] = $Signature;
-      }
-      return $R->error(403, 403, "无权获取");
-    }
-
-    $FileInfo = self::$FileStorageInstance->getFileInfo($FileKey, $Signature, $CurrentAuthId, $RawURLParams, $RawHeaders, $HTTPMethod);
-
-    if (is_bool($FileInfo)) {
-      return $R->error(500, 500, "获取文件信息失败", $FileInfo);
-    }
-    if (is_numeric($FileInfo)) {
-      switch ($FileInfo) {
-        case 0:
-          return $R->error(403, 403001, "签名错误", $FileInfo);
-        case 1:
-          return $R->error(404, 404001, "文件不存在", [], false);
-        case 2:
-          return $R->error(403, 403002, "无权访问");
-        case 3:
-          return $R->error(403, 403003, "无权访问");
-        case 4:
-          return $R->error(404, 404002, "文件不存在");
-      }
-    }
-
-    $width = $FileInfo['width'];
-    $height = $FileInfo['height'];
-    $size = $FileInfo['fileSize'];
-    if ($FileInfo['remote']) {
-      if (!$width || !$height) {
-        $ImageInfo = self::$FileStorageInstance->getImageInfo($FileKey);
-        if ($ImageInfo === false) {
-          return $R->error(500, 500, "获取远程文件信息失败", [], $ImageInfo);
-        }
-        if (!is_null($ImageInfo)) {
-          $FileInfo['width'] = $width = (int)$ImageInfo['width'];
-          $FileInfo['height'] = $height = (int)$ImageInfo['height'];
-          $FileInfo['fileSize'] = $size = (float)$ImageInfo['size'];
-
-          FilesModel::singleton()->update([
-            "width" => $width,
-            "height" => $height,
-            "fileSize" => $size
-          ]);
-        }
-      }
-    } else {
-      $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-
-      if (!file_exists($FilePath)) {
-        return $R->error(404, 404003, "文件不存在", [], false);
-      }
-
-      if (FileHelper::isImage($FilePath) && (!$width || !$height)) {
-        $ImageInfo = getimagesize($FilePath);
-        if ($ImageInfo) {
-          $FileInfo['width'] = $width = (int)$ImageInfo[0];
-          $FileInfo['height'] = $height = (int)$ImageInfo[1];
-          $FileInfo['fileSize'] = $size = (float)filesize($FilePath);
-
-          FilesModel::singleton()->update([
-            "width" => $width,
-            "height" => $height,
-            "fileSize" => $size
-          ]);
-        }
-      }
-    }
-
-    return $R->success($FileInfo);
   }
 
   /**
