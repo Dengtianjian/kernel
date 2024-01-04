@@ -20,7 +20,6 @@ class FileStorageGetUploadFileAuthController extends AuthController
   public function data()
   {
     $Body = $this->body->some();
-    $SignatureKey = Config::get("signatureKey") ?: "";
 
     $fileName = $sourceFileName = $Body['fileName'];
     if (!$this->body->has("rename") || $Body['rename']) {
@@ -28,7 +27,7 @@ class FileStorageGetUploadFileAuthController extends AuthController
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
     $FileKey = Files::combinedFileKey($Body['filePath'], $fileName);
-    $Auth = FileStorageService::getAccessAuth($FileKey, $SignatureKey, 600, [], "post", true);
+    $Auth = FileStorageService::getAccessAuth($FileKey, 600, [], "post", true);
     if ($Auth->error) return $Auth;
 
     return [
