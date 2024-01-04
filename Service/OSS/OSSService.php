@@ -30,7 +30,7 @@ class OSSService extends FileRemoteStorageService
    * @param string $Region 存储桶所属地域，如 ap-guangzhou
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
    */
-  static function useService($OSSPlatform = "QCloudCos", $SecretId = null, $SecretKey = null, $Region = null, $Bucket = null)
+  static function useService($OSSPlatform = ObjectStorageService::OSS_QCLOUD, $SecretId = null, $SecretKey = null, $Region = null, $Bucket = null)
   {
     if (!$OSSPlatform || !in_array($OSSPlatform, ObjectStorageService::OSS_PLATFORMS)) {
       throw new Exception("该OSS平台不支持");
