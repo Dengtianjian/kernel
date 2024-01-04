@@ -27,7 +27,7 @@ class DiscuzXFileStorageService extends FileStorageService
 
     Router::get("fileStorage/{fileId:.+?}/preview", DiscuzXFileStorageNamespace\DiscuzXFileStorageAccessFileController::class);
     Router::get("fileStorage/{fileId:.+?}/download", DiscuzXFileStorageNamespace\DiscuzXFileStorageDownloadFileController::class);
-    
+
     Router::get("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetFileController::class);
   }
   static function getAccessURL($FileKey, $URLParams = [], $SignatureKey = NULL, $Expires = 600, $HTTPMethod = "get")
@@ -90,9 +90,11 @@ class DiscuzXFileStorageService extends FileStorageService
       }
     }
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-    if (!file_exists($FilePath)) {
-      return $R->error(404, 404002, "文件不存在", [], false);
+    if (!$File['remote']) {
+      $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+      if (!file_exists($FilePath)) {
+        return $R->error(404, 404002, "文件不存在", [], false);
+      }
     }
 
     return $R->success([
@@ -108,7 +110,8 @@ class DiscuzXFileStorageService extends FileStorageService
       "height" => $File['height'],
       'acl' => $File['acl'],
       "createdAt" => $File['createdAt'],
-      "updatedAt" => $File['updatedAt']
+      "updatedAt" => $File['updatedAt'],
+      "remote" => $File['remote']
     ]);
   }
   static function deleteFile($FileKey, $Signature = null, $SignatureKey = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
