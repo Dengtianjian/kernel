@@ -19,7 +19,8 @@ class DiscuzXFileStorageGetFileController extends DiscuzXController
     "relativePath" => "string",
     "ownerId" => "string",
     "width" => "double",
-    "height" => "double"
+    "height" => "double",
+    "remote" => "boolean"
   ];
 
   public function data($FileKey)
