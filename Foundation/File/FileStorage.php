@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\File;
 
-use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\HTTP\URL;
 use kernel\Model\FilesModel;
@@ -11,7 +10,7 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-class FileStorage extends Files
+class FileStorage
 {
   /**
    * 私有的，创作者与管理员具备全部权限，其他人没有权限
@@ -34,38 +33,124 @@ class FileStorage extends Files
    */
   const AUTHENTICATED_READ_WRITE = "authenticated-read-write";
 
+  protected $saveFolder = null;
+  protected $signatureKey = null;
+
+  /**
+   * 文件存储签名实例
+   *
+   * @var FileStorageSignature
+   */
+  protected $signature = null;
+  /**
+   * 文件存储表实例
+   *
+   * @var FilesModel
+   */
+  protected $filesModel = null;
+
+  function __construct($SaveFolder, $SignatureKey)
+  {
+    $this->saveFolder = $SaveFolder;
+    $this->signatureKey = $SignatureKey;
+
+    $this->signature = new FileStorageSignature($SignatureKey);
+    $this->filesModel = new FilesModel();
+  }
+
+  /**
+   * 添加文件记录
+   *
+   * @param string $FileKey 文件名
+   * @param string $SourceFileName 原文件名
+   * @param string $FileName 保存的文件名
+   * @param string $FilePath 文件路径
+   * @param int $FileSize 文件大小
+   * @param string $OwnerId 拥有者ID
+   * @param string $ACL 访问权限控制
+   * @param string $extension 扩展名
+   * @param int $Width 宽度
+   * @param int $Height 高度
+   * @param string $BelongsId 关联的数据ID
+   * @param string $BelongsType 关联的数据类型
+   * @return int 文件数字ID
+   */
+  function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = self::PRIVATE, $extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null)
+  {
+    if (!$extension) {
+      $extension = pathinfo($SourceFileName, PATHINFO_EXTENSION);
+    }
+
+    return $this->filesModel->add($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height);
+  }
+
+  /**
+   * 上传文件
+   *
+   * @param File $File 文件
+   * @param string $FileKey 文件名
+   * @param string $OwnerId 拥有者标识符
+   * @param string $BelongsId 关联内容ID
+   * @param string $BelongsType  关联内容类型
+   * @param string $ACL 访问权限控制
+   * @return false|array{fileKey:string, sourceFileName:string, path:string, fileName:string, extension:string, size:int, fullPath:string, relativePath:string, width:int, height:int}
+   */
+  public function upload($File, $FileKey, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  {
+    if (!$File) return false;
+
+    $FileInfo = pathinfo($FileKey);
+
+    $fileName = "{$FileInfo['basename']}.{$FileInfo['extension']}";
+    $fileSavePath = $FileInfo['dirname'];
+    if (!is_null($this->saveFolder)) {
+      $fileSavePath = FileHelper::combinedFilePath($this->saveFolder, $fileSavePath);
+    }
+
+    $UploadedResult = Files::upload($File, $fileSavePath, $fileName);
+    if (is_bool($UploadedResult) && $UploadedResult === false) {
+      return false;
+    }
+
+    $this->filesModel->add($FileKey, $UploadedResult['sourceFileName'], $UploadedResult['fileName'], $UploadedResult['path'], $UploadedResult['size'], $UploadedResult['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $UploadedResult['width'], $UploadedResult['height']);
+
+    $UploadedResult['fileKey'] = $FileKey;
+    $UploadedResult['ownerId'] = $OwnerId;
+    $UploadedResult['acl'] = $ACL;
+    $UploadedResult['belongsId'] = $BelongsId;
+    $UploadedResult['belongsType'] = $BelongsType;
+
+    return $UploadedResult;
+  }
+
   /**
    * 生成访问授权信息
    *
    * @param string $FileKey 文件名
-   * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
    * @param string $HTTPMethod 请求方式
    * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string|array 授权信息
    */
-  static function generateAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $toString = false)
+  function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $toString = false)
   {
     if (!$FileKey) {
       throw new Exception("文件名不可为空", 400, 400);
     }
 
-    $FSS = new FileStorageSignature($SignatureKey);
-
-    return $FSS->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, $toString);
+    return $this->signature->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, $toString);
   }
   /**
    * 验证授权签名
    *
-   * @param string $SignatureKey 签名秘钥
    * @param string $FileKey 文件名称
    * @param array $RawURLParams 请求参数
    * @param array $RawHeaders 请求头
    * @param string $HTTPMethod 请求方式
    * @return boolean truly验证通过，返回false或者数字就是验证失败
    */
-  static function verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
+  function verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     foreach ($URLParamKeys as $key) {
@@ -121,28 +206,126 @@ class FileStorage extends Files
       }
     }
 
-    return FileStorageSignature::call($SignatureKey)->verifyAuthorization($Signature, $FileKey, $startTime, $endTime, $URLParams, $Headers, $HTTPMethod);
+    return $this->signature->verifyAuthorization($Signature, $FileKey, $startTime, $endTime, $URLParams, $Headers, $HTTPMethod);
   }
   /**
    * 生成访问链接
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
-   * @param string $SignatureKey 签名秘钥
+   * @param boolean $WithSignature URL中携带签名
    * @param integer $Expires 有效期，秒级
    * @param string $HTTPMethod 请求方式
    * @return string 访问URL
    */
-  static function generateAccessURL($FileKey, $URLParams = [], $SignatureKey = null, $Expires = 600,  $HTTPMethod = "get")
+  function generateAccessURL($FileKey, $URLParams = [], $WithSignature = true, $Expires = 600,  $HTTPMethod = "get")
   {
-    if ($SignatureKey) {
-      $URLParams = array_merge($URLParams, self::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $HTTPMethod, false));
+    if ($WithSignature) {
+      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $HTTPMethod, false));
     }
 
-    $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}";
-    $AccessURL->queryParam($URLParams);
+    $AccessURLIns = new URL(F_BASE_URL);
+    $AccessURLIns->pathName = URL::combinedPathName("fileStorage", $FileKey);
+    $AccessURLIns->queryParam($URLParams);
 
-    return $AccessURL->toString();
+    return $AccessURLIns->toString();
+  }
+  /**
+   * 获取文件信息
+   *
+   * @param string $FileKey 文件名
+   * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
+   * @param string $CurrentAuthId 当前登录态的用户ID，对应的是文件表的OwnerId，会进行一个权限比较
+   * @param array $RawURLParams URL请求参数
+   * @param array $RawHeaders 请求头
+   * @param string $HTTPMethod 请求方式
+   * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 文件信息
+   */
+  function getFileInfo($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
+  {
+    if ($Signature) {
+      if (!array_key_exists("signature", $RawURLParams)) {
+        $RawURLParams['signature'] = $Signature;
+      }
+      $verifyResult =  $this->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
+      if ($verifyResult !== true)
+        return 0;
+    }
+
+    $File = $this->filesModel->item($FileKey);
+    if (!$File) {
+      return 1;
+    }
+
+    if ($File['acl'] === FileStorage::PRIVATE) {
+      if ($File['ownerId'] && $File['ownerId'] !== $CurrentAuthId) {
+        return 2;
+      }
+    } else {
+      if (!$Signature) {
+        if (in_array($File['acl'], [
+          FileStorage::AUTHENTICATED_READ,
+          FileStorage::AUTHENTICATED_READ_WRITE
+        ])) {
+          return 3;
+        }
+      }
+    }
+
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+    if (!file_exists($FilePath)) {
+      return 4;
+    }
+
+    $File['fullPath'] = $FilePath;
+    $File['fileKey'] = $FileKey;
+
+    return $File;
+  }
+  /**
+   * 删除文件
+   *
+   * @param string $FileKey 文件名
+   * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
+   * @param string $CurrentAuthId 当前登录态的用户ID，对应的是文件表的OwnerId，会进行一个权限比较
+   * @param array $RawURLParams URL请求参数
+   * @param array $RawHeaders 请求头
+   * @param string $HTTPMethod 请求方式
+   * @return ReturnResult<boolean> 是否已删除，true=删除完成，false=删除失败
+   */
+  function deleteFile($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
+  {
+    if ($Signature) {
+      if (!array_key_exists("signature", $RawURLParams)) {
+        $RawURLParams['signature'] = $Signature;
+      }
+      $verifyResult =  $this->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
+      if ($verifyResult !== true)
+        return 0;
+    }
+
+    $File = $this->filesModel->item($FileKey);
+    if (!$File) {
+      return 1;
+    }
+
+    if ($File['acl'] === self::PRIVATE) {
+      if ($File['ownerId'] && $File['ownerId'] !== $CurrentAuthId) {
+        return 2;
+      }
+    } else {
+      if ($File['acl'] !== self::PUBLIC_READ_WRITE && $File['acl'] !== self::AUTHENTICATED_READ_WRITE) {
+        if ($File['ownerId'] !== $CurrentAuthId) {
+          return 3;
+        }
+      }
+    }
+
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+    if (file_exists($FilePath)) {
+      unlink($FilePath);
+    }
+
+    return $this->filesModel->remove(true, $FileKey);
   }
 }

@@ -21,18 +21,16 @@ trait FileStorageControllerTrait
   /**
    * 获取参数
    *
-   * @return array{signatureKey:string,signature:string,URLParams:array,headers:array}
+   * @return array{signature:string,URLParams:array,headers:array}
    */
   public function getParams()
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
     $Signature = $this->query->get("signature");
     $URLParams = $this->request->query->some();
     $Headers = $this->request->header->some();
     unset($URLParams['id'], $URLParams['uri']);
 
     return [
-      "signatureKey" => $SignatureKey,
       "signature" => $Signature,
       "URLParams" => $URLParams,
       "headers" => $Headers

@@ -14,11 +14,18 @@ use kernel\Service\File\FileService;
 class FileStorageService extends FileService
 {
   /**
+   * 文件存储实例
+   *
+   * @var FileStorage
+   */
+  protected static $FileStorageInstance = null;
+
+  /**
    * 使用服务
    *
    * @return void
    */
-  static function useService()
+  static function useService($SaveFolder = null, $SignatureKey = null)
   {
     Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
     Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
@@ -26,6 +33,8 @@ class FileStorageService extends FileService
     Router::get("fileStorage/{fileId:.+?}/preview", FileStorageNamespace\FileStorageAccessFileController::class);
     Router::get("fileStorage/{fileId:.+?}/download", FileStorageNamespace\FileStorageDownloadFileController::class);
     Router::get("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageGetFileController::class);
+
+    self::$FileStorageInstance = new FileStorage($SaveFolder, $SignatureKey);
   }
   static function init()
   {
@@ -36,40 +45,38 @@ class FileStorageService extends FileService
    *
    * @param string $FileKey 文件名
    * @param string $Signature 签名
-   * @param string $SignatureKey 签名秘钥
    * @param array $RawURLParams 请求参数
    * @param array $RawHeaders 请求头
    * @param string $HTTPMethod 请求方式
-   * @return boolean truly验证通过，返回false或者数字就是验证失败
+   * @return ReturnResulr{boolean} truly验证通过，返回false或者数字就是验证失败
    */
-  static function verifyAccessAuth($FileKey, $Signature, $SignatureKey, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
+  static function verifyAccessAuth($FileKey, $Signature, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
   {
     if (!array_key_exists("signature", $RawURLParams)) {
       $RawURLParams['signature'] = $Signature;
     }
 
-    return FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
+    return (new ReturnResult(self::$FileStorageInstance->verifyAccessAuth($FileKey, $RawURLParams, $RawHeaders, $HTTPMethod)));
   }
   /**
    * 获取访问授权信息字符串
    *
    * @param string $FileKey 文件名
-   * @param string $SignatureKey 签名秘钥
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
    * @param string $HTTPMethod 请求方式
    * @param boolean $ToString 字符串格式返回
    * @return ReturnResult{string} URL请求参数格式的授权信息字符串
    */
-  static function getAccessAuth($FileKey, $SignatureKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ToString = false)
+  static function getAccessAuth($FileKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ToString = false)
   {
-    $R = new ReturnResult(true);
+    $R = new ReturnResult(null);
 
     if (!$FileKey) {
       return $R->error(400, 400, "文件名不可为空");
     }
 
-    $AccessAuth = FileStorage::generateAccessAuth($FileKey, $SignatureKey, $Expires, $URLParams, $HTTPMethod, $ToString);
+    $AccessAuth = self::$FileStorageInstance->generateAccessAuth($FileKey, $Expires, $URLParams, $HTTPMethod, $ToString);
 
     return $R->success($AccessAuth);
   }
@@ -78,29 +85,39 @@ class FileStorageService extends FileService
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
-   * @param string $SignatureKey 签名秘钥。如果传入该值，请按需传入下面的值，会生成带签名的URL地址
+   * @param string $WithSignature 生成的URL是否携带签名
    * @param integer $Expires 签名有效期，秒级
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult{string} 访问的URL地址
    */
-  static function getAccessURL($FileKey, $URLParams = [], $SignatureKey = NULL, $Expires = 600, $HTTPMethod = "get")
+  static function getAccessURL($FileKey, $URLParams = [], $WithSignature = TRUE, $Expires = 600, $HTTPMethod = "get")
   {
-    $accessURL = "";
-    $R = new ReturnResult($accessURL);
+    $R = new ReturnResult(null);
 
-    if ($SignatureKey) {
-      $FileKeyInfo = pathinfo($FileKey);
-      $accessURL = FileStorage::generateAccessURL($FileKeyInfo['dirname'], $FileKeyInfo['basename'], $SignatureKey, $Expires, $URLParams, $HTTPMethod);
-    } else {
-      $U = new URL(F_BASE_URL);
-      $U->pathName = URL::combinedPathName("files", $FileKey);
-      foreach ($URLParams as $key => $value) {
-        $U->queryParam($value, $key);
-      }
-      $accessURL = $U->toString();
-    }
+    return $R->success(self::$FileStorageInstance->generateAccessURL($FileKey, $URLParams, $WithSignature, $Expires, $HTTPMethod));
+  }
 
-    return $R->success($accessURL);
+
+  /**
+   * 添加文件记录
+   *
+   * @param string $FileKey 文件名
+   * @param string $SourceFileName 原文件名
+   * @param string $FileName 保存的文件名
+   * @param string $FilePath 文件路径
+   * @param int $FileSize 文件大小
+   * @param string $OwnerId 拥有者ID
+   * @param string $ACL 访问权限控制
+   * @param string $extension 扩展名
+   * @param int $Width 宽度
+   * @param int $Height 高度
+   * @param string $BelongsId 关联的数据ID
+   * @param string $BelongsType 关联的数据类型
+   * @return int 文件数字ID
+   */
+  static function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = FileStorage::PRIVATE, $extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null)
+  {
+    return (new ReturnResult(self::$FileStorageInstance->addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height)));
   }
 
   /**
@@ -112,132 +129,91 @@ class FileStorageService extends FileService
    * @param string $BelongsId 关联内容ID
    * @param string $BelongsType  关联内容类型
    * @param string $ACL 访问权限控制
-   * @return ReturnResult{int}
+   * @return ReturnResult{false|array{fileKey:string, sourceFileName:string, path:string, fileName:string, extension:string, size:int, fullPath:string, relativePath:string, width:int, height:int}}
    */
   static function upload($File, $FileKey, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = 'private')
   {
-    $FileInfo = pathinfo($FileKey);
-    $UploadedResult = parent::upload($File, $FileInfo['dirname'], $FileInfo['basename']);
-    if ($UploadedResult->error) return $UploadedResult;
-    $UploadFileInfo = $UploadedResult->getData();
+    $R = new ReturnResult(null);
 
-    $FS = new FilesModel();
-    return $UploadedResult->success($FS->add($FileKey, $UploadFileInfo['sourceFileName'], $UploadFileInfo['fileName'], $UploadFileInfo['path'], $UploadFileInfo['size'], $UploadFileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $UploadFileInfo['width'], $UploadFileInfo['height']));
+    $UploadedResult = self::$FileStorageInstance->upload($File, $FileKey, $OwnerId, $BelongsId, $BelongsType, $ACL);
+    if ($UploadedResult === false) return $R->error(500, 500, "上传失败", $UploadedResult);
+
+    return $R->success($UploadedResult);
   }
   /**
    * 获取文件信息
    *
    * @param string $FileKey 文件名
    * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
-   * @param string $SignatureKey 签名秘钥
    * @param string $CurrentAuthId 当前登录态的用户ID，对应的是文件表的OwnerId，会进行一个权限比较
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int}> 文件信息
    */
-  static function getFileInfo($FileKey, $Signature = null, $SignatureKey = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
+  static function getFileInfo($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
   {
     $R = new ReturnResult(true);
-    if ($Signature) {
-      if (!array_key_exists("signature", $RawURLParams)) {
-        $RawURLParams['signature'] = $Signature;
-      }
-      $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
-      if ($verifyResult !== true)
-        return $R->error(403, 403001, "签名错误", $verifyResult);
-    }
 
-    $File = FilesModel::singleton()->item($FileKey);
-    if (!$File) {
-      return $R->error(404, 404001, "文件不存在", [], false);
-    }
+    $FileInfo = self::$FileStorageInstance->getFileInfo($FileKey, $Signature, $CurrentAuthId, $RawURLParams, $RawHeaders, $HTTPMethod);
 
-    if ($File['acl'] === FileStorage::PRIVATE) {
-      if ($File['ownerId'] && $File['ownerId'] !== $CurrentAuthId) {
-        return $R->error(403, 403002, "无权访问", [], $File['acl']);
-      }
-    } else {
-      if (!$Signature) {
-        if (in_array($File['acl'], [
-          FileStorage::AUTHENTICATED_READ,
-          FileStorage::AUTHENTICATED_READ_WRITE
-        ])) {
-          return $R->error(403, 403003, "无权访问", [], $File['acl']);
-        }
+    if (is_bool($FileInfo)) {
+      return $R->error(500, 500, "获取文件信息失败", $FileInfo);
+    }
+    if (is_numeric($FileInfo)) {
+      switch ($FileInfo) {
+        case 0:
+          return $R->error(403, 403001, "签名错误", $FileInfo);
+        case 1:
+          return $R->error(404, 404001, "文件不存在", [], false);
+        case 2:
+          return $R->error(403, 403002, "无权访问");
+        case 3:
+          return $R->error(403, 403003, "无权访问");
+        case 4:
+          return $R->error(404, 404002, "文件不存在");
       }
     }
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-    if (!file_exists($FilePath)) {
-      return $R->error(404, 404002, "文件不存在", [], false);
-    }
-
-    return $R->success([
-      "fileKey" => $FileKey,
-      "path" => $File['filePath'],
-      "fileName" => $File['fileName'],
-      "extension" => $File['extension'],
-      "size" => $File['fileSize'],
-      "fullPath" => $FilePath,
-      "relativePath" => FileHelper::optimizedPath(dirname($FileKey)),
-      "ownerId" => $File['ownerId'],
-      "width" => $File['width'],
-      "height" => $File['height'],
-      'acl' => $File['acl'],
-      "createdAt" => $File['createdAt'],
-      "updatedAt" => $File['updatedAt']
-    ]);
+    return $R->success($FileInfo);
   }
   /**
    * 删除文件
    *
    * @param string $FileKey 文件名
    * @param string $Signature 签名，如果传入该值，就会进行签名校验，需要传入后面的所有参数
-   * @param string $SignatureKey 签名秘钥
+   * @param string $CurrentAuthId 当前登录态的用户ID，对应的是文件表的OwnerId，会进行一个权限比较
    * @param array $RawURLParams URL请求参数
    * @param array $RawHeaders 请求头
-   * @param string $CurrentAuthId 当前登录态的用户ID，对应的是文件表的OwnerId，会进行一个权限比较
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult<boolean> 是否已删除，true=删除完成，false=删除失败
    */
-  static function deleteFile($FileKey, $Signature = null, $SignatureKey = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
+  static function deleteFile($FileKey, $Signature = null, $CurrentAuthId = null, $RawURLParams = [], $RawHeaders = [], $HTTPMethod = "get")
   {
     $R = new ReturnResult(true);
-    if ($Signature) {
-      if (!array_key_exists("signature", $RawURLParams)) {
-        $RawURLParams['signature'] = $Signature;
-      }
-      $verifyResult = FileStorage::verifyAccessAuth($SignatureKey, $FileKey, $RawURLParams, $RawHeaders, $HTTPMethod);
-      if ($verifyResult !== true)
-        return $R->error(403, 403001, "签名错误", $verifyResult);
+
+    $DeletedResult = self::$FileStorageInstance->deleteFile($FileKey, $Signature, $CurrentAuthId, $RawURLParams, $RawHeaders, $HTTPMethod);
+
+    if (is_bool($DeletedResult)) {
+      return $R->error(500, 500, "删除文件失败", $DeletedResult);
     }
-
-    $FS = new FilesModel();
-
-    $File = $FS->item($FileKey);
-    if (!$File) {
-      return $R->error(404, 404001, "文件不存在", [], false);
-    }
-
-    if ($File['acl'] === FileStorage::PRIVATE) {
-      if ($File['ownerId'] && $File['ownerId'] !== $CurrentAuthId) {
-        return $R->error(403, 403002, "无权删除", [], $File['acl']);
-      }
-    } else {
-      if ($File['acl'] !== FileStorage::PUBLIC_READ_WRITE && $File['acl'] !== FileStorage::AUTHENTICATED_READ_WRITE) {
-        if ($File['ownerId'] !== $CurrentAuthId) {
-          return $R->error(403, 403002, "无权删除", [], $File['acl']);
-        }
+    if (is_numeric($DeletedResult)) {
+      switch ($DeletedResult) {
+        case 0:
+          return $R->error(403, 403001, "签名错误");
+          break;
+        case 1:
+          return $R->error(404, 404001, "文件不存在");
+          break;
+        case 2:
+          return $R->error(403, 403002, "无权删除");
+          break;
+        case 3:
+          return $R->error(403, 403002, "无权删除");
+          break;
       }
     }
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-    if (file_exists($FilePath)) {
-      unlink($FilePath);
-    }
-    $FS->remove(true, $FileKey);
-
-    return $R;
+    return $R->success($DeletedResult);
   }
 }

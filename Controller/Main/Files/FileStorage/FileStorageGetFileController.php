@@ -25,6 +25,6 @@ class FileStorageGetFileController extends GetFileController
   {
     $Params = $this->getParams();
 
-    return FileStorageService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    return FileStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

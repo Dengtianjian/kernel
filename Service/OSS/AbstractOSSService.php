@@ -3,6 +3,7 @@
 namespace kernel\Service\OSS;
 
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\File\FileRemoteOSSStorage;
 use kernel\Foundation\Service;
 
 /**
@@ -59,7 +60,7 @@ abstract class AbstractOSSService extends Service
    */
   public function __construct($OSSPlatoform, $SecretId, $SecretKey, $Region, $Bucket)
   {
-    if (!in_array($OSSPlatoform, ObjectStorageService::OSS_PLATFORMS)) {
+    if (!in_array($OSSPlatoform, FileRemoteOSSStorage::OSS_PLATFORMS)) {
       throw new Exception("该OSS平台不支持");
     }
     $this->OSSPlatoform = $OSSPlatoform;

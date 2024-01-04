@@ -4,7 +4,7 @@ namespace kernel\Controller\Main\Files\FileStorage;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\File\FileStorage;
+use kernel\Foundation\File\Files;
 use kernel\Service\File\FileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
@@ -27,7 +27,7 @@ class FileStorageGetUploadFileAuthController extends AuthController
       $FileInfo = pathinfo($sourceFileName);
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
-    $FileKey = FileStorage::combinedFileKey($Body['filePath'], $fileName);
+    $FileKey = Files::combinedFileKey($Body['filePath'], $fileName);
     $Auth = FileStorageService::getAccessAuth($FileKey, $SignatureKey, 600, [], "post", true);
     if ($Auth->error) return $Auth;
 

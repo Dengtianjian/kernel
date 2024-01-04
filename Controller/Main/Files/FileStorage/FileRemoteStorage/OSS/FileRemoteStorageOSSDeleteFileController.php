@@ -3,8 +3,7 @@
 namespace kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS;
 
 use kernel\Controller\Main\Files\FileStorage\FileStorageDeleteFileController;
-use kernel\Foundation\Config;
-use kernel\Service\OSS\OSSService;
+use kernel\Service\File\FileOSSStorageService;
 
 class FileRemoteStorageOSSDeleteFileController extends FileStorageDeleteFileController
 {
@@ -12,6 +11,6 @@ class FileRemoteStorageOSSDeleteFileController extends FileStorageDeleteFileCont
   {
     $Params = $this->getParams();
 
-    return OSSService::deleteFile($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    return FileOSSStorageService::deleteFile($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

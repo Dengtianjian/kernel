@@ -4,7 +4,7 @@ namespace kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS;
 
 use kernel\Controller\Main\Files\FileStorage\FileStorageAccessFileController;
 use kernel\Foundation\Config;
-use kernel\Service\OSS\OSSService;
+use kernel\Service\File\FileOSSStorageService;
 
 class FileRemoteStorageOSSAccessFileController extends FileStorageAccessFileController
 {
@@ -12,12 +12,12 @@ class FileRemoteStorageOSSAccessFileController extends FileStorageAccessFileCont
   {
     $Params = $this->getParams();
 
-    $File = OSSService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    $File = FileOSSStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($File->error) return $File;
 
     $FileData = $File->getData();
     if ($FileData['remote']) {
-      return $this->response->redirect(OSSService::getAccessURL($FileKey, $this->getRequestParams())->getData(), 302);
+      return $this->response->redirect(FileOSSStorageService::getAccessURL($FileKey, $this->getRequestParams())->getData(), 302);
     }
 
     return $this->response->file($FileData['fullPath']);

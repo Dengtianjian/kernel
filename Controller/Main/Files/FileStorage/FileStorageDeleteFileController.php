@@ -15,6 +15,6 @@ class FileStorageDeleteFileController extends DeleteFileController
   {
     $Params = $this->getParams();
 
-    return FileStorageService::deleteFile($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    return FileStorageService::deleteFile($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

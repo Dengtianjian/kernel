@@ -3,11 +3,11 @@
 namespace kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS;
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\File\FileRemoteStorage;
+use kernel\Foundation\File\Files;
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\Validate\ValidateRules;
 use kernel\Model\FilesModel;
-use kernel\Service\OSS\OSSService;
+use kernel\Service\File\FileOSSStorageService;
 
 class FileRemoteStorageOSSGetUploadAuthController extends AuthController
 {
@@ -42,9 +42,9 @@ class FileRemoteStorageOSSGetUploadAuthController extends AuthController
     $FilePathInfo = pathinfo($Body['sourceFileName']);
 
     $ObjectFileName = uniqid() . "." . $FilePathInfo['extension'];
-    $FileKey = FileRemoteStorage::combinedFileKey($Body['filePath'], $ObjectFileName);
+    $FileKey = Files::combinedFileKey($Body['filePath'], $ObjectFileName);
 
-    $Auth = OSSService::getAccessAuth($FileKey, 600, [], [], "put");
+    $Auth = FileOSSStorageService::getAccessAuth($FileKey, 600, [], [], "put");
     if ($Auth->error) return $Auth;
     $FileName = $FilePathInfo['basename'];
 
