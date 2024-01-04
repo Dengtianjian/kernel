@@ -25,12 +25,7 @@ class DiscuzXFileStorageGetFileController extends DiscuzXController
 
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    $Headers = $this->request->header->some();
-    unset($URLParams['id'], $URLParams['uri']);
-
-    return DiscuzXFileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    $Params = $this->getParams();
+    return DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

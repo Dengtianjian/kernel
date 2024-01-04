@@ -10,12 +10,8 @@ class FileRemoteStorageOSSDeleteFileController extends FileStorageDeleteFileCont
 {
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    unset($URLParams['id'], $URLParams['uri']);
-    $Headers = $this->request->header->some();
+    $Params = $this->getParams();
 
-    return OSSService::deleteFile($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    return OSSService::deleteFile($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

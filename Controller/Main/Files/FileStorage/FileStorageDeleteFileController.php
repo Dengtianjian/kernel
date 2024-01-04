@@ -13,12 +13,8 @@ class FileStorageDeleteFileController extends DeleteFileController
 
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    unset($URLParams['id'], $URLParams['uri']);
-    $Headers = $this->request->header->some();
+    $Params = $this->getParams();
 
-    return FileStorageService::deleteFile($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    return FileStorageService::deleteFile($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

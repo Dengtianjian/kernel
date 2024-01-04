@@ -10,12 +10,8 @@ class FileRemoteStorageOSSGetFileController extends FileStorageGetFileController
 {
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    $Headers = $this->request->header->some();
-    unset($URLParams['id'], $URLParams['uri']);
+    $Params = $this->getParams();
 
-    return OSSService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    return OSSService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

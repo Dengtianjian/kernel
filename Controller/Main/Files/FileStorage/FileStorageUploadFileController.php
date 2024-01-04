@@ -26,13 +26,9 @@ class FileStorageUploadFileController extends AuthController
     }
     $Body = $this->body->some();
 
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    $Headers = $this->request->header->some();
-    unset($URLParams['id'], $URLParams['uri']);
+    $Params = $this->getParams();
 
-    $VerifedResult = FileStorageService::verifyAccessAuth($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $this->request->method);
+    $VerifedResult = FileStorageService::verifyAccessAuth($FileKey, $Params['signature'], $Params['signatureKey'], $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($VerifedResult !== true) {
       return $this->response->error(403, 403, "签名错误", $VerifedResult);
     }

@@ -14,17 +14,13 @@ class DiscuzXFileStorageDownloadFileController extends DiscuzXController
 
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    $Headers = $this->request->header->some();
-    unset($URLParams['id'], $URLParams['uri']);
+    $Params = $this->getParams();
 
-    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($File->error) return $File;
 
     if ($File->getData("remote")) {
-      return $this->response->redirect(OSSService::getAccessURL($FileKey, [], 600, NULL, "get", true, true)->getData());
+      return $this->response->redirect(OSSService::getAccessURL($FileKey, $this->getRequestParams(), 600, NULL, "get", true, true)->getData());
     }
 
     return $this->response->download($File->getData("fullPath"));

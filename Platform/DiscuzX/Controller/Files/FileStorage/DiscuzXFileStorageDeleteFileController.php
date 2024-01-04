@@ -13,12 +13,7 @@ class DiscuzXFileStorageDeleteFileController extends DiscuzXController
 
   public function data($FileKey)
   {
-    $SignatureKey = Config::get("signatureKey") ?: "";
-    $Signature = $this->query->get("signature");
-    $URLParams = $this->request->query->some();
-    unset($URLParams['id'], $URLParams['uri']);
-    $Headers = $this->request->header->some();
-
-    return DiscuzXFileStorageService::deleteFile($FileKey, $Signature, $SignatureKey, null, $URLParams, $Headers, $this->request->method);
+    $Params = $this->getParams();
+    return DiscuzXFileStorageService::deleteFile($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }
