@@ -25,8 +25,9 @@ class FileRemoteOSSStorage extends FileRemoteStorage
    * @param string $SecretKey 云 API 密钥 key
    * @param string $Region 存储桶所属地域，如 ap-guangzhou
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
+   * @param string $SignatureKey 签名秘钥
    */
-  public function __construct($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket)
+  public function __construct($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey)
   {
     switch ($OSSPlatform) {
       case self::OSS_QCLOUD:
@@ -39,7 +40,7 @@ class FileRemoteOSSStorage extends FileRemoteStorage
         break;
     }
 
-    parent::__construct(null, null);
+    parent::__construct(null, $SignatureKey);
   }
 
   /**

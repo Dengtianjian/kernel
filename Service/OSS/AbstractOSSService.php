@@ -60,9 +60,6 @@ abstract class AbstractOSSService extends Service
    */
   public function __construct($OSSPlatoform, $SecretId, $SecretKey, $Region, $Bucket)
   {
-    if (!in_array($OSSPlatoform, FileRemoteOSSStorage::OSS_PLATFORMS)) {
-      throw new Exception("该OSS平台不支持");
-    }
     $this->OSSPlatoform = $OSSPlatoform;
     $this->OSSBucketName = $Bucket;
     $this->OSSRegion = $Region;

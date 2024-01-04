@@ -58,7 +58,7 @@ class FileOSSStorageService extends FileRemoteStorageService
     Router::get("fileStorage/{fileId:.+?}/download", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDownloadFileController::class);
     Router::get("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetFileController::class);
 
-    self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket);
+    self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
 
     parent::useService(null, $SignatureKey);
   }
