@@ -111,4 +111,21 @@ class FileService extends Service
 
     return $R->success($AccessURL);
   }
+
+  /**
+   * 获取下载URL地址
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return ReturnResult{string} 下载的URL地址
+   */
+  static function getDownloadURL($FileKey, $URLParams = [])
+  {
+    $R = new ReturnResult(null);
+
+    $FileInfo = pathinfo($FileKey);
+    $AccessURL = Files::generateAccessURL($FileInfo['dirname'], $FileInfo['filename'], $URLParams);
+
+    return $R->success($AccessURL);
+  }
 }

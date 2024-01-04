@@ -5,7 +5,6 @@ namespace kernel\Service\File;
 use kernel\Controller\Main\Files\FileStorage as FileStorageNamespace;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\File\FileStorage;
-use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
@@ -71,11 +70,11 @@ class FileStorageService extends FileService
    * @param string $FileKey 文件名
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
    * @param string $HTTPMethod 请求方式
-   * @param boolean $ToString 字符串格式返回
    * @return ReturnResult{string} URL请求参数格式的授权信息字符串
    */
-  static function getAccessAuth($FileKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $ToString = false)
+  static function getAccessAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     $R = new ReturnResult(null);
 
@@ -83,7 +82,7 @@ class FileStorageService extends FileService
       return $R->error(400, 400, "文件名不可为空");
     }
 
-    $AccessAuth = self::$FileStorageInstance->generateAccessAuth($FileKey, $Expires, $URLParams, $HTTPMethod, $ToString);
+    $AccessAuth = self::$FileStorageInstance->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, true);
 
     return $R->success($AccessAuth);
   }
@@ -92,18 +91,36 @@ class FileStorageService extends FileService
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
    * @param string $WithSignature 生成的URL是否携带签名
    * @param integer $Expires 签名有效期，秒级
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult{string} 访问的URL地址
    */
-  static function getAccessURL($FileKey, $URLParams = [], $WithSignature = TRUE, $Expires = 600, $HTTPMethod = "get")
+  static function getAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600, $HTTPMethod = "get")
   {
     $R = new ReturnResult(null);
 
-    return $R->success(self::$FileStorageInstance->generateAccessURL($FileKey, $URLParams, $WithSignature, $Expires, $HTTPMethod));
+    return $R->success(self::$FileStorageInstance->generateAccessURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires, $HTTPMethod));
   }
 
+  /**
+   * 获取下载URL地址
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
+   * @param string $WithSignature 生成的URL是否携带签名
+   * @param integer $Expires 签名有效期，秒级
+   * @param string $HTTPMethod 请求方式
+   * @return ReturnResult{string} 下载的URL地址
+   */
+  static function getDownloadURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600)
+  {
+    $R = new ReturnResult(null);
+
+    return $R->success(self::$FileStorageInstance->generateDownloadURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires));
+  }
 
   /**
    * 添加文件记录
@@ -115,16 +132,17 @@ class FileStorageService extends FileService
    * @param int $FileSize 文件大小
    * @param string $OwnerId 拥有者ID
    * @param string $ACL 访问权限控制
-   * @param string $extension 扩展名
+   * @param string $Extension 扩展名
    * @param int $Width 宽度
    * @param int $Height 高度
    * @param string $BelongsId 关联的数据ID
    * @param string $BelongsType 关联的数据类型
+   * @param boolean $Remote 是否为远程存储文件
    * @return int 文件数字ID
    */
-  static function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = FileStorage::PRIVATE, $extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null)
+  static function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = FileStorage::PRIVATE, $Extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null, $Remote = FALSE)
   {
-    return (new ReturnResult(self::$FileStorageInstance->addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height)));
+    return (new ReturnResult(self::$FileStorageInstance->addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId, $ACL, $Extension, $Width, $Height, $BelongsId, $BelongsType, $Remote)));
   }
 
   /**

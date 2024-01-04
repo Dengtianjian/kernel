@@ -44,6 +44,50 @@ class FileRemoteOSSStorage extends FileRemoteStorage
   }
 
   /**
+   * 获取访问对象授权信息
+   *
+   * @param string $FileKey 对象名称
+   * @param integer $Expires 有效期，秒级
+   * @param array $URLParams URL的query参数
+   * @param array $Headers 请求头
+   * @param string $HTTPMethod 访问请求方法
+   * @return string 对象访问授权信息
+   */
+  public function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = true)
+  {
+    return $this->RemoteStorageInstance->getObjectAuth($FileKey, $HTTPMethod, $Expires, $URLParams, $Headers);
+  }
+  /**
+   * 生成访问授权信息
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
+   * @param boolean $Download 下载参数
+   * @param integer $Expires 授权有效期
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @return string 授权信息
+   */
+  public function generateAccessURL($FileKey, $URLParams = [], $Headers = [], $Download = false, $Expires = 600, $TempKeyPolicyStatement = [])
+  {
+    return $this->RemoteStorageInstance->getObjectURL($FileKey, $Expires, $URLParams, $Headers, $TempKeyPolicyStatement, $Download);
+  }
+  /**
+   * 生成访问授权信息
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
+   * @param boolean $Download 链接打开是下载文件
+   * @param integer $Expires 授权有效期
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @return string 授权信息
+   */
+  public function generateDownloadURL($FileKey, $URLParams = [], $Headers = [], $Download = true, $Expires = 600, $TempKeyPolicyStatement = [])
+  {
+    return $this->RemoteStorageInstance->getObjectURL($FileKey, $Expires, $URLParams, $Headers, $TempKeyPolicyStatement, true);
+  }
+  /**
    * 删除文件
    *
    * @param string $FileKey — 文件名
@@ -80,36 +124,6 @@ class FileRemoteOSSStorage extends FileRemoteStorage
     $this->RemoteStorageInstance->deleteObject($FileKey);
 
     return  $this->filesModel->remove(true, $FileKey);
-  }
-
-  /**
-   * 生成访问授权信息
-   *
-   * @param string $FileKey 文件名
-   * @param integer $Expires 授权有效期
-   * @param array $URLParams 请求参数
-   * @param array $Headers 请求头
-   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
-   * @param boolean $Download 链接打开是下载文件
-   * @return string 授权信息
-   */
-  public function generateAccessURL($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = FALSE)
-  {
-    return $this->RemoteStorageInstance->getObjectURL($FileKey, $Expires, $URLParams, $Headers, $TempKeyPolicyStatement, $Download);
-  }
-  /**
-   * 获取访问对象授权信息
-   *
-   * @param string $FileKey 对象名称
-   * @param integer $Expires 有效期，秒级
-   * @param array $URLParams URL的query参数
-   * @param string $HTTPMethod 访问请求方法
-   * @param array $Headers 请求头
-   * @return string 对象访问授权信息
-   */
-  public function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $Headers = [])
-  {
-    return $this->RemoteStorageInstance->getObjectAuth($FileKey, $HTTPMethod, $Expires, $URLParams, $Headers);
   }
   /**
    * 获取图片信息

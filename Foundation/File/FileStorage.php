@@ -76,15 +76,16 @@ class FileStorage
    * @param int $Height 高度
    * @param string $BelongsId 关联的数据ID
    * @param string $BelongsType 关联的数据类型
+   * @param boolean $Remote 是否为远程存储文件
    * @return int 文件数字ID
    */
-  function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = self::PRIVATE, $extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null)
+  function addFile($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $OwnerId = null, $ACL = self::PRIVATE, $extension = null, $Width = null, $Height = null, $BelongsId = null, $BelongsType = null, $Remote = false)
   {
     if (!$extension) {
       $extension = pathinfo($SourceFileName, PATHINFO_EXTENSION);
     }
 
-    return $this->filesModel->add($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, true, $BelongsId, $BelongsType, $Width, $Height);
+    return $this->filesModel->add($FileKey, $SourceFileName, $FileName, $FilePath, $FileSize, $extension, $OwnerId, $ACL, $Remote, $BelongsId, $BelongsType, $Width, $Height);
   }
 
   /**
@@ -129,17 +130,18 @@ class FileStorage
    * @param string $FileKey 文件名
    * @param integer $Expires 授权有效期
    * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
    * @param string $HTTPMethod 请求方式
    * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string|array 授权信息
    */
-  function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $HTTPMethod = "get", $toString = false)
+  function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
   {
     if (!$FileKey) {
       throw new Exception("文件名不可为空", 400, 400);
     }
 
-    return $this->signature->createAuthorization($FileKey, $URLParams, [], $Expires, $HTTPMethod, $toString);
+    return $this->signature->createAuthorization($FileKey, $URLParams, $Headers, $Expires, $HTTPMethod, $toString);
   }
   /**
    * 验证授权签名
@@ -213,15 +215,16 @@ class FileStorage
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
    * @param boolean $WithSignature URL中携带签名
    * @param integer $Expires 有效期，秒级
    * @param string $HTTPMethod 请求方式
    * @return string 访问URL
    */
-  function generateAccessURL($FileKey, $URLParams = [], $WithSignature = true, $Expires = 600,  $HTTPMethod = "get")
+  function generateAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600,  $HTTPMethod = "get")
   {
     if ($WithSignature) {
-      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $HTTPMethod, false));
+      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, false));
     }
 
     $AccessURLIns = new URL(F_BASE_URL);
@@ -229,6 +232,29 @@ class FileStorage
     $AccessURLIns->queryParam($URLParams);
 
     return $AccessURLIns->toString();
+  }
+  /**
+   * 生成下载链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @param array $Headers 请求头
+   * @param boolean $WithSignature URL中携带签名
+   * @param integer $Expires 有效期，秒级
+   * @param string $HTTPMethod 请求方式
+   * @return string 下载URL地址
+   */
+  function generateDownloadURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600)
+  {
+    if ($WithSignature) {
+      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, "get", false));
+    }
+
+    $DownloadURL = new URL(F_BASE_URL);
+    $DownloadURL->pathName = URL::combinedPathName("fileStorage", $FileKey);
+    $DownloadURL->queryParam($URLParams);
+
+    return $DownloadURL->toString();
   }
   /**
    * 获取文件信息
