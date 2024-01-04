@@ -121,11 +121,6 @@ class FileService extends Service
    */
   static function getDownloadURL($FileKey, $URLParams = [])
   {
-    $R = new ReturnResult(null);
-
-    $FileInfo = pathinfo($FileKey);
-    $AccessURL = Files::generateAccessURL($FileInfo['dirname'], $FileInfo['filename'], $URLParams);
-
-    return $R->success($AccessURL);
+    return self::getAccessURL($FileKey, $URLParams);
   }
 }

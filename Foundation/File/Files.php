@@ -52,11 +52,16 @@ class Files
     }
 
     $saveFullFileName = "{$fileName}.{$fileExtension}";
-    $FilePath = FileHelper::combinedFilePath($savePath, $saveFullFileName);
-    $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $FilePath);
-    if (!is_dir($savePath)) {
-      mkdir($savePath, 770, true);
+    $path = $saveFullFileName;
+    if ($savePath) {
+      $path = FileHelper::combinedFilePath($savePath, $saveFullFileName);
+      $FolderPath = FileHelper::combinedFilePath(F_APP_STORAGE, $savePath);
+      if (!is_dir($FolderPath)) {
+        mkdir($FolderPath, 770, true);
+      }
     }
+
+    $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $path);
     if (is_string($file)) {
       if (!file_exists($file)) {
         throw new Exception("文件保存失败", 500, "FileUpload:500002");
@@ -82,7 +87,7 @@ class Files
       "extension" => $fileExtension,
       "size" => $fileSize,
       "fullPath" => FileHelper::optimizedPath($saveFullPath),
-      "relativePath" => FileHelper::optimizedPath($FilePath),
+      "relativePath" => FileHelper::optimizedPath($path),
       "width" => 0,
       "height" => 0
     ];
