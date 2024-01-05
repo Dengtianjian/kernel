@@ -10,6 +10,13 @@ class DiscuzXFileStorageUploadFileController extends DiscuzXController
 {
   use FileStorageControllerTrait;
 
+  public $body = [
+    "saveFileName" => "string",
+    "belongsId" => "string",
+    "belongsType" => "string",
+    "acl" => "string"
+  ];
+
   public function data($FileKey)
   {
     $Files = array_values($_FILES);
@@ -28,7 +35,7 @@ class DiscuzXFileStorageUploadFileController extends DiscuzXController
       return $this->response->error(403, 403, "签名错误", $VerifedResult);
     }
 
-    $UploadedResult = DiscuzXFileStorageService::upload($Files[0], $FileKey, $Body['ownerId'], $Body['belongsId'], $Body['belongsType'], $Body['acl']);
+    $UploadedResult = DiscuzXFileStorageService::upload($Files[0], $FileKey, getglobal("uid"), $Body['belongsId'], $Body['belongsType'], $Body['acl']);
     if ($UploadedResult->error) return $UploadedResult;
 
     return $FileKey;

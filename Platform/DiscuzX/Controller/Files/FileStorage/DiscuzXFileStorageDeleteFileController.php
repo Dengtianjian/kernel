@@ -13,6 +13,6 @@ class DiscuzXFileStorageDeleteFileController extends DiscuzXController
   public function data($FileKey)
   {
     $Params = $this->getParams();
-    return DiscuzXFileStorageService::deleteFile($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    return DiscuzXFileStorageService::deleteFile($FileKey, $Params['signature'], getglobal("uid"), $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

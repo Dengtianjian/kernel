@@ -25,6 +25,6 @@ class DiscuzXFileStorageGetFileController extends DiscuzXController
   public function data($FileKey)
   {
     $Params = $this->getParams();
-    return DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    return DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], getglobal("uid"), $Params['URLParams'], $Params['headers'], $this->request->method);
   }
 }

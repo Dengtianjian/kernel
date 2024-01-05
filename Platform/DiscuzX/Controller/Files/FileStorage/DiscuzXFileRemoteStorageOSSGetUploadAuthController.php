@@ -23,7 +23,7 @@ class DiscuzXFileRemoteStorageOSSGetUploadAuthController extends FileRemoteStora
     if ($Auth->error) return $Auth;
     $FileName = $FilePathInfo['basename'];
 
-    DiscuzXFilesModel::singleton()->add($FileKey, $Body['sourceFileName'], $ObjectFileName, $Body['filePath'], $Body['size'], $FilePathInfo['extension'], null, DiscuzXFileStorage::PRIVATE, true);
+    DiscuzXFilesModel::singleton()->add($FileKey, $Body['sourceFileName'], $ObjectFileName, $Body['filePath'], $Body['size'], $FilePathInfo['extension'], getglobal("uid"), DiscuzXFileStorage::PRIVATE, true);
 
     return [
       "fileKey" => $FileKey,
