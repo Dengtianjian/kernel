@@ -2,11 +2,6 @@
 
 namespace kernel\Platform\DiscuzX\Foundation;
 
-use kernel\Foundation\App;
-use kernel\Foundation\File;
-use kernel\Platform\DiscuzX\DiscuzXAttachment;
-use kernel\Platform\DiscuzX\DiscuzXFile;
-
 class DiscuzXHookApp extends DiscuzXApp
 {
   public function __construct($AppId)

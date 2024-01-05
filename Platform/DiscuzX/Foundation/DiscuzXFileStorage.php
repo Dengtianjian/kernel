@@ -4,9 +4,16 @@ namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\HTTP\URL;
+use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXFileStorage extends FileStorage
 {
+  function __construct($SignatureKey)
+  {
+    parent::__construct($SignatureKey);
+    $this->filesModel = new DiscuzXFilesModel();
+  }
+
   function generateAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600, $HTTPMethod = "get")
   {
     if ($WithSignature) {

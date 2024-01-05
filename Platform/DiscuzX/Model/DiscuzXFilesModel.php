@@ -17,8 +17,8 @@ class DiscuzXFilesModel extends DiscuzXModel
     parent::__construct($tableName);
 
     $this->tableStructureSQL = <<<SQL
-DROP TABLE IF EXISTS `{$tableName}`;
-CREATE TABLE `{$tableName}`  (
+DROP TABLE IF EXISTS `pre_{$tableName}`;
+CREATE TABLE `pre_{$tableName}`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
   `key` varchar(280) NOT NULL COMMENT '文件名',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',

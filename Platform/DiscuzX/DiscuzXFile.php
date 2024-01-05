@@ -44,9 +44,9 @@ class DiscuzXFile
    */
   static function registerRoute()
   {
-    Router::post("files", FilesNamespace\UploadFilesController::class);
-    Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
-    Router::get("files/{fileId:.+?}", FilesNamespace\AccessFileController::class);
+    // Router::post("files", FilesNamespace\UploadFilesController::class);
+    // Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);
+    // Router::get("files/{fileId:.+?}", FilesNamespace\AccessFileController::class);
   }
   /**
    * 保存文件
