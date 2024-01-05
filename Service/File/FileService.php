@@ -102,7 +102,7 @@ class FileService extends Service
    * @param array $URLParams 请求参数
    * @return ReturnResult{string} 访问的URL地址
    */
-  static function getAccessURL($FileKey, $URLParams = [])
+  static function getFilePreviewURL($FileKey, $URLParams = [])
   {
     $R = new ReturnResult(null);
 
@@ -121,6 +121,6 @@ class FileService extends Service
    */
   static function getFileDownloadURL($FileKey, $URLParams = [])
   {
-    return self::getAccessURL($FileKey, $URLParams);
+    return self::getFilePreviewURL($FileKey, $URLParams);
   }
 }
