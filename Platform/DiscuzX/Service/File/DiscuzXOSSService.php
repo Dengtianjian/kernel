@@ -21,9 +21,9 @@ class DiscuzXOSSService extends FileOSSStorageService
     parent::useService($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
 
     self::$FileRemoteStorageInstance = new DiscuzXFileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
-    self::$FileStorageInstance = new DiscuzXFileStorage($SignatureKey);
+    self::$FileStorageInstance = new DiscuzXFileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
     self::$Files = new DiscuzXFiles();
-    
+
     self::$FilesModelInstance = new DiscuzXFilesModel();
   }
 }

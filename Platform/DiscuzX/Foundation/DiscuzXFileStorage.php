@@ -24,7 +24,7 @@ class DiscuzXFileStorage extends FileStorage
     $AccessURL->pathName = "plugin.php";
 
     $URLParams['id'] = F_APP_ID;
-    $URLParams['uri'] = "files/{$FileKey}/preview";
+    $URLParams['uri'] = "fileStorage/{$FileKey}/preview";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();
@@ -39,7 +39,7 @@ class DiscuzXFileStorage extends FileStorage
     $AccessURL->pathName = "plugin.php";
 
     $URLParams['id'] = F_APP_ID;
-    $URLParams['uri'] = "files/{$FileKey}/download";
+    $URLParams['uri'] = "fileStorage/{$FileKey}/download";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();

@@ -12,6 +12,7 @@ class FileRemoteStorageService extends FileStorageService
   {
     parent::useService($SignatureKey);
 
+    self::$FileStorageInstance = new FileRemoteStorage($SignatureKey);
     self::$FileRemoteStorageInstance = new FileRemoteStorage($SignatureKey);
   }
   /**
