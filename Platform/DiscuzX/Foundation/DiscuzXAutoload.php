@@ -11,7 +11,7 @@ function loader($className)
     include_once($filePath);
   } else {
     if (strpos($filePath, "gstudio") !== false && defined("F_APP_MODE") && F_APP_MODE === "development") {
-      debug($filePath);
+      debug([$className, $filePath]);
     }
   }
 }
