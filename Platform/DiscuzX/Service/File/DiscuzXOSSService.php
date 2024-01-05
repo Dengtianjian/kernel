@@ -7,6 +7,7 @@ use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files\FileStorage as DiscuzXFileStorageNamespace;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileRemoteOSSStorage;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileRemoteStorage;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFiles;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileOSSStorageService;
@@ -17,11 +18,12 @@ class DiscuzXOSSService extends FileOSSStorageService
   {
     Router::get("fileStorage/oss/upload/auth", DiscuzXFileStorageNamespace\DiscuzXFileRemoteStorageOSSGetUploadAuthController::class);
 
-    self::$FileStorageInstance = new DiscuzXFileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
-    
     parent::useService($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
 
-    self::$FileStorageInstance = new DiscuzXFileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
+    self::$FileRemoteStorageInstance = new DiscuzXFileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
+    self::$FileStorageInstance = new DiscuzXFileStorage($SignatureKey);
+    self::$Files = new DiscuzXFiles();
+    
     self::$FilesModelInstance = new DiscuzXFilesModel();
   }
 }

@@ -11,6 +11,8 @@ class DiscuzXFileRemoteOSSStorage extends FileRemoteOSSStorage
   function __construct($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey)
   {
     parent::__construct($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
+
     $this->filesModel = new DiscuzXFilesModel();
+    $this->FileStorageInstance = new DiscuzXFileStorage($SignatureKey);
   }
 }

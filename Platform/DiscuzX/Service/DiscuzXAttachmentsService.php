@@ -40,7 +40,7 @@ class DiscuzXAttachmentsService extends AttachmentsService
 
     return http_build_query($QueryStrings);
   }
-  static function getDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null, $ratio = null, $outputExtension = null, $quality = null)
+  static function getFileDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null, $ratio = null, $outputExtension = null, $quality = null)
   {
     return F_BASE_URL . "/plugin.php?" . self::getURLQueryString("attachments/$attachmentId/download", $attachmentId, $withKey, $userId, $periodSeconds, true, false, $width, $height, $ratio, $outputExtension, $quality);
   }

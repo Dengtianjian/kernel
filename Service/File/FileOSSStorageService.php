@@ -52,6 +52,6 @@ class FileOSSStorageService extends FileRemoteStorageService
 
     parent::useService($SignatureKey);
 
-    self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
+    self::$FileRemoteStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
   }
 }

@@ -71,20 +71,31 @@ abstract class AbstractOSSService extends Service
    * @param string $ObjectKey 对象名称
    * @return mixed
    */
-  abstract function deleteObject($ObjectKey);
+  abstract function deleteFile($ObjectKey);
 
   /**
-   * 获取对象访问链接地址
+   * 获取对象预览链接地址
    *
    * @param string $objectName 对象名称
-   * @param integer $DurationSeconds 签名有效期
    * @param array $URLParams URL的query参数
-   * @param array $Headers 请求头部
+   * @param integer $DurationSeconds 签名有效期
+   * @param boolean $WithSignature 是否携带签名
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
-   * @param boolean $Download 链接打开是下载文件
    * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getObjectURL($objectName, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false);
+  abstract function getFilePreviewURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true,  $TempKeyPolicyStatement = []);
+
+  /**
+   * 获取对象下载链接地址
+   *
+   * @param string $objectName 对象名称
+   * @param array $URLParams URL的query参数
+   * @param integer $DurationSeconds 签名有效期
+   * @param boolean $WithSignature 是否携带签名
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @return string HTTPS协议的对象访问链接地址
+   */
+  abstract function getFileDownloadURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = []);
 
   /**
    * 获取对象授权信息
@@ -93,15 +104,13 @@ abstract class AbstractOSSService extends Service
    * @param string $HTTPMethod 调用的服务所使用的请求方法
    * @param integer $DurationSeconds 有效期，秒级
    * @param array $URLParams URL的query参数
-   * @param array $Headers 请求头部
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
-  abstract function getObjectAuth(
+  abstract function getFileAuth(
     $objectName,
     $HTTPMethod = "get",
     $DurationSeconds = 600,
-    $URLParams = [],
-    $Headers = []
+    $URLParams = []
   );
   /**
    * 获取图片信息

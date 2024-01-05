@@ -13,6 +13,12 @@ use kernel\Foundation\Service;
 class FileService extends Service
 {
   /**
+   * 文件操作实例
+   *
+   * @var Files
+   */
+  protected static $Files = null;
+  /**
    * 使用服务
    *
    * @return void
@@ -24,6 +30,8 @@ class FileService extends Service
     Router::get("files/{fileId:.+?}/preview", FilesNamespace\AccessFileController::class);
     Router::get("files/{fileId:.+?}/download", FilesNamespace\DownloadFileController::class);
     Router::get("files/{fileId:.+?}", FilesNamespace\GetFileController::class);
+
+    self::$Files = Files::class;
   }
   /**
    * 上传文件
@@ -36,7 +44,7 @@ class FileService extends Service
   static function upload($File, $SavePath, $saveFileName = null)
   {
     $R = new ReturnResult(true);
-    $UploadedResult = Files::upload($File, $SavePath, $saveFileName);
+    $UploadedResult = self::$Files::upload($File, $SavePath, $saveFileName);
     if (is_bool($UploadedResult) && $UploadedResult === false) {
       return $R->error(500, 500, "上传失败", [], false);
     }
@@ -51,14 +59,7 @@ class FileService extends Service
    */
   static function deleteFile($FileKey)
   {
-    $R = new ReturnResult(true);
-
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-    if (file_exists($FilePath)) {
-      unlink($FilePath);
-    }
-
-    return $R;
+    return (new ReturnResult(self::$Files::deleteFile($FileKey)));
   }
   /**
    * 获取文件信息
@@ -70,30 +71,10 @@ class FileService extends Service
   {
     $R = new ReturnResult(true);
 
-    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
-    if (!file_exists($FilePath)) {
-      return $R->error(404, 404, "文件不存在", [], false);
-    }
+    $FileInfo = self::$Files::getFileInfo($FileKey);
+    if ($FileInfo === 0) return $R->error(404, 404, "文件不存在");
 
-    $FileInfo = pathinfo($FilePath);
-    $File = [
-      "fileKey" => $FileKey,
-      "path" => dirname($FileKey),
-      "fileName" => $FileInfo['filename'],
-      "extension" => $FileInfo['extension'],
-      "size" => filesize($FilePath),
-      "fullPath" => $FilePath,
-      "relativePath" => FileHelper::optimizedPath(dirname($FileKey)),
-      "width" => 0,
-      "height" => 0
-    ];
-    if (FileHelper::isImage($FilePath)) {
-      $imageInfo = \getimagesize($FilePath);
-      $File['width'] = $imageInfo[0];
-      $File['height'] = $imageInfo[1];
-    }
-
-    return $R->success($File);
+    return $R->success($FileInfo);
   }
   /**
    * 获取访问URL地址
@@ -104,12 +85,7 @@ class FileService extends Service
    */
   static function getFilePreviewURL($FileKey, $URLParams = [])
   {
-    $R = new ReturnResult(null);
-
-    $FileInfo = pathinfo($FileKey);
-    $AccessURL = Files::getFilePreviewURL($FileInfo['dirname'], $FileInfo['filename'], $URLParams);
-
-    return $R->success($AccessURL);
+    return (new ReturnResult(self::$Files::getFilePreviewURL($FileKey, $URLParams)));
   }
 
   /**
@@ -121,6 +97,6 @@ class FileService extends Service
    */
   static function getFileDownloadURL($FileKey, $URLParams = [])
   {
-    return self::getFilePreviewURL($FileKey, $URLParams);
+    return (new ReturnResult(self::$Files::getFileDownloadURL($FileKey, $URLParams)));
   }
 }

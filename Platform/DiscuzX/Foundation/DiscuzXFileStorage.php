@@ -14,10 +14,10 @@ class DiscuzXFileStorage extends FileStorage
     $this->filesModel = new DiscuzXFilesModel();
   }
 
-  function generateAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600, $HTTPMethod = "get")
+  function getFilePreviewURL($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true)
   {
     if ($WithSignature) {
-      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, false));
+      $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, $Headers, "get", false));
     }
 
     $AccessURL = new URL(F_BASE_URL);
@@ -25,6 +25,21 @@ class DiscuzXFileStorage extends FileStorage
 
     $URLParams['id'] = F_APP_ID;
     $URLParams['uri'] = "files/{$FileKey}/preview";
+    $AccessURL->queryParam($URLParams);
+
+    return $AccessURL->toString();
+  }
+  function getFileDownloadURL($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true)
+  {
+    if ($WithSignature) {
+      $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, $Headers, "get", false));
+    }
+
+    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL->pathName = "plugin.php";
+
+    $URLParams['id'] = F_APP_ID;
+    $URLParams['uri'] = "files/{$FileKey}/download";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();

@@ -4,13 +4,11 @@ namespace kernel\Service\File;
 
 use kernel\Controller\Main\Files\FileStorage as FileStorageNamespace;
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileRemoteStorage;
 use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXFileRemoteOSSStorage;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
-use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 use kernel\Service\File\FileService;
 
 class FileStorageService extends FileService
@@ -21,6 +19,12 @@ class FileStorageService extends FileService
    * @var FileStorage
    */
   protected static $FileStorageInstance = null;
+  /**
+   * 文件远程存储实例
+   *
+   * @var FileRemoteStorage
+   */
+  protected static $FileRemoteStorageInstance = null;
   /**
    * 文件存储表模型实例
    *
@@ -43,6 +47,7 @@ class FileStorageService extends FileService
     Router::get("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageGetFileController::class);
 
     self::$FileStorageInstance = new FileStorage($SignatureKey);
+    self::$FileRemoteStorageInstance = new FileRemoteStorage($SignatureKey);
     self::$FilesModelInstance = new FilesModel();
   }
   static function init()
@@ -77,7 +82,7 @@ class FileStorageService extends FileService
    * @param string $HTTPMethod 请求方式
    * @return ReturnResult{string} URL请求参数格式的授权信息字符串
    */
-  static function getAccessAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  static function getFileAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     $R = new ReturnResult(null);
 
@@ -85,43 +90,41 @@ class FileStorageService extends FileService
       return $R->error(400, 400, "文件名不可为空");
     }
 
-    $AccessAuth = self::$FileStorageInstance->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, true);
+    $AccessAuth = self::$FileStorageInstance->getFileAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, true);
 
     return $R->success($AccessAuth);
   }
   /**
-   * 获取访问URL地址
+   * 获取预览文件URL地址
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @param array $Headers 请求头
    * @param string $WithSignature 生成的URL是否携带签名
    * @param integer $Expires 签名有效期，秒级
-   * @param string $HTTPMethod 请求方式
    * @return ReturnResult{string} 访问的URL地址
    */
-  static function getAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600, $HTTPMethod = "get")
+  static function getFilePreviewURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600)
   {
     $R = new ReturnResult(null);
-    return $R->success(self::$FileStorageInstance->generateAccessURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires, $HTTPMethod));
+    return $R->success(self::$FileStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature));
   }
 
   /**
-   * 获取下载URL地址
+   * 获取下载文件URL地址
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @param array $Headers 请求头
    * @param string $WithSignature 生成的URL是否携带签名
    * @param integer $Expires 签名有效期，秒级
-   * @param string $HTTPMethod 请求方式
    * @return ReturnResult{string} 下载的URL地址
    */
-  static function getDownloadURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600)
+  static function getFileDownloadURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600)
   {
     $R = new ReturnResult(null);
 
-    return $R->success(self::$FileStorageInstance->generateDownloadURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires));
+    return $R->success(self::$FileStorageInstance->getFileDownloadURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature));
   }
 
   /**
@@ -207,7 +210,7 @@ class FileStorageService extends FileService
     $size = $FileInfo['fileSize'];
     if ($FileInfo['remote']) {
       if (!$width || !$height) {
-        $ImageInfo = self::$FileStorageInstance->getImageInfo($FileKey);
+        $ImageInfo = self::$FileRemoteStorageInstance->getImageInfo($FileKey);
         if ($ImageInfo === false) {
           return $R->error(500, 500, "获取远程文件信息失败", [], $ImageInfo);
         }

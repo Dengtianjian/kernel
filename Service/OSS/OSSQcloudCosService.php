@@ -52,14 +52,14 @@ class OSSQcloudCosService extends AbstractOSSService
     parent::__construct("QCloudCos", $SecretId, $SecretKey, $Region, $Bucket);
   }
 
-  function deleteObject($ObjectKey)
+  function deleteFile($ObjectKey)
   {
     return $this->OSSSDKClient->deleteObject([
       "Bucket" => $this->OSSBucketName,
       'Key' => $ObjectKey
     ]);
   }
-  function getObjectURL($ObjectKey, $DurationSeconds = 600, $URLParams = [], $Headers = [], $TempKeyPolicyStatement = [], $Download = false)
+  function getFilePreviewURL($ObjectKey, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
     $startTime = time();
     $endTime = $startTime + $DurationSeconds;
@@ -68,9 +68,20 @@ class OSSQcloudCosService extends AbstractOSSService
       $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
     }
 
-    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, $Headers, $startTime, $endTime, $Download);
+    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $startTime, $endTime, false);
   }
-  function getObjectAuth(
+  function getFileDownloadURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
+  {
+    $startTime = time();
+    $endTime = $startTime + $DurationSeconds;
+
+    if ($TempKeyPolicyStatement) {
+      $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
+    }
+
+    return $this->OSSClient->getObjectAuthUrl($objectName, "get", $URLParams, [], $startTime, $endTime, true);
+  }
+  function getFileAuth(
     $ObjectKey,
     $HTTPMethod = "get",
     $DurationSeconds = 600,

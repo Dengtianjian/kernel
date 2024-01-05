@@ -135,7 +135,7 @@ class FileStorage
    * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string|array 授权信息
    */
-  function generateAccessAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
+  function getFileAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
   {
     if (!$FileKey) {
       throw new Exception("文件名不可为空", 400, 400);
@@ -211,20 +211,19 @@ class FileStorage
     return $this->signature->verifyAuthorization($Signature, $FileKey, $startTime, $endTime, $URLParams, $Headers, $HTTPMethod);
   }
   /**
-   * 生成访问链接
+   * 获取访问链接
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @param array $Headers 请求头
-   * @param boolean $WithSignature URL中携带签名
    * @param integer $Expires 有效期，秒级
-   * @param string $HTTPMethod 请求方式
+   * @param boolean $WithSignature URL中携带签名
    * @return string 访问URL
    */
-  function generateAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600,  $HTTPMethod = "get")
+  function getFilePreviewURL($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true)
   {
     if ($WithSignature) {
-      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, false));
+      $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, $Headers));
     }
 
     $AccessURLIns = new URL(F_BASE_URL);
@@ -234,24 +233,23 @@ class FileStorage
     return $AccessURLIns->toString();
   }
   /**
-   * 生成下载链接
+   * 获取文件下载链接
    *
    * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @param array $Headers 请求头
-   * @param boolean $WithSignature URL中携带签名
    * @param integer $Expires 有效期，秒级
-   * @param string $HTTPMethod 请求方式
+   * @param boolean $WithSignature URL中携带签名
    * @return string 下载URL地址
    */
-  function generateDownloadURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = true, $Expires = 600)
+  function getFileDownloadURL($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true)
   {
     if ($WithSignature) {
-      $URLParams = array_merge($URLParams, $this->generateAccessAuth($FileKey, $Expires, $URLParams, $Headers, "get", false));
+      $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, $Headers));
     }
 
     $DownloadURL = new URL(F_BASE_URL);
-    $DownloadURL->pathName = URL::combinedPathName("fileStorage", $FileKey, "preview");
+    $DownloadURL->pathName = URL::combinedPathName("fileStorage", $FileKey, "download");
     $DownloadURL->queryParam($URLParams);
 
     return $DownloadURL->toString();

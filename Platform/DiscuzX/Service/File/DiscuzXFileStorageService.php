@@ -2,10 +2,10 @@
 
 namespace kernel\Platform\DiscuzX\Service\File;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files\FileStorage as DiscuzXFileStorageNamespace;
-use kernel\Platform\DiscuzX\DiscuzXURL;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileRemoteStorage;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFiles;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\File\FileStorageService;
@@ -31,5 +31,7 @@ class DiscuzXFileStorageService extends FileStorageService
 
     self::$FileStorageInstance = new DiscuzXFileStorage($SignatureKey);
     self::$FilesModelInstance = new DiscuzXFilesModel();
+    self::$FileRemoteStorageInstance = new DiscuzXFileRemoteStorage($SignatureKey);
+    self::$Files = new DiscuzXFiles();
   }
 }

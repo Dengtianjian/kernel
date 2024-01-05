@@ -284,19 +284,79 @@ class Files
     return $fileKey;
   }
   /**
+   * 获取文件信息
+   *
+   * @param string $FileKey 文件名
+   * @return false|array{fileKey:string,sourceFileName:string,path:string,fileName:string,extension:string,size:int,fullPath:string,relativePath:string,width:int,height:int} 文件信息
+   */
+  static function getFileInfo($FileKey)
+  {
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+    if (!file_exists($FilePath)) {
+      return 0;
+    }
+
+    $FileInfo = pathinfo($FilePath);
+    $File = [
+      "fileKey" => $FileKey,
+      "path" => dirname($FileKey),
+      "fileName" => $FileInfo['filename'],
+      "extension" => $FileInfo['extension'],
+      "size" => filesize($FilePath),
+      "fullPath" => $FilePath,
+      "relativePath" => FileHelper::optimizedPath(dirname($FileKey)),
+      "width" => 0,
+      "height" => 0
+    ];
+    if (FileHelper::isImage($FilePath)) {
+      $imageInfo = \getimagesize($FilePath);
+      $File['width'] = $imageInfo[0];
+      $File['height'] = $imageInfo[1];
+    }
+
+    return true;
+  }
+  /**
+   * 删除文件
+   *
+   * @param string $FileKey 文件名
+   * @return booleanƒ 是否已删除，true=删除完成，false=删除失败
+   */
+  static function deleteFile($FileKey)
+  {
+    $FilePath = FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey));
+    if (file_exists($FilePath)) {
+      unlink($FilePath);
+    }
+
+    return true;
+  }
+  /**
    * 获取访问链接
    *
-   * @param string $FilePath 文件路径
-   * @param string $FileName 文件名称
+   * @param string $FileKey 文件名
    * @param array $URLParams 请求参数
    * @return string 访问URL
    */
-  static function getFilePreviewURL($FilePath, $FileName, $URLParams = [])
+  static function getFilePreviewURL($FileKey, $URLParams = [])
   {
-    $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
-
     $AccessURL = new URL(F_BASE_URL);
     $AccessURL->pathName = "files/{$FileKey}/preview";
+    $AccessURL->queryParam($URLParams);
+
+    return $AccessURL->toString();
+  }
+  /**
+   * 获取下载链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return string 下载URL
+   */
+  static function getFileDownloadURL($FileKey, $URLParams = [])
+  {
+    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL->pathName = "files/{$FileKey}/download";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();

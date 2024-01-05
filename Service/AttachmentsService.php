@@ -32,7 +32,7 @@ class AttachmentsService extends Service
    * @param string $attachmentId 附件ID
    * @return string
    */
-  static function getDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null)
+  static function getFileDownloadURL($attachmentId, $withKey = false, $userId = null, $periodSeconds = 300, $preview = true, $width = null, $height = null)
   {
     $QueryStrings = [];
     if ($withKey) {
