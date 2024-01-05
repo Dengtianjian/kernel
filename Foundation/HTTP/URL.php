@@ -230,7 +230,7 @@ class URL
         }
         $this->queryParam($item, $key);
       }
-    } else {
+    } else if ($value) {
       if (!$key) {
         $key = $value;
         $value = "";
