@@ -29,7 +29,7 @@ class FileRemoteStorageService extends FileStorageService
   {
     $R = new ReturnResult(null);
 
-    return $R->success(self::$FileRemoteStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires, true));
+    return $R->success(self::$FileRemoteStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature, true));
   }
   /**
    * 获取下载URL地址
@@ -45,6 +45,6 @@ class FileRemoteStorageService extends FileStorageService
   {
     $R = new ReturnResult(null);
 
-    return $R->success(self::$FileRemoteStorageInstance->getFileDownloadURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires, true));
+    return $R->success(self::$FileRemoteStorageInstance->getFileDownloadURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature, true));
   }
 }

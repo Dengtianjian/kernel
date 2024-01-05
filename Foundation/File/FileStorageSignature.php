@@ -212,7 +212,7 @@ class FileStorageSignature extends BaseObject
     $HTTPMethod = strtolower($HTTPMethod);
 
     $StartTime = time();
-    $EndTime = time() + $Expires;
+    $EndTime = $StartTime + $Expires;
 
     $KeyTime = implode(";", [$StartTime, $EndTime]);
     $SignKey = hash_hmac("sha1", $KeyTime, $this->SignatureKey);

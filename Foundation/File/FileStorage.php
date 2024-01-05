@@ -167,7 +167,6 @@ class FileStorage
     $URLParamList = $RawURLParams['url-param-list'] ? explode(";", rawurldecode(urldecode($RawURLParams['url-param-list']))) : [];
     $Signature = $RawURLParams['signature'];
 
-
     if ($SignAlgorithm !== FileStorageSignature::getSignAlgorithm()) return 2;
     if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return 3;
     if ($SignTime !== $KeyTime) return 4;

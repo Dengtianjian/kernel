@@ -35,9 +35,9 @@ class FileRemoteStorage extends FileStorage
   public function getFileAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get", $Remote = true)
   {
     if ($Remote) {
-      return $this->RemoteStorageInstance->getFileAuth($FileKey, $HTTPMethod, $Expires, $URLParams, $Headers);
+      return $this->RemoteStorageInstance->getFileAuth($FileKey, $Expires, $HTTPMethod, $URLParams, $Headers);
     } else {
-      return $this->FileStorageInstance->getFileAuth($FileKey, $HTTPMethod, $Expires, $URLParams, $Headers);
+      return $this->FileStorageInstance->getFileAuth($FileKey, $Expires, $HTTPMethod, $URLParams, $Headers);
     }
   }
   /**
@@ -56,9 +56,9 @@ class FileRemoteStorage extends FileStorage
     $remote = boolval(intval($remote));
 
     if ($remote) {
-      return $this->RemoteStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
+      return $this->RemoteStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature);
     } else {
-      return $this->FileStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
+      return $this->FileStorageInstance->getFilePreviewURL($FileKey, $URLParams, $Headers, $Expires, $WithSignature);
     }
   }
   /**
