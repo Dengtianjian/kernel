@@ -60,6 +60,9 @@ class ResponseFile extends ResponseDownload
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
     if ($targetRatio) {
+      if ($targetRatio > 1) {
+        $targetRatio = doubleval("0.$targetRatio");
+      }
       $targetWdith = $sourceWidth * $targetRatio;
       $targetHeight = $sourceHeight * $targetRatio;
     } else {
@@ -74,6 +77,7 @@ class ResponseFile extends ResponseDownload
         }
       }
     }
+
     imagesavealpha($sourceImage, true);
     $targetImage = imagecreatetruecolor($targetWdith, $targetHeight);
     imagealphablending($targetImage, false);
@@ -90,11 +94,20 @@ class ResponseFile extends ResponseDownload
         imagejpeg($targetImage, null, $quality);
         break;
       case "png":
+        $NumberList = [10 => 0, 9 => 1, 8 => 2, 7 => 3, 6 => 4, 5 => 5, 4 => 6, 3 => 7, 2 => 8, 1 => 9, 0 => 9];
+        if ($quality !== -1) {
+          $firstStr = $quality > 99.99 ? substr($quality, 0, 2) : substr($quality, 0, 1);
+          $quality = substr_replace($quality, $NumberList[$firstStr], 0, 1);
+        }
+
         if ($quality <= -1) {
           $quality = -1;
         } else if ($quality > 9) {
-          $quality = $quality / 10;
+          $quality = doubleval("0.$quality") * 10;
+        } else if ($quality < 1) {
+          $quality = $quality * 10;
         }
+
         imagepng($targetImage, null, $quality);
         break;
       case "gif":
@@ -120,7 +133,7 @@ class ResponseFile extends ResponseDownload
     $PathInfo = pathinfo($this->filePath);
 
     if (FileHelper::isImage($this->filePath)) {
-      if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r")) {
+      if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r") || $this->request->query->has("q") || $this->request->query->get("ext")) {
         header_remove("Content-Length");
         $imageInfo = getimagesize($this->filePath);
         $sourceWidth = $imageInfo[0];
