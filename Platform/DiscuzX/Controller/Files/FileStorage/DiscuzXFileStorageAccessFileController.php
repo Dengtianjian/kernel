@@ -16,7 +16,7 @@ class DiscuzXFileStorageAccessFileController extends DiscuzXController
   {
     $Params = $this->getParams();
 
-    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($File->error) return $File;
 
     if ($File->getData('remote')) {

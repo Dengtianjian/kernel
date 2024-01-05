@@ -19,13 +19,12 @@ class DiscuzXFileStorageUploadFileController extends DiscuzXController
     }
     $Body = $this->body->some();
 
-    $SignatureKey = Config::get("signatureKey") ?: "";
     $Signature = $this->query->get("signature");
     $URLParams = $this->request->query->some();
     $Headers = $this->request->header->some();
     unset($URLParams['id'], $URLParams['uri']);
 
-    $VerifedResult = DiscuzXFileStorageService::verifyAccessAuth($FileKey, $Signature, $SignatureKey, $URLParams, $Headers, $this->request->method);
+    $VerifedResult = DiscuzXFileStorageService::verifyAccessAuth($FileKey, $Signature, $URLParams, $Headers, $this->request->method);
     if ($VerifedResult !== true) {
       return $this->response->error(403, 403, "签名错误", $VerifedResult);
     }

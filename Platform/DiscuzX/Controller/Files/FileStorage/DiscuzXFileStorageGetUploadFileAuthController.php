@@ -2,9 +2,8 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
-use kernel\Foundation\Config;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFiles;
 use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 
 class DiscuzXFileStorageGetUploadFileAuthController extends DiscuzXController
@@ -17,15 +16,14 @@ class DiscuzXFileStorageGetUploadFileAuthController extends DiscuzXController
   public function data()
   {
     $Body = $this->body->some();
-    $SignatureKey = Config::get("signatureKey") ?: "";
 
     $fileName = $sourceFileName = $Body['fileName'];
     if (!$this->body->has("rename") || $Body['rename']) {
       $FileInfo = pathinfo($sourceFileName);
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
-    $FileKey = DiscuzXFileStorage::combinedFileKey($Body['filePath'], $fileName);
-    $Auth = DiscuzXFileStorageService::getAccessAuth($FileKey, $SignatureKey, 600, [], "post", true);
+    $FileKey = DiscuzXFiles::combinedFileKey($Body['filePath'], $fileName);
+    $Auth = DiscuzXFileStorageService::getAccessAuth($FileKey, 600, [], [], "post", true);
     if ($Auth->error) return $Auth;
 
     return [

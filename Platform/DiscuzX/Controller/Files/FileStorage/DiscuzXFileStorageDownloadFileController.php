@@ -5,6 +5,7 @@ namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 use kernel\Foundation\Config;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
+use kernel\Platform\DiscuzX\Service\File\DiscuzXOSSService;
 use kernel\Service\OSS\OSSService;
 use kernel\Traits\FileStorageControllerTrait;
 
@@ -16,11 +17,11 @@ class DiscuzXFileStorageDownloadFileController extends DiscuzXController
   {
     $Params = $this->getParams();
 
-    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], $Params['signatureKey'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
+    $File = DiscuzXFileStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($File->error) return $File;
 
     if ($File->getData("remote")) {
-      return $this->response->redirect(OSSService::getAccessURL($FileKey, $this->getRequestParams(), 600, NULL, "get", true, true)->getData());
+      return $this->response->redirect(DiscuzXOSSService::getAccessURL($FileKey, $this->getRequestParams(), [], true, 600, "get")->getData());
     }
 
     return $this->response->download($File->getData("fullPath"));
