@@ -284,14 +284,14 @@ class Files
     return $fileKey;
   }
   /**
-   * 生成访问链接
+   * 获取访问链接
    *
    * @param string $FilePath 文件路径
    * @param string $FileName 文件名称
    * @param array $URLParams 请求参数
    * @return string 访问URL
    */
-  static function generateAccessURL($FilePath, $FileName, $URLParams = [])
+  static function getFilePreviewURL($FilePath, $FileName, $URLParams = [])
   {
     $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
 
