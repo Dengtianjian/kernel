@@ -2,7 +2,6 @@
 
 namespace kernel\Controller\Main\Files\FileStorage;
 
-use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Service\File\FileStorageService;
 use kernel\Traits\FileStorageControllerTrait;

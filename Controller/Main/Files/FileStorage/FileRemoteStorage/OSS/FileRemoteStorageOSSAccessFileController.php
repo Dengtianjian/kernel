@@ -3,7 +3,6 @@
 namespace kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS;
 
 use kernel\Controller\Main\Files\FileStorage\FileStorageAccessFileController;
-use kernel\Foundation\Config;
 use kernel\Service\File\FileOSSStorageService;
 
 class FileRemoteStorageOSSAccessFileController extends FileStorageAccessFileController

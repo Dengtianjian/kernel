@@ -2,11 +2,9 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
-use kernel\Foundation\Config;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 use kernel\Platform\DiscuzX\Service\File\DiscuzXOSSService;
-use kernel\Service\OSS\OSSService;
 use kernel\Traits\FileStorageControllerTrait;
 
 class DiscuzXFileStorageDownloadFileController extends DiscuzXController

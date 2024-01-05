@@ -3,8 +3,7 @@
 namespace kernel\Platform\DiscuzX\Controller\Files\FileStorage;
 
 use kernel\Controller\Main\Files\FileStorage\FileRemoteStorage\OSS\FileRemoteStorageOSSGetUploadAuthController;
-use kernel\Foundation\File\FileRemoteStorage;
-use kernel\Foundation\File\Files;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFiles;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Platform\DiscuzX\Service\File\DiscuzXOSSService;
@@ -18,7 +17,7 @@ class DiscuzXFileRemoteStorageOSSGetUploadAuthController extends FileRemoteStora
     $FilePathInfo = pathinfo($Body['sourceFileName']);
 
     $ObjectFileName = uniqid() . "." . $FilePathInfo['extension'];
-    $FileKey = Files::combinedFileKey($Body['filePath'], $ObjectFileName);
+    $FileKey = DiscuzXFiles::combinedFileKey($Body['filePath'], $ObjectFileName);
 
     $Auth = DiscuzXOSSService::getAccessAuth($FileKey, 600, [], [], "put");
     if ($Auth->error) return $Auth;

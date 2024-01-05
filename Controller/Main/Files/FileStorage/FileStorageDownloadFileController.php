@@ -3,7 +3,6 @@
 namespace kernel\Controller\Main\Files\FileStorage;
 
 use kernel\Controller\Main\Files\DownloadFileController;
-use kernel\Foundation\Config;
 use kernel\Service\File\FileStorageService;
 use kernel\Traits\FileStorageControllerTrait;
 
