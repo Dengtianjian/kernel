@@ -8,6 +8,9 @@ use kernel\Foundation\File\FileStorage;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Model\FilesModel;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileRemoteOSSStorage;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
+use kernel\Platform\DiscuzX\Service\File\DiscuzXFileStorageService;
 use kernel\Service\File\FileService;
 
 class FileStorageService extends FileService
@@ -100,7 +103,6 @@ class FileStorageService extends FileService
   static function getAccessURL($FileKey, $URLParams = [], $Headers = [], $WithSignature = TRUE, $Expires = 600, $HTTPMethod = "get")
   {
     $R = new ReturnResult(null);
-
     return $R->success(self::$FileStorageInstance->generateAccessURL($FileKey, $URLParams, $Headers, $WithSignature, $Expires, $HTTPMethod));
   }
 

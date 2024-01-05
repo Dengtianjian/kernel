@@ -228,7 +228,7 @@ class FileStorage
     }
 
     $AccessURLIns = new URL(F_BASE_URL);
-    $AccessURLIns->pathName = URL::combinedPathName("fileStorage", $FileKey);
+    $AccessURLIns->pathName = URL::combinedPathName("fileStorage", $FileKey, "preview");
     $AccessURLIns->queryParam($URLParams);
 
     return $AccessURLIns->toString();
@@ -251,7 +251,7 @@ class FileStorage
     }
 
     $DownloadURL = new URL(F_BASE_URL);
-    $DownloadURL->pathName = URL::combinedPathName("fileStorage", $FileKey);
+    $DownloadURL->pathName = URL::combinedPathName("fileStorage", $FileKey, "preview");
     $DownloadURL->queryParam($URLParams);
 
     return $DownloadURL->toString();

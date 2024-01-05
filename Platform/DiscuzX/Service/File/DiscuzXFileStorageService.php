@@ -18,6 +18,8 @@ class DiscuzXFileStorageService extends FileStorageService
   }
   static function useService($SignatureKey = null)
   {
+    parent::useService($SignatureKey);
+
     Router::post("fileStorage/upload/auth", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetUploadFileAuthController::class);
     Router::post("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageUploadFileController::class);
     Router::delete("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageDeleteFileController::class);

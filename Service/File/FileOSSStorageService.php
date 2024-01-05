@@ -14,13 +14,6 @@ use kernel\Service\File\FileRemoteStorageService;
 class FileOSSStorageService extends FileRemoteStorageService
 {
   /**
-   * 远程存储服务实例
-   *
-   * @var FileRemoteOSSStorage
-   */
-  protected static $FileStorageInstance = null;
-
-  /**
    * 实例化OSS服务类
    *
    * @param "QCloudCos"|"AliYunOSS" $OSSPlatform
@@ -57,8 +50,8 @@ class FileOSSStorageService extends FileRemoteStorageService
     Router::get("fileStorage/{fileId:.+?}/download", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDownloadFileController::class);
     Router::get("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetFileController::class);
 
-    self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
+    parent::useService($SignatureKey);
 
-    parent::useService(null, $SignatureKey);
+    self::$FileStorageInstance = new FileRemoteOSSStorage($OSSPlatform, $SecretId, $SecretKey, $Region, $Bucket, $SignatureKey);
   }
 }

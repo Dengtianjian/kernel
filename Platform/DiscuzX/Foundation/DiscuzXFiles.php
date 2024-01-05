@@ -13,7 +13,8 @@ class DiscuzXFiles extends Files
 
     $AccessURL = new URL(F_BASE_URL);
     $AccessURL->pathName = "plugin.php";
-    $URLParams['uri'] = "files/{$FileKey}";
+    $URLParams['id'] = F_APP_ID;
+    $URLParams['uri'] = "files/{$FileKey}/preview";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();

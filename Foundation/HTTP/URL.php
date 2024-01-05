@@ -224,7 +224,7 @@ class URL
   {
     if (is_array($value)) {
       foreach ($value as $key => $item) {
-        if (!is_numeric($key)) {
+        if (is_numeric($key)) {
           $key = $item;
           $item = null;
         }

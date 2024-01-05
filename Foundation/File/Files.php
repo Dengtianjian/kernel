@@ -296,7 +296,7 @@ class Files
     $FileKey = rawurlencode(self::combinedFileKey($FilePath, $FileName));
 
     $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}";
+    $AccessURL->pathName = "files/{$FileKey}/preview";
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();
