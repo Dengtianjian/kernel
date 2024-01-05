@@ -16,7 +16,7 @@ class FileRemoteStorageOSSAccessFileController extends FileStorageAccessFileCont
 
     $FileData = $File->getData();
     if ($FileData['remote']) {
-      return $this->response->redirect(FileOSSStorageService::getAccessURL($FileKey, $this->getRequestParams())->getData(), 302);
+      return $this->response->redirect(FileOSSStorageService::getRemotePreviewURL($FileKey, $this->getRequestParams())->getData(), 302);
     }
 
     return $this->response->file($FileData['fullPath']);

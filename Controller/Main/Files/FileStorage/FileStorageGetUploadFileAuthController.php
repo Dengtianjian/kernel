@@ -26,7 +26,7 @@ class FileStorageGetUploadFileAuthController extends AuthController
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
     $FileKey = Files::combinedFileKey($Body['filePath'], $fileName);
-    $Auth = FileStorageService::getAccessAuth($FileKey, 600, [], "post", true);
+    $Auth = FileStorageService::getFileAuth($FileKey, 600, [], [], "post");
     if ($Auth->error) return $Auth;
 
     return [

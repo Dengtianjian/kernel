@@ -19,7 +19,7 @@ class DiscuzXFileStorageAccessFileController extends DiscuzXController
     if ($File->error) return $File;
 
     if ($File->getData('remote')) {
-      return $this->response->redirect(DiscuzXOSSService::getAccessURL($FileKey, $this->getRequestParams())->getData(), 302);
+      return $this->response->redirect(DiscuzXOSSService::getRemotePreviewURL($FileKey, $this->getRequestParams())->getData(), 302);
     }
 
     return $this->response->file($File->getData("fullPath"));

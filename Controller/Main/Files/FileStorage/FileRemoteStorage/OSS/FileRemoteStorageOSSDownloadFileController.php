@@ -17,7 +17,7 @@ class FileRemoteStorageOSSDownloadFileController extends FileStorageDownloadFile
 
     $FileData = $File->getData();
     if ($FileData['remote']) {
-      return $this->response->redirect(FileOSSStorageService::getAccessURL($FileKey, $this->getRequestParams(), 600, NULL, "get", true, true)->getData(), 302);
+      return $this->response->redirect(FileOSSStorageService::getRemoteDownloadURL($FileKey, $this->getRequestParams())->getData(), 302);
     }
 
     return $this->response->download($FileData['fullPath']);

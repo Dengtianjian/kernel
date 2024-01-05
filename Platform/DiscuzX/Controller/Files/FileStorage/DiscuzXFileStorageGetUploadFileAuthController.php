@@ -23,7 +23,7 @@ class DiscuzXFileStorageGetUploadFileAuthController extends DiscuzXController
       $fileName = uniqid() . "." . $FileInfo['extension'];
     }
     $FileKey = DiscuzXFiles::combinedFileKey($Body['filePath'], $fileName);
-    $Auth = DiscuzXFileStorageService::getAccessAuth($FileKey, 600, [], [], "post", true);
+    $Auth = DiscuzXFileStorageService::getFileAuth($FileKey, 600, [], [], "post");
     if ($Auth->error) return $Auth;
 
     return [

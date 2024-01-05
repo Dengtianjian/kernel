@@ -44,7 +44,7 @@ class FileRemoteStorageOSSGetUploadAuthController extends AuthController
     $ObjectFileName = uniqid() . "." . $FilePathInfo['extension'];
     $FileKey = Files::combinedFileKey($Body['filePath'], $ObjectFileName);
 
-    $Auth = FileOSSStorageService::getAccessAuth($FileKey, 600, [], [], "put");
+    $Auth = FileOSSStorageService::getFileAuth($FileKey, 600, [], [], "post");
     if ($Auth->error) return $Auth;
     $FileName = $FilePathInfo['basename'];
 

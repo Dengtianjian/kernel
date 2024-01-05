@@ -19,7 +19,7 @@ class DiscuzXFileRemoteStorageOSSGetUploadAuthController extends FileRemoteStora
     $ObjectFileName = uniqid() . "." . $FilePathInfo['extension'];
     $FileKey = DiscuzXFiles::combinedFileKey($Body['filePath'], $ObjectFileName);
 
-    $Auth = DiscuzXOSSService::getAccessAuth($FileKey, 600, [], [], "put");
+    $Auth = DiscuzXOSSService::getFileAuth($FileKey, 600, [], [], "post");
     if ($Auth->error) return $Auth;
     $FileName = $FilePathInfo['basename'];
 
@@ -32,7 +32,8 @@ class DiscuzXFileRemoteStorageOSSGetUploadAuthController extends FileRemoteStora
       "fileName" =>  $FileName,
       "size" => $Body['size'],
       "extension" => $FilePathInfo['extension'],
-      "auth" => $Auth->getData()
+      "auth" => $Auth->getData(),
+      "remote" => true
     ];
   }
 }

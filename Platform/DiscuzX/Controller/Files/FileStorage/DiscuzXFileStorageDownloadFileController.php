@@ -19,7 +19,7 @@ class DiscuzXFileStorageDownloadFileController extends DiscuzXController
     if ($File->error) return $File;
 
     if ($File->getData("remote")) {
-      return $this->response->redirect(DiscuzXOSSService::getAccessURL($FileKey, $this->getRequestParams(), [], true, 600, "get")->getData());
+      return $this->response->redirect(DiscuzXOSSService::getRemoteDownloadURL($FileKey, $this->getRequestParams())->getData());
     }
 
     return $this->response->download($File->getData("fullPath"));
