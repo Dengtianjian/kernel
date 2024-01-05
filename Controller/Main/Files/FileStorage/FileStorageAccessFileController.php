@@ -13,7 +13,6 @@ class FileStorageAccessFileController extends AccessFileController
   public function data($FileKey)
   {
     $Params = $this->getParams();
-
     $File = FileStorageService::getFileInfo($FileKey, $Params['signature'], null, $Params['URLParams'], $Params['headers'], $this->request->method);
     if ($File->error) return $File;
 
