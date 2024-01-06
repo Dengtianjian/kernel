@@ -18,6 +18,17 @@ class SettingService extends Service
   {
     $this->settingModel = new SettingsModel();
   }
+
+  /**
+   * 设置表模型
+   *
+   * @var SettingsModel
+   */
+  protected static $settingsModel = null;
+  public static function useService()
+  {
+    self::$settingsModel = new SettingsModel();
+  }
   /**
    * 获取多个设置项
    *
