@@ -30,7 +30,7 @@ class FileService extends Service
     Router::get("files/{fileId:.+?}/preview", FilesNamespace\AccessFileController::class);
     Router::get("files/{fileId:.+?}/download", FilesNamespace\DownloadFileController::class);
     Router::get("files/{fileId:.+?}", FilesNamespace\GetFileController::class);
-    Router::get("files/remote/upload/auth", FilesNamespace\GetUploadRemoteAuthController::class);
+    Router::post("files/remote/upload/auth", FilesNamespace\GetUploadRemoteAuthController::class);
 
     self::$Files = Files::class;
   }

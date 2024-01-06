@@ -133,19 +133,18 @@ class QCloudCosSignture extends QCloudCosBase
    * 制作授权信息
    *
    * @param string $objectName 路径名称，/开头
-   * @param string $HTTPMethod 调用的服务所使用的请求方法
    * @param array $URLParams  请求的URL参数
    * @param array $Headers  请求头部
-   * @param int $StartTime 授权开始时间，秒级时间戳
-   * @param int $EndTime 授权结束时间，秒级时间戳
+   * @param int $Expires  签名有效期，多少秒
+   * @param string $HTTPMethod  请求方式
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
-  function createAuthorization($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null)
+  function createAuthorization($objectName, $URLParams = [], $Headers = [], $Expires = 1800, $HTTPMethod = "get")
   {
     $HTTPMethod = strtolower($HTTPMethod);
 
-    $StartTime = $StartTime ?: time() - 60;
-    $EndTime = $EndTime ?: strtotime('+30 minutes');
+    $StartTime = time();
+    $EndTime = $StartTime + $Expires;
 
     $KeyTime = implode(";", [$StartTime, $EndTime]);
     $SignKey = hash_hmac("sha1", $KeyTime, $this->SecretKey);

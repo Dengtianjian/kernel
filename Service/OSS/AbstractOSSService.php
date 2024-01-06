@@ -76,41 +76,45 @@ abstract class AbstractOSSService extends Service
   /**
    * 获取对象预览链接地址
    *
-   * @param string $objectName 对象名称
+   * @param string $ObjectKey 对象名称
    * @param array $URLParams URL的query参数
-   * @param integer $DurationSeconds 签名有效期
+   * @param array $Headers 请求头
+   * @param integer $Expires 签名有效期
    * @param boolean $WithSignature 是否携带签名
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getFilePreviewURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true,  $TempKeyPolicyStatement = []);
+  abstract function getFilePreviewURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 1800, $WithSignature = true,  $TempKeyPolicyStatement = []);
 
   /**
    * 获取对象下载链接地址
    *
-   * @param string $objectName 对象名称
+   * @param string $ObjectKey 对象名称
    * @param array $URLParams URL的query参数
-   * @param integer $DurationSeconds 签名有效期
+   * @param array $Headers 请求头
+   * @param integer $Expires 签名有效期
    * @param boolean $WithSignature 是否携带签名
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getFileDownloadURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = []);
+  abstract function getFileDownloadURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 1800, $WithSignature = true, $TempKeyPolicyStatement = []);
 
   /**
    * 获取对象授权信息
    *
-   * @param string $objectName 对象名称
+   * @param string $ObjectKey 对象名称
+   * @param integer $Expires 有效期，秒级
    * @param string $HTTPMethod 调用的服务所使用的请求方法
-   * @param integer $DurationSeconds 有效期，秒级
    * @param array $URLParams URL的query参数
+   * @param array $Headers 请求头
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
   abstract function getFileAuth(
-    $objectName,
+    $ObjectKey,
+    $Expires = 1800,
     $HTTPMethod = "get",
-    $DurationSeconds = 600,
-    $URLParams = []
+    $URLParams = [],
+    $Headers = []
   );
   /**
    * 获取图片信息

@@ -59,39 +59,30 @@ class OSSQcloudCosService extends AbstractOSSService
       'Key' => $ObjectKey
     ]);
   }
-  function getFilePreviewURL($ObjectKey, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
+  function getFilePreviewURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
-    $startTime = time();
-    $endTime = $startTime + $DurationSeconds;
-
     if ($TempKeyPolicyStatement) {
-      $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
+      $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $Expires);
     }
 
-    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $startTime, $endTime, false);
+    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $Expires, false);
   }
-  function getFileDownloadURL($objectName, $URLParams = [], $DurationSeconds = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
+  function getFileDownloadURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
-    $startTime = time();
-    $endTime = $startTime + $DurationSeconds;
-
     if ($TempKeyPolicyStatement) {
-      $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $DurationSeconds);
+      $TempAuth = $this->OSSSTSClient->getTempKeysByPolicy($TempKeyPolicyStatement, $Expires);
     }
 
-    return $this->OSSClient->getObjectAuthUrl($objectName, "get", $URLParams, [], $startTime, $endTime, true);
+    return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $Expires, true);
   }
   function getFileAuth(
     $ObjectKey,
+    $Expires = 1800,
     $HTTPMethod = "get",
-    $DurationSeconds = 600,
     $URLParams = [],
     $Headers = []
   ) {
-    $StartTime = time();
-    $EndTime = $StartTime + $DurationSeconds;
-
-    return $this->OSSClient->getAuth($ObjectKey, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
+    return $this->OSSClient->getAuth($ObjectKey, $Expires, $HTTPMethod, $URLParams, $Headers);
   }
   function getImageInfo($ObjectKey)
   {

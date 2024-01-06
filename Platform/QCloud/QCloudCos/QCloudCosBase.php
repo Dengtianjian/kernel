@@ -55,15 +55,14 @@ class QCloudCosBase extends QCloud
   /**
    * 获取授权参数
    *
-   * @param string $objectName 对象名称，/开头
+   * @param string $objectName 对象名称
+   * @param int $Expires 签名有效期，多少秒
    * @param string $HTTPMethod 调用的服务所使用的请求方法
    * @param array $URLParams  请求的URL参数
    * @param array $Headers  请求头部
-   * @param int $StartTime 授权开始时间，秒级时间戳
-   * @param int $EndTime 授权结束时间，秒级时间戳
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
-  function getAuth($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null)
+  function getAuth($objectName, $Expires = 1800, $HTTPMethod = "get", $URLParams = [], $Headers = [])
   {
     $QCCS = new QCloudCosSignture($this->getSecretId(), $this->getSecretKey(), $this->Region, $this->Bucket, $this->Host, $this->SecurityToken);
 
@@ -71,7 +70,7 @@ class QCloudCosBase extends QCloud
       $objectName = "/" . $objectName;
     }
 
-    return $QCCS->createAuthorization($objectName, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
+    return $QCCS->createAuthorization($objectName, $URLParams, $Headers, $Expires, $HTTPMethod);
   }
   /**
    * 获取带有授权参数的对象访问URL
@@ -80,12 +79,11 @@ class QCloudCosBase extends QCloud
    * @param string $HTTPMethod 调用的服务所使用的请求方法
    * @param array $URLParams  请求的URL参数
    * @param array $Headers  请求头部
-   * @param int $StartTime 授权开始时间，秒级时间戳
-   * @param int $EndTime 授权结束时间，秒级时间戳
+   * @param int $Expires 签名有效期，多少秒
    * @param boolean $Download 链接打开是下载文件
    * @return string https协议的对象访问URL
    */
-  function getObjectAuthUrl($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $StartTime = null, $EndTime = null, $Download = false)
+  function getObjectAuthUrl($objectName, $HTTPMethod = "get", $URLParams = [], $Headers = [], $Expires = 1800, $Download = false)
   {
     $objectName = trim($objectName);
 
@@ -93,7 +91,7 @@ class QCloudCosBase extends QCloud
       $URLParams['response-content-disposition'] = 'attachment';
     }
 
-    $Authorization = $this->getAuth($objectName, $HTTPMethod, $URLParams, $Headers, $StartTime, $EndTime);
+    $Authorization = $this->getAuth($objectName, $Expires, $HTTPMethod, $URLParams, $Headers);
 
     if (strpos($objectName, "/") !== 0) {
       $objectName = "/" . $objectName;
