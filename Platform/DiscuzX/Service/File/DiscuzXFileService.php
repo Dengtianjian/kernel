@@ -23,6 +23,7 @@ class DiscuzXFileService extends FileService
     Router::get("files/{fileKey:.+?}/preview", DiscuzXFilesNamespace\DiscuzXAccessFileController::class);
     Router::get("files/{fileId:.+?}/download", DiscuzXFilesNamespace\DiscuzXDownloadFileController::class);
     Router::get("files/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXGetFileController::class);
+    Router::get("files/remote/upload/auth", DiscuzXFilesNamespace\DiscuzXGetUploadRemoteAuthController::class);
 
     self::$Files = DiscuzXFiles::class;
   }
