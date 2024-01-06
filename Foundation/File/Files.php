@@ -314,7 +314,7 @@ class Files
       $File['height'] = $imageInfo[1];
     }
 
-    return true;
+    return $File;
   }
   /**
    * 删除文件
