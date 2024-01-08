@@ -18,12 +18,12 @@ class DiscuzXFileService extends FileService
    */
   static function useService()
   {
-    Router::post("files", DiscuzXFilesNamespace\DiscuzXUploadFileController::class);
-    Router::delete("files/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXDeleteFileController::class);
-    Router::get("files/{fileKey:.+?}/preview", DiscuzXFilesNamespace\DiscuzXAccessFileController::class);
-    Router::get("files/{fileId:.+?}/download", DiscuzXFilesNamespace\DiscuzXDownloadFileController::class);
-    Router::get("files/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXGetFileController::class);
-    Router::post("files/remote/upload/auth", DiscuzXFilesNamespace\DiscuzXGetUploadRemoteAuthController::class);
+    // Router::post("files", DiscuzXFilesNamespace\DiscuzXUploadFileController::class);
+    // Router::delete("files/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXDeleteFileController::class);
+    // Router::get("files/{fileKey:.+?}/preview", DiscuzXFilesNamespace\DiscuzXAccessFileController::class);
+    // Router::get("files/{fileId:.+?}/download", DiscuzXFilesNamespace\DiscuzXDownloadFileController::class);
+    // Router::get("files/{fileId:.+?}", DiscuzXFilesNamespace\DiscuzXGetFileController::class);
+    // Router::post("files/remote/upload/auth", DiscuzXFilesNamespace\DiscuzXGetUploadRemoteAuthController::class);
 
     self::$Files = DiscuzXFiles::class;
   }

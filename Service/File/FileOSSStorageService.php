@@ -41,14 +41,14 @@ class FileOSSStorageService extends FileRemoteStorageService
       throw new Exception("使用OSS服务请传入OSS平台Bucket参数");
     }
 
-    Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
-    Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
+    // Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
+    // Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
 
-    Router::get("fileStorage/oss/upload/auth", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetUploadAuthController::class);
-    Router::delete("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDeleteFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/preview", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSAccessFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/download", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDownloadFileController::class);
-    Router::get("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetFileController::class);
+    // Router::get("fileStorage/oss/upload/auth", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetUploadAuthController::class);
+    // Router::delete("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDeleteFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/preview", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSAccessFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/download", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSDownloadFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}", FileRemoteStorageOSSNamespace\FileRemoteStorageOSSGetFileController::class);
 
     parent::useService($SignatureKey);
 

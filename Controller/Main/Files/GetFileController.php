@@ -2,23 +2,31 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Controller\AuthController;
-use kernel\Service\File\FileService;
-
-class GetFileController extends AuthController
+class GetFileController extends FileBaseController
 {
   public $serializes = [
     "fileKey" => "string",
-    "path" => "string",
-    "fileName"=>"string",
+    "fileName" => "string",
     "extension" => "string",
     "size" => "int",
-    "relativePath" => "string",
     "width" => "double",
     "height" => "double"
   ];
   public function data($FileKey)
   {
-    return FileService::getFileInfo($FileKey);
+    if (!$this->driver->verifyRequestAuth($FileKey)) {
+      return $this->response->error(403, 403, "抱歉，您没有获取该文件信息的权限");
+    }
+    $GetResponse = $this->driver->getFileInfo($FileKey);
+    if ($GetResponse->error) return $GetResponse;
+    $FileInfo = $GetResponse->getData();
+    if (!array_key_exists("fileKey", $FileInfo)) {
+      $FileInfo['fileKey'] = $FileInfo['key'];
+    }
+    if (!array_key_exists("size", $FileInfo)) {
+      $FileInfo['size'] = $FileInfo['fileKey'];
+    }
+
+    return $FileInfo;
   }
 }

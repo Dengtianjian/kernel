@@ -2,19 +2,18 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Controller\AuthController;
-use kernel\Service\File\FileService;
-
-class UploadFileController extends AuthController
+class UploadFileController extends FileBaseController
 {
-  public function data()
+  public function data($FileKey)
   {
-    if (count($_FILES) === 0 || !$_FILES['file']) {
+    if (!$this->driver->verifyRequestAuth($FileKey, TRUE)) {
+      return $this->response->error(403, 403, "抱歉，您没有上传文件的权限");
+    }
+
+    $Files = array_values($_FILES);
+    if (!$Files) {
       return $this->response->error(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
-    $UploadedResult = FileService::upload($_FILES['file'], "Files");
-    if ($UploadedResult->error) return $UploadedResult;
-
-    return $UploadedResult->getData("fileKey");
+    return $this->driver->uploadFile($Files[0], $FileKey);
   }
 }

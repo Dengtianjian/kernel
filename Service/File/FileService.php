@@ -3,6 +3,7 @@
 namespace kernel\Service\File;
 
 use kernel\Controller\Main\Files as FilesNamespace;
+use kernel\Foundation\File\AbstractFileDriver;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\File\Files;
 use kernel\Foundation\File\FileStorage;
@@ -18,12 +19,14 @@ class FileService extends Service
    * @var Files
    */
   protected static $Files = null;
+
   /**
    * 使用服务
    *
+   * @param AbstractFileDriver $fileDriver
    * @return void
    */
-  static function useService()
+  static function useService($fileDriver = null)
   {
     Router::post("files", FilesNamespace\UploadFileController::class);
     Router::delete("files/{fileId:.+?}", FilesNamespace\DeleteFileController::class);

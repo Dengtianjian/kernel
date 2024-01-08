@@ -52,12 +52,40 @@ class OSSQcloudCosService extends AbstractOSSService
     parent::__construct("QCloudCos", $SecretId, $SecretKey, $Region, $Bucket);
   }
 
+  /**
+   * 上传对象
+   *
+   * @param string $ObjectKey 对象键
+   * @param string $FilePath 本地文件名
+   * @param array $Options 上传选项，具体有哪些选项可看https://cloud.tencent.com/document/product/436/64283
+   * @return boolean 上传结果
+   */
+  public function upload($ObjectKey, $FilePath, $Options = [])
+  {
+    try {
+      $this->OSSSDKClient->upload(
+        $this->OSSBucketName,
+        $ObjectKey,
+        fopen($FilePath, 'rb'),
+        $Options
+      );
+      return true;
+    } catch (\Exception $e) {
+      return false;
+    }
+  }
+
   function deleteFile($ObjectKey)
   {
-    return $this->OSSSDKClient->deleteObject([
-      "Bucket" => $this->OSSBucketName,
-      'Key' => $ObjectKey
-    ]);
+    try {
+      $this->OSSSDKClient->deleteObject([
+        "Bucket" => $this->OSSBucketName,
+        'Key' => $ObjectKey
+      ]);
+      return true;
+    } catch (\Exception $e) {
+      return false;
+    }
   }
   function getFilePreviewURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
@@ -99,5 +127,9 @@ class OSSQcloudCosService extends AbstractOSSService
       Log::record($e->getMessage());
       return false;
     }
+  }
+  function getFileInfo($ObjectKey)
+  {
+    return NULL;
   }
 }

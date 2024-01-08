@@ -19,11 +19,11 @@ class FilesRemoteService extends Service
   {
     self::$FileRemoteInstance = new FilesRemote($driver);
 
-    Router::get("filesRemote/{fileId:.+?}/preview", FilesRemoteNamespace\FilesRemoteAccessFileController::class);
-    Router::get("filesRemote/{fileId:.+?}/download", FilesRemoteNamespace\FilesRemoteDownloadFileController::class);
-    Router::get("filesRemote/{fileId:.+?}", FilesRemoteNamespace\FilesRemoteGetFileController::class);
-    Router::post("filesRemote/{fileId:.+?}/upload/auth", FilesRemoteNamespace\FilesRemoteGetUploadAuthController::class);
-    Router::delete("filesRemote/{fileId:.+?}", FilesRemoteNamespace\FilesRemoteDeleteFileController::class);
+    // Router::get("filesRemote/{fileId:.+?}/preview", FilesRemoteNamespace\FilesRemoteAccessFileController::class);
+    // Router::get("filesRemote/{fileId:.+?}/download", FilesRemoteNamespace\FilesRemoteDownloadFileController::class);
+    // Router::get("filesRemote/{fileId:.+?}", FilesRemoteNamespace\FilesRemoteGetFileController::class);
+    // Router::post("filesRemote/{fileId:.+?}/upload/auth", FilesRemoteNamespace\FilesRemoteGetUploadAuthController::class);
+    // Router::delete("filesRemote/{fileId:.+?}", FilesRemoteNamespace\FilesRemoteDeleteFileController::class);
   }
   static function getFileAuth($FileKey, $Expires = 600, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {

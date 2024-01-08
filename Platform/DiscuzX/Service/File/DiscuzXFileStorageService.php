@@ -20,14 +20,14 @@ class DiscuzXFileStorageService extends FileStorageService
   {
     parent::useService($SignatureKey);
 
-    Router::post("fileStorage/upload/auth", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetUploadFileAuthController::class);
-    Router::post("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageUploadFileController::class);
-    Router::delete("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageDeleteFileController::class);
+    // Router::post("fileStorage/upload/auth", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetUploadFileAuthController::class);
+    // Router::post("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageUploadFileController::class);
+    // Router::delete("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageDeleteFileController::class);
 
-    Router::get("fileStorage/{fileId:.+?}/preview", DiscuzXFileStorageNamespace\DiscuzXFileStorageAccessFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/download", DiscuzXFileStorageNamespace\DiscuzXFileStorageDownloadFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/preview", DiscuzXFileStorageNamespace\DiscuzXFileStorageAccessFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/download", DiscuzXFileStorageNamespace\DiscuzXFileStorageDownloadFileController::class);
 
-    Router::get("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}", DiscuzXFileStorageNamespace\DiscuzXFileStorageGetFileController::class);
 
     self::$FileStorageInstance = new DiscuzXFileStorage($SignatureKey);
     self::$FilesModelInstance = new DiscuzXFilesModel();

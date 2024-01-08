@@ -2,13 +2,14 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Controller\AuthController;
-use kernel\Service\File\FileService;
-
-class DeleteFileController extends AuthController
+class DeleteFileController extends FileBaseController
 {
-  public function data($fileKey)
+  public function data($FileKey)
   {
-    return FileService::deleteFile($fileKey);
+    if (!$this->driver->verifyRequestAuth($FileKey, TRUE)) {
+      return $this->response->error(403, 403, "抱歉，您没有删除该文件的权限");
+    }
+
+    return $this->driver->deleteFile($FileKey);
   }
 }

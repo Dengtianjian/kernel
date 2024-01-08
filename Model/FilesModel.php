@@ -37,4 +37,12 @@ CREATE TABLE `{$tableName}`  (
 ) COMMENT = '文件';
 SQL;
   }
+  public function item($Key = null)
+  {
+    $item = $this->where("key", $Key)->getOne();
+    if (!$item) return NULL;
+    $item['remote'] = boolval(intval($item['remote']));
+
+    return $item;
+  }
 }

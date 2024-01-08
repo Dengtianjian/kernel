@@ -39,12 +39,12 @@ class FileStorageService extends FileService
    */
   static function useService($SignatureKey = null)
   {
-    Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
-    Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
-    Router::delete("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageDeleteFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/preview", FileStorageNamespace\FileStorageAccessFileController::class);
-    Router::get("fileStorage/{fileId:.+?}/download", FileStorageNamespace\FileStorageDownloadFileController::class);
-    Router::get("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageGetFileController::class);
+    // Router::post("fileStorage/upload/auth", FileStorageNamespace\FileStorageGetUploadFileAuthController::class);
+    // Router::post("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageUploadFileController::class);
+    // Router::delete("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageDeleteFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/preview", FileStorageNamespace\FileStorageAccessFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}/download", FileStorageNamespace\FileStorageDownloadFileController::class);
+    // Router::get("fileStorage/{fileId:.+?}", FileStorageNamespace\FileStorageGetFileController::class);
 
     self::$FileStorageInstance = new FileStorage($SignatureKey);
     self::$FileRemoteStorageInstance = new FileRemoteStorage($SignatureKey);

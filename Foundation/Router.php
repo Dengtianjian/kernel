@@ -137,6 +137,8 @@ class Router
    */
   static function register($type, $method, $URI, $controller, $middlewares = [], $ControllerInstantiateParams = [])
   {
+    // debug( preg_match("/files\/[\w\/]+?\.\w+\/preview/", "files/a/b.png/preview", $matchs));
+
     $handleMethodName = null;
     if (!is_null($URI) && (is_array($URI) || class_exists($URI)) && is_null($controller)) {
       if (is_array($URI)) {
@@ -182,9 +184,17 @@ class Router
         return $item;
       }));
     }
-    $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $Params);
+    $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $MatchParams);
     if ($HasParamsRoute) {
-      $URIParts = explode("/", $URI);
+      $URIParams = [];
+      foreach ($MatchParams as $item) {
+        array_push($URIParams, ...$item);
+      }
+      foreach ($URIParams as $index => $value) {
+        $ReplaceURI = str_replace($value, "{$index}", $URI);
+      }
+
+      $URIParts = explode("/", $ReplaceURI);
       $URIParts = array_filter($URIParts, function ($item) {
         if (empty(trim($item)))
           return false;
@@ -192,13 +202,14 @@ class Router
       });
 
       $patterns = [];
-      $Params = [];
+      $params = [];
       foreach ($URIParts as $URIPart) {
         $HasParamPart = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URIPart, $Param);
         if ($HasParamPart) {
           $Param = $Param[0][0];
+          $Param = $URIPart = $URIParams[$Param];
           if (strpos($Param, ":") === false) {
-            $Params[$Param] = null;
+            $params[$Param] = null;
             array_push($patterns, "/(\w+)");
           } else {
             $ParamSplits = explode(":", $Param);
@@ -207,7 +218,7 @@ class Router
 
             $NotEssential = false; //* 该参数可有可无的
             if (empty($key)) {
-              $key = count($Params);
+              $key = count($params);
             }
 
             $NotEssential = strpos($key, "?") !== false; //* 该参数可有可无的
@@ -219,9 +230,9 @@ class Router
               }
             }
             if (empty($key)) {
-              array_push($Params, null);
+              array_push($params, null);
             } else {
-              $Params[$key] = null;
+              $params[$key] = null;
             }
 
             $ParamPattern = trim($pattern);
@@ -250,7 +261,7 @@ class Router
         "method" => $method,
         "controller" => $controller,
         "middlewares" => $middlewares,
-        "params" => $Params,
+        "params" => $params,
         "controllerHandleMethodName" => $handleMethodName,
         "controllerInstantiateParams" => $ControllerInstantiateParams
       ];
@@ -447,7 +458,7 @@ class Router
         break;
       }
     }
-
+    
     return $matchRoute;
   }
   /**

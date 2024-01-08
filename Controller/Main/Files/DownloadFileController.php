@@ -2,18 +2,21 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Config;
-use kernel\Foundation\Controller\AuthController;
-use kernel\Service\File\FileService;
-
-class DownloadFileController extends AuthController
+class DownloadFileController extends FileBaseController
 {
-
   public function data($FileKey)
   {
-    $File = FileService::getFileInfo($FileKey);
+    if (!$this->driver->verifyRequestAuth($FileKey, TRUE)) {
+      return $this->response->error(403, 403, "抱歉，您没有下载该文件的权限");
+    }
+
+    $File = $this->driver->getFileInfo($FileKey);
     if ($File->error) return $File;
 
-    return $this->response->download($File->getData("fullPath"));
+    if ($File->getData("remote")) {
+      return $this->response->redirect($this->driver->getFileRemoteDownloadURL($FileKey, []), 302);
+    } else {
+      return $this->response->download($File['filePath']);
+    }
   }
 }
