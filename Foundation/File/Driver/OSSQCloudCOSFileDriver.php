@@ -48,7 +48,17 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       "height" => $TempFileInfo['height'],
       "remote" => true
     ];
-    $this->filesModel->add($FileKey, $FileInfo['sourceFileInfo'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['fileSize'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+
+    if ($this->filesModel) {
+      if ($this->filesModel->existItem($FileKey)) {
+        $this->filesModel->remove($FileKey);
+      }
+      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['fileSize'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+    }
+
+    if (file_exists($TempFileInfo['filePath'])) {
+      unlink($TempFileInfo['filePath']);
+    }
 
     return $this->return->success($FileInfo);
   }
@@ -84,7 +94,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     ];
     if ($this->filesModel) {
       $fileInfo = parent::getFileInfo($FileKey);
-      if (!$fileInfo->error) return $fileInfo;
+      if ($fileInfo->error) return $fileInfo;
       $fileInfo = $fileInfo->getData();
       if (!$fileInfo['remote']) {
         return $this->return->success($fileInfo);

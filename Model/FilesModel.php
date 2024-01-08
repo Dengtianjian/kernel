@@ -45,4 +45,16 @@ SQL;
 
     return $item;
   }
+  public function remove($Key = null)
+  {
+    return $this->filterNullWhere([
+      "key" => $Key
+    ])->delete(true);
+  }
+  public function existItem($Key = null)
+  {
+    return $this->filterNullWhere([
+      "key" => $Key
+    ])->exist();
+  }
 }

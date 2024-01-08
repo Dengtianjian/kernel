@@ -23,7 +23,7 @@ class FileService extends Service
 
     self::$dirver = $Driver;
 
-    $FileNamePattern = "[\w/]+?\.\w+";
+    $FileNamePattern = "[\w/\u4e00-\u9fa5]+?\.\w+";
 
     Router::get("$RoutePrefix/{fileKey:$FileNamePattern}", FilesNamespace\GetFileController::class, [], [
       $Driver

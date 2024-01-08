@@ -70,6 +70,9 @@ class FileStorageDriver extends AbstractFileDriver
     $FileInfo['remote'] = false;
 
     if ($this->filesModel) {
+      if ($this->filesModel->existItem($FileKey)) {
+        $this->filesModel->remove($FileKey);
+      }
       $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
@@ -93,22 +96,29 @@ class FileStorageDriver extends AbstractFileDriver
    */
   function getFileInfo($FileKey)
   {
+    $FileKey = rawurldecode(urldecode($FileKey));
     if ($this->filesModel) {
-      $FileInfo = $this->filesModel->where("key", $FileKey)->getOne();
+      $FileInfo = $this->filesModel->item($FileKey);
       if (!$FileInfo) return $this->return->error(404, 404001, "文件不存在");
     }
-    $LocalFileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
-    if (!$LocalFileInfo) return $this->return->error(404, 404, "文件不存在");
-    if ($this->filesModel) {
-      $FileInfo['width'] = $LocalFileInfo['width'];
-      $FileInfo['height'] = $LocalFileInfo['height'];
-      $FileInfo['fileSize'] = $LocalFileInfo['size'];
+
+    if ($FileInfo['remote']) {
       $FileInfo['remote'] = boolval(intval($FileInfo['remote']));
-      $FileInfo['path'] = $FileInfo['filePath'];
-      $FileInfo['filePath'] = $LocalFileInfo['filePath'];
+      $FileInfo['filePath'] = null;
     } else {
-      $FileInfo = $LocalFileInfo;
-      $FileInfo['remote'] = false;
+      $LocalFileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
+      if (!$LocalFileInfo) return $this->return->error(404, 404, "文件不存在");
+      if ($this->filesModel) {
+        $FileInfo['width'] = $LocalFileInfo['width'];
+        $FileInfo['height'] = $LocalFileInfo['height'];
+        $FileInfo['fileSize'] = $LocalFileInfo['size'];
+        $FileInfo['remote'] = boolval(intval($FileInfo['remote']));
+        $FileInfo['path'] = $FileInfo['filePath'];
+        $FileInfo['filePath'] = $LocalFileInfo['filePath'];
+      } else {
+        $FileInfo = $LocalFileInfo;
+        $FileInfo['remote'] = false;
+      }
     }
 
     $FileInfo['fileKey'] = $FileKey;
