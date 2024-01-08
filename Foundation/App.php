@@ -430,12 +430,13 @@ class App
 
     $callTarget = [];
     $callParams = $Route['params'] ?: [];
+    $RouteInstantiateParams = $Route['controllerInstantiateParams'];
     $Controller = null;
     if (is_callable($Route['controller'])) {
       $callTarget = $Route['controller'];
-      array_unshift($callParams, $this->request);
+      array_unshift($callParams, $this->request, ...$RouteInstantiateParams);
     } else {
-      $Controller = new $Route['controller']($this->request);
+      $Controller = new $Route['controller']($this->request, ...$RouteInstantiateParams);
       $Controller->before();
       $ControllerHandleMethodName = is_null($Route['controllerHandleMethodName']) ? 'data' : $Route['controllerHandleMethodName'];
       if (!method_exists($Controller, $ControllerHandleMethodName)) {
