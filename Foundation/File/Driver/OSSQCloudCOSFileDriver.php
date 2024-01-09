@@ -15,6 +15,16 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
    */
   protected $COSInstance = null;
   /**
+   * 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
+   * 为何存在：用于区分不入库的文件是存放在远程存储库还是本地磁盘  
+   * 辨别传入的文件名是否是远程文件，适用于不存入数据库的文件信息，因为不存入数据库无法区分是本地文件还是远程存储文件，所以特地增加前缀去区分。  
+   * 例如路由files/{fileKey}，那么实际fileKey就是{FileKeyRemotePrefix}/{fileKey}，当访问远程存储时会自动去掉FileKeyRemotePrefix  
+   * 假设在腾讯云COS存储了一个文件a.png，远程存储标识前缀是remote，预览URI就是files/remote/a.png/preview，获取到的远程存储访问的URI是bucket.ap-region.cos.ap-guangzhou.myqcloud.com/a.png，因为remote这个远程标识只是用于框架区分，获取实际URL时会去掉。
+   *
+   * @var string
+   */
+  protected $fileKeyRemoteIdentificationPrefix = NULL;
+  /**
    * 实例化腾讯云COS存储驱动
    *
    * @param string $SecretId 云 API 密钥 Id
@@ -23,21 +33,31 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
    * @param string $SignatureKey 本地存储签名秘钥
    * @param string $Record 存储的文件信息是否存入数据库
+   * @param string $fileKeyRemoteIdentificationPrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL)
   {
     parent::__construct(true, $SignatureKey, $Record);
 
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
+    $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;
   }
-  public function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
-    $FileKeyPathInfo = pathinfo($FileKey);
-    $TempFileInfo = FileManager::upload($File, "OSSTemp", $FileKeyPathInfo['basename']);
-    $this->COSInstance->upload($FileKey, $TempFileInfo['filePath']);
+    $remoteFileKey = $fileKey;
+    if ($this->fileKeyRemoteIdentificationPrefix) {
+      if (strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) === false) {
+        $fileKey = "{$this->fileKeyRemoteIdentificationPrefix}/{$fileKey}";
+      }
+    }
+
+    $FileKeyPathInfo = pathinfo($fileKey);
+    $TempFileInfo = FileManager::upload($File, $this->fileKeyRemoteIdentificationPrefix ?: 'RemoteTemp', $FileKeyPathInfo['basename']);
+
+    $this->COSInstance->upload($remoteFileKey, $TempFileInfo['filePath']);
 
     $FileInfo = [
-      "fileKey" => $FileKey,
+      "fileKey" => $fileKey,
       "sourceFileName" => $TempFileInfo['sourceFileName'],
       "path" =>  $FileKeyPathInfo['dirname'],
       "filePath" => $TempFileInfo['dirname'],
@@ -50,10 +70,10 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     ];
 
     if ($this->filesModel) {
-      if ($this->filesModel->existItem($FileKey)) {
-        $this->filesModel->remove($FileKey);
+      if ($this->filesModel->existItem($fileKey)) {
+        $this->filesModel->remove($fileKey);
       }
-      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['fileSize'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+      $this->filesModel->add($fileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['fileSize'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
     if (file_exists($TempFileInfo['filePath'])) {
@@ -62,15 +82,32 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
     return $this->return->success($FileInfo);
   }
-  public function getFileRemoteAuth($FileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = TRUE)
+  public function getFileAuth($fileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
   {
-    return $this->COSInstance->getFileAuth($FileKey, $Expires, $HTTPMethod, $URLParams, $Headers);
+    if ($this->fileKeyRemoteIdentificationPrefix) {
+      if (strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) === false) {
+        $fileKey = "{$this->fileKeyRemoteIdentificationPrefix}/{$fileKey}";
+      }
+    }
+
+    return parent::getFileAuth($fileKey, $Expires, $URLParams, $Headers, $HTTPMethod, $toString);
   }
-  public function deleteFile($FileKey)
+  public function getFileRemoteAuth($fileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = TRUE)
   {
-    $COSDeletedResult = $this->COSInstance->deleteFile($FileKey);
+    return $this->COSInstance->getFileAuth($fileKey, $Expires, $HTTPMethod, $URLParams, $Headers);
+  }
+  public function deleteFile($fileKey)
+  {
+    $remoteFileKey = $fileKey;
+    if ($this->fileKeyRemoteIdentificationPrefix) {
+      if (strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) !== false) {
+        $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
+      }
+    }
+
+    $COSDeletedResult = $this->COSInstance->deleteFile($remoteFileKey);
     if ($COSDeletedResult && $this->filesModel) {
-      $this->filesModel->where("key", $FileKey);
+      $this->filesModel->where("key", $fileKey);
     }
     if ($COSDeletedResult === false) {
       return $this->return->error(500, 500, "删除失败，请稍后重试");
@@ -78,11 +115,13 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
     return $this->return->success(true);
   }
-  public function getFileInfo($FileKey)
+  public function getFileInfo($fileKey)
   {
+    $remote = strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) !== false;
+
     $COSFileInfo = [
-      "fileKey" => $FileKey,
-      "key" => $FileKey,
+      "fileKey" => $fileKey,
+      "key" => $fileKey,
       "path" => null,
       "fileName" => null,
       "extension" => null,
@@ -90,10 +129,10 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       "filePath" => null,
       "width" => null,
       "height" => null,
-      'remote' => true
+      'remote' => $remote
     ];
     if ($this->filesModel) {
-      $fileInfo = parent::getFileInfo($FileKey);
+      $fileInfo = parent::getFileInfo($fileKey);
       if ($fileInfo->error) return $fileInfo;
       $fileInfo = $fileInfo->getData();
       if (!$fileInfo['remote']) {
@@ -102,11 +141,20 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
       $COSFileInfo = array_merge($COSFileInfo, $fileInfo);
     } else {
-      $PathInfo = pathinfo($FileKey);
-      $COSFileInfo['path'] = $PathInfo['dirname'];
-      $COSFileInfo['fileName'] = $PathInfo['basename'];
-      $COSFileInfo['extension'] = $PathInfo['extension'];
-      $COSFileInfo['filePath'] = $PathInfo['dirname'];
+      if ($remote) {
+        $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
+        $COSDoesExist = $this->COSInstance->doesObjectExist($remoteFileKey);
+        if (!$COSDoesExist) {
+          return $this->return->error(404, 404, "文件不存在");
+        }
+        $PathInfo = pathinfo($fileKey);
+        $COSFileInfo['path'] = $PathInfo['dirname'];
+        $COSFileInfo['fileName'] = $PathInfo['basename'];
+        $COSFileInfo['extension'] = $PathInfo['extension'];
+        $COSFileInfo['filePath'] = $PathInfo['dirname'];
+      } else {
+        return parent::getFileInfo($fileKey);
+      }
     }
 
     return $this->return->success($COSFileInfo);
@@ -118,29 +166,36 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
   /**
    * 获取文件下载直链
    *
-   * @param string $FileKey 对象名称
+   * @param string $fileKey 对象名称
    * @param array $URLParams URL的query参数
    * @param integer $Expires 签名有效期
    * @param boolean $WithSignature 是否携带签名
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string HTTPS协议的对象访问链接地址
    */
-  public function getFileRemotePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $TempKeyPolicyStatement = [])
+  public function getFileRemotePreviewURL($fileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $TempKeyPolicyStatement = [])
   {
-    return $this->COSInstance->getFilePreviewURL($FileKey, $URLParams, [], $Expires, $WithSignature, $TempKeyPolicyStatement);
+    if ($this->fileKeyRemoteIdentificationPrefix) {
+      $fileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
+    }
+
+    return $this->COSInstance->getFilePreviewURL($fileKey, $URLParams, [], $Expires, $WithSignature, $TempKeyPolicyStatement);
   }
   /**
    * 获取文件预览直链
    *
-   * @param string $FileKey 对象名称
+   * @param string $fileKey 对象名称
    * @param array $URLParams URL的query参数
    * @param integer $Expires 签名有效期
    * @param boolean $WithSignature 是否携带签名
    * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
    * @return string HTTPS协议的对象访问链接地址
    */
-  public function getFileRemoteDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $TempKeyPolicyStatement = [])
+  public function getFileRemoteDownloadURL($fileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $TempKeyPolicyStatement = [])
   {
-    return $this->COSInstance->getFileDownloadURL($FileKey, $URLParams, [], $Expires, $WithSignature, $TempKeyPolicyStatement);
+    if ($this->fileKeyRemoteIdentificationPrefix) {
+      $fileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
+    }
+    return $this->COSInstance->getFileDownloadURL($fileKey, $URLParams, [], $Expires, $WithSignature, $TempKeyPolicyStatement);
   }
 }

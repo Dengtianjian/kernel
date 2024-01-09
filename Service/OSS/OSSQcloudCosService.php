@@ -132,4 +132,15 @@ class OSSQcloudCosService extends AbstractOSSService
   {
     return NULL;
   }
+  function doesObjectExist($ObjectKey)
+  {
+    try {
+      return $this->OSSSDKClient->doesObjectExist(
+        $this->OSSBucketName,
+        $ObjectKey
+      );
+    } catch (\Exception $e) {
+      return false;
+    }
+  }
 }

@@ -38,6 +38,13 @@ class FileStorageDriver extends AbstractFileDriver
    */
   protected $filesModel = null;
 
+  /**
+   * 实例化文件存储类
+   *
+   * @param boolean $VerifyAuth 访问、上传文件需要验证授权
+   * @param string $SignatureKey 本地存储签名秘钥
+   * @param boolean $Record 文件信息是否存入数据库
+   */
   public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE)
   {
     parent::__construct($VerifyAuth, $SignatureKey);
@@ -118,6 +125,7 @@ class FileStorageDriver extends AbstractFileDriver
       } else {
         $FileInfo = $LocalFileInfo;
         $FileInfo['remote'] = false;
+        $FileInfo['size'] = $LocalFileInfo['size'];
       }
     }
 

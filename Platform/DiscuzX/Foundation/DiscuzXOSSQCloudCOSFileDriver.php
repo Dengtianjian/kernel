@@ -3,6 +3,7 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\File\Driver\OSSQCloudCOSFileDriver;
+use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 use kernel\Service\OSS\OSSQcloudCosService;
 
 class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
@@ -16,18 +17,23 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
 
   /**
    * 实例化腾讯云COS存储驱动
-   *
+   * 
    * @param string $SecretId 云 API 密钥 Id
    * @param string $SecretKey 云 API 密钥 key
    * @param string $Region 存储桶所属地域，如 ap-guangzhou
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
    * @param string $SignatureKey 本地存储签名秘钥
+   * @param string $Record 存储的文件信息是否存入数据库
+   * @param string $FileKeyRemotePrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemotePrefix = NULL)
   {
-    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record);
+    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record, $FileKeyRemotePrefix);
 
     $this->DiscuzXFileStorageDriver = new DiscuzXFileStorageDriver(true, $SignatureKey, $Record);
+    if ($Record) {
+      $this->filesModel = new DiscuzXFilesModel();
+    }
   }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {

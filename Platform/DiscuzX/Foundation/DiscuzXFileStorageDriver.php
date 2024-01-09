@@ -8,12 +8,13 @@ use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXFileStorageDriver extends FileStorageDriver
 {
-
-  public function __construct($VerifyAuth, $SignatureKey)
+  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE)
   {
-    parent::__construct($VerifyAuth, $SignatureKey);
+    parent::__construct($VerifyAuth, $SignatureKey, $Record);
 
-    $this->filesModel = new DiscuzXFilesModel();
+    if ($Record) {
+      $this->filesModel = new DiscuzXFilesModel();
+    }
   }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
