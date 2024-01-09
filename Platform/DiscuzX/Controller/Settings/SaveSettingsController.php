@@ -2,9 +2,8 @@
 
 namespace kernel\Platform\DiscuzX\Controller\Settings;
 
-use kernel\Foundation\HTTP\Request;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
-use kernel\Platform\DiscuzX\Service\DiscuzXSettingService;
+use kernel\Platform\DiscuzX\Service\DiscuzXSettingsService;
 
 class SaveSettingsController extends DiscuzXController
 {
@@ -12,6 +11,6 @@ class SaveSettingsController extends DiscuzXController
   public function data()
   {
     $settings = $this->request->body->some();
-    return DiscuzXSettingService::singleton()->saveItems($settings);
+    return DiscuzXSettingsService::singleton()->saveItems($settings);
   }
 }

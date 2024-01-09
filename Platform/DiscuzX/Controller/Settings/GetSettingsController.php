@@ -4,7 +4,7 @@ namespace kernel\Platform\DiscuzX\Controller\Settings;
 
 use kernel\Foundation\HTTP\Request;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
-use kernel\Platform\DiscuzX\Service\DiscuzXSettingService;
+use kernel\Platform\DiscuzX\Service\DiscuzXSettingsService;
 
 class GetSettingsController extends DiscuzXController
 {
@@ -14,9 +14,9 @@ class GetSettingsController extends DiscuzXController
   protected $adminNames = []; //* 不同管理组可以获取的键名，键是数组ID，值是键名数组 [ 1=>['appId','appName'],3=>['appName'] ]
   public function __construct($R)
   {
-    $this->names = DiscuzXSettingService::$Names;
-    $this->groupNames = DiscuzXSettingService::$GroupNames;
-    $this->adminNames = DiscuzXSettingService::$AdminNames;
+    $this->names = DiscuzXSettingsService::$Names;
+    $this->groupNames = DiscuzXSettingsService::$GroupNames;
+    $this->adminNames = DiscuzXSettingsService::$AdminNames;
     parent::__construct($R);
   }
   public function data()
@@ -35,6 +35,6 @@ class GetSettingsController extends DiscuzXController
     }
     $names = array_unique(array_intersect($GetNames, $names));
 
-    return DiscuzXSettingService::singleton()->items(...$names);
+    return DiscuzXSettingsService::singleton()->items(...$names);
   }
 }
