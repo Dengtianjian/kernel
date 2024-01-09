@@ -33,11 +33,12 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
    * @param string $Bucket 存储桶名称：bucketName-appid, 如 test-125000000
    * @param string $SignatureKey 本地存储签名秘钥
    * @param string $Record 存储的文件信息是否存入数据库
-   * @param string $fileKeyRemoteIdentificationPrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
+   * @param string $FileKeyRemoteIdentificationPrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
+   * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL, $RoutePrefix = "files")
   {
-    parent::__construct(true, $SignatureKey, $Record);
+    parent::__construct(true, $SignatureKey, $Record, $RoutePrefix);
 
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;

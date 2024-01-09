@@ -25,12 +25,13 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
    * @param string $SignatureKey 本地存储签名秘钥
    * @param string $Record 存储的文件信息是否存入数据库
    * @param string $FileKeyRemotePrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
+   * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemotePrefix = NULL)
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemotePrefix = NULL, $RoutePrefix = "files")
   {
-    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record, $FileKeyRemotePrefix);
+    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record, $FileKeyRemotePrefix, $RoutePrefix);
 
-    $this->DiscuzXFileStorageDriver = new DiscuzXFileStorageDriver(true, $SignatureKey, $Record);
+    $this->DiscuzXFileStorageDriver = new DiscuzXFileStorageDriver(true, $SignatureKey, $Record, $RoutePrefix);
     if ($Record) {
       $this->filesModel = new DiscuzXFilesModel();
     }

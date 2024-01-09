@@ -83,7 +83,7 @@ class LocalFileDriver extends AbstractFileDriver
   function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}/preview";
+    $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/preview";
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
@@ -118,7 +118,7 @@ class LocalFileDriver extends AbstractFileDriver
   function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}/download";
+    $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/download";
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));

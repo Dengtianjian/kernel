@@ -59,17 +59,26 @@ abstract class AbstractFileDriver
   protected $return = null;
 
   /**
+   * 路由URI前缀
+   *
+   * @var string
+   */
+  protected $routePrefix = "files";
+
+  /**
    * 实例化文件驱动类
    *
    * @param boolean $VerifyAuth 是否硬性验证授权信息  
    * 当前属性用于实例化时作为标记，实际业务时可根据该属性去判断是否需要校验授权信息
    * @param string $SignatureKey 签名秘钥
+   * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($VerifyAuth, $SignatureKey)
+  public function __construct($VerifyAuth, $SignatureKey, $RoutePrefix = "files")
   {
     $this->verifyAuth = $VerifyAuth;
     $this->signature = new FileStorageSignature($SignatureKey);
     $this->return = new ReturnResult(NULL);
+    $this->routePrefix = $RoutePrefix;
   }
   public function __get($name)
   {

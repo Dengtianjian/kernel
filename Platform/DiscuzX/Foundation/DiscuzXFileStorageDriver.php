@@ -8,9 +8,10 @@ use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXFileStorageDriver extends FileStorageDriver
 {
-  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE)
+  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE, $RoutePrefix = "files")
   {
-    parent::__construct($VerifyAuth, $SignatureKey, $Record);
+    parent::__construct($VerifyAuth, $SignatureKey, $Record, $RoutePrefix);
+    $this->routePrefix = $RoutePrefix;
 
     if ($Record) {
       $this->filesModel = new DiscuzXFilesModel();
@@ -24,7 +25,7 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
     }
     $URLParams['id'] = F_APP_ID;
-    $URLParams['uri'] = "files/{$FileKey}/preview";
+    $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/preview";
 
     $AccessURL->queryParam($URLParams);
 
@@ -38,7 +39,7 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
     }
     $URLParams['id'] = F_APP_ID;
-    $URLParams['uri'] = "files/{$FileKey}/download";
+    $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/download";
 
     $AccessURL->queryParam($URLParams);
 

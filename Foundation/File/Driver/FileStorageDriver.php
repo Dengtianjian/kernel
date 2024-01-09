@@ -44,10 +44,11 @@ class FileStorageDriver extends AbstractFileDriver
    * @param boolean $VerifyAuth 访问、上传文件需要验证授权
    * @param string $SignatureKey 本地存储签名秘钥
    * @param boolean $Record 文件信息是否存入数据库
+   * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE)
+  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE, $RoutePrefix = "files")
   {
-    parent::__construct($VerifyAuth, $SignatureKey);
+    parent::__construct($VerifyAuth, $SignatureKey, $RoutePrefix);
 
     if ($Record) {
       $this->filesModel = new FilesModel();
@@ -160,7 +161,7 @@ class FileStorageDriver extends AbstractFileDriver
   function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}/preview";
+    $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/preview";
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
@@ -195,7 +196,7 @@ class FileStorageDriver extends AbstractFileDriver
   function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
-    $AccessURL->pathName = "files/{$FileKey}/download";
+    $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/download";
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
