@@ -64,7 +64,7 @@ class FileStorageDriver extends AbstractFileDriver
    * @param string $BelongsId 关联数据ID
    * @param string $BelongsType 关联数据类型
    * @param string $ACL 文件访问权限控制
-   * @return ReturnResult{array{fileKey:string,sourceFileName:string,path:string,filePath:string,fileName:string,extension:string,fileSize:int,path:string,width:int,height:int,remote:boolean}} 文件信息
+   * @return ReturnResult{array{fileKey:string,sourceFileName:string,path:string,filePath:string,fileName:string,extension:string,fileSize:int,width:int,height:int,remote:boolean}} 文件信息
    */
   function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
