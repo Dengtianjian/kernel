@@ -43,7 +43,7 @@ class FileStorageDriver extends AbstractFileDriver
     parent::__construct($VerifyAuth, $SignatureKey);
 
     if ($Record) {
-      $this->filesModel = new DiscuzXFilesModel();
+      $this->filesModel = new FilesModel();
     }
   }
 
