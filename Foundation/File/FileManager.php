@@ -293,7 +293,7 @@ class FileManager
    * 删除文件
    *
    * @param string $filePath 文件路径
-   * @return booleanƒ 是否已删除，true=删除完成，false=删除失败
+   * @return boolean 是否已删除，true=删除完成，false=删除失败
    */
   static function deleteFile($filePath)
   {
