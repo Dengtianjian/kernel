@@ -44,7 +44,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;
   }
-  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::AUTHENTICATED_READ)
   {
     $remoteFileKey = $fileKey;
     if ($this->fileKeyRemoteIdentificationPrefix) {
