@@ -41,18 +41,106 @@ class FileStorageDriver extends AbstractFileDriver
   /**
    * 实例化文件存储类
    *
-   * @param boolean $VerifyAuth 访问、上传文件需要验证授权
    * @param string $SignatureKey 本地存储签名秘钥
    * @param boolean $Record 文件信息是否存入数据库
    * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files")
   {
-    parent::__construct($VerifyAuth, $SignatureKey, $RoutePrefix);
+    parent::__construct($SignatureKey, $RoutePrefix);
 
     if ($Record) {
       $this->filesModel = new FilesModel();
     }
+  }
+
+  /**
+   * 当前登录态下的用户标识
+   *
+   * @var string
+   */
+  protected $currentLoginId = NULL;
+  protected $ACLEnabled = FALSE;
+  /**
+   * 开启ACL，并且设置当前登录态下的用户ID  
+   * 用于把ownerId和当前传入的ID比较，判断是否一致再允许进一步的操作  
+   * 传入FALSE或者未调用过该方法将不会校验ACL
+   *
+   * @param string $ID 登录态下的用户ID
+   */
+  public function enableACL($ID)
+  {
+    $this->currentLoginId = $ID;
+    $this->ACLEnabled = true;
+    return $this;
+  }
+  /**
+   * 问价授权校验
+   *
+   * @param string $FileKey 文件键
+   * @param string $AuthTag 授权值 
+   * @param string $OwnerId 拥有者ID
+   * @param "read"|"write $action 操作，只允许传入read（读）和write（写）参数
+   * @return boolean TRUE=授权校验通过，FALSE=授权校验失败
+   */
+  public function FileAuthorizationVerification($FileKey, $AuthTag, $OwnerId, $action = "read")
+  {
+    if (!$this->filesModel || !$this->ACLEnabled) return TRUE;
+    $action = strtolower($action);
+
+    if ($OwnerId != $this->currentLoginId) {
+      if ($AuthTag === self::PRIVATE) {
+        return FALSE;
+      } else if (in_array($AuthTag, [
+        self::AUTHENTICATED_READ_WRITE,
+        self::AUTHENTICATED_READ
+      ])) {
+        if ($AuthTag === self::AUTHENTICATED_READ && $action !== "read") {
+          return FALSE;
+        }
+        $Verifed = $this->verifyRequestAuth($FileKey, TRUE);
+        return is_numeric($Verifed) || $Verifed === FALSE ? FALSE : TRUE;
+      } else if (in_array($AuthTag, [
+        self::PUBLIC_READ,
+        self::PUBLIC_READ_WRITE
+      ])) {
+        if ($AuthTag === self::PUBLIC_READ && $action !== "read") {
+          return FALSE;
+        }
+      }
+    }
+
+    return TRUE;
+  }
+
+  /**
+   * 添加文件记录
+   *
+   * @param string $FileKey 文件键
+   * @param string $SourceFileName 原文件名
+   * @param string $SaveFileName 现文件名
+   * @param string $FilePath 文件保存路径
+   * @param int $FileSize 文件大小
+   * @param string $Extension 文件扩展名
+   * @param string $OwnerId 拥有者ID
+   * @param string $ACL 访问权限控制
+   * @param boolean $Remote 是否是远程存储
+   * @param string $BelongsId 关联数据ID
+   * @param string $BelongsType 关联数据类型
+   * @param int $Width 媒体文件宽度
+   * @param int $Height 媒体文件高度
+   * @return int|boolean
+   */
+  public function addFile($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = null, $Height = null)
+  {
+    if ($this->filesModel) {
+      if ($this->filesModel->existItem($FileKey)) {
+        $this->filesModel->remove($FileKey);
+      }
+
+      return $this->filesModel->add($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId, $ACL, $Remote, $BelongsId, $BelongsType, $Width, $Height);
+    }
+    return FALSE;
   }
 
   /**
@@ -67,6 +155,10 @@ class FileStorageDriver extends AbstractFileDriver
    */
   function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
+    if ($this->FileAuthorizationVerification($FileKey, $ACL, $OwnerId, "write") === FALSE) {
+      return $this->break(403, 403, "抱歉，您没有上传该文件的权限");
+    }
+
     $PathInfo = pathinfo($FileKey);
 
     $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
@@ -88,10 +180,17 @@ class FileStorageDriver extends AbstractFileDriver
   }
   function deleteFile($FileKey)
   {
+    $FileInfo = $this->getFileInfo($FileKey);
+    if ($this->error) return $this->return();
+
+    if ($this->FileAuthorizationVerification($FileKey, $FileInfo->acl, $FileInfo->ownerId) === FALSE) {
+      return $this->break(403, 403001, "抱歉，您无权删除该文件");
+    }
+
     $DeletedResult = FileManager::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
 
     if ($DeletedResult && $this->filesModel) {
-      $this->filesModel->where("key", $FileKey);
+      $this->filesModel->remove(true, $FileKey);
     }
 
     return $DeletedResult;
@@ -130,12 +229,17 @@ class FileStorageDriver extends AbstractFileDriver
         $FileInfo = $LocalFileInfo;
         $FileInfo['remote'] = false;
         $FileInfo['size'] = $LocalFileInfo['size'];
+        $FileInfo['acl'] = NULL;
+        $FileInfo['ownerId'] = NULL;
       }
+    }
+    if ($this->FileAuthorizationVerification($FileKey, $FileInfo['acl'], $FileInfo['ownerId'], "read") === FALSE) {
+      return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
 
     $FileInfo['key'] = $FileKey;
     $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
-    $FileInfo['downloadURL'] =  $this->getFileDownloadURL($FileKey);
+    $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 
     return new FileInfoData($FileInfo);
   }
