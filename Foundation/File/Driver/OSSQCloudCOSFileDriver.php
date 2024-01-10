@@ -44,13 +44,16 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;
   }
-  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE )
+  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
     $remoteFileKey = $fileKey;
     if ($this->fileKeyRemoteIdentificationPrefix) {
       if (strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) === false) {
         $fileKey = "{$this->fileKeyRemoteIdentificationPrefix}/{$fileKey}";
       }
+    }
+    if ($this->FileAuthorizationVerification($fileKey, $ACL, $OwnerId, "write") === FALSE) {
+      return $this->break(403, 403, "抱歉，您没有上传该文件的权限");
     }
 
     $FileKeyPathInfo = pathinfo($fileKey);
@@ -75,7 +78,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       if ($this->filesModel->existItem($fileKey)) {
         $this->filesModel->remove($fileKey);
       }
-      $this->filesModel->add($fileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['fileSize'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+      $this->filesModel->add($fileKey, $FileInfo['sourceFileName'], $FileInfo['name'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, true, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
     if (file_exists($TempFileInfo['filePath'])) {
@@ -106,10 +109,15 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
         $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
       }
     }
+    $FileInfo = $this->getFileInfo($fileKey);
+    if ($this->error) return $this->return();
+    if ($this->FileAuthorizationVerification($fileKey, $FileInfo->acl, $FileInfo->ownerId) === FALSE) {
+      return $this->break(403, 403001, "抱歉，您无权删除该文件");
+    }
 
     $COSDeletedResult = $this->COSInstance->deleteFile($remoteFileKey);
     if ($COSDeletedResult && $this->filesModel) {
-      $this->filesModel->where("key", $fileKey);
+      $this->filesModel->remove(true, $fileKey);
     }
     if ($COSDeletedResult === false) {
       return $this->break(500, 500, "删除失败，请稍后重试");
@@ -141,7 +149,30 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
         return new FileInfoData($fileInfo);
       }
 
-      $COSFileInfo = array_merge($COSFileInfo, $fileInfo);
+      $COSFileInfo = array_merge($COSFileInfo, $fileInfo->toArray());
+      $COSDoesExist = $this->COSInstance->doesObjectExist($fileKey);
+      if (!$COSDoesExist) {
+        return $this->break(404, 404, "文件不存在");
+      }
+      if (in_array($fileInfo->extension, [
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp"
+      ]) && (!$fileInfo->width || !$fileInfo->height || !$fileInfo->size)) {
+        $ImageInfo = $this->COSInstance->getImageInfo($fileKey);
+        if ($ImageInfo) {
+          $COSFileInfo['width'] = $ImageInfo['width'];
+          $COSFileInfo['height'] = $ImageInfo['height'];
+          $COSFileInfo['size'] = $ImageInfo['size'];
+          $this->filesModel->save([
+            "width" => $ImageInfo['width'],
+            "height" => $ImageInfo['height'],
+            "size" => $ImageInfo['size']
+          ], $fileKey);
+        }
+      }
     } else {
       if ($remote) {
         $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
@@ -157,6 +188,10 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       } else {
         return parent::getFileInfo($fileKey);
       }
+    }
+
+    if ($this->FileAuthorizationVerification($fileKey, $COSFileInfo['acl'], $COSFileInfo['ownerId'], "read") === FALSE) {
+      return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
 
     return new FileInfoData($COSFileInfo);

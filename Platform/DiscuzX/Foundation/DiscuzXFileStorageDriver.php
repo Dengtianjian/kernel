@@ -8,9 +8,9 @@ use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXFileStorageDriver extends FileStorageDriver
 {
-  public function __construct($VerifyAuth, $SignatureKey, $Record = TRUE, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files")
   {
-    parent::__construct($VerifyAuth, $SignatureKey, $Record, $RoutePrefix);
+    parent::__construct($SignatureKey, $Record, $RoutePrefix);
     $this->routePrefix = $RoutePrefix;
 
     if ($Record) {
@@ -45,10 +45,8 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
 
     return $AccessURL->toString();
   }
-  public function verifyRequestAuth($FileKey, $Force = FALSE)
+  public function verifyRequestAuth($FileKey)
   {
-    if (!$this->verifyAuth && !$Force) return true;
-
     $Request = getApp()->request();
     $URLParams = $Request->query->some();
     unset($URLParams['id'], $URLParams['uri']);

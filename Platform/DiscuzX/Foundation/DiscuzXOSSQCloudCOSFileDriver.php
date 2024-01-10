@@ -31,10 +31,14 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
   {
     parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record, $FileKeyRemotePrefix, $RoutePrefix);
 
-    $this->DiscuzXFileStorageDriver = new DiscuzXFileStorageDriver(true, $SignatureKey, $Record, $RoutePrefix);
+    $this->DiscuzXFileStorageDriver = new DiscuzXFileStorageDriver($SignatureKey, $Record, $RoutePrefix);
     if ($Record) {
       $this->filesModel = new DiscuzXFilesModel();
     }
+  }
+  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  {
+    return parent::uploadFile($File, $fileKey, getglobal("uid"), $BelongsId, $BelongsType, $ACL);
   }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
@@ -43,5 +47,9 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
   public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     return $this->DiscuzXFileStorageDriver->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
+  }
+  public function verifyRequestAuth($FileKey)
+  {
+    return $this->DiscuzXFileStorageDriver->verifyRequestAuth($FileKey);
   }
 }
