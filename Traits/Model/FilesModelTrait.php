@@ -9,9 +9,9 @@ trait FilesModelTrait
     return $this->insert(array_filter([
       "key" => $FileKey,
       "sourceFileName" => $SourceFileName,
-      "fileName" => $SaveFileName,
-      "filePath" => $FilePath,
-      "fileSize" => $FileSize,
+      "name" => $SaveFileName,
+      "path" => $FilePath,
+      "size" => $FileSize,
       "extension" => $Extension,
       "remote" => $Remote,
       "belongsId" => $BelongsId,
@@ -76,5 +76,15 @@ trait FilesModelTrait
       "belongsId" => $BelongsId,
       "belongsType" => $BelongsType,
     ])->delete($directly);
+  }
+  public function existItem($Key = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null)
+  {
+    return $this->filterNullWhere([
+      "id" => $Id,
+      "key" => $Key,
+      "ownerId" => $OwnerId,
+      "belongsId" => $BelongsId,
+      "belongsType" => $BelongsType,
+    ])->exist();
   }
 }

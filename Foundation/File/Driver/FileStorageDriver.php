@@ -3,10 +3,10 @@
 namespace kernel\Foundation\File\Driver;
 
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileInfoData;
 use kernel\Foundation\File\FileManager;
 use kernel\Foundation\HTTP\URL;
 use kernel\Model\FilesModel;
-use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class FileStorageDriver extends AbstractFileDriver
 {
@@ -64,17 +64,17 @@ class FileStorageDriver extends AbstractFileDriver
    * @param string $BelongsId 关联数据ID
    * @param string $BelongsType 关联数据类型
    * @param string $ACL 文件访问权限控制
-   * @return ReturnResult{array{fileKey:string,sourceFileName:string,path:string,filePath:string,fileName:string,extension:string,fileSize:int,width:int,height:int,remote:boolean}} 文件信息
    */
   function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
     $PathInfo = pathinfo($FileKey);
 
     $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
-    if (!$FileInfo) return $this->return->error(500, 500, "文件上传失败");
+    if (!$FileInfo) {
+      return $this->break(500, 500, "文件上传失败");
+    }
 
-    $FileInfo['fileKey'] = $FileKey;
-    $FileInfo['fileSize'] = $FileInfo['size'];
+    $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
 
     if ($this->filesModel) {
@@ -84,7 +84,7 @@ class FileStorageDriver extends AbstractFileDriver
       $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
-    return $this->return->success($FileInfo);
+    return $this->getFileInfo($FileKey);
   }
   function deleteFile($FileKey)
   {
@@ -94,20 +94,22 @@ class FileStorageDriver extends AbstractFileDriver
       $this->filesModel->where("key", $FileKey);
     }
 
-    return $this->return->success($DeletedResult);
+    return $DeletedResult;
   }
   /**
    * 获取文件信息
    *
    * @param string $FileKey 文件名
-   * @return ReturnResult{array{fileKey:string,path:string,fileName:string,extension:string,fileSize:int,filePath:string,width:int|null,height:int|null,remote:boolean}} 文件信息
+   * @return FileInfoData 文件信息
    */
   function getFileInfo($FileKey)
   {
     $FileKey = rawurldecode(urldecode($FileKey));
     if ($this->filesModel) {
       $FileInfo = $this->filesModel->item($FileKey);
-      if (!$FileInfo) return $this->return->error(404, 404001, "文件不存在");
+      if (!$FileInfo) {
+        return $this->break(404, 404001, "文件不存在");
+      };
     }
 
     if ($FileInfo['remote']) {
@@ -115,11 +117,12 @@ class FileStorageDriver extends AbstractFileDriver
       $FileInfo['filePath'] = null;
     } else {
       $LocalFileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
-      if (!$LocalFileInfo) return $this->return->error(404, 404, "文件不存在");
+      if (!$LocalFileInfo) {
+        return $this->break(404, 404002, "文件不存在");
+      }
       if ($this->filesModel) {
         $FileInfo['width'] = $LocalFileInfo['width'];
         $FileInfo['height'] = $LocalFileInfo['height'];
-        $FileInfo['fileSize'] = $LocalFileInfo['size'];
         $FileInfo['remote'] = boolval(intval($FileInfo['remote']));
         $FileInfo['path'] = $FileInfo['filePath'];
         $FileInfo['filePath'] = $LocalFileInfo['filePath'];
@@ -130,9 +133,11 @@ class FileStorageDriver extends AbstractFileDriver
       }
     }
 
-    $FileInfo['fileKey'] = $FileKey;
+    $FileInfo['key'] = $FileKey;
+    $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
+    $FileInfo['downloadURL'] =  $this->getFileDownloadURL($FileKey);
 
-    return $this->return->success($FileInfo);
+    return new FileInfoData($FileInfo);
   }
   /**
    * 生成远程存储授权信息
@@ -223,7 +228,6 @@ class FileStorageDriver extends AbstractFileDriver
    * 获取图片信息
    *
    * @param string $FileKey
-   * @return ReturnResult{array{fileKey:string,path:string,fileName:string,extension:string,fileSize:int,filePath:string,width:int|null,height:int|null,remote:boolean,url:string}} 文件信息
    */
   function getImageInfo($FileKey)
   {

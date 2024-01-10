@@ -45,4 +45,16 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
 
     return $AccessURL->toString();
   }
+  public function verifyRequestAuth($FileKey, $Force = FALSE)
+  {
+    if (!$this->verifyAuth && !$Force) return true;
+
+    $Request = getApp()->request();
+    $URLParams = $Request->query->some();
+    unset($URLParams['id'], $URLParams['uri']);
+
+    $RequestHeaders = $Request->header->some();
+
+    return $this->verifyAuth($FileKey, $URLParams, $RequestHeaders, $Request->method);
+  }
 }

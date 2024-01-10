@@ -5,9 +5,10 @@ namespace kernel\Foundation\File\Driver;
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File\FileStorageSignature;
+use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
-abstract class AbstractFileDriver
+abstract class AbstractFileDriver extends AbilityBaseObject
 {
   /**
    * 通过文件路径、文件名称组合成一个文件键名
@@ -52,13 +53,6 @@ abstract class AbstractFileDriver
   protected $signature = null;
 
   /**
-   * 处理结果返回实例
-   *
-   * @var ReturnResult
-   */
-  protected $return = null;
-
-  /**
    * 路由URI前缀
    *
    * @var string
@@ -77,7 +71,6 @@ abstract class AbstractFileDriver
   {
     $this->verifyAuth = $VerifyAuth;
     $this->signature = new FileStorageSignature($SignatureKey);
-    $this->return = new ReturnResult(NULL);
     $this->routePrefix = $RoutePrefix;
   }
   public function __get($name)
@@ -182,7 +175,6 @@ abstract class AbstractFileDriver
 
     $Request = getApp()->request();
     $URLParams = $Request->query->some();
-    unset($URLParams['id'], $URLParams['uri']);
 
     $RequestHeaders = $Request->header->some();
 
