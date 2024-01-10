@@ -4,6 +4,7 @@ namespace kernel\Foundation\File\Driver;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\File\FileInfoData;
 use kernel\Foundation\File\FileStorageSignature;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Foundation\ReturnResult\ReturnResult;
@@ -181,13 +182,70 @@ abstract class AbstractFileDriver extends AbilityBaseObject
     return $this->verifyAuth($FileKey, $URLParams, $RequestHeaders, $Request->method);
   }
 
+  /**
+   * 上传文件，并且保存在服务器
+   *
+   * @param File $File 文件
+   * @return FileInfoData 文件信息
+   */
   public abstract function uploadFile($File);
+  /**
+   * 获取文件信息
+   *
+   * @param string $FileKey 文件名
+   * @return FileInfoData 文件信息
+   */
   public abstract function getFileInfo($FileKey);
+  /**
+   * 删除文件
+   *
+   * @param string $FileKey 文件名
+   * @return boolean 是否已删除，true=删除完成，false=删除失败
+   */
   public abstract function deleteFile($FileKey);
+  /**
+   * 生成远程存储授权信息
+   *
+   * @param string $FileKey 文件名
+   * @return string 授权信息
+   */
   public abstract function getFileRemoteAuth($FileKey);
+  /**
+   * 获取访问链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return string 访问URL
+   */
   public abstract function getFilePreviewURL($FileKey, $URLParams);
+  /**
+   * 获取远程浏览链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return string 访问URL
+   */
   public abstract function getFileRemotePreviewURL($FileKey, $URLParams);
+  /**
+   * 获取下载链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return string 下载URL
+   */
   public abstract function getFileDownloadURL($FileKey, $URLParams);
+  /**
+   * 获取远程下载链接
+   *
+   * @param string $FileKey 文件名
+   * @param array $URLParams 请求参数
+   * @return string 下载URL
+   */
   public abstract function getFileRemoteDownloadURL($FileKey, $URLParams);
+  /**
+   * 获取图片信息
+   *
+   * @param string $FileKey 文件键
+   */
   public abstract function getImageInfo($FileKey);
 }
