@@ -162,12 +162,22 @@ abstract class AbstractFileDriver extends AbilityBaseObject
    */
   public function verifyRequestAuth($FileKey)
   {
+    if (!$this->authorizationEnabled) return TRUE;
+    
     $Request = getApp()->request();
     $URLParams = $Request->query->some();
 
     $RequestHeaders = $Request->header->some();
 
     return $this->verifyAuth($FileKey, $URLParams, $RequestHeaders, $Request->method);
+  }
+
+  protected $authorizationEnabled = false;
+  public function enableAuth()
+  {
+    $this->authorizationEnabled = TRUE;
+
+    return $this;
   }
 
   /**

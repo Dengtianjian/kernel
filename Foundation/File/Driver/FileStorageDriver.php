@@ -72,6 +72,7 @@ class FileStorageDriver extends AbstractFileDriver
   {
     $this->currentLoginId = $ID;
     $this->ACLEnabled = true;
+    $this->enableAuth();
     return $this;
   }
   /**
@@ -166,12 +167,13 @@ class FileStorageDriver extends AbstractFileDriver
       return $this->break(500, 500, "文件上传失败");
     }
 
+    $FileInfo['name'] = $FileInfo['basename'];
     $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
 
     if ($this->filesModel) {
       if ($this->filesModel->existItem($FileKey)) {
-        $this->filesModel->remove($FileKey);
+        $this->filesModel->remove(true, $FileKey);
       }
       $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
@@ -238,6 +240,8 @@ class FileStorageDriver extends AbstractFileDriver
     }
 
     $FileInfo['key'] = $FileKey;
+    $FileInfo['path'] = pathinfo($FileKey, PATHINFO_DIRNAME);
+    $FileInfo['name'] = pathinfo($FileKey, PATHINFO_BASENAME);
     $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
     $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 
@@ -256,7 +260,7 @@ class FileStorageDriver extends AbstractFileDriver
    */
   function getFileRemoteAuth($FileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
   {
-    return $this->getFileAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, $toString);
+    return null;
   }
   /**
    * 获取访问链接
@@ -291,7 +295,7 @@ class FileStorageDriver extends AbstractFileDriver
    */
   function getFileRemotePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
-    return $this->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return null;
   }
   /**
    * 获取下载链接
@@ -326,7 +330,7 @@ class FileStorageDriver extends AbstractFileDriver
    */
   function getFileRemoteDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
-    return $this->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return null;
   }
   /**
    * 获取图片信息

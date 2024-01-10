@@ -18,6 +18,10 @@ class LocalFileDriver extends AbstractFileDriver
    */
   function uploadFile($File, $FileKey = null)
   {
+    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, 403, "抱歉，您无权上传该文件");
+    }
+
     $PathInfo = pathinfo($FileKey);
 
     $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
@@ -35,6 +39,10 @@ class LocalFileDriver extends AbstractFileDriver
    */
   function deleteFile($FileKey)
   {
+    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, 403, "抱歉，您无权删除该文件");
+    }
+
     return FileManager::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
   }
   /**
@@ -45,6 +53,10 @@ class LocalFileDriver extends AbstractFileDriver
    */
   function getFileInfo($FileKey)
   {
+    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, 403, "抱歉，您无权该文件信息");
+    }
+
     $FileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
     if (!$FileInfo) {
       return $this->break(404, 404, "文件不存在");
