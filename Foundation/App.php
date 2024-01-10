@@ -313,7 +313,7 @@ class App
 
     return $executedResponse;
   }
-  public function execureController($callTarget, $callParams, &$Controller)
+  public function executeController($callTarget, $callParams, &$Controller)
   {
     try {
       $response = call_user_func_array($callTarget, array_values($callParams));
@@ -453,7 +453,7 @@ class App
       if (count($Middlewares)) {
         $app = $this;
         $MiddlewareExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
-          $app->execureController($callTarget, $callParams, $Controller);
+          $app->executeController($callTarget, $callParams, $Controller);
 
           return $Controller->response;
         });
@@ -461,7 +461,7 @@ class App
           $Controller->response = $MiddlewareExecutedResult;
         }
       } else {
-        $this->execureController($callTarget, $callParams, $Controller);
+        $this->executeController($callTarget, $callParams, $Controller);
       }
     }
 

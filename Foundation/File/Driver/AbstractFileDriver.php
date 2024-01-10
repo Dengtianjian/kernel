@@ -40,13 +40,6 @@ abstract class AbstractFileDriver extends AbilityBaseObject
   }
 
   /**
-   * 是否硬性验证授权信息  
-   * 当前属性用于实例化时作为标记，实际业务时可根据该属性去判断是否需要校验授权信息
-   *
-   * @var boolean
-   */
-  public $verifyAuth = false;
-  /**
    * 文件存储签名实例
    *
    * @var FileStorageSignature
@@ -63,14 +56,11 @@ abstract class AbstractFileDriver extends AbilityBaseObject
   /**
    * 实例化文件驱动类
    *
-   * @param boolean $VerifyAuth 是否硬性验证授权信息  
-   * 当前属性用于实例化时作为标记，实际业务时可根据该属性去判断是否需要校验授权信息
    * @param string $SignatureKey 签名秘钥
    * @param string $RoutePrefix 路由前缀
    */
-  public function __construct($VerifyAuth, $SignatureKey, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $RoutePrefix = "files")
   {
-    $this->verifyAuth = $VerifyAuth;
     $this->signature = new FileStorageSignature($SignatureKey);
     $this->routePrefix = $RoutePrefix;
   }
@@ -170,10 +160,8 @@ abstract class AbstractFileDriver extends AbilityBaseObject
    * @param boolean $Force 是否强制校验，如果传入false，会看当前驱动实例的verifyAuth的值再去决定是否校验
    * @return boolean true=校验通过，false=校验失败
    */
-  public function verifyRequestAuth($FileKey, $Force = FALSE)
+  public function verifyRequestAuth($FileKey)
   {
-    if (!$this->verifyAuth && !$Force) return true;
-
     $Request = getApp()->request();
     $URLParams = $Request->query->some();
 
