@@ -11,12 +11,12 @@ class DownloadFileController extends FileBaseController
     }
 
     $File = $this->driver->getFileInfo($FileKey);
-    if ($File->error) return $File;
+    if ($this->driver->error) return $this->driver->return();
 
-    if ($File->getData("remote")) {
+    if ($File->remote) {
       return $this->response->redirect($this->driver->getFileRemoteDownloadURL($FileKey, []), 302);
     } else {
-      return $this->response->download($File->getData('filePath'));
+      return $this->response->download($File->filePath);
     }
   }
 }

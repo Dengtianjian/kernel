@@ -7,6 +7,8 @@ use kernel\Foundation\ReturnResult\ReturnResult;
 /**
  * 能力基础对象  
  * 适用于作为提供功能、能力类的基类
+ * 
+ * @property boolean $error 是否有错误
  */
 class AbilityBaseObject
 {
@@ -75,6 +77,10 @@ class AbilityBaseObject
     if ($return) return $this->return();
 
     return $this;
+  }
+  function __get($name)
+  {
+    return $this->$name;
   }
   /**
    * 设置错误并且该函数会返回指定的值  

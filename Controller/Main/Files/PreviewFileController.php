@@ -17,12 +17,12 @@ class PreviewFileController extends FileBaseController
     }
 
     $File = $this->driver->getFileInfo($FileKey);
-    if ($File->error) return $File;
+    if ($this->driver->error) return $this->driver->return();
 
-    if ($File->getData("remote")) {
+    if ($File->remote) {
       return $this->response->redirect($this->driver->getFileRemotePreviewURL($FileKey, []), 302);
     } else {
-      return $this->response->file($File->getData("filePath"));
+      return $this->response->file($File->filePath);
     }
   }
 }
