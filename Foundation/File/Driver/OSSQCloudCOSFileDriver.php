@@ -44,7 +44,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;
   }
-  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE )
   {
     $remoteFileKey = $fileKey;
     if ($this->fileKeyRemoteIdentificationPrefix) {
@@ -61,7 +61,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     $FileInfo = [
       "key" => $fileKey,
       "sourceFileName" => $TempFileInfo['sourceFileName'],
-      "path" =>  $FileKeyPathInfo['dirname'],
+      "path" => $FileKeyPathInfo['dirname'],
       "filePath" => $TempFileInfo['dirname'],
       "name" => $FileKeyPathInfo['basename'],
       "extension" => $FileKeyPathInfo['extension'],
@@ -135,7 +135,8 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     ];
     if ($this->filesModel) {
       $fileInfo = parent::getFileInfo($fileKey);
-      if ($this->error) return $this->return();
+      if ($this->error)
+        return $this->return();
       if (!$fileInfo->remote) {
         return new FileInfoData($fileInfo);
       }
@@ -158,7 +159,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       }
     }
 
-    return $COSFileInfo;
+    return new FileInfoData($COSFileInfo);
   }
   public function getImageInfo($FileKey)
   {
