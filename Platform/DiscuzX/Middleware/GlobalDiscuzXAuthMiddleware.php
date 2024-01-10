@@ -83,6 +83,21 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       return $this->verifyViewControllerAuth();
     }
   }
+  private function login()
+  {
+    $memberInfo = null;
+    $Auth = Store::getApp("auth");
+    if ($Auth && isset($Auth['userId'])) {
+      $memberInfo = DiscuzXMember::get($Auth['userId']);
+      include_once libfile("function/member");
+      \setloginstatus($memberInfo, 1296000);
+    } else {
+      $memberInfo = DiscuzXMember::get(0);
+    }
+    Store::setApp([
+      "member" => $memberInfo,
+    ]);
+  }
   /**
    * 中间件处理
    *
@@ -96,6 +111,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       if ($Verified->error) {
         return $Verified;
       }
+      $this->login();
       return $next();
     }
 
@@ -107,19 +123,8 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
-    $memberInfo = null;
     if ($this->request->ajax() && !$SameOrigin) {
-      $Auth = Store::getApp("auth");
-      if ($Auth && isset($Auth['userId'])) {
-        $memberInfo = DiscuzXMember::get($Auth['userId']);
-        include_once libfile("function/member");
-        \setloginstatus($memberInfo, 1296000);
-      } else {
-        $memberInfo = DiscuzXMember::get(0);
-      }
-      Store::setApp([
-        "member" => $memberInfo,
-      ]);
+      $this->login();
     } else {
       $memberInfo = DiscuzXMember::get(getglobal("uid"));
       Store::setApp([
