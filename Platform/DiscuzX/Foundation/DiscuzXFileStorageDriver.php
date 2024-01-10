@@ -17,6 +17,13 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
       $this->filesModel = new DiscuzXFilesModel();
     }
   }
+  public function uploadFile($File, $FileKey = null, $ownerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  {
+    if (is_null($ownerId)) {
+      $ownerId = getglobal("uid");
+    }
+    return parent::uploadFile($File, $FileKey, $ownerId, $BelongsId, $BelongsType, $ACL);
+  }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     $AccessURL = new DiscuzXURL(F_BASE_URL);

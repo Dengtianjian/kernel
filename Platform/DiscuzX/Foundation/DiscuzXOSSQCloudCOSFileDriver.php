@@ -36,9 +36,12 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
       $this->filesModel = new DiscuzXFilesModel();
     }
   }
-  public function uploadFile($File, $fileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  public function uploadFile($File, $fileKey = null, $ownerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
   {
-    return parent::uploadFile($File, $fileKey, getglobal("uid"), $BelongsId, $BelongsType, $ACL);
+    if (is_null($ownerId)) {
+      $ownerId = getglobal("uid");
+    }
+    return parent::uploadFile($File, $fileKey, $ownerId, $BelongsId, $BelongsType, $ACL);
   }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
