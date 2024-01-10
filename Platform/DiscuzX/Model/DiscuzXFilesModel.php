@@ -26,9 +26,9 @@ CREATE TABLE `pre_{$tableName}`  (
   `belongsType` varchar(32) NULL DEFAULT NULL COMMENT '所属ID类型',
   `ownerId` varchar(32) NULL DEFAULT NULL COMMENT '文件所有者ID',
   `sourceFileName` varchar(255) NOT NULL COMMENT '原本的文件名称',
-  `fileName` varchar(255) NOT NULL COMMENT '保存后的文件名称',
-  `fileSize` double NOT NULL COMMENT '文件尺寸',
-  `filePath` text NOT NULL COMMENT '保存的文件路径',
+  `name` varchar(255) NOT NULL COMMENT '保存后的文件名称',
+  `size` double NOT NULL COMMENT '文件尺寸',
+  `path` text NOT NULL COMMENT '保存的文件路径',
   `width` double NULL DEFAULT 0 COMMENT '宽度（媒体文件才有该值）',
   `height` double NULL DEFAULT 0 COMMENT '高度（媒体文件才有该值）',
   `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
@@ -39,25 +39,5 @@ CREATE TABLE `pre_{$tableName}`  (
   UNIQUE INDEX `key`(`key`) USING BTREE COMMENT '文件名'
 ) COMMENT = '文件';
 SQL;
-  }
-  public function item($Key = null)
-  {
-    $item = $this->where("key", $Key)->getOne();
-    if (!$item) return NULL;
-    $item['remote'] = boolval(intval($item['remote']));
-
-    return $item;
-  }
-  public function remove($Key = null)
-  {
-    return $this->filterNullWhere([
-      "key" => $Key
-    ])->delete(true);
-  }
-  public function existItem($Key = null)
-  {
-    return $this->filterNullWhere([
-      "key" => $Key
-    ])->exist();
   }
 }

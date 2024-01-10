@@ -84,14 +84,15 @@ class FileManager
     }
 
     $fileInfo = [
+      "name" => $saveFullFileName,
       "sourceFileName" => $fileSourceName,
       "path" => FileHelper::optimizedPath($path),
-      "fileName" => $saveFullFileName,
       "extension" => $fileExtension,
       "size" => $fileSize,
-      "filePath" => FileHelper::optimizedPath($saveFullPath),
       "width" => 0,
-      "height" => 0
+      "height" => 0,
+
+      "filePath" => FileHelper::optimizedPath($saveFullPath)
     ];
     if (FileHelper::isImage($saveFullPath)) {
       $imageInfo = \getimagesize($saveFullPath);
@@ -262,7 +263,7 @@ class FileManager
    * 获取文件信息
    *
    * @param string $FileKey 文件名
-   * @return false|array{path:string,fileName:string,extension:string,size:int,filePath:string,width:int,height:int} 文件信息
+   * @return false|array{name:string,path:string,extension:string,size:int,width:int,height:int,filePath:string} 文件信息
    */
   static function getFileInfo($filePath)
   {
@@ -273,13 +274,15 @@ class FileManager
 
     $FileInfo = pathinfo($filePath);
     $File = [
+      "name" => $FileInfo['basename'],
+      "sourceFileName" => $FileInfo['basename'],
       "path" => $FileInfo['dirname'],
-      "fileName" => $FileInfo['basename'],
       "extension" => $FileInfo['extension'],
       "size" => filesize($filePath),
-      "filePath" => $filePath,
       "width" => NULL,
-      "height" => NULL
+      "height" => NULL,
+
+      "filePath" => $filePath
     ];
     if (FileHelper::isImage($filePath)) {
       $imageInfo = \getimagesize($filePath);

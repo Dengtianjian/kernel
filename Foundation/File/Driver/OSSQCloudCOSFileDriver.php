@@ -3,6 +3,7 @@
 namespace kernel\Foundation\File\Driver;
 
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileInfoData;
 use kernel\Foundation\File\FileManager;
 use kernel\Service\OSS\OSSQcloudCosService;
 
@@ -58,13 +59,13 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     $this->COSInstance->upload($remoteFileKey, $TempFileInfo['filePath']);
 
     $FileInfo = [
-      "fileKey" => $fileKey,
+      "key" => $fileKey,
       "sourceFileName" => $TempFileInfo['sourceFileName'],
       "path" =>  $FileKeyPathInfo['dirname'],
       "filePath" => $TempFileInfo['dirname'],
-      "fileName" => $FileKeyPathInfo['basename'],
+      "name" => $FileKeyPathInfo['basename'],
       "extension" => $FileKeyPathInfo['extension'],
-      "fileSize" => $TempFileInfo['size'],
+      "size" => $TempFileInfo['size'],
       "width" => $TempFileInfo['width'],
       "height" => $TempFileInfo['height'],
       "remote" => true
@@ -81,7 +82,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       unlink($TempFileInfo['filePath']);
     }
 
-    return $this->return->success($FileInfo);
+    return new FileInfoData($FileInfo);
   }
   public function getFileAuth($fileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get", $toString = false)
   {
@@ -111,10 +112,10 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       $this->filesModel->where("key", $fileKey);
     }
     if ($COSDeletedResult === false) {
-      return $this->return->error(500, 500, "删除失败，请稍后重试");
+      return $this->break(500, 500, "删除失败，请稍后重试");
     }
 
-    return $this->return->success(true);
+    return TRUE;
   }
   public function getFileInfo($fileKey)
   {
@@ -134,10 +135,9 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     ];
     if ($this->filesModel) {
       $fileInfo = parent::getFileInfo($fileKey);
-      if ($fileInfo->error) return $fileInfo;
-      $fileInfo = $fileInfo->getData();
-      if (!$fileInfo['remote']) {
-        return $this->return->success($fileInfo);
+      if ($this->error) return $this->return();
+      if (!$fileInfo->remote) {
+        return new FileInfoData($fileInfo);
       }
 
       $COSFileInfo = array_merge($COSFileInfo, $fileInfo);
@@ -146,23 +146,23 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
         $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
         $COSDoesExist = $this->COSInstance->doesObjectExist($remoteFileKey);
         if (!$COSDoesExist) {
-          return $this->return->error(404, 404, "文件不存在");
+          return $this->break(404, 404, "文件不存在");
         }
         $PathInfo = pathinfo($fileKey);
         $COSFileInfo['path'] = $PathInfo['dirname'];
-        $COSFileInfo['fileName'] = $PathInfo['basename'];
+        $COSFileInfo['name'] = $PathInfo['basename'];
         $COSFileInfo['extension'] = $PathInfo['extension'];
-        $COSFileInfo['filePath'] = $PathInfo['dirname'];
+        $COSFileInfo['path'] = $PathInfo['dirname'];
       } else {
         return parent::getFileInfo($fileKey);
       }
     }
 
-    return $this->return->success($COSFileInfo);
+    return $COSFileInfo;
   }
   public function getImageInfo($FileKey)
   {
-    return $this->return->success($this->COSInstance->getImageInfo($FileKey));
+    return $this->COSInstance->getImageInfo($FileKey);
   }
   /**
    * 获取文件下载直链

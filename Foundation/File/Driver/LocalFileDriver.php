@@ -3,6 +3,7 @@
 namespace kernel\Foundation\File\Driver;
 
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileInfoData;
 use kernel\Foundation\File\FileManager;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
@@ -14,47 +15,47 @@ class LocalFileDriver extends AbstractFileDriver
    *
    * @param File $File 文件
    * @param string $FileKey 文件名
-   * @return ReturnResult{array{fileKey:string,sourceFileName:string,path:string,filePath:string,fileName:string,extension:string,fileSize:int,width:int,height:int,remote:boolean}} 文件信息
    */
   function uploadFile($File, $FileKey = null)
   {
     $PathInfo = pathinfo($FileKey);
 
     $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
-    if (!$FileInfo) return $this->return->error(500, 500, "文件上传失败");
+    if (!$FileInfo) {
+      return $this->break(500, 500, "文件上传失败", TRUE);
+    }
 
-    $FileInfo['fileKey'] = self::combinedFileKey($FileInfo['path'], $FileInfo['fileName']);
-    $FileInfo['fileSize'] = $FileInfo['size'];
-    $FileInfo['remote'] = false;
-
-    return $this->return->success($FileInfo);
+    return $this->getFileInfo($FileKey);
   }
   /**
    * 删除文件
    *
    * @param string $FileKey 文件名
-   * @return ReturnResult{boolean} 是否已删除，true=删除完成，false=删除失败
+   * @return boolean 是否已删除，true=删除完成，false=删除失败
    */
   function deleteFile($FileKey)
   {
-    return $this->return->success(FileManager::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey))));
+    return FileManager::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
   }
   /**
    * 获取文件信息
    *
    * @param string $FileKey 文件名
-   * @return ReturnResult{array{fileKey:string,path:string,fileName:string,extension:string,fileSize:int,filePath:string,width:int|null,height:int|null,remote:boolean}} 文件信息
+   * @return FileInfoData 文件信息
    */
   function getFileInfo($FileKey)
   {
     $FileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $FileKey)));
-    if (!$FileInfo) return $this->return->error(404, 404, "文件不存在");
+    if (!$FileInfo) {
+      return $this->break(404, 404, "文件不存在");
+    };
 
-    $FileInfo['fileKey'] = $FileKey;
-    $FileInfo['fileSize'] = $FileInfo['size'];
+    $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
+    $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
+    $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 
-    return $this->return->success($FileInfo);
+    return new FileInfoData($FileInfo);
   }
   /**
    * 生成远程存储授权信息
@@ -144,8 +145,7 @@ class LocalFileDriver extends AbstractFileDriver
   /**
    * 获取图片信息
    *
-   * @param string $FileKey
-   * @return ReturnResult{array{fileKey:string,path:string,fileName:string,extension:string,fileSize:int,filePath:string,width:int|null,height:int|null,remote:boolean}} 文件信息
+   * @param string $FileKey 文件键
    */
   function getImageInfo($FileKey)
   {
