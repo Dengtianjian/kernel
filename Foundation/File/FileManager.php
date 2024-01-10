@@ -17,7 +17,7 @@ class FileManager
    * @param File|string $file 文件
    * @param string $savePath 保存的路径，相对于F_APP_STORAGE
    * @param string $fileName 存储的文件名称。如果未传入该值，将会自动生成新的文件名称
-   * @return false|array{path:string,sourceFileName:string,fileName:string,extension:string,size:int,filePath:string,width:int,height:int}
+   * @return false|array{path:string,sourceFileName:string,name:string,extension:string,size:int,filePath:string,width:int,height:int}
    */
   public static function upload($file, $savePath, $fileName = null)
   {
