@@ -4,6 +4,14 @@ namespace kernel\Controller\Main\Files;
 
 class UploadFileController extends FileBaseController
 {
+  public $serializes = [
+    "key" => "string",
+    "name" => "string",
+    "extension" => "string",
+    "size" => "int",
+    "width" => "double",
+    "height" => "double"
+  ];
   public function data($FileKey)
   {
     $Files = array_values($_FILES);
@@ -12,6 +20,7 @@ class UploadFileController extends FileBaseController
     }
     $FileInfo = $this->driver->uploadFile($Files[0], $FileKey);
     if ($this->driver->error) return $this->driver->return();
+
     return $FileInfo->toArray();
   }
 }

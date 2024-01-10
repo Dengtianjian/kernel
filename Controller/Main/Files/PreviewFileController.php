@@ -14,8 +14,12 @@ class PreviewFileController extends FileBaseController
   {
     $File = $this->driver->getFileInfo($FileKey);
     if ($this->driver->error) return $this->driver->return();
+
     if ($File->remote) {
-      return $this->response->redirect($this->driver->getFileRemotePreviewURL($FileKey, []), 302);
+      $URL = $this->driver->getFileRemotePreviewURL($FileKey, []);
+      if (!$URL) return $this->response->error(500, 500, "预览文件失败", "获取到的远程文件URL为空");
+
+      return $this->response->redirect($URL, 302);
     } else {
       return $this->response->file($File->filePath);
     }

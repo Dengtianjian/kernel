@@ -6,6 +6,9 @@ class DeleteFileController extends FileBaseController
 {
   public function data($FileKey)
   {
-    return $this->driver->deleteFile($FileKey);
+    $DeletedResult = $this->driver->deleteFile($FileKey);
+    if ($this->driver->error) return $this->driver->return();
+
+    return $DeletedResult;
   }
 }

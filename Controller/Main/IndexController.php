@@ -28,7 +28,7 @@ class IndexController extends Controller
 
     parent::__construct($R);
   }
-  public function data(Request $R)
+  public function data()
   {
     return DiscuzXModel::singleton("common_member")->getAll();
     return Import("Configs/ConfigFun", [3, 6]);

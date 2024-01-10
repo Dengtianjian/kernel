@@ -10,7 +10,10 @@ class DownloadFileController extends FileBaseController
     if ($this->driver->error) return $this->driver->return();
 
     if ($File->remote) {
-      return $this->response->redirect($this->driver->getFileRemoteDownloadURL($FileKey, []), 302);
+      $URL = $this->driver->getFileRemotePreviewURL($FileKey, []);
+      if (!$URL) return $this->response->error(500, 500, "下载文件失败", "获取到的远程文件URL为空");
+
+      return $this->response->redirect($URL, 302);
     } else {
       return $this->response->download($File->filePath);
     }
