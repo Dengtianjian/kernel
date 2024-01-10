@@ -119,7 +119,7 @@ class GlobalAuthMiddleware extends Middleware
       $auth = array_merge($auth, $newAuth);
       $token = $newToken['value'];
     }
-
+    
     Store::setApp([
       "auth" => $auth,
       "token" => $token,
