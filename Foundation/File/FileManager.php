@@ -86,7 +86,7 @@ class FileManager
     $fileInfo = [
       "name" => $saveFullFileName,
       "sourceFileName" => $fileSourceName,
-      "path" => FileHelper::optimizedPath($path),
+      "path" => $savePath ? FileHelper::optimizedPath($savePath) : NULL,
       "extension" => $fileExtension,
       "size" => $fileSize,
       "width" => 0,

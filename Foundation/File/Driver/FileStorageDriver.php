@@ -132,7 +132,7 @@ class FileStorageDriver extends AbstractFileDriver
    * @param int $Height 媒体文件高度
    * @return int|boolean
    */
-  public function addFile($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = null, $Height = null)
+  public function addFile($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId = null, $ACL = self::AUTHENTICATED_READ, $Remote = false, $BelongsId = null, $BelongsType = null, $Width = null, $Height = null)
   {
     if ($this->filesModel) {
       if ($this->filesModel->existItem($FileKey)) {
@@ -154,7 +154,7 @@ class FileStorageDriver extends AbstractFileDriver
    * @param string $BelongsType 关联数据类型
    * @param string $ACL 文件访问权限控制
    */
-  function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::PRIVATE)
+  function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::AUTHENTICATED_READ)
   {
     if ($this->FileAuthorizationVerification($FileKey, $ACL, $OwnerId, "write") === FALSE) {
       return $this->break(403, 403, "抱歉，您没有上传该文件的权限");
@@ -167,7 +167,6 @@ class FileStorageDriver extends AbstractFileDriver
       return $this->break(500, 500, "文件上传失败");
     }
 
-    $FileInfo['name'] = $FileInfo['basename'];
     $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
 
@@ -175,7 +174,7 @@ class FileStorageDriver extends AbstractFileDriver
       if ($this->filesModel->existItem($FileKey)) {
         $this->filesModel->remove(true, $FileKey);
       }
-      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['fileName'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['name'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
     return $this->getFileInfo($FileKey);

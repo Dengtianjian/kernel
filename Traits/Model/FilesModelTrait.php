@@ -4,14 +4,14 @@ namespace kernel\Traits\Model;
 
 trait FilesModelTrait
 {
-  function add($FileKey, $SourceFileName, $SaveFileName, $FilePath, $FileSize, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
+  function add($Key, $SourceFileName, $Name, $Path, $Size, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
   {
     return $this->insert(array_filter([
-      "key" => $FileKey,
+      "key" => $Key,
       "sourceFileName" => $SourceFileName,
-      "name" => $SaveFileName,
-      "path" => $FilePath,
-      "size" => $FileSize,
+      "name" => $Name,
+      "path" => $Path,
+      "size" => $Size,
       "extension" => $Extension,
       "remote" => $Remote,
       "belongsId" => $BelongsId,
