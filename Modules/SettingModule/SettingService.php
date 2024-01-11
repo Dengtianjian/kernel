@@ -17,7 +17,7 @@ class SettingService extends Service
   protected static $SettingModuleBaseInstance = NULL;
   static function useService(SettingModuleBase $SMB = NULL)
   {
-    self::$SettingModuleBaseInstance = $SMB;
+    self::$SettingModuleBaseInstance = get_called_class()::$SettingModuleBaseInstance = $SMB;
   }
   /**
    * 获取多个设置项
@@ -35,7 +35,7 @@ class SettingService extends Service
    * @param string $name 设置项名称
    * @return mixed 设置项值
    */
-  static function  item($name)
+  static function item($name)
   {
     return self::$SettingModuleBaseInstance->item($name);
   }

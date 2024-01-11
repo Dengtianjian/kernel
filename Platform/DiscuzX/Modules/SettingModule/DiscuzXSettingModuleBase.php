@@ -66,10 +66,7 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    */
   public function item($name)
   {
-    $setting = $this->SettingModelInstance->item($name);
-    if (!$setting) return null;
-    $v = unserialize($setting['value']);
-    return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
+    return $this->SettingModelInstance->item($name);
   }
   /**
    * 查询某个设置项是否存在

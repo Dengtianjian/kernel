@@ -40,7 +40,10 @@ SQL;
     $setting = $this->where("name", $name)->getOne();
     if ($setting) {
       $setting['value'] = $setting['value'] ?: null;
-      return unserialize($setting['value']) ?: $setting['value'];
+      if (is_null($setting['value'])) return null;
+      
+      $v = unserialize($setting['value']);
+      return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
     }
     return null;
   }
