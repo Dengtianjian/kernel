@@ -25,7 +25,7 @@ class SettingsService extends Service
    */
   public static function items(...$names)
   {
-    $SettingsData = self::$settingsModel->where("name", $names)->getAll();
+    $SettingsData = get_called_class()::$settingsModel->where("name", $names)->getAll();
     $Settings = [];
     foreach ($SettingsData as $item) {
       if ($item['value']) {
@@ -45,7 +45,7 @@ class SettingsService extends Service
    */
   public static function exist($name)
   {
-    return self::$settingsModel->where("name", $name)->exist();
+    return get_called_class()::$settingsModel->where("name", $name)->exist();
   }
   /**
    * 获取单个设置项值
@@ -55,7 +55,7 @@ class SettingsService extends Service
    */
   public static function item($name)
   {
-    $setting = self::$settingsModel->where("name", $name)->getOne();
+    $setting = get_called_class()::$settingsModel->where("name", $name)->getOne();
     if (!$setting) return null;
     $v = unserialize($setting['value']);
     return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
@@ -70,7 +70,7 @@ class SettingsService extends Service
    */
   public static function add($name, $value = null, $serialization = true)
   {
-    return self::$settingsModel->insert([
+    return get_called_class()::$settingsModel->insert([
       "name" => $name,
       "value" => $serialization ? serialize($value) : $value,
     ]);
@@ -85,7 +85,7 @@ class SettingsService extends Service
    */
   public static function save($name, $value, $serialization = true)
   {
-    return self::$settingsModel->where("name", $name)->update([
+    return get_called_class()::$settingsModel->where("name", $name)->update([
       "value" => $serialization ? serialize($value) : $value,
       "updatedAt" => time()
     ]);
@@ -99,7 +99,7 @@ class SettingsService extends Service
   public static function saveItems($settings)
   {
     foreach ($settings as $name => $value) {
-      self::$settingsModel->where("name", $name)->update([
+      get_called_class()::$settingsModel->where("name", $name)->update([
         "value" => serialize($value),
         "updatedAt" => time()
       ]);
