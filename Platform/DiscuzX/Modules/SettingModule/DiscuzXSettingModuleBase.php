@@ -33,6 +33,21 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
     $this->groupNames = $groupNames;
     $this->adminNames = $adminNames;
   }
+  public function filterName(...$names)
+  {
+    global $_G;
+
+    $publicNames = $this->publicNames;
+    if (isset($this->groupNames[$_G['groupid']])) {
+      $publicNames = array_merge($names, $this->groupNames[$_G['groupid']]);
+    }
+
+    if (isset($this->adminNames[$_G['adminid']])) {
+      $publicNames = array_merge($names, $this->adminNames[$_G['adminid']]);
+    }
+
+    return array_unique(array_intersect($names, $publicNames));
+  }
   /**
    * 获取多个设置项
    *
@@ -41,19 +56,6 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    */
   public function items(...$names)
   {
-    global $_G;
-
-    $publicNames = $this->publicNames;
-
-    if (isset($this->groupNames[$_G['groupid']])) {
-      $publicNames = array_merge($names, $this->groupNames[$_G['groupid']]);
-    }
-
-    if (isset($this->adminNames[$_G['adminid']])) {
-      $publicNames = array_merge($names, $this->adminNames[$_G['adminid']]);
-    }
-    $names = array_unique(array_intersect($names, $publicNames));
-    
     return $this->SettingModelInstance->items(...$names);
   }
   /**

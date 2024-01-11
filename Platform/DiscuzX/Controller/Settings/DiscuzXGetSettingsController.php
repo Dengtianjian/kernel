@@ -27,6 +27,6 @@ class DiscuzXGetSettingsController extends DiscuzXController
 
     $names = (array)$this->query->get("name");
 
-    return $this->setting->items(...$names);
+    return $this->setting->items(...$this->setting->filterName(...$names));
   }
 }
