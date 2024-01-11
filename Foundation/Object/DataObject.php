@@ -12,11 +12,14 @@ use stdClass;
  */
 class DataObject extends stdClass
 {
-  public function __construct($Data)
+  public function __construct($data)
   {
+    if (is_object($data)) {
+      $data = $data->toArray();
+    }
     $Vars = get_class_vars(get_class($this));
     foreach (array_keys($Vars) as $key) {
-      $this->$key = $Data[$key];
+      $this->$key = $data[$key];
     }
   }
   function __get($name)
