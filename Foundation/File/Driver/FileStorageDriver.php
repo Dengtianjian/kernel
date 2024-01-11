@@ -11,27 +11,6 @@ use kernel\Model\FilesModel;
 class FileStorageDriver extends AbstractFileDriver
 {
   /**
-   * 私有的，创作者与管理员具备全部权限，其他人没有权限
-   */
-  const PRIVATE = "private";
-  /**
-   * 共有读的，匿名用户具备 READ 权限，创作者与管理员具备全部权限
-   */
-  const PUBLIC_READ = "public-read";
-  /**
-   * 公有读写，创建者、管理员和匿名用户具备全部权限，通常不建议授予此权限
-   */
-  const PUBLIC_READ_WRITE = "public-read-write";
-  /**
-   * 认证用户具备 READ 权限，创作者与管理员具备全部权限
-   */
-  const AUTHENTICATED_READ = "authenticated-read";
-  /**
-   * 创建者、管理员和认证用户具备全部权限，通常不建议授予此权限
-   */
-  const AUTHENTICATED_READ_WRITE = "authenticated-read-write";
-
-  /**
    * 文件表模型实例
    *
    * @var FilesModel
