@@ -2,15 +2,19 @@
 
 namespace kernel\Platform\DiscuzX\Model;
 
-use kernel\Model\SettingsModel;
+use kernel\Modules\SettingModule\SettingsModel;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
 
 class DiscuzXSettingsModel extends SettingsModel
 {
   public $tableName = "";
-  public function __construct($tableName)
+  public function __construct($tableName = NULL)
   {
+    if (is_null($tableName)) {
+      $tableName = F_APP_ID . "_settings";
+    }
+
     $this->tableName = $tableName;
 
     $this->query = new DiscuzXQuery($this->tableName);

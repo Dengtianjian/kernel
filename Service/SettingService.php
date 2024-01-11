@@ -6,6 +6,10 @@ use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Model\SettingsModel;
 
+/**
+ * 设置服务
+ * @deprecated
+ */
 class SettingService extends Service
 {
   /**
