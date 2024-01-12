@@ -17,7 +17,7 @@ class SettingService extends Service
   protected static $SettingModuleBaseInstance = NULL;
   static function useService(SettingModuleBase $SMB = NULL)
   {
-    self::$SettingModuleBaseInstance = get_called_class()::$SettingModuleBaseInstance = $SMB;
+    get_called_class()::$SettingModuleBaseInstance = $SMB;
   }
   /**
    * 获取多个设置项
@@ -27,7 +27,7 @@ class SettingService extends Service
    */
   static function items(...$names)
   {
-    return self::$SettingModuleBaseInstance->items(...$names);
+    return get_called_class()::$SettingModuleBaseInstance->items(...$names);
   }
   /**
    * 获取单个设置项值
@@ -37,7 +37,7 @@ class SettingService extends Service
    */
   static function item($name)
   {
-    return self::$SettingModuleBaseInstance->item($name);
+    return get_called_class()::$SettingModuleBaseInstance->item($name);
   }
   /**
    * 查询某个设置项是否存在
@@ -47,7 +47,7 @@ class SettingService extends Service
    */
   static function exist($name)
   {
-    return self::$SettingModuleBaseInstance->exist($name);
+    return get_called_class()::$SettingModuleBaseInstance->exist($name);
   }
   /**
    * 添加设置项
@@ -59,7 +59,7 @@ class SettingService extends Service
    */
   static function add($name, $value = null, $serialization = true)
   {
-    return self::$SettingModuleBaseInstance->add($name, $value, $serialization);
+    return get_called_class()::$SettingModuleBaseInstance->add($name, $value, $serialization);
   }
   /**
    * 保存单个设置项
@@ -71,7 +71,7 @@ class SettingService extends Service
    */
   static function save($name, $value, $serialization = true)
   {
-    return self::$SettingModuleBaseInstance->save($name, $value, $serialization);
+    return get_called_class()::$SettingModuleBaseInstance->save($name, $value, $serialization);
   }
   /**
    * 保存多个设置项值
@@ -81,6 +81,6 @@ class SettingService extends Service
    */
   static function saveItems($settings)
   {
-    return self::$SettingModuleBaseInstance->saveItems($settings);
+    return get_called_class()::$SettingModuleBaseInstance->saveItems($settings);
   }
 }
