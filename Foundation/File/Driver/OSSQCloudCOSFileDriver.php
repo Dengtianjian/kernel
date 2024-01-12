@@ -193,6 +193,8 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     if ($this->FileAuthorizationVerification($fileKey, $COSFileInfo['acl'], $COSFileInfo['ownerId'], "read") === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
+    $COSFileInfo['previewURL'] = $this->getFilePreviewURL($fileKey);
+    $COSFileInfo['downloadURL'] = $this->getFileDownloadURL($fileKey);
 
     return new FileInfoData($COSFileInfo);
   }
