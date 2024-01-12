@@ -10,7 +10,9 @@ class GetFileController extends FileBaseController
     "extension" => "string",
     "size" => "int",
     "width" => "double",
-    "height" => "double"
+    "height" => "double",
+    "previewURL" => "string",
+    "downloadURL" => "string"
   ];
   public function data($FileKey)
   {
