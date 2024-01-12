@@ -25,6 +25,9 @@ class DiscuzXPost extends BaseObject
     $attachs = [];
     $payAttachIds = [];
     foreach ($attachGroups as $tableId => $item) {
+      if ($tableId === 127) {
+        $tableId = "unused";
+      }
       $FANM = new DiscuzXModel("forum_attachment_" . $tableId);
       if ($onlyImage) {
         $FANM->where("isimage", [1, -1]);
