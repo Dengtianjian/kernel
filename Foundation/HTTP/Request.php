@@ -97,6 +97,9 @@ class Request
       if ($this->params->has("x-ajax")) return 1;
     }
 
+    if (array_key_exists("HTTP_X_REQUESTED_WITH",$_SERVER)) {
+      if ($_SERVER['HTTP_X_REQUESTED_WITH'] === "XMLHttpRequest" || $_SERVER['HTTP_X_REQUESTED_WITH'] === "fetch") return true;
+    }
     if ($this->header->has("x-ajax") || $this->header->has("X-Ajax")) return 1;
     if ($this->query->has("isAjax")) return 1;
 
