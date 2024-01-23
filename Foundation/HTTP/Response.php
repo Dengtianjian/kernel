@@ -472,7 +472,7 @@ EOT;
         }
         break;
       default:
-        Output::printContent($body);
+        Output::printContent(F_APP_MODE === "development" ? $body : $data);
         break;
     }
   }
