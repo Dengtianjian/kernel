@@ -308,7 +308,7 @@ class App
       $executedResponse = $middleware['target'](...$params);
     } else {
       $MInstance = new $middleware['target']($this->request, $Controller);
-      $executedResponse = call_user_func_array([$MInstance, "handle"], $params);
+      $executedResponse = call_user_func_array([$MInstance, "handle"], array_values($params));
     }
 
     return $executedResponse;
