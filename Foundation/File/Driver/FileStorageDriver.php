@@ -8,31 +8,8 @@ use kernel\Foundation\File\FileManager;
 use kernel\Foundation\HTTP\URL;
 use kernel\Model\FilesModel;
 
-class FileStorageDriver extends AbstractFileDriver
+class FileStorageDriver extends AbstractFileStorageDriver
 {
-  /**
-   * 文件表模型实例
-   *
-   * @var FilesModel
-   */
-  protected $filesModel = null;
-
-  /**
-   * 实例化文件存储类
-   *
-   * @param string $SignatureKey 本地存储签名秘钥
-   * @param boolean $Record 文件信息是否存入数据库
-   * @param string $RoutePrefix 路由前缀
-   */
-  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files")
-  {
-    parent::__construct($SignatureKey, $RoutePrefix);
-
-    if ($Record) {
-      $this->filesModel = new FilesModel();
-    }
-  }
-
   /**
    * 当前登录态下的用户标识
    *

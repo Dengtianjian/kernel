@@ -5,6 +5,7 @@ namespace kernel\Service;
 use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File\Driver\AbstractFileDriver;
+use kernel\Foundation\File\Driver\AbstractFileStorageDriver;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 
@@ -12,10 +13,10 @@ class FileService extends Service
 {
   /**
    * 驱动实例
-   * @var AbstractFileDriver
+   * @var AbstractFileDriver|AbstractFileStorageDriver
    */
   static protected $dirver = null;
-  static function useService(AbstractFileDriver $Driver = null, $RoutePrefix = "files")
+  static function useService($Driver = null, $RoutePrefix = "files")
   {
     if (is_null($Driver)) {
       throw new Exception("缺失文件驱动参数");
