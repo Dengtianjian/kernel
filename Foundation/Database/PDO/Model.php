@@ -352,4 +352,16 @@ class Model extends BaseObject
     if (empty($this->tableStructureSQL)) return true;
     return DB::query($this->tableStructureSQL);
   }
+  function increment($field, $value = 1)
+  {
+    $sql = $this->query->increment($field, $value)->sql();
+    if ($this->returnSql) return $sql;
+    return (int)DB::query($sql);
+  }
+  function decrement($field, $value = 1)
+  {
+    $sql = $this->query->decrement($field, $value)->sql();
+    if ($this->returnSql) return $sql;
+    return (int)DB::query($sql);
+  }
 }
