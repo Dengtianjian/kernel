@@ -64,6 +64,7 @@ class LocalFileDriver extends AbstractFileDriver
 
     $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
+    $FileInfo['url'] = $this->getFilePreviewURL($FileKey,[],1800,FALSE);
     $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
     $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 

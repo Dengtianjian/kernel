@@ -11,6 +11,7 @@ class UploadFileController extends FileBaseController
     "size" => "int",
     "width" => "double",
     "height" => "double",
+    "url" => "string",
     "previewURL" => "string",
     "downloadURL" => "string"
   ];

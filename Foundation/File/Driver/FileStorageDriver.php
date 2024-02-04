@@ -197,6 +197,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
     $FileInfo['key'] = $FileKey;
     $FileInfo['path'] = pathinfo($FileKey, PATHINFO_DIRNAME);
     $FileInfo['name'] = pathinfo($FileKey, PATHINFO_BASENAME);
+    $FileInfo['url'] = $this->getFilePreviewURL($FileKey, [], 1800, FALSE);
     $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
     $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 

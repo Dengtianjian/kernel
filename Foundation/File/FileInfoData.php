@@ -17,6 +17,7 @@ use kernel\Foundation\Object\DataObject;
  * @property int $width 媒体文件宽度，非媒体文件该值为空
  * @property int $height 媒体文件高度，非媒体文件该值为空
  * @property boolean $remote 是否远程存储
+ * @property string $url 文件访问URL
  * @property string $previewURL 预览URL链接
  * @property string $downloadURL 下载URL链接
  * @property string $acl 访问权限控制
@@ -34,6 +35,7 @@ class FileInfoData extends DataObject
   protected $width = NULL;
   protected $height = NULL;
   protected $remote = FALSE;
+  protected $url = null;
   protected $previewURL = null;
   protected $downloadURL = null;
   protected $acl = FALSE;
