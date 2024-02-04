@@ -9,7 +9,7 @@ class FilesModel extends Model
 {
   use FilesModelTrait;
 
-  public function __construct($tableName = null)
+  public function __construct($tableName = "files")
   {
     parent::__construct($tableName);
 
