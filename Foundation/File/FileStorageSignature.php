@@ -245,7 +245,12 @@ class FileStorageSignature extends BaseObject
       return urlencode($item);
     }, $URLParams));
 
-    return $toString ? $this->object2String($QueryStrings, [], 0) : $QueryStrings;
+    if ($toString) {
+      return $this->object2String($QueryStrings, [], 0);
+    }
+    $QueryStrings['auth'] = $this->object2String($QueryStrings, [], 0);
+
+    return $QueryStrings;
   }
   /**
    * 验证签名是否正确

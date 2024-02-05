@@ -105,17 +105,61 @@ class FileStorageDriver extends AbstractFileStorageDriver
    *
    * @param File $File 文件
    * @param string $FileKey 文件名
+   */
+  function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
+  {
+    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    }
+    $AC = self::AUTHENTICATED_READ;
+    $ownerId = $this->currentLoginId;
+    if ($this->filesModel) {
+      $FileData = $this->filesModel->item($FileKey);
+      if (!$FileData) {
+        return $this->break(404, 404, "文件不存在");
+      }
+      $AC = $FileData['acl'];
+      $ownerId = $FileData['ownerId'];
+    }
+    if ($this->FileAuthorizationVerification($FileKey, $AC, $ownerId, "write") === FALSE) {
+      return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
+    }
+
+    $PathInfo = pathinfo($FileKey);
+
+    $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
+    if (!$FileInfo) {
+      return $this->break(500, 500, "文件上传失败");
+    }
+
+    $FileInfo['key'] = $FileKey;
+    $FileInfo['remote'] = false;
+
+    // if ($this->filesModel) {
+    //   if ($this->filesModel->existItem($FileKey)) {
+    //     $this->filesModel->remove(true, $FileKey);
+    //   }
+    //   $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['name'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $AC, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+    // }
+
+    return $this->getFileInfo($FileKey);
+  }
+  /**
+   * 上传文件，并且保存在服务器。如果已存在记录，会删除已经存在文件以及记录，再重新写入
+   *
+   * @param File $File 文件
+   * @param string $FileKey 文件名
    * @param string $OwnerId 拥有者ID
    * @param string $BelongsId 关联数据ID
    * @param string $BelongsType 关联数据类型
    * @param string $ACL 文件访问权限控制
    */
-  function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $ACL = self::AUTHENTICATED_READ)
+  function saveFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
   {
     if ($this->verifyRequestAuth($FileKey) !== TRUE) {
       return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
     }
-    if ($this->FileAuthorizationVerification($FileKey, $ACL, $OwnerId, "write") === FALSE) {
+    if ($this->FileAuthorizationVerification($FileKey, $AC, $OwnerId, "write") === FALSE) {
       return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
     }
 
@@ -133,7 +177,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
       if ($this->filesModel->existItem($FileKey)) {
         $this->filesModel->remove(true, $FileKey);
       }
-      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['name'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $ACL, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
+      $this->filesModel->add($FileKey, $FileInfo['sourceFileName'], $FileInfo['name'], $FileInfo['path'], $FileInfo['size'], $FileInfo['extension'], $OwnerId, $AC, false, $BelongsId, $BelongsType, $FileInfo['width'], $FileInfo['height']);
     }
 
     return $this->getFileInfo($FileKey);

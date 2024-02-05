@@ -4,12 +4,12 @@ namespace kernel\Controller\Main\Files;
 
 class UploadFileController extends FileBaseController
 {
-  public $body = [
-    // "acl" => "string",
-    "ownerId" => "string",
-    "belongsId" => "string",
-    "belongsType" => "string"
-  ];
+  // public $body = [
+  //   "acl" => "string",
+  //   "ownerId" => "string",
+  //   "belongsId" => "string",
+  //   "belongsType" => "string"
+  // ];
   public $serializes = [
     "key" => "string",
     "name" => "string",
@@ -27,7 +27,7 @@ class UploadFileController extends FileBaseController
     if (!$Files) {
       return $this->response->error(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
-    $FileInfo = $this->driver->uploadFile($Files[0], $FileKey, $this->body->get("ownerId"), $this->body->get("belongsId"), $this->body->get("belongsType"), NULL);
+    $FileInfo = $this->driver->uploadFile($Files[0], $FileKey);
     if ($this->driver->error) return $this->driver->return();
 
     return $FileInfo->toArray();
