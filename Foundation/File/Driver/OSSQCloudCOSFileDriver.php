@@ -52,8 +52,11 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
         $fileKey = "{$this->fileKeyRemoteIdentificationPrefix}/{$fileKey}";
       }
     }
+    if ($this->verifyRequestAuth($fileKey) !== TRUE) {
+      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    }
     if ($this->FileAuthorizationVerification($fileKey, $ACL, $OwnerId, "write") === FALSE) {
-      return $this->break(403, 403, "抱歉，您没有上传该文件的权限");
+      return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
     }
 
     $FileKeyPathInfo = pathinfo($fileKey);
