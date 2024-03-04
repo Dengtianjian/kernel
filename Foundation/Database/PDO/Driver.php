@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Exception\RuyiException;
 use kernel\Foundation\Log;
 use kernel\Foundation\Output;
 use kernel\Foundation\Response;
@@ -46,11 +47,12 @@ class Driver
     $data = $this->PDOInstance->query($query);
     if ($data === false) {
       $errorDetails = [
+        "message" => join(" ", $this->error()),
         "error" => $this->error(),
         "trace" => debug_backtrace(),
         "sql" => $query
       ];
-      throw new Exception("数据错误", 500, "DatabaseError:500001", $errorDetails);
+      throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->error()[0], $errorDetails);
     } else {
       if ($isSelect) {
         $result = $data->fetchAll(PDO::FETCH_ASSOC);

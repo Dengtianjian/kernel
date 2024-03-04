@@ -10,6 +10,7 @@ use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Exception\RuyiException;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponsePagination;
 
@@ -318,10 +319,10 @@ class App
     try {
       $response = call_user_func_array($callTarget, array_values($callParams));
     } catch (GlobalException $E) {
-      if ($E instanceof Exception) {
-        throw new Exception($E->getMessage(), $E->statusCode, $E->errorCode, $E->getTrace());
+      if ($E instanceof RuyiException) {
+        throw new RuyiException($E->getMessage(), $E->statusCode, $E->errorCode, $E->errorDetails ?: $E->getTrace());
       } else {
-        throw new Exception($E->getMessage(), 500, "500:ServerError", $E->getTrace());
+        throw new RuyiException($E->getMessage(), 500, "500:ServerError", $E->getTrace());
       }
     }
 

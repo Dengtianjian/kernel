@@ -110,7 +110,7 @@ class ExceptionHandler
     $statusCode = 500;
     $errorCode = 500;
     $errorDetails = null;
-    if ($exception instanceof Exception) {
+    if ($exception instanceof RuyiException) {
       $statusCode = $exception->statusCode;
       $errorCode = $exception->errorCode;
       $errorDetails = $exception->errorDetails;
