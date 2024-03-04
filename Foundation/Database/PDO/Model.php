@@ -232,6 +232,19 @@ class Model extends BaseObject
   function update($data)
   {
     if (!$data) return 0;
+    $Call = get_class($this);
+    if ($Call::$Timestamps) {
+      $now = time();
+      if ($Call::$UpdatedAt) {
+        $data[$Call::$UpdatedAt] = $now;
+      }
+
+      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+        foreach ($Call::$TimestampFields as $item) {
+          $data[$item] = $now;
+        }
+      }
+    }
     $sql = $this->query->update($data)->sql();
     if ($this->returnSql) return $sql;
     $DB = $this->DB;
