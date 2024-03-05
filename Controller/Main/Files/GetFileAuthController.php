@@ -10,8 +10,22 @@ use kernel\Foundation\Validate\ValidateRules;
  */
 class GetFileAuthController extends FileBaseController
 {
+  public $body = [
+    "sourceFileName" => "string",
+    "filePath" => "string",
+    "fileSize" => "int",
+    "width" => "int",
+    "height" => "int"
+  ];
   public function data()
   {
     // return $this->driver->getFileAuth($FileKey, 1800);
+    return [
+      "fileKey" => NULL,
+      "remoteFileKey" => NULL,
+      "auth" => NULL,
+      "previewURL" => NULL,
+      "accessControl" => NULL
+    ];
   }
 }
