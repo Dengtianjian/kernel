@@ -45,4 +45,17 @@ abstract class AbstractFileStorageDriver extends AbstractFileDriver
       $FileKey
     );
   }
+  /**
+   * 设置文件状态
+   *
+   * @param string $FileKey 文件名
+   * @param string $Status 状态
+   * @return int
+   */
+  function setStatus($FileKey, $Status)
+  {
+    return $this->filesModel->where("key", $FileKey)->update([
+      "status" => $Status
+    ]);
+  }
 }
