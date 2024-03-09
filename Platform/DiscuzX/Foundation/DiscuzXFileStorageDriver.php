@@ -30,6 +30,9 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
     $URLParams['id'] = F_APP_ID;
     $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/preview";
@@ -44,6 +47,9 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
     $URLParams['id'] = F_APP_ID;
     $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/download";

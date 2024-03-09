@@ -33,6 +33,7 @@ CREATE TABLE `pre_{$tableName}`  (
   `height` double NULL DEFAULT 0 COMMENT '高度（媒体文件才有该值）',
   `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
   `acl` varchar(64) NOT NULL DEFAULT 'private' COMMENT '访问权限控制',
+  `status` varchar(32) NULL DEFAULT NULL COMMENT '状态',
   `createdAt` varchar(12) NOT NULL COMMENT '创建时间',
   `updatedAt` varchar(12) NOT NULL COMMENT '最后更新时间',
   PRIMARY KEY (`id`) USING BTREE,

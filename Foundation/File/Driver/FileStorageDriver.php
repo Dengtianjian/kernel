@@ -281,6 +281,9 @@ class FileStorageDriver extends AbstractFileStorageDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
 
     $AccessURL->queryParam($URLParams);
@@ -316,6 +319,9 @@ class FileStorageDriver extends AbstractFileStorageDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
 
     $AccessURL->queryParam($URLParams);

@@ -64,7 +64,7 @@ class LocalFileDriver extends AbstractFileDriver
 
     $FileInfo['key'] = $FileKey;
     $FileInfo['remote'] = false;
-    $FileInfo['url'] = $this->getFilePreviewURL($FileKey,[],1800,FALSE);
+    $FileInfo['url'] = $this->getFilePreviewURL($FileKey, [], 1800, FALSE);
     $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
     $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
 
@@ -101,6 +101,9 @@ class LocalFileDriver extends AbstractFileDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
 
     $AccessURL->queryParam($URLParams);
@@ -136,6 +139,9 @@ class LocalFileDriver extends AbstractFileDriver
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
+      if (array_key_exists("auth", $URLParams)) {
+        unset($URLParams['auth']);
+      }
     }
 
     $AccessURL->queryParam($URLParams);
