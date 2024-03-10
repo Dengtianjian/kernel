@@ -46,16 +46,16 @@ abstract class AbstractFileStorageDriver extends AbstractFileDriver
     );
   }
   /**
-   * 设置文件状态
+   * 设置文件访问控制权限
    *
    * @param string $FileKey 文件名
-   * @param string $Status 状态
+   * @param string $AccessControlTag 文件控制权限标签
    * @return int
    */
-  function setStatus($FileKey, $Status)
+  function setAccessControl($FileKey, $AccessControlTag)
   {
     return $this->filesModel->where("key", $FileKey)->update([
-      "status" => $Status
+      "accessControl" => $AccessControlTag
     ]);
   }
 }

@@ -28,20 +28,4 @@ class RemoteFileService extends FileService
   {
     return self::$dirver->getFileRemoteAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod, true);
   }
-  /**
-   * 设置文件所属
-   *
-   * @param string $FileKey 文件名
-   * @param string $BelongsId 所属ID
-   * @param string $BelongsType 所属ID数据类型
-   * @return int
-   */
-  static function setFileBelongs($FileKey, $BelongsId, $BelongsType)
-  {
-    return self::$dirver->setFileBelongs(
-      $FileKey,
-      $BelongsId,
-      $BelongsType
-    );
-  }
 }

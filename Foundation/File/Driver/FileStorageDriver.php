@@ -118,7 +118,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
       if (!$FileData) {
         return $this->break(404, 404, "文件不存在");
       }
-      $AC = $FileData['acl'];
+      $AC = $FileData['accessControl'];
       $ownerId = $FileData['ownerId'];
     }
     if ($this->FileAuthorizationVerification($FileKey, $AC, $ownerId, "write") === FALSE) {
@@ -187,7 +187,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
     $FileInfo = $this->getFileInfo($FileKey);
     if ($this->error) return $this->return();
 
-    if ($this->FileAuthorizationVerification($FileKey, $FileInfo->acl, $FileInfo->ownerId) === FALSE) {
+    if ($this->FileAuthorizationVerification($FileKey, $FileInfo->accessControl, $FileInfo->ownerId) === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权删除该文件");
     }
 
@@ -233,11 +233,11 @@ class FileStorageDriver extends AbstractFileStorageDriver
         $FileInfo = $LocalFileInfo;
         $FileInfo['remote'] = false;
         $FileInfo['size'] = $LocalFileInfo['size'];
-        $FileInfo['acl'] = NULL;
+        $FileInfo['accessControl'] = NULL;
         $FileInfo['ownerId'] = NULL;
       }
     }
-    if ($this->FileAuthorizationVerification($FileKey, $FileInfo['acl'], $FileInfo['ownerId'], "read") === FALSE) {
+    if ($this->FileAuthorizationVerification($FileKey, $FileInfo['accessControl'], $FileInfo['ownerId'], "read") === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
 

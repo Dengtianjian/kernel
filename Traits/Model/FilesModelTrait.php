@@ -4,7 +4,7 @@ namespace kernel\Traits\Model;
 
 trait FilesModelTrait
 {
-  function add($Key, $SourceFileName, $Name, $Path, $Size, $Extension, $OwnerId = null, $ACL = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
+  function add($Key, $SourceFileName, $Name, $Path, $Size, $Extension, $OwnerId = null, $accessControl = 'private', $Remote = false, $BelongsId = null, $BelongsType = null, $Width = 0, $Height = 0)
   {
     return $this->insert(array_filter([
       "key" => $Key,
@@ -19,7 +19,7 @@ trait FilesModelTrait
       "ownerId" => $OwnerId,
       "width" => $Width,
       "height" => $Height,
-      "acl" => $ACL
+      "accessControl" => $accessControl
     ], function ($item) {
       return !is_null($item);
     }));

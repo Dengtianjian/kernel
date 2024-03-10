@@ -5,7 +5,7 @@ namespace kernel\Controller\Main\Files;
 class UploadFileController extends FileBaseController
 {
   // public $body = [
-  //   "acl" => "string",
+  //   "accessControl" => "string",
   //   "ownerId" => "string",
   //   "belongsId" => "string",
   //   "belongsType" => "string"

@@ -133,4 +133,31 @@ class FileService extends Service
   {
     return self::$dirver->getImageInfo($FileKey);
   }
+  /**
+   * 设置文件所属
+   *
+   * @param string $FileKey 文件名
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  static function setFileBelongs($FileKey, $BelongsId, $BelongsType)
+  {
+    return self::$dirver->setFileBelongs(
+      $FileKey,
+      $BelongsId,
+      $BelongsType
+    );
+  }
+  /**
+   * 设置文件访问控制权限
+   *
+   * @param string $FileKey 文件名
+   * @param string $AccessControlTag 文件控制权限标签
+   * @return int
+   */
+  static function setFileAccessControl($FileKey, $AccessControlTag)
+  {
+    return self::$dirver->setAccessControl($FileKey, $AccessControlTag);
+  }
 }

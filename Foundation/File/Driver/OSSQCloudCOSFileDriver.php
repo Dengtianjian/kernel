@@ -114,7 +114,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     }
     $FileInfo = $this->getFileInfo($fileKey);
     if ($this->error) return $this->return();
-    if ($this->FileAuthorizationVerification($fileKey, $FileInfo->acl, $FileInfo->ownerId) === FALSE) {
+    if ($this->FileAuthorizationVerification($fileKey, $FileInfo->accessControl, $FileInfo->ownerId) === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权删除该文件");
     }
 
@@ -193,7 +193,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       }
     }
 
-    if ($this->FileAuthorizationVerification($fileKey, $COSFileInfo['acl'], $COSFileInfo['ownerId'], "read") === FALSE) {
+    if ($this->FileAuthorizationVerification($fileKey, $COSFileInfo['accessControl'], $COSFileInfo['ownerId'], "read") === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
     $COSFileInfo['url'] = $this->getFilePreviewURL($fileKey, [], 1800, FALSE);
