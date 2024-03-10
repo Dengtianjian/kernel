@@ -2,6 +2,9 @@
 
 namespace kernel\Service;
 
+use kernel\Foundation\File\Driver\AbstractFileDriver;
+use kernel\Foundation\File\Driver\AbstractFileStorageDriver;
+
 class RemoteFileService extends FileService
 {
   /**

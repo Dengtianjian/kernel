@@ -24,7 +24,7 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
     }
     return parent::uploadFile($File, $FileKey, $ownerId, $BelongsId, $BelongsType, $ACL);
   }
-  public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
     $AccessURL = new DiscuzXURL(F_BASE_URL);
 
@@ -36,12 +36,15 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
     }
     $URLParams['id'] = F_APP_ID;
     $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/preview";
+    if ($WithAccessControl) {
+      $URLParams['uri'] .= "/auth";
+    }
 
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();
   }
-  public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
     $AccessURL = new DiscuzXURL(F_BASE_URL);
 
@@ -53,6 +56,9 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
     }
     $URLParams['id'] = F_APP_ID;
     $URLParams['uri'] = "{$this->routePrefix}/{$FileKey}/download";
+    if ($WithAccessControl) {
+      $URLParams['uri'] .= "/auth";
+    }
 
     $AccessURL->queryParam($URLParams);
 

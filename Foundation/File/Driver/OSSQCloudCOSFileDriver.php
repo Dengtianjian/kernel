@@ -128,13 +128,13 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
     return TRUE;
   }
-  public function getFileInfo($fileKey)
+  public function getFileInfo($FileKey, $AccessControl = TRUE)
   {
-    $remote = strpos($fileKey, $this->fileKeyRemoteIdentificationPrefix) !== false;
+    $remote = strpos($FileKey, $this->fileKeyRemoteIdentificationPrefix) !== false;
 
     $COSFileInfo = [
-      "fileKey" => $fileKey,
-      "key" => $fileKey,
+      "fileKey" => $FileKey,
+      "key" => $FileKey,
       "path" => null,
       "fileName" => null,
       "extension" => null,
@@ -145,7 +145,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       'remote' => $remote
     ];
     if ($this->filesModel) {
-      $fileInfo = parent::getFileInfo($fileKey);
+      $fileInfo = parent::getFileInfo($FileKey, $AccessControl);
       if ($this->error)
         return $this->return();
       if (!$fileInfo->remote) {
@@ -153,7 +153,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       }
 
       $COSFileInfo = array_merge($COSFileInfo, $fileInfo->toArray());
-      $COSDoesExist = $this->COSInstance->doesObjectExist($fileKey);
+      $COSDoesExist = $this->COSInstance->doesObjectExist($FileKey);
       if (!$COSDoesExist) {
         return $this->break(404, 404, "文件不存在");
       }
@@ -164,7 +164,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
         "gif",
         "webp"
       ]) && (!$fileInfo->width || !$fileInfo->height || !$fileInfo->size)) {
-        $ImageInfo = $this->COSInstance->getImageInfo($fileKey);
+        $ImageInfo = $this->COSInstance->getImageInfo($FileKey);
         if ($ImageInfo) {
           $COSFileInfo['width'] = $ImageInfo['width'];
           $COSFileInfo['height'] = $ImageInfo['height'];
@@ -173,32 +173,32 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
             "width" => $ImageInfo['width'],
             "height" => $ImageInfo['height'],
             "size" => $ImageInfo['size']
-          ], $fileKey);
+          ], $FileKey);
         }
       }
     } else {
       if ($remote) {
-        $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $fileKey);
+        $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $FileKey);
         $COSDoesExist = $this->COSInstance->doesObjectExist($remoteFileKey);
         if (!$COSDoesExist) {
           return $this->break(404, 404, "文件不存在");
         }
-        $PathInfo = pathinfo($fileKey);
+        $PathInfo = pathinfo($FileKey);
         $COSFileInfo['path'] = $PathInfo['dirname'];
         $COSFileInfo['name'] = $PathInfo['basename'];
         $COSFileInfo['extension'] = $PathInfo['extension'];
         $COSFileInfo['path'] = $PathInfo['dirname'];
       } else {
-        return parent::getFileInfo($fileKey);
+        return parent::getFileInfo($FileKey, $AccessControl);
       }
     }
 
-    if ($this->FileAuthorizationVerification($fileKey, $COSFileInfo['accessControl'], $COSFileInfo['ownerId'], "read") === FALSE) {
-      return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
-    }
-    $COSFileInfo['url'] = $this->getFilePreviewURL($fileKey, [], 1800, FALSE);
-    $COSFileInfo['previewURL'] = $this->getFilePreviewURL($fileKey);
-    $COSFileInfo['downloadURL'] = $this->getFileDownloadURL($fileKey);
+    // if ($this->FileAuthorizationVerification($FileKey, $COSFileInfo['accessControl'], $COSFileInfo['ownerId'], "read") === FALSE) {
+    //   return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
+    // }
+    $COSFileInfo['url'] = $this->getFilePreviewURL($FileKey, [], 1800, FALSE, $AccessControl);
+    $COSFileInfo['previewURL'] = $this->getFilePreviewURL($FileKey, [], 1800, TRUE, $AccessControl);
+    $COSFileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey, [], 1800, TRUE, $AccessControl);
 
     return new FileInfoData($COSFileInfo);
   }

@@ -43,13 +43,13 @@ class DiscuzXOSSQCloudCOSFileDriver extends OSSQCloudCOSFileDriver
     }
     return parent::uploadFile($File, $fileKey, $ownerId, $BelongsId, $BelongsType, $ACL);
   }
-  public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    return $this->DiscuzXFileStorageDriver->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return $this->DiscuzXFileStorageDriver->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
   }
-  public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    return $this->DiscuzXFileStorageDriver->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return $this->DiscuzXFileStorageDriver->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
   }
   public function verifyRequestAuth($FileKey)
   {

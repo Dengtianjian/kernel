@@ -37,7 +37,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
    * @param string $FileKey 文件键
    * @param string $AuthTag 授权值 
    * @param string $OwnerId 拥有者ID
-   * @param "read"|"write $action 操作，只允许传入read（读）和write（写）参数
+   * @param "read"|"write" $action 操作，只允许传入read（读）和write（写）参数
    * @return boolean TRUE=授权校验通过，FALSE=授权校验失败
    */
   public function FileAuthorizationVerification($FileKey, $AuthTag, $OwnerId, $action = "read")
@@ -203,9 +203,10 @@ class FileStorageDriver extends AbstractFileStorageDriver
    * 获取文件信息
    *
    * @param string $FileKey 文件名
+   * @param boolean $AccessControl 是否检测文件的访问控制权限
    * @return FileInfoData 文件信息
    */
-  function getFileInfo($FileKey)
+  function getFileInfo($FileKey, $AccessControl = TRUE)
   {
     $FileKey = rawurldecode(urldecode($FileKey));
     if ($this->filesModel) {
@@ -237,7 +238,17 @@ class FileStorageDriver extends AbstractFileStorageDriver
         $FileInfo['ownerId'] = NULL;
       }
     }
-    if ($this->FileAuthorizationVerification($FileKey, $FileInfo['accessControl'], $FileInfo['ownerId'], "read") === FALSE) {
+
+    $ACTag = "private";
+    if ($FileInfo['accessControl']) {
+      if ($AccessControl) {
+        $ACTag = $FileInfo['accessControl'];
+      } else {
+        $ACTag = self::AUTHENTICATED_READ_WRITE;
+      }
+    }
+
+    if ($this->FileAuthorizationVerification($FileKey, $ACTag, $FileInfo['ownerId'], "read") === FALSE) {
       return $this->break(403, 403001, "抱歉，您无权查看该文件信息");
     }
 
@@ -245,8 +256,8 @@ class FileStorageDriver extends AbstractFileStorageDriver
     $FileInfo['path'] = pathinfo($FileKey, PATHINFO_DIRNAME);
     $FileInfo['name'] = pathinfo($FileKey, PATHINFO_BASENAME);
     $FileInfo['url'] = $this->getFilePreviewURL($FileKey, [], 1800, FALSE);
-    $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey);
-    $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey);
+    $FileInfo['previewURL'] = $this->getFilePreviewURL($FileKey, [], 1800, TRUE, $AccessControl);
+    $FileInfo['downloadURL'] = $this->getFileDownloadURL($FileKey, [], 1800, TRUE, $AccessControl);
 
     return new FileInfoData($FileInfo);
   }
@@ -272,12 +283,16 @@ class FileStorageDriver extends AbstractFileStorageDriver
    * @param array $URLParams 请求参数
    * @param int $Expires 签名有效期
    * @param bool $WithSignature 带有签名
+   * @param bool $WithAccessControl 带有授权控制的
    * @return string 访问URL
    */
-  function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/preview";
+    if ($WithAccessControl) {
+      $AccessURL->pathName .= "/auth";
+    }
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
@@ -310,12 +325,16 @@ class FileStorageDriver extends AbstractFileStorageDriver
    * @param array $URLParams 请求参数
    * @param int $Expires 签名有效期
    * @param bool $WithSignature 带有签名
+   * @param bool $WithAccessControl 带有授权控制的
    * @return string 下载URL
    */
-  function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
     $AccessURL = new URL(F_BASE_URL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/download";
+    if ($WithAccessControl) {
+      $AccessURL->pathName .= "/auth";
+    }
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));

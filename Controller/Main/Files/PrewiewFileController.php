@@ -2,7 +2,7 @@
 
 namespace kernel\Controller\Main\Files;
 
-class PreviewFileController extends FileBaseController
+class PrewiewFileController extends FileBaseController
 {
   /**
    * 主体
@@ -12,7 +12,7 @@ class PreviewFileController extends FileBaseController
    */
   public function data($FileKey)
   {
-    $File = $this->driver->getFileInfo($FileKey);
+    $File = $this->driver->getFileInfo($FileKey, FALSE);
     if ($this->driver->error) return $this->driver->return();
 
     if ($File->remote) {

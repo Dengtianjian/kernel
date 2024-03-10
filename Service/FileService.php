@@ -29,7 +29,10 @@ class FileService extends Service
     Router::get("$RoutePrefix/{fileKey:$FileNamePattern}", FilesNamespace\GetFileController::class, [], [
       $Driver
     ]);
-    Router::get("$RoutePrefix/{fileKey:$FileNamePattern}/preview", FilesNamespace\PreviewFileController::class, [], [
+    Router::get("$RoutePrefix/{fileKey:$FileNamePattern}/preview/auth", FilesNamespace\AuthPreviewFileController::class, [], [
+      $Driver
+    ]);
+    Router::get("$RoutePrefix/{fileKey:$FileNamePattern}/preview", FilesNamespace\PrewiewFileController::class, [], [
       $Driver
     ]);
     Router::get("$RoutePrefix/{fileKey:$FileNamePattern}/download", FilesNamespace\DownloadFileController::class, [], [
@@ -78,11 +81,12 @@ class FileService extends Service
    * @param array $URLParams 请求参数
    * @param int $Expires 签名有效期
    * @param bool $WithSignature 带有签名
+   * @param bool $WithAccessControl 带有授权控制的
    * @return string 访问URL
    */
-  static function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  static function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    return self::$dirver->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return self::$dirver->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
   }
   /**
    * 获取远程浏览链接
@@ -104,11 +108,12 @@ class FileService extends Service
    * @param array $URLParams 请求参数
    * @param int $Expires 签名有效期
    * @param bool $WithSignature 带有签名
+   * @param bool $WithAccessControl 带有授权控制的
    * @return string 下载URL
    */
-  static function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
+  static function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    return self::$dirver->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
+    return self::$dirver->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
   }
   /**
    * 获取远程下载链接
@@ -159,5 +164,55 @@ class FileService extends Service
   static function setFileAccessControl($FileKey, $AccessControlTag)
   {
     return self::$dirver->setAccessControl($FileKey, $AccessControlTag);
+  }
+  /**
+   * 设置文件访问控制权限为为 私有的
+   *
+   * @param string $FileKey 文件名
+   * @return int
+   */
+  static function setAccessControlToPrivate($FileKey)
+  {
+    return self::setFileAccessControl($FileKey, self::$dirver::PRIVATE);
+  }
+  /**
+   * 设置文件访问控制权限为为 授权读
+   *
+   * @param string $FileKey 文件名
+   * @return int
+   */
+  static function setAccessControlToAuthenticatedRead($FileKey)
+  {
+    return self::setFileAccessControl($FileKey, self::$dirver::AUTHENTICATED_READ);
+  }
+  /**
+   * 设置文件访问控制权限为 授权读写
+   *
+   * @param string $FileKey 文件名
+   * @return int
+   */
+  static function setAccessControlToAuthenticatedReadWrite($FileKey)
+  {
+    return self::setFileAccessControl($FileKey, self::$dirver::AUTHENTICATED_READ_WRITE);
+  }
+  /**
+   * 设置文件访问控制权限为 共有读写
+   *
+   * @param string $FileKey 文件名
+   * @return int
+   */
+  static function setAccessControlToPublicReadWrite($FileKey)
+  {
+    return self::setFileAccessControl($FileKey, self::$dirver::PUBLIC_READ_WRITE);
+  }
+  /**
+   * 设置文件访问控制权限为 共有读
+   *
+   * @param string $FileKey 文件名
+   * @return int
+   */
+  static function setAccessControlToPublicRead($FileKey)
+  {
+    return self::setFileAccessControl($FileKey, self::$dirver::PUBLIC_READ);
   }
 }

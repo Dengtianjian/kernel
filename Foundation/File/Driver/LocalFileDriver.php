@@ -49,9 +49,10 @@ class LocalFileDriver extends AbstractFileDriver
    * 获取文件信息
    *
    * @param string $FileKey 文件名
+   * @param boolean $AccessControl 是否检测文件的访问控制权限
    * @return FileInfoData 文件信息
    */
-  function getFileInfo($FileKey)
+  function getFileInfo($FileKey, $AccessControl = TRUE)
   {
     if ($this->verifyRequestAuth($FileKey) !== TRUE) {
       return $this->break(403, 403, "抱歉，您无权该文件信息");
