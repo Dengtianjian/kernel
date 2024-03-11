@@ -241,4 +241,42 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     }
     return $this->COSInstance->getFileDownloadURL($fileKey, $URLParams, [], $Expires, $WithSignature, $TempKeyPolicyStatement);
   }
+  public function transformToRemoteURLParams($RequestURLParams)
+  {
+    $params = [];
+
+    $imageMogr2 = [];
+    if (array_key_exists("w", $RequestURLParams) || array_key_exists("h", $RequestURLParams) || array_key_exists("r", $RequestURLParams)) {
+      $key = "";
+      if (array_key_exists("w", $RequestURLParams) && array_key_exists("h", $RequestURLParams)) {
+        $key = "thumbnail/{$RequestURLParams['w']}x{$RequestURLParams['h']}";
+      } else if (array_key_exists("w", $RequestURLParams)) {
+        $key = "thumbnail/{$RequestURLParams['w']}x";
+      } else if (array_key_exists("h", $RequestURLParams)) {
+        $key = "thumbnail/x{$RequestURLParams['h']}";
+      } else if (array_key_exists("r", $RequestURLParams)) {
+        $key = "thumbnail/!{$RequestURLParams['r']}p";
+      }
+      // $key .= "/minisize/1/ignore-error/1";
+      array_push($imageMogr2, $key);
+
+      unset($RequestURLParams['w'], $RequestURLParams['h'], $RequestURLParams['r']);
+    }
+
+    if (array_key_exists("ext", $RequestURLParams)) {
+      array_push($imageMogr2, "format/{$RequestURLParams['ext']}");
+
+      unset($RequestURLParams['ext']);
+    }
+
+    if (array_key_exists("q", $RequestURLParams)) {
+      array_push($imageMogr2, "quality/{$RequestURLParams['q']}!");
+
+      unset($RequestURLParams['q']);
+    }
+    $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
+    // debug($params);
+
+    return $params;
+  }
 }

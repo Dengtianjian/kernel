@@ -16,7 +16,7 @@ class AuthPreviewFileController extends FileBaseController
     if ($this->driver->error) return $this->driver->return();
 
     if ($File->remote) {
-      $URL = $this->driver->getFileRemotePreviewURL($FileKey, []);
+      $URL = $this->driver->getFileRemotePreviewURL($FileKey, $this->driver->transformToRemoteURLParams($this->request->query->some()));
       if (!$URL) return $this->response->error(500, 500, "预览文件失败", "获取到的远程文件URL为空");
 
       return $this->response->redirect($URL, 302);
