@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\File\Driver;
 
+use kernel\Foundation\Log;
 use kernel\Model\FilesModel;
 
 abstract class AbstractFileStorageDriver extends AbstractFileDriver
