@@ -288,7 +288,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL = new URL($this->baseURL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/preview";
     if ($WithAccessControl) {
       $AccessURL->pathName .= "/auth";
@@ -330,7 +330,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL = new URL($this->baseURL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/download";
     if ($WithAccessControl) {
       $AccessURL->pathName .= "/auth";

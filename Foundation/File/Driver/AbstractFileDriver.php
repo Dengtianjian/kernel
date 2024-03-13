@@ -75,15 +75,24 @@ abstract class AbstractFileDriver extends AbilityBaseObject
   protected $routePrefix = "files";
 
   /**
+   * 基础地址。用于生成浏览、下载地址时作为基础URL
+   *
+   * @var string
+   */
+  protected $baseURL = null;
+
+  /**
    * 实例化文件驱动类
    *
    * @param string $SignatureKey 签名秘钥
    * @param string $RoutePrefix 路由前缀
+   * @param string $BaseURL 基础地址
    */
-  public function __construct($SignatureKey, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $RoutePrefix = "files", $BaseURL = F_BASE_URL)
   {
     $this->signature = new FileStorageSignature($SignatureKey);
     $this->routePrefix = $RoutePrefix;
+    $this->baseURL = $BaseURL;
   }
   public function __get($name)
   {

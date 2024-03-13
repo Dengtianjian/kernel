@@ -20,10 +20,11 @@ abstract class AbstractFileStorageDriver extends AbstractFileDriver
    * @param string $SignatureKey 本地存储签名秘钥
    * @param boolean $Record 文件信息是否存入数据库
    * @param string $RoutePrefix 路由前缀
+   * @param string $BaseURL 基础地址
    */
-  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files", $BaseURL = F_BASE_URL)
   {
-    parent::__construct($SignatureKey, $RoutePrefix);
+    parent::__construct($SignatureKey, $RoutePrefix, $BaseURL);
 
     if ($Record) {
       $this->filesModel = new FilesModel();
