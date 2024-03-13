@@ -40,7 +40,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
    */
   public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL, $RoutePrefix = "files", $BaseURL = F_BASE_URL)
   {
-    parent::__construct(true, $SignatureKey, $Record, $RoutePrefix, $BaseURL);
+    parent::__construct($SignatureKey, $Record, $RoutePrefix, $BaseURL);
 
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;

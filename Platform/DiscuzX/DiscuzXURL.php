@@ -57,16 +57,6 @@ class DiscuzXURL extends URL
 
     return parent::buildURL($host, $pathName, $queryParams, $fragment, $protocol, $port, $user, $password);
   }
-  static function buildPluginURL($PluginId = F_APP_ID, $URI = null, $BaseURL = F_BASE_URL)
-  {
-    $U = new self($BaseURL);
-    $U->queryParam("id", $PluginId);
-    if ($URI) {
-      $U->queryParam("uri", $URI);
-    }
-
-    return $U->toString();
-  }
   public function toString()
   {
     return self::buildURL($this->host, $this->pathName, $this->uri, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
