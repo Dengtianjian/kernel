@@ -155,6 +155,26 @@ class FileService extends Service
     );
   }
   /**
+   * 设置多个文件所属
+   *
+   * @param array $FileKeys 文件名数组
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  static function setFilesBelongs($FileKeys, $BelongsId, $BelongsType)
+  {
+    foreach ($FileKeys as $FileKey) {
+      self::$dirver->setFileBelongs(
+        $FileKey,
+        $BelongsId,
+        $BelongsType
+      );
+    }
+
+    return true;
+  }
+  /**
    * 设置文件访问控制权限
    *
    * @param string $FileKey 文件名
