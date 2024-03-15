@@ -10,9 +10,9 @@ class DiscuzXFilesModel extends DiscuzXModel
   use FilesModelTrait;
 
 
-  public function __construct()
+  public function __construct($tableName = null)
   {
-    $tableName = F_APP_ID . "_files";
+    $tableName = $tableName ?: F_APP_ID . "_files";
 
     parent::__construct($tableName);
 
