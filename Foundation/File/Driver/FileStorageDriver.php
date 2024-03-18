@@ -108,8 +108,8 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
   {
-    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
-      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    if ($VerifyErrorCode = $this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限", $VerifyErrorCode);
     }
     $AC = self::AUTHENTICATED_READ;
     $ownerId = $this->currentLoginId;
@@ -156,8 +156,8 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function saveFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
   {
-    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
-      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    if ($VerifyErrorCode = $this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限", $VerifyErrorCode);
     }
     if ($this->FileAuthorizationVerification($FileKey, $AC, $OwnerId, "write") === FALSE) {
       return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
