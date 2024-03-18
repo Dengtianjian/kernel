@@ -9,11 +9,15 @@ use kernel\Foundation\Output;
  *
  * @param string $fileName 文件名称，无需包含.php扩展名，路径相对于当前项目根目录
  * @param array $args 如果导入的文件return了一个函数，就会自动执行，该参数就是执行函数时传入的参数
+ * @param string $BasePath 基路径
  * @return false|mixed 返回false意味为导入失败，可能文件不存在，不建议导入的文件return false，可能会在使用Import时误判断
  */
-function Import($fileName, $args = [])
+function Import($fileName, $args = [], $BasePath = F_APP_ROOT)
 {
-  $RealFilePath = FileHelper::combinedFilePath(F_APP_ROOT, $fileName . ".php");
+  if (function_exists("str_ends_with") && !str_ends_with($fileName, ".php")) {
+    $fileName = "{$fileName}.php";
+  }
+  $RealFilePath = FileHelper::combinedFilePath($BasePath, $fileName);
   if (!file_exists($RealFilePath)) {
     return false;
   }
