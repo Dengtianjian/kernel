@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\File\Driver;
 
-use kernel\Foundation\Log;
 use kernel\Model\FilesModel;
 
 abstract class AbstractFileStorageDriver extends AbstractFileDriver
@@ -45,6 +44,22 @@ abstract class AbstractFileStorageDriver extends AbstractFileDriver
       $BelongsId,
       $BelongsType,
       $FileKey
+    );
+  }
+  /**
+   * 删除相关类型&所属类型数据ID的文件
+   *
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  public function deleteBelongsFile($BelongsId, $BelongsType)
+  {
+    return $this->filesModel->remove(
+      true,
+      null,
+      $BelongsId,
+      $BelongsType
     );
   }
   /**

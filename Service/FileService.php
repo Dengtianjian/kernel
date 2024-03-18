@@ -175,6 +175,17 @@ class FileService extends Service
     return true;
   }
   /**
+   * 删除相关类型&ID的文件
+   *
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  static function deleteBelongsFiles($BelongsId, $BelongsType)
+  {
+    return self::$dirver->deleteBelongsFile($BelongsId, $BelongsType);
+  }
+  /**
    * 设置文件访问控制权限
    *
    * @param string $FileKey 文件名
