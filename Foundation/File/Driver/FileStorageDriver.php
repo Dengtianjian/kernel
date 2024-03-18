@@ -241,10 +241,14 @@ class FileStorageDriver extends AbstractFileStorageDriver
 
     $ACTag = "private";
     if ($FileInfo['accessControl']) {
-      if ($AccessControl) {
+      if (in_array($FileInfo['accessControl'], [self::PUBLIC_READ, self::PUBLIC_READ_WRITE])) {
         $ACTag = $FileInfo['accessControl'];
       } else {
-        $ACTag = self::AUTHENTICATED_READ_WRITE;
+        if ($AccessControl) {
+          $ACTag = $FileInfo['accessControl'];
+        } else {
+          $ACTag = self::AUTHENTICATED_READ_WRITE;
+        }
       }
     }
 
