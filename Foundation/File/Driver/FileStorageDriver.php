@@ -160,7 +160,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
       return $this->break(403, "saveFile:403001", "抱歉，您没有上传该文件的权限", $VerifyErrorCode);
     }
     if ($this->FileAuthorizationVerification($FileKey, $AC, $OwnerId, "write") === FALSE) {
-      return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
+      return $this->break(403, "saveFile:403002", "抱歉，您没有上传该文件的权限");
     }
 
     $PathInfo = pathinfo($FileKey);
