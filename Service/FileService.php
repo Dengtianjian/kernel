@@ -16,6 +16,12 @@ class FileService extends Service
    * @var AbstractFileDriver|AbstractFileStorageDriver
    */
   static protected $dirver = null;
+  /**
+   * 文件名匹配正则表达式
+   *
+   * @var string
+   */
+  static protected $FileNameMatchPattern = "[\w/\u4e00-\u9fa5]+?\.\w+";
   static function useService($Driver = null, $RoutePrefix = "files")
   {
     if (is_null($Driver)) {
@@ -24,7 +30,7 @@ class FileService extends Service
 
     self::$dirver = $Driver;
 
-    $FileNamePattern = "[\w/\u4e00-\u9fa5]+?\.\w+";
+    $FileNamePattern = self::$FileNameMatchPattern;
 
     Router::get("$RoutePrefix/{fileKey:$FileNamePattern}", FilesNamespace\GetFileController::class, [], [
       $Driver
