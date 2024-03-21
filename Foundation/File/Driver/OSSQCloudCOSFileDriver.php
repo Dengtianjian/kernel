@@ -275,8 +275,9 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
       unset($RequestURLParams['q']);
     }
-    $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
-    // debug($params);
+    if($imageMogr2){
+      $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
+    }
 
     return $params;
   }
