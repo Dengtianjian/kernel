@@ -98,6 +98,6 @@ class QCloudCosBase extends QCloud
       $objectName = "/" . $objectName;
     }
 
-    return "https://{$this->Host}{$objectName}?" . URL::buildQuery($Authorization);
+    return "https://{$this->Host}{$objectName}?" . URL::buildQuery($Authorization, false);
   }
 }
