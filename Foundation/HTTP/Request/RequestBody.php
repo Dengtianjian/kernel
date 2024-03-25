@@ -18,7 +18,7 @@ class RequestBody extends RequestData
     if ($input) {
       $data = json_decode($input, true);
       if ($data === null) {
-        $data = simplexml_load_string($input);
+        $data = simplexml_load_string($input, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
         if ($data === false) {
           $data = [];
         } else {
