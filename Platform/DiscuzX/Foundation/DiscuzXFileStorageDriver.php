@@ -8,9 +8,9 @@ use kernel\Platform\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXFileStorageDriver extends FileStorageDriver
 {
-  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files")
+  public function __construct($SignatureKey, $Record = TRUE, $RoutePrefix = "files", $BaseURL = F_BASE_URL)
   {
-    parent::__construct($SignatureKey, $Record, $RoutePrefix);
+    parent::__construct($SignatureKey, $Record, $RoutePrefix, $BaseURL);
     $this->routePrefix = $RoutePrefix;
 
     if ($Record) {
@@ -26,7 +26,7 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
   }
   public function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new DiscuzXURL(F_BASE_URL);
+    $AccessURL = new DiscuzXURL($this->baseURL);
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));
@@ -46,7 +46,7 @@ class DiscuzXFileStorageDriver extends FileStorageDriver
   }
   public function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new DiscuzXURL(F_BASE_URL);
+    $AccessURL = new DiscuzXURL($this->baseURL);
 
     if ($WithSignature) {
       $URLParams = array_merge($URLParams, $this->getFileAuth($FileKey, $Expires, $URLParams, []));

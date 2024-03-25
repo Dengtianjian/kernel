@@ -108,8 +108,8 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function uploadFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
   {
-    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
-      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    if ($VerifyErrorCode = $this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限", $VerifyErrorCode);
     }
     $AC = self::AUTHENTICATED_READ;
     $ownerId = $this->currentLoginId;
@@ -156,18 +156,18 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function saveFile($File, $FileKey = null, $OwnerId = null, $BelongsId = null, $BelongsType = null, $AC = self::AUTHENTICATED_READ)
   {
-    if ($this->verifyRequestAuth($FileKey) !== TRUE) {
-      return $this->break(403, "uploadFile:403001", "抱歉，您没有上传该文件的权限");
+    if ($VerifyErrorCode = $this->verifyRequestAuth($FileKey) !== TRUE) {
+      return $this->break(403, "saveFile:403001", "抱歉，您没有上传该文件的权限", $VerifyErrorCode);
     }
     if ($this->FileAuthorizationVerification($FileKey, $AC, $OwnerId, "write") === FALSE) {
-      return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
+      return $this->break(403, "saveFile:403002", "抱歉，您没有上传该文件的权限");
     }
 
     $PathInfo = pathinfo($FileKey);
 
     $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
     if (!$FileInfo) {
-      return $this->break(500, 500, "文件上传失败");
+      return $this->break(500, "saveFile:500001", "文件上传失败");
     }
 
     $FileInfo['key'] = $FileKey;
@@ -241,10 +241,14 @@ class FileStorageDriver extends AbstractFileStorageDriver
 
     $ACTag = "private";
     if ($FileInfo['accessControl']) {
-      if ($AccessControl) {
+      if (in_array($FileInfo['accessControl'], [self::PUBLIC_READ, self::PUBLIC_READ_WRITE])) {
         $ACTag = $FileInfo['accessControl'];
       } else {
-        $ACTag = self::AUTHENTICATED_READ_WRITE;
+        if ($AccessControl) {
+          $ACTag = $FileInfo['accessControl'];
+        } else {
+          $ACTag = self::AUTHENTICATED_READ_WRITE;
+        }
       }
     }
 
@@ -288,7 +292,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL = new URL($this->baseURL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/preview";
     if ($WithAccessControl) {
       $AccessURL->pathName .= "/auth";
@@ -330,7 +334,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
    */
   function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
   {
-    $AccessURL = new URL(F_BASE_URL);
+    $AccessURL = new URL($this->baseURL);
     $AccessURL->pathName = "{$this->routePrefix}/{$FileKey}/download";
     if ($WithAccessControl) {
       $AccessURL->pathName .= "/auth";

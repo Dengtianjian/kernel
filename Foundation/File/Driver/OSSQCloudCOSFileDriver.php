@@ -36,10 +36,11 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
    * @param string $Record 存储的文件信息是否存入数据库
    * @param string $FileKeyRemoteIdentificationPrefix 远程文件名前缀标识，值为NULL或者FALSE就是不增加远程前缀标识  
    * @param string $RoutePrefix 路由前缀
+   * @param string $BaseURL 基础地址
    */
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL, $RoutePrefix = "files")
+  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $SignatureKey, $Record = TRUE, $FileKeyRemoteIdentificationPrefix = NULL, $RoutePrefix = "files", $BaseURL = F_BASE_URL)
   {
-    parent::__construct(true, $SignatureKey, $Record, $RoutePrefix);
+    parent::__construct($SignatureKey, $Record, $RoutePrefix, $BaseURL);
 
     $this->COSInstance = new OSSQcloudCosService($SecretId, $SecretKey, $Region, $Bucket);
     $this->fileKeyRemoteIdentificationPrefix = $FileKeyRemoteIdentificationPrefix;
@@ -274,8 +275,9 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
       unset($RequestURLParams['q']);
     }
-    $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
-    // debug($params);
+    if($imageMogr2){
+      $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
+    }
 
     return $params;
   }

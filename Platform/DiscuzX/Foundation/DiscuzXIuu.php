@@ -4,6 +4,7 @@ namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileManager;
 use kernel\Foundation\Iuu;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXApp;
 
@@ -39,21 +40,20 @@ class DiscuzXIuu extends Iuu
   public function uninstall()
   {
     parent::uninstall();
-    DiscuzXFileStorage::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
-    // DiscuzXFileStorage::deleteDirectory(F_APP_DATA);
+    FileManager::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return DiscuzXFileStorage::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu"));
+    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu"));
   }
   public function cleanInstall()
   {
-    return DiscuzXFileStorage::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "Install"));
+    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "Install"));
   }
   public function cleanUpgrade()
   {
-    return DiscuzXFileStorage::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "Upgrade"));
+    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "Upgrade"));
   }
 }

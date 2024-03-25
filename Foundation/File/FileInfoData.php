@@ -20,6 +20,8 @@ use kernel\Foundation\Object\DataObject;
  * @property string $url 文件访问URL
  * @property string $previewURL 预览URL链接
  * @property string $downloadURL 下载URL链接
+ * @property string $remotePreviewURL 远程预览URL链接
+ * @property string $remoteDownloadURL 远程下载URL链接
  * @property string $accessControl 访问权限控制
  * @property string $ownerId 所属用户标识
  */
@@ -38,6 +40,8 @@ class FileInfoData extends DataObject
   protected $url = null;
   protected $previewURL = null;
   protected $downloadURL = null;
+  protected $remotePreviewURL = null;
+  protected $remoteDownloadURL = null;
   protected $accessControl = FALSE;
   protected $ownerId = FALSE;
 }

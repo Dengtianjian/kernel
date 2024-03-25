@@ -9,7 +9,6 @@ use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Platform\DiscuzX\Controller\Files as FilesNamespace;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 
 /**
  * DiscuzX!平台的文件类
@@ -60,7 +59,7 @@ class DiscuzXFile
   static function save($file, $saveDir = "files", $fileName = null, $auth = true)
   {
     $saveBasePath = FileHelper::combinedFilePath(F_DISCUZX_DATA_PLUGIN, $saveDir);
-    $file = DiscuzXFileStorage::upload($file, $saveBasePath, $fileName);
+    // $file = DiscuzXFileStorage::upload($file, $saveBasePath, $fileName);
 
     $file['relativePath'] = str_replace(F_DISCUZX_DATA, "", $file['relativePath']);
     if ($file['relativePath'][0] === "\\") {

@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\QCloud\QCloudCos;
 
+use kernel\Foundation\HTTP\URL;
 use kernel\Platform\QCloud\QCloud;
 
 class QCloudCosBase extends QCloud
@@ -97,6 +98,6 @@ class QCloudCosBase extends QCloud
       $objectName = "/" . $objectName;
     }
 
-    return "https://{$this->Host}{$objectName}?{$Authorization}";
+    return "https://{$this->Host}{$objectName}?" . URL::buildQuery($Authorization, false);
   }
 }

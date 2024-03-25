@@ -207,10 +207,8 @@ class QCloudCosSignture extends QCloudCosBase
       $QueryStrings['x-cos-security-token'] = $this->SecurityToken;
     }
 
-    $QueryStrings = array_merge($QueryStrings, array_map(function ($item) {
+    return array_merge($QueryStrings, array_map(function ($item) {
       return urlencode($item);
     }, $URLParams));
-
-    return $this->object2String($QueryStrings, [], 0);
   }
 }

@@ -16,6 +16,12 @@ class FileService extends Service
    * @var AbstractFileDriver|AbstractFileStorageDriver
    */
   static protected $dirver = null;
+  /**
+   * 文件名匹配正则表达式
+   *
+   * @var string
+   */
+  static protected $FileNameMatchPattern = "[\w/\u4e00-\u9fa5]+?\.\w+";
   static function useService($Driver = null, $RoutePrefix = "files")
   {
     if (is_null($Driver)) {
@@ -24,7 +30,7 @@ class FileService extends Service
 
     self::$dirver = $Driver;
 
-    $FileNamePattern = "[\w/\u4e00-\u9fa5]+?\.\w+";
+    $FileNamePattern = self::$FileNameMatchPattern;
 
     Router::get("$RoutePrefix/{fileKey:$FileNamePattern}", FilesNamespace\GetFileController::class, [], [
       $Driver
@@ -153,6 +159,37 @@ class FileService extends Service
       $BelongsId,
       $BelongsType
     );
+  }
+  /**
+   * 设置多个文件所属
+   *
+   * @param array $FileKeys 文件名数组
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  static function setFilesBelongs($FileKeys, $BelongsId, $BelongsType)
+  {
+    foreach ($FileKeys as $FileKey) {
+      self::$dirver->setFileBelongs(
+        $FileKey,
+        $BelongsId,
+        $BelongsType
+      );
+    }
+
+    return true;
+  }
+  /**
+   * 删除相关类型&ID的文件
+   *
+   * @param string $BelongsId 所属ID
+   * @param string $BelongsType 所属ID数据类型
+   * @return int
+   */
+  static function deleteBelongsFiles($BelongsId, $BelongsType)
+  {
+    return self::$dirver->deleteBelongsFile($BelongsId, $BelongsType);
   }
   /**
    * 设置文件访问控制权限

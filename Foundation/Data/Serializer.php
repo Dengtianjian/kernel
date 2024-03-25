@@ -143,4 +143,42 @@ class Serializer
     $Data['_serlizer'] = is_array($RuleOrName) ? $SerializerName : $RuleOrName;
     return $Data;
   }
+  /**
+   * 加载序列化文件。该文件会 return 一个数组，数组就是序列化规则
+   *
+   * @param string $FileName 文件名
+   * @param string $ruleName 规则名称，如果不传入该值，就会把文件名称作为规则名称
+   * @param string $BasePath 基路径
+   * @return void
+   */
+  static function load($FileName, $ruleName = null, $BasePath = F_APP_ROOT)
+  {
+    $Rule = Import($FileName, [], $BasePath);
+    if (is_null($ruleName)) {
+      $ruleName = pathinfo($FileName, PATHINFO_BASENAME);
+    }
+    self::add($ruleName, $Rule);
+  }
+  /**
+   * 加载序列化规则并且获取规则。该方法是 load 和 get 的合体
+   *
+   * @param string $FileName 文件名
+   * @param string|string[] $Names $Names 规则名称，如果传入的是字符串，可用“ . ”分隔层级，例如user.age，那就是获取user下的age规则。如果传入的字符串数组，那么就是获取多层级下的规则，跟用" . "分隔一样，例如传入[article,title]，就是获取article下的title规则
+   * @param array $upperLevel 上一层级的序列化规则，这是当前函数递归调用时使用到，无需传入
+   * @param string $ruleName 规则名称，如果不传入该值，就会把文件名称作为规则名称
+   * @param string $BasePath 基路径
+   * @return array
+   */
+  static function loadGet($FileName, $ruleName = null, $Names = null, $upperLevel = null, $BasePath = F_APP_ROOT)
+  {
+    if (is_null($ruleName)) {
+      $ruleName = pathinfo($FileName, PATHINFO_BASENAME);
+    }
+    if (is_null($Names)) {
+      $Names = $ruleName;
+    }
+
+    self::load($FileName, $ruleName, $BasePath);
+    return self::get($Names, $upperLevel);
+  }
 }

@@ -204,10 +204,9 @@ class FileStorageSignature extends BaseObject
    * @param array $Headers 请求头
    * @param integer $Expires 有效期，秒级数值
    * @param string $HTTPMethod 请求方法
-   * @param boolean $toString 字符串形式返回参数，如果传入false，将会返回参数数组
    * @return string &连接的授权字符串
    */
-  function createAuthorization($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $HTTPMethod = "get", $toString = true)
+  function createAuthorization($FileKey, $URLParams = [], $Headers = [], $Expires = 600, $HTTPMethod = "get")
   {
     $HTTPMethod = strtolower($HTTPMethod);
 
@@ -244,11 +243,6 @@ class FileStorageSignature extends BaseObject
     $QueryStrings = array_merge($QueryStrings, array_map(function ($item) {
       return urlencode($item);
     }, $URLParams));
-
-    if ($toString) {
-      return $this->object2String($QueryStrings, [], 0);
-    }
-    $QueryStrings['auth'] = $this->object2String($QueryStrings, [], 0);
 
     return $QueryStrings;
   }
