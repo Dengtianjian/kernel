@@ -35,7 +35,13 @@ class SettingModuleBase
     $setting = $this->SettingModelInstance->item($name);
     if (!$setting) return null;
     $v = unserialize($setting['value']);
-    return (is_bool($v) && $v === false) && strpos($setting['value'], "b:") === false ? $setting['value'] : $v;
+    if (is_bool($v) && $v === false && strpos($setting['value'], "b:") === false) {
+      if (array_key_exists("value", $setting)) {
+        return $setting['value'];
+      }
+      return $setting;
+    }
+    return $v;
   }
   /**
    * 查询某个设置项是否存在
