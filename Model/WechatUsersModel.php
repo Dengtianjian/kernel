@@ -65,9 +65,9 @@ SQL;
       "updatedAt" => $now,
     ]);
   }
-  public function removeByMemberId($memberId)
+  public function removeByMemberId($memberId, $directly = false)
   {
-    return $this->where("memberId", $memberId)->delete();
+    return $this->where("memberId", $memberId)->delete($directly);
   }
   public function removeByOpenId($openId)
   {
