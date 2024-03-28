@@ -187,6 +187,8 @@ class ValidateRules
       "max" => $max,
     ];
     $this->ErrorMessages["length"] = $message;
+
+    return $this;
   }
   /**
    * 校验值是否为空或者为null
