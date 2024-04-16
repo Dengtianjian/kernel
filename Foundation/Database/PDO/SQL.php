@@ -32,7 +32,7 @@ class SQL
       if (\is_bool($item)) {
         $item = $item ? 1 : 0;
       }
-      if ($addQuote) {
+      if ($addQuote && !is_null($item)) {
         $item = $quote . $item . $quote;
       }
     }
