@@ -170,6 +170,11 @@ class SQL
     $fields = \implode(",", $fields);
     $values = array_values($data);
     $values = self::addQuote($values, "'", true);
+    foreach ($values as &$item) {
+      if (is_null($item)) {
+        $item = 'NULL';
+      }
+    }
     $values = \implode(",", $values);
 
     $startSql = "INSERT INTO";
@@ -185,6 +190,9 @@ class SQL
     $valueSql = [];
     foreach ($datas as $dataItem) {
       $dataItem = self::addQuote($dataItem, "'", true);
+      if (is_null($dataItem)) {
+        $dataItem = 'NULL';
+      }
       $valueSql[] = "(" . \implode(",", $dataItem) . ")";
     }
     $valueSql = \implode(",", $valueSql);
@@ -201,6 +209,9 @@ class SQL
     $valueSql = [];
     foreach ($datas as $dataItem) {
       $dataItem = self::addQuote($dataItem, "'", true);
+      if (is_null($dataItem)) {
+        $dataItem = 'NULL';
+      }
       $valueSql[] = "(" . \implode(",", $dataItem) . ")";
     }
     $valueSql = \implode(",", $valueSql);
@@ -215,7 +226,7 @@ class SQL
   {
     $data = self::addQuote($data, "'", true);
     foreach ($data as $field => &$value) {
-      if ($value === null) $value = "null";
+      if ($value === null) $value = "NULL";
       $value = "`$field` = $value";
     }
     $data = implode(",", $data);
@@ -225,6 +236,11 @@ class SQL
   // BUG 批量更新不应该走batchInsert的replace，应该是多条update
   static function batchUpdate($tableName, $fields, $datas, $extraStatement = "")
   {
+    foreach ($datas as &$item) {
+      if (is_null($item)) {
+        $item = 'NULL';
+      }
+    }
     $sql = self::batchInsert($tableName, $fields, $datas, true);
     $sql .= " $extraStatement";
     return $sql;
