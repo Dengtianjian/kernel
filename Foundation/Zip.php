@@ -23,6 +23,22 @@ class Zip
       $this->zipDir("$extensionsFolderPath/$dirItem", "$outputRoot/$dirItem.zip", true, "$localPath/$dirItem");
     }
   }
+  private function combinedFilePath(...$paths)
+  {
+    $path = implode("/", array_map(function ($item) {
+      return $item;
+    }, array_filter($paths, function ($item) {
+      return !empty(trim($item));
+    })));
+    $path = str_replace([
+      "//",
+      "\\",
+      "/",
+      "\\\\"
+    ], "/", $path);
+
+    return $path;
+  }
   public function folderToZip(&$zip, $folder,  $removedLength, $localRootPath = null)
   {
     $dirs = FileHelper::scandir($folder);
@@ -30,7 +46,7 @@ class Zip
       if (\in_array($dirItem, $this->packageFileBlackList)) {
         continue;
       }
-      $sourceFilePath = FileHelper::combinedFilePath($folder, $dirItem);
+      $sourceFilePath = $this->combinedFilePath($folder, $dirItem);
       $localPath = \substr($sourceFilePath, $removedLength + 1);
       if (\is_file($sourceFilePath)) {
         $zip->addFile($sourceFilePath, $localPath);
@@ -49,7 +65,7 @@ class Zip
       $zip->open($outputPath, \ZipArchive::CREATE);
     }
     $pathInfo = \pathinfo($sourcePath);
-    $this->folderToZip($zip, $sourcePath, \strlen(FileHelper::combinedFilePath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
+    $this->folderToZip($zip, $sourcePath, \strlen($this->combinedFilePath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
 
     $zip->close();
   }
