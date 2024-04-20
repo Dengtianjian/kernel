@@ -224,6 +224,32 @@ class Model extends BaseObject
   }
   function batchInsert($fieldNames, $values, $isReplaceInto = false)
   {
+    $Call = get_class($this);
+    if ($Call::$Timestamps) {
+      $now = time();
+      if ($Call::$CreatedAt) {
+        array_push($fieldNames, $Call::$CreatedAt);
+        foreach ($values as &$ValueItem) {
+          array_push($ValueItem, $now);
+        }
+      }
+      if ($Call::$UpdatedAt) {
+        array_push($fieldNames, $Call::$UpdatedAt);
+        foreach ($values as &$ValueItem) {
+          array_push($ValueItem, $now);
+        }
+      }
+
+      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+        foreach ($Call::$TimestampFields as $item) {
+          $fieldNames[] = $item;
+          foreach ($values as &$ValueItem) {
+            array_push($ValueItem, $now);
+          }
+        }
+      }
+    }
+
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
     if ($this->returnSql) return $sql;
     $DB = $this->DB;
