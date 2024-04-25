@@ -20,9 +20,9 @@ class SQL
    */
   static function addQuote($strings, $quote = "`", $addQuote = true)
   {
-    foreach ($strings as &$item) {
+    return array_map(function ($item) use ($addQuote, $quote) {
       if (strpos($item, "distinct") !== false || strpos($item, "DISTINCT") !== false) {
-        continue;
+        return $item;
       }
       if (empty($item)) {
         // if ($item === null) {
@@ -35,8 +35,9 @@ class SQL
       if ($addQuote && !is_null($item)) {
         $item = $quote . $item . $quote;
       }
-    }
-    return $strings;
+
+      return $item;
+    }, $strings);
   }
   static function condition($field, $value, $glue = "=", $operator = null)
   {
@@ -65,14 +66,15 @@ class SQL
     if (empty($orders)) {
       return "";
     }
-    foreach ($orders as &$orderItem) {
+    $OrderStrings = [];
+    foreach ($orders as $orderItem) {
       if (!$orderItem['field']) {
         continue;
       }
       $by = $orderItem['by'] ? $orderItem['by'] : 'ASC';
-      $orderItem = "`" . $orderItem['field'] . "` " . $by;
+      $OrderStrings[] = "`" . $orderItem['field'] . "` " . $by;
     }
-    $order = "ORDER BY " . \implode(", ", $orders);
+    $order = "ORDER BY " . \implode(", ", $OrderStrings);
     return $order;
   }
   static function field($fieldName, $value, $glue = "=")
@@ -169,12 +171,12 @@ class SQL
     $fields = self::addQuote($fields);
     $fields = \implode(",", $fields);
     $values = array_values($data);
-    $values = self::addQuote($values, "'", true);
-    foreach ($values as &$item) {
+    $values = array_map(function ($item) {
       if (is_null($item)) {
         $item = 'NULL';
       }
-    }
+      return $item;
+    }, self::addQuote($values, "'", true));
     $values = \implode(",", $values);
 
     $startSql = "INSERT INTO";
@@ -224,24 +226,26 @@ class SQL
   }
   static function update($tableName, $data, $extraStatement = "")
   {
-    $data = self::addQuote($data, "'", true);
-    foreach ($data as $field => &$value) {
+    $updateData = self::addQuote($data, "'", true);
+    foreach ($updateData as $field => &$value) {
       if ($value === null) $value = "NULL";
       $value = "`$field` = $value";
     }
-    $data = implode(",", $data);
-    $sql = "UPDATE `$tableName` SET $data $extraStatement";
+    $updateData = implode(",", $updateData);
+    $sql = "UPDATE `$tableName` SET {$updateData} $extraStatement";
     return $sql;
   }
   // BUG 批量更新不应该走batchInsert的replace，应该是多条update
   static function batchUpdate($tableName, $fields, $datas, $extraStatement = "")
   {
-    foreach ($datas as &$item) {
+    $updateData = [];
+    foreach ($datas as $item) {
       if (is_null($item)) {
         $item = 'NULL';
       }
+      $updateData[] = $item;
     }
-    $sql = self::batchInsert($tableName, $fields, $datas, true);
+    $sql = self::batchInsert($tableName, $fields, $updateData, true);
     $sql .= " $extraStatement";
     return $sql;
   }
