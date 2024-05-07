@@ -2,8 +2,6 @@
 
 namespace kernel\Platform\Wechat\WechatPay\V3;
 
-use kernel\Foundation\Date;
-use kernel\Foundation\File;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
 class WechatPayJSApi extends WechatPayV3
@@ -27,7 +25,7 @@ class WechatPayJSApi extends WechatPayV3
   public function order($OrderId, $openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false, $profitSharing = false)
   {
     $OrderTime = time();
-    $expireTime = null;
+    $expireTime = strtotime("+1 hour");
     if (!is_null($periodSeconds)) {
       $expireTime = $OrderTime + $periodSeconds;
     }
@@ -48,7 +46,7 @@ class WechatPayJSApi extends WechatPayV3
       "support_fapiao" => $supportFapiao,
       "goods_tag" => $goodsTag,
       "attach" => $attach,
-      "time_expire" => date("Y-m-d\TH:i:sT:00", $expireTime),
+      "time_expire" => date("Y-m-d\TH:i:s+08:00", $expireTime),
       "settle_info" => [
         "profit_sharing" => $profitSharing
       ]

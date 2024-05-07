@@ -3,7 +3,6 @@
 namespace kernel\Foundation\File;
 
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\HTTP\URL;
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');

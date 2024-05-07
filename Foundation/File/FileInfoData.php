@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\File;
 
-use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Object\DataObject;
 
 /**
