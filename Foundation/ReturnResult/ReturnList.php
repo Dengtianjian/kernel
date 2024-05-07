@@ -1,6 +1,6 @@
 <?php
 
-namespace gstudio_kernel\Foundation\ReturnResult;
+namespace kernel\Foundation\ReturnResult;
 
 use kernel\Foundation\ReturnResult\ReturnResult;
 

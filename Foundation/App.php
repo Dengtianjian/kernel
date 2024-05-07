@@ -3,7 +3,7 @@
 namespace kernel\Foundation;
 
 use Exception as GlobalException;
-use gstudio_kernel\Foundation\ReturnResult\ReturnList;
+use kernel\Foundation\ReturnResult\ReturnList;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
