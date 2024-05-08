@@ -4,6 +4,10 @@ namespace kernel\Platform\Wechat\WechatPay\V3;
 
 use kernel\Foundation\ReturnResult\ReturnResult;
 
+/**
+ * 微信支付 JSAPI 类
+ * @deprecated
+ */
 class WechatPayJSApi extends WechatPayV3
 {
   /**
