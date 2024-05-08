@@ -10,7 +10,7 @@ use kernel\Foundation\ReturnResult\ReturnResult;
  * 
  * @property boolean $error 是否有错误
  */
-class AbilityBaseObject
+class AbilityBaseObject extends BaseObject
 {
   /**
    * 是否有错误
@@ -90,7 +90,7 @@ class AbilityBaseObject
    *  return $this-interrupt(500,500,"服务错误"); // false
    * }
    *
-   * @param integer $statusCode HTTP状态码
+   * @param integer｜ReturnResult $statusCode HTTP状态码
    * @param integer|string $code 响应码
    * @param string $message 响应信息
    * @param mixed $data 主体数据
@@ -104,7 +104,11 @@ class AbilityBaseObject
     $details = [],
     $data = []
   ) {
-    $this->setError($statusCode, $code, $message, FALSE, $details, $data);
+    if ($statusCode instanceof ReturnResult) {
+      $this->setError($statusCode->statusCode(), $statusCode->errorCode(), $statusCode->errorMessage(), false, $statusCode->errorDetails(), $statusCode->getData());
+    } else {
+      $this->setError($statusCode, $code, $message, FALSE, $details, $data);
+    }
 
     return FALSE;
   }

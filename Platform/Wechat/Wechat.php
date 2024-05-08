@@ -5,12 +5,13 @@ namespace kernel\Platform\Wechat;
 use DB;
 use kernel\Foundation\BaseObject;
 use kernel\Foundation\HTTP\Curl;
+use kernel\Foundation\Object\AbilityBaseObject;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
 }
 
-class Wechat extends BaseObject
+class Wechat extends AbilityBaseObject
 {
   protected $AppId = null;
   protected $AppSecret = null;

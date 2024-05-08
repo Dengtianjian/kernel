@@ -4,6 +4,7 @@ namespace kernel\Foundation;
 
 /**
  * 基对象，提供一些通用方法
+ * @deprecated 请使用 Object 下的 BaseObject 对象
  */
 class BaseObject
 {
