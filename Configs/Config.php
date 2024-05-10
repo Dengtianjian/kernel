@@ -2,6 +2,6 @@
 
 return [
   "mode" => "development", //* production development
-  "version" => "0.4.8.20240427.0950",
+  "version" => "0.4.9.20240509.1536",
   "extensions" => false
 ];
