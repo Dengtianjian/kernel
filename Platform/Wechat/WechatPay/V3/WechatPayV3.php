@@ -224,6 +224,36 @@ class WechatPayV3 extends WechatPay
 
     return $R;
   }
+  public function refund($RefundTranstionId, $RefundAmount, $TotalAmount, $OriginalTranstionId = null, $WechatTranstionId = null, $Reason = "")
+  {
+    $Body = [
+      "transaction_id" => $WechatTranstionId,
+      "out_trade_no" => $OriginalTranstionId,
+      "out_refund_no" => $RefundTranstionId,
+      "reason" => $Reason,
+      "notify_url" => $this->NotifyURL,
+      "amount" => [
+        "refund" => $RefundAmount,
+        "total" => $TotalAmount,
+        "currency" => "CNY"
+      ]
+    ];
+    $Now = time();
+    $JsonBody = json_encode($Body, JSON_UNESCAPED_UNICODE);
+    $Nonce = md5($Now);
+
+    $Sign = $this->generateSign("/v3/refund/domestic/refunds", "POST", $Now, $Nonce, $JsonBody);
+    $this->addAuthorizationToHeader($Nonce, $Now, $Sign);
+    $response = $this->post("refund/domestic/refunds", $Body);
+    if ($response->errorNo()) {
+      return $this->break(500, 500, "服务器错误", $response->error());
+    }
+    $ResponseData = $response->getData();
+    if ($response->statusCode() > 299) {
+      return $this->break($response->statusCode(), $response->statusCode() . ":" . $ResponseData['code'], $ResponseData['message'], $ResponseData);
+    }
+    return $ResponseData;
+  }
   /**
    * JSAPI下单
    * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_1.shtml
