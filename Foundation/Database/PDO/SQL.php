@@ -277,6 +277,6 @@ class SQL
   }
   static function groupBy($fieldName)
   {
-    return  "GROUP BY " . self::addQuote($fieldName);
+    return "GROUP BY " . self::addQuote([$fieldName])[0];
   }
 }
