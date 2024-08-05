@@ -35,6 +35,10 @@ class Log
     //* 如果年/月文件夹不存在就创建
     if (!is_dir($logDir)) {
       mkdir($logDir, 0757, true);
+      if (is_dir($logDir)) {
+        chown($logDir, 'www');
+        chmod($logDir, 0757);
+      }
     }
     $logFileName = date("d") . ".yml";
     $logFilePath = FileHelper::combinedFilePath($logDir, $logFileName);
