@@ -50,21 +50,43 @@ abstract class AbstractOSSService extends Service
   protected $OSSRegion = null;
 
   /**
+   * 密钥 ID
+   *
+   * @var string
+   */
+  protected $SecretId = null;
+
+  /**
+   * 密钥
+   *
+   * @var string
+   */
+  protected $SecretKey = null;
+
+  /**
    * 实例化OSS服务类
    *
-   * @param string $OSSPlatoform
-   * @param string $SecretId 
-   * @param string $SecretKey
-   * @param string $Region
-   * @param string $Bucket
+   * @param string $OSSPlatoform 远程存储平台名称
+   * @param string $SecretId 密钥 ID
+   * @param string $SecretKey 密钥
+   * @param string $Region 存储地区
+   * @param string $Bucket 存储桶名称
    */
   public function __construct($OSSPlatoform, $SecretId, $SecretKey, $Region, $Bucket)
   {
     $this->OSSPlatoform = $OSSPlatoform;
     $this->OSSBucketName = $Bucket;
     $this->OSSRegion = $Region;
+    $this->SecretId = $SecretId;
+    $this->SecretKey = $SecretKey;
   }
 
+  /**
+   * 上传文件
+   *
+   * @param string $ObjectKey 对象名称
+   */
+  abstract function upload($ObjectKey);
   /**
    * 删除对象
    *
@@ -77,50 +99,29 @@ abstract class AbstractOSSService extends Service
    * 获取对象预览链接地址
    *
    * @param string $ObjectKey 对象名称
-   * @param array $URLParams URL的query参数
-   * @param array $Headers 请求头
-   * @param integer $Expires 签名有效期
-   * @param boolean $WithSignature 是否携带签名
-   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
-   * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getFilePreviewURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 1800, $WithSignature = true,  $TempKeyPolicyStatement = []);
+  abstract function getFilePreviewURL($ObjectKey);
 
   /**
    * 获取对象下载链接地址
    *
    * @param string $ObjectKey 对象名称
-   * @param array $URLParams URL的query参数
-   * @param array $Headers 请求头
-   * @param integer $Expires 签名有效期
-   * @param boolean $WithSignature 是否携带签名
-   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
-   * @return string HTTPS协议的对象访问链接地址
    */
-  abstract function getFileDownloadURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 1800, $WithSignature = true, $TempKeyPolicyStatement = []);
+  abstract function getFileDownloadURL($ObjectKey);
 
   /**
    * 获取对象授权信息
    *
    * @param string $ObjectKey 对象名称
-   * @param integer $Expires 有效期，秒级
-   * @param string $HTTPMethod 调用的服务所使用的请求方法
-   * @param array $URLParams URL的query参数
-   * @param array $Headers 请求头
-   * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
   abstract function getFileAuth(
-    $ObjectKey,
-    $Expires = 1800,
-    $HTTPMethod = "get",
-    $URLParams = [],
-    $Headers = []
+    $ObjectKey
   );
+
   /**
-   * 获取图片信息
+   * 查看对象是否存在
    *
-   * @param string $ObjectKey 对象键名
-   * @return array|false
+   * @param string $ObjectKey 对象名称
    */
-  abstract function getImageInfo($ObjectKey);
+  abstract function fileExist($ObjectKey);
 }

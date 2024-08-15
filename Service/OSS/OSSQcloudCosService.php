@@ -60,7 +60,7 @@ class OSSQcloudCosService extends AbstractOSSService
    * @param array $Options 上传选项，具体有哪些选项可看https://cloud.tencent.com/document/product/436/64283
    * @return boolean 上传结果
    */
-  public function upload($ObjectKey, $FilePath, $Options = [])
+  public function upload($ObjectKey, $FilePath = "files", $Options = [])
   {
     try {
       $this->OSSSDKClient->upload(
@@ -87,6 +87,17 @@ class OSSQcloudCosService extends AbstractOSSService
       return false;
     }
   }
+  /**
+   * 获取对象预览链接地址
+   *
+   * @param string $ObjectKey 对象名称
+   * @param array $URLParams URL的query参数
+   * @param array $Headers 请求头
+   * @param integer $Expires 签名有效期
+   * @param boolean $WithSignature 是否携带签名
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @return string HTTPS协议的对象访问链接地址
+   */
   function getFilePreviewURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
     if ($TempKeyPolicyStatement) {
@@ -95,6 +106,18 @@ class OSSQcloudCosService extends AbstractOSSService
 
     return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $Expires, false);
   }
+
+  /**
+   * 获取对象下载链接地址
+   *
+   * @param string $ObjectKey 对象名称
+   * @param array $URLParams URL的query参数
+   * @param array $Headers 请求头
+   * @param integer $Expires 签名有效期
+   * @param boolean $WithSignature 是否携带签名
+   * @param array $TempKeyPolicyStatement 临时秘钥策略描述语句
+   * @return string HTTPS协议的对象访问链接地址
+   */
   function getFileDownloadURL($ObjectKey, $URLParams = [], $Headers = [], $Expires = 600, $WithSignature = true, $TempKeyPolicyStatement = [])
   {
     if ($TempKeyPolicyStatement) {
@@ -103,6 +126,17 @@ class OSSQcloudCosService extends AbstractOSSService
 
     return $this->OSSClient->getObjectAuthUrl($ObjectKey, "get", $URLParams, [], $Expires, true);
   }
+
+  /**
+   * 获取对象授权信息
+   *
+   * @param string $ObjectKey 对象名称
+   * @param integer $Expires 有效期，秒级
+   * @param string $HTTPMethod 调用的服务所使用的请求方法
+   * @param array $URLParams URL的query参数
+   * @param array $Headers 请求头
+   * @return string 授权信息，k=v&v1=v1 字符串形式的结构
+   */
   function getFileAuth(
     $ObjectKey,
     $Expires = 1800,
@@ -112,6 +146,13 @@ class OSSQcloudCosService extends AbstractOSSService
   ) {
     return $this->OSSClient->getAuth($ObjectKey, $Expires, $HTTPMethod, $URLParams, $Headers);
   }
+
+  /**
+   * 获取图片信息
+   *
+   * @param string $ObjectKey 对象键名
+   * @return array|false
+   */
   function getImageInfo($ObjectKey)
   {
     try {
@@ -132,7 +173,27 @@ class OSSQcloudCosService extends AbstractOSSService
   {
     return NULL;
   }
+
+  /**
+   * 查看对象是否存在
+   * @deprecated
+   *
+   * @param string $ObjectKey 对象名称
+   * @return boolean
+   */
   function doesObjectExist($ObjectKey)
+  {
+    try {
+      return $this->OSSSDKClient->doesObjectExist(
+        $this->OSSBucketName,
+        $ObjectKey
+      );
+    } catch (\Exception $e) {
+      return false;
+    }
+  }
+
+  function fileExist($ObjectKey)
   {
     try {
       return $this->OSSSDKClient->doesObjectExist(

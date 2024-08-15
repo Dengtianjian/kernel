@@ -16,6 +16,10 @@
 	},
 	"require": {
 		"qcloud_sts/qcloud-sts-sdk": "^3.0",
-		"qcloud/cos-sdk-v5": "2.*"
+		"qcloud/cos-sdk-v5": "2.*",
+		"aliyuncs/oss-sdk-php": "^2.7",
+		"alibabacloud/sdk": "^1.8",
+		"alibabacloud/sts": "*",
+		"alibabacloud/sts-20150401": "^1.1"
 	}
 }

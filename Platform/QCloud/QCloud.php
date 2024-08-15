@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\QCloud;
 
-use kernel\Foundation\BaseObject;
+use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
