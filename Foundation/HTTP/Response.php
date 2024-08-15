@@ -65,9 +65,9 @@ class Response
   /**
    * 响应输出的格式
    *
-   * @var json|text|xml
+   * @var json|text|xml|html
    */
-  protected $OutputType = "text";
+  protected $OutputType = NULL;
   /**
    * 响应输出为text格式是，是否需要格式化
    *
@@ -334,6 +334,16 @@ class Response
     return $this;
   }
   /**
+   * 输出为超文本格式的内容
+   *
+   * @return Response
+   */
+  public function html()
+  {
+    $this->OutputType = "html";
+    return $this;
+  }
+  /**
    * 重定向
    *
    * @param string $url 重定向的URL
@@ -441,7 +451,7 @@ class Response
     }
     $outputType = $this->OutputType;
     $Accept = getApp()->request()->header->get("Accept");
-    if ($Accept) {
+    if (!$outputType && $Accept) {
       list($type, $format) = explode("/", $Accept);
       if ($format !== "*") {
         $outputType = $format;
@@ -456,6 +466,10 @@ class Response
       case "xml":
         header("Content-type:text/xml", true);
         print_r(Arr::toXML($data));
+        break;
+      case "html":
+        header("Content-type:text/html", true);
+        print_r($data);
         break;
       case "text":
         if ($this->FormatOutputTypeOfText) {

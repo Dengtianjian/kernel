@@ -31,9 +31,7 @@ class App
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
   protected $startTime = null; //* 开始时间戳
-  protected function __clone()
-  {
-  }
+  protected function __clone() {}
   /**
    * 构造App
    *
@@ -469,7 +467,7 @@ class App
     $Controller->after();
 
     $endTime = Date::milliseconds();
-    if ($this->request->ajax()) {
+    if ($this->request->ajax() && !$Controller->response->OutputType) {
       $Controller->response->json();
       $Controller->response->addBody([
         "requiredTime" => $endTime - $this->startTime . "ms"
