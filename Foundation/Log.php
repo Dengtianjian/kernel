@@ -40,8 +40,18 @@ class Log
         chmod($logDir, 0757);
       }
     }
+
     $logFileName = date("d") . ".yml";
     $logFilePath = FileHelper::combinedFilePath($logDir, $logFileName);
+
+    if (file_exists($logFilePath) && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+      $fileOwner = posix_getpwuid(fileowner($logFilePath));
+      if ($fileOwner['name'] !== 'www') {
+        chmod($logFilePath, 0757);
+        chown($logFilePath, 'www');
+      }
+    }
+
     if (is_array($content)) $content = json_encode($content, JSON_UNESCAPED_UNICODE);
     $content = strval($content);
     $time = date("Y-m-d h:i:s");
