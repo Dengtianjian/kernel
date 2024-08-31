@@ -48,7 +48,9 @@ class RequestData
    */
   public function has($key)
   {
-    return array_key_exists($key,$this->data);
+    if (!is_array($this->data)) return false;
+    
+    return array_key_exists($key, $this->data);
   }
   /**
    * 获取某个键的值
@@ -58,7 +60,8 @@ class RequestData
    */
   public function get($key)
   {
-    if (!array_key_exists($key,$this->data)) return null;
+    if (!is_array($this->data)) return null;
+    if (!array_key_exists($key, $this->data)) return null;
 
     return $this->data[$key];
   }
@@ -72,6 +75,8 @@ class RequestData
     $keys = null,
     $completion = false
   ) {
+    if (!is_array($this->data)) return null;
+
     $data = [];
     if ($keys === null) {
       $data = $this->data;

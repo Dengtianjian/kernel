@@ -8,6 +8,7 @@ if (!defined('F_KERNEL')) {
 
 use kernel\Foundation\Config;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\Log;
 use kernel\Foundation\Middleware;
 
 class GlobalCorsMiddleware extends Middleware
@@ -33,10 +34,6 @@ class GlobalCorsMiddleware extends Middleware
   public function handle($next)
   {
     $Response = $next();
-    if ($_SERVER['REQUEST_METHOD'] === "OPTIONS") {
-      $Response->null();
-      return $Response;
-    }
     $origin = $this->getOrigin();
     $allowOrigin = Config::get("cors/allowOrigin");
     if (!is_array($allowOrigin)) {
@@ -59,6 +56,12 @@ class GlobalCorsMiddleware extends Middleware
     $Response->header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?: ["Authorization"]));
     $Response->header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?: ["Authorization"]));
     $Response->header("Access-Control-Max-Age", Config::get("cors/maxAge") ?: 86400);
+
+    if ($_SERVER['REQUEST_METHOD'] === "OPTIONS") {
+      $Response->null();
+      return $Response;
+    }
+
     return $Response;
   }
 }

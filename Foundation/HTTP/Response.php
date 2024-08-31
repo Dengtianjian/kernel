@@ -490,4 +490,8 @@ EOT;
         break;
     }
   }
+  public function outputType()
+  {
+    return $this->OutputType;
+  }
 }

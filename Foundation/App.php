@@ -388,6 +388,8 @@ class App
     header('Access-Control-Max-Age:86400');
     header('Access-Control-Allow-Credentials: true');
 
+    if ($this->request()->method === "options") return;
+
     //* 载入扩展
     if (Config::get("extensions")) {
       $this->loadExtensions();
@@ -467,7 +469,7 @@ class App
     $Controller->after();
 
     $endTime = Date::milliseconds();
-    if ($this->request->ajax() && !$Controller->response->OutputType) {
+    if ($this->request->ajax() && !$Controller->response->OutputType()) {
       $Controller->response->json();
       $Controller->response->addBody([
         "requiredTime" => $endTime - $this->startTime . "ms"
