@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Service\OSS;
+namespace kernel\Platform\Aliyun\AliyunOSS;
 
 use AlibabaCloud\SDK\Sts\V20150401\Models\AssumeRoleRequest;
 use OSS\OssClient;
@@ -11,8 +11,9 @@ use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSCredentialsProvider;
 use OSS\Core\OssException;
 use Darabonba\OpenApi\Models\Config;
 use AlibabaCloud\Tea\Utils\Utils\RuntimeOptions;
+use kernel\Service\OSS\AbstractOSSService;
 
-class OSSAliyunService extends AbstractOSSService
+class AliyunOSSService extends AbstractOSSService
 {
   /**
    * OSS客户端实例
@@ -60,7 +61,6 @@ class OSSAliyunService extends AbstractOSSService
     try {
       return $this->OSSSDKClient->uploadFile($this->OSSBucketName, $ObjectKey, $FilePath, $Options);
     } catch (OssException $e) {
-      debug($e->getErrorMessage());
       throw new ExceptionException("服务器错误", 500, 500, $e);
     }
   }
@@ -82,7 +82,7 @@ class OSSAliyunService extends AbstractOSSService
    */
   public function getFilePreviewURL($ObjectKey, $Expires = 60, $Options = [])
   {
-    return $this->OSSSDKClient->signUrl($this->OSSBucketName, $ObjectKey, $Expires, $this->OSSSDKClient::OSS_HTTP_GET, $Options);
+    return $this->getFileSignURL($ObjectKey, $Expires, $Options);
   }
   /**
    * 获取文件下载地址
@@ -94,11 +94,17 @@ class OSSAliyunService extends AbstractOSSService
    */
   public function getFileDownloadURL($ObjectKey, $Expires = 60, $Options = [])
   {
+    return $this->getFileSignURL($ObjectKey, $Expires, $Options);
+  }
+  public function getFileSignURL($ObjectKey, $Expires = 60, $Options = [])
+  {
     return $this->OSSSDKClient->signUrl($this->OSSBucketName, $ObjectKey, $Expires, $this->OSSSDKClient::OSS_HTTP_GET, $Options);
   }
   public function getFileAuth(
-    $ObjectKey
-  ) {}
+    $Expires = 1800
+  ) {
+    return $this->getSTSToken($Expires);
+  }
   public function fileExist($ObjectKey)
   {
     return $this->OSSSDKClient->doesObjectExist($this->OSSBucketName, $ObjectKey);

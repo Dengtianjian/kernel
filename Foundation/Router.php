@@ -137,8 +137,6 @@ class Router
    */
   static function register($type, $method, $URI, $controller, $middlewares = [], $ControllerInstantiateParams = [])
   {
-    // debug( preg_match("/files\/[\w\/]+?\.\w+\/preview/", "files/a/b.png/preview", $matchs));
-
     $handleMethodName = null;
     if (!is_null($URI) && (is_array($URI) || class_exists($URI)) && is_null($controller)) {
       if (is_array($URI)) {
@@ -190,11 +188,13 @@ class Router
       foreach ($MatchParams as $item) {
         array_push($URIParams, ...$item);
       }
+
+      $replaceURI = $URI;
       foreach ($URIParams as $index => $value) {
-        $ReplaceURI = str_replace($value, "{$index}", $URI);
+        $replaceURI = str_replace($value, "{$index}", $replaceURI);
       }
 
-      $URIParts = explode("/", $ReplaceURI);
+      $URIParts = explode("/", $replaceURI);
       $URIParts = array_filter($URIParts, function ($item) {
         if (empty(trim($item)))
           return false;
@@ -235,13 +235,16 @@ class Router
               $params[$key] = null;
             }
 
-            $ParamPattern = trim($pattern);
-            if ($ParamPattern) {
-              $ParamPattern = $NotEssential ? "/?($ParamPattern)?" : "/($ParamPattern)";
+            $paramPattern = trim($pattern);
+            if ($paramPattern) {
+              if (!preg_match("/^\(.+\)$/", $paramPattern)) {
+                $paramPattern = "({$paramPattern})";
+              }
+              $paramPattern = $NotEssential ? "/?{$paramPattern}?" : "/{$paramPattern}";
             } else {
-              $ParamPattern = $NotEssential ? "/?(\w+)?" : "/(\w+)";
+              $paramPattern = $NotEssential ? "/?(\w+)?" : "/(\w+)";
             }
-            array_push($patterns, $ParamPattern);
+            array_push($patterns, $paramPattern);
           }
         } else {
           if (count($patterns) === 0) {
@@ -251,6 +254,7 @@ class Router
           }
         }
       }
+
       $pattern = implode("", $patterns);
       $pattern = str_replace("/", "\/", $pattern);
 
@@ -458,7 +462,7 @@ class Router
         break;
       }
     }
-    
+
     return $matchRoute;
   }
   /**

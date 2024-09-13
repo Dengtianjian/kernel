@@ -3,21 +3,24 @@
 namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\File\Driver\AbstractFileDriver;
-use kernel\Foundation\File\Driver\AbstractFileStorageDriver;
+use kernel\Foundation\Storage\LocalStorage;
+use kernel\Foundation\Storage\AbstractStorage;
+use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;
+use kernel\Service\FileService;
+use kernel\Service\StorageService;
 
 class FileBaseController extends AuthController
 {
   /**
    * 文件驱动
    *
-   * @var AbstractFileDriver|AbstractFileStorageDriver
+   * @var LocalStorage|AbstractStorage|AliyunOSSStorage
    */
-  protected $driver = null;
-  public function __construct($R, AbstractFileDriver $Driver)
+  protected $platform = null;
+  public function __construct($R)
   {
     parent::__construct($R);
 
-    $this->driver = $Driver;
+    $this->platform = StorageService::getPlatform();
   }
 }

@@ -20,7 +20,9 @@ class FileManager
    */
   public static function upload($file, $savePath, $fileName = null)
   {
-    if (!$file) return false;
+    if (!$file) {
+      throw new Exception("请上传文件", 400, "FileUpload:400001");
+    };
     $filePath = "";
     $fileSize = 0;
     $fileSourceName = "";
@@ -38,7 +40,7 @@ class FileManager
       $fileSourceName = basename($filePath);
     } else {
       if ($file['error'] > 0) {
-        throw new Exception("文件保存失败", 400, "FileUpload:400001:", $file['error']);
+        throw new Exception("文件保存失败", 400, "FileUpload:400002:", $file['error']);
       }
       $fileSourceName = basename($file['name']);
       $fileSize = $file['size'];

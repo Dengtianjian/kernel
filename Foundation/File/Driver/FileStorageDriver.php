@@ -32,7 +32,7 @@ class FileStorageDriver extends AbstractFileStorageDriver
     return $this;
   }
   /**
-   * 问价授权校验
+   * 文件授权校验
    *
    * @param string $FileKey 文件键
    * @param string $AuthTag 授权值 
@@ -367,10 +367,22 @@ class FileStorageDriver extends AbstractFileStorageDriver
   /**
    * 获取图片信息
    *
-   * @param string $FileKey
+   * @param string $FileKey 文件键
    */
   function getImageInfo($FileKey)
   {
     return $this->getFileInfo($FileKey);
+  }
+
+  /**
+   * 本地访问文件链接请求的参数转换为远程文件访问参数
+   *
+   * @param array $RequestURLParams 请求 URL 的参数。  
+   * 假设文件存储在腾讯云 COS，而文件访问的地址服务器地址，经过一系列逻辑后需要 302 跳转到腾讯云 COS 的文件访问地址。服务器访问地址传入设置宽度参数 w=100，那就需要调用该函数把 w 转换为生成腾讯云访问地址对应的参数
+   * @return array 转换后对应远程访问请求的参数
+   */
+  public function transformToRemoteURLParams($RequestURLParams)
+  {
+    return $RequestURLParams;
   }
 }

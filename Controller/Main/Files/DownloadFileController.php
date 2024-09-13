@@ -2,20 +2,26 @@
 
 namespace kernel\Controller\Main\Files;
 
+use kernel\Foundation\File\FileHelper;
+
 class DownloadFileController extends FileBaseController
 {
   public function data($FileKey)
   {
-    $File = $this->driver->getFileInfo($FileKey);
-    if ($this->driver->error) return $this->driver->return();
+    $File = $this->platform->getFile($FileKey);
+    if ($this->platform->error) return $this->platform->return();
 
     if ($File->remote) {
-      $URL = $this->driver->getFileRemotePreviewURL($FileKey, $this->driver->transformToRemoteURLParams($this->request->query->some()));
+      $URL = $this->platform->getFileDownloadURL($FileKey);
       if (!$URL) return $this->response->error(404, 404, "下载文件失败", "获取到的远程文件URL为空");
 
       return $this->response->redirect($URL, 302);
     } else {
-      return $this->response->download($File->filePath);
+      $FilePath = FileHelper::combinedFilePath(F_APP_STORAGE, $File->filePath);
+      if (!file_exists($FilePath)) {
+        return $this->response->error(404, 404, "文件不存在", "文件实体不存在");
+      }
+      return $this->response->download($FilePath);
     }
   }
 }

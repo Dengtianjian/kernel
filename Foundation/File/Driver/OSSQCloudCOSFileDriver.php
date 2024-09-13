@@ -154,7 +154,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
       }
 
       $COSFileInfo = array_merge($COSFileInfo, $fileInfo->toArray());
-      $COSDoesExist = $this->COSInstance->doesObjectExist($FileKey);
+      $COSDoesExist = $this->COSInstance->fileExist($FileKey);
       if (!$COSDoesExist) {
         return $this->break(404, 404, "文件不存在");
       }
@@ -180,7 +180,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
     } else {
       if ($remote) {
         $remoteFileKey = str_replace($this->fileKeyRemoteIdentificationPrefix, "", $FileKey);
-        $COSDoesExist = $this->COSInstance->doesObjectExist($remoteFileKey);
+        $COSDoesExist = $this->COSInstance->fileExist($remoteFileKey);
         if (!$COSDoesExist) {
           return $this->break(404, 404, "文件不存在");
         }
@@ -203,6 +203,11 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
     return new FileInfoData($COSFileInfo);
   }
+  /**
+   * 获取图片信息
+   *
+   * @param string $FileKey 文件键
+   */
   public function getImageInfo($FileKey)
   {
     return $this->COSInstance->getImageInfo($FileKey);
@@ -275,7 +280,7 @@ class OSSQCloudCOSFileDriver extends FileStorageDriver
 
       unset($RequestURLParams['q']);
     }
-    if($imageMogr2){
+    if ($imageMogr2) {
       $params["imageMogr2/" . join("/", $imageMogr2) . "/minisize/1/ignore-error/1"] = null;
     }
 

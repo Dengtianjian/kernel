@@ -4,6 +4,10 @@ namespace kernel\Platform\Aliyun\AliyunOSS;
 
 use kernel\Platform\Aliyun\Aliyun;
 
+/**
+ * 阿里云 OSS
+ * @deprecated
+ */
 class AliyunOSS extends Aliyun
 {
   /**

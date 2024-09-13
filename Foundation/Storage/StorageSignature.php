@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Foundation\File;
+namespace kernel\Foundation\Storage;
 
 use kernel\Foundation\Object\BaseObject;
 
-class FileStorageSignature extends BaseObject
+class StorageSignature extends BaseObject
 {
   /**
    * 签名秘钥，用于签名时加盐
@@ -164,6 +164,9 @@ class FileStorageSignature extends BaseObject
    */
   protected function generateSignature($FileKey, $StartTime, $EndTime, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
+    // $FileKey = "postFiles/66e13f5305147.png";
+    // $StartTime = 1726040426;
+    // $EndTime = 1726042226;
     $HTTPMethod = strtolower($HTTPMethod);
 
     $KeyTime = implode(";", [$StartTime, $EndTime]);
@@ -193,6 +196,7 @@ class FileStorageSignature extends BaseObject
       sha1($HTTPString),
       ""
     ]);
+    // debug($KeyTime, hash_hmac("sha1", $StringToSign, $SignKey));
 
     return hash_hmac("sha1", $StringToSign, $SignKey);
   }
@@ -238,7 +242,6 @@ class FileStorageSignature extends BaseObject
       "signature" => $Signature,
       "url-param-list" => rawurlencode($URLParameterKeyString)
     ];
-
 
     $QueryStrings = array_merge($QueryStrings, array_map(function ($item) {
       return urlencode($item);

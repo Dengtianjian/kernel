@@ -19,7 +19,7 @@ class GetFileAuthController extends FileBaseController
   ];
   public function data()
   {
-    // return $this->driver->getFileAuth($FileKey, 1800);
+    // return $this->platform->getFileAuth($FileKey, 1800);
     return [
       "fileKey" => NULL,
       "remoteFileKey" => NULL,

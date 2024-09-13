@@ -13,12 +13,14 @@ class GetFileController extends FileBaseController
     "height" => "double",
     "url" => "string",
     "previewURL" => "string",
-    "downloadURL" => "string"
+    "downloadURL" => "string",
+    "transferPreviewURL"=>"string",
+    "transferDownloadURL"=>"string"
   ];
   public function data($FileKey)
   {
-    $GetResponse = $this->driver->getFileInfo($FileKey);
-    if ($this->driver->error) return $this->driver->return();
+    $GetResponse = $this->platform->getFile($FileKey);
+    if ($this->platform->error) return $this->platform->return();
 
     return $GetResponse->toArray();
   }
