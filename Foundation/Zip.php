@@ -8,8 +8,11 @@ use ZipArchive;
 class Zip
 {
   public $packageFileBlackList = [
-    ".git", "README.md"
+    ".git",
+    "README.md"
   ];
+  protected $blackListFileNames = [];
+  protected $blackListWildcards = [];
   public function zipExtentions($extensionsFolderPath, $outputRoot, $localPath)
   {
     if (!\is_dir($extensionsFolderPath)) {
@@ -39,14 +42,23 @@ class Zip
 
     return $path;
   }
-  public function folderToZip(&$zip, $folder,  $removedLength, $localRootPath = null)
+  public function folderToZip(&$zip, $folder, $removedLength)
   {
     $dirs = FileHelper::scandir($folder);
     foreach ($dirs as $dirItem) {
-      if (\in_array($dirItem, $this->packageFileBlackList)) {
-        continue;
-      }
       $sourceFilePath = $this->combinedFilePath($folder, $dirItem);
+
+      if (in_array($sourceFilePath, $this->blackListFileNames)) continue;
+
+      $skip = false;
+      foreach ($this->blackListWildcards as $item) {
+        if (str_ends_with($dirItem, $item)) {
+          $skip = true;
+          break;
+        };
+      }
+      if ($skip) continue;
+
       $localPath = \substr($sourceFilePath, $removedLength + 1);
       if (\is_file($sourceFilePath)) {
         $zip->addFile($sourceFilePath, $localPath);
@@ -56,7 +68,8 @@ class Zip
       }
     }
   }
-  public function zipDir($sourcePath, $outputPath, $localRootPath = null)
+
+  public function zipDir($sourcePath, $outputPath)
   {
     $zip = new \ZipArchive();
     if (\file_exists($outputPath)) {
@@ -65,9 +78,20 @@ class Zip
       $zip->open($outputPath, \ZipArchive::CREATE);
     }
     $pathInfo = \pathinfo($sourcePath);
-    $this->folderToZip($zip, $sourcePath, \strlen($this->combinedFilePath($pathInfo['dirname'], $pathInfo['basename'])), $localRootPath);
+
+    foreach ($this->packageFileBlackList as $item) {
+      if (preg_match("/^\*(\.\w+)$/", $item, $matchs)) {
+        array_push($this->blackListWildcards, $matchs[1]);
+      } else {
+        array_push($this->blackListFileNames, $this->combinedFilePath($sourcePath, $item));
+      }
+    }
+
+    $this->folderToZip($zip, $sourcePath, \strlen($this->combinedFilePath($pathInfo['dirname'], $pathInfo['basename'])));
 
     $zip->close();
+
+    return true;
   }
   public function unzip(string $filePath, string $dest)
   {
