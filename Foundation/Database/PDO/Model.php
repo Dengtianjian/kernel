@@ -2,13 +2,13 @@
 
 namespace kernel\Foundation\Database\PDO;
 
-use kernel\Foundation\BaseObject;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Date;
+use kernel\Foundation\Object\AbilityBaseObject;
 use mysqli_result;
 
-class Model extends BaseObject
+class Model extends AbilityBaseObject
 {
   /**
    * 数据表名称
@@ -169,18 +169,6 @@ class Model extends BaseObject
     $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
     return $this;
   }
-  /**
-   * 过滤掉条件中为空的字段
-   * @deprecated
-   *
-   * @param boolean $flag true=过滤，false=不过滤
-   * @return Model
-   */
-  function whereFilterNull($flag = true)
-  {
-    $this->query->whereFilterNull($flag);
-    return $this;
-  }
   function filterNullWhere($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
   {
     $this->query->filterNullWhere($fieldNameOrFieldValue, $value, $glue, $operator);
@@ -336,6 +324,13 @@ class Model extends BaseObject
     if ($this->returnSql) return $this->query->limit(1)->get()->sql();
     $DB = $this->DB;
     return $DB::getOne($this->query);
+  }
+  function each($callback)
+  {
+    if ($this->returnSql) return $this->query->get()->sql();
+    $DB = $this->DB;
+    $DB::each($this->query, $callback);
+    return $this;
   }
   function count($field = "*")
   {

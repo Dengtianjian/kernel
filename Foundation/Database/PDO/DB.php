@@ -38,6 +38,11 @@ class DB
     if (empty($data)) return [];
     return $data;
   }
+  static function each($query, $callback)
+  {
+    $data = self::$db->query($query->get()->sql(), $callback);
+    return $data;
+  }
   static function insert($query = null)
   {
     $InsertResult = self::query($query->sql());

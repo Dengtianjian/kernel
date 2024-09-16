@@ -40,7 +40,7 @@ class Driver
   {
     return $this->PDOInstance->lastInsertId();
   }
-  public function query(string $query)
+  public function query(string $query, $selectCallback = null)
   {
     $result = null;
     $isSelect = strtoupper(substr($query, 0, strpos($query, " "))) === "SELECT";
@@ -55,7 +55,14 @@ class Driver
       throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->error()[0], $errorDetails);
     } else {
       if ($isSelect) {
-        $result = $data->fetchAll(PDO::FETCH_ASSOC);
+        if ($selectCallback) {
+          while ($row = $data->fetch(PDO::FETCH_ASSOC)) {
+            $selectCallback($row);
+          }
+          $result = null;
+        } else {
+          $result = $data->fetchAll(PDO::FETCH_ASSOC);
+        }
       } else {
         $result = $data->rowCount();
       }
