@@ -85,6 +85,23 @@ class Request
     $this->getURI();
   }
   /**
+   * 获取用户IP地址
+   *
+   * @return string IP地址
+   */
+  public static function realClientIp()
+  {
+    $ip = null;
+    if (getenv("HTTP_CLIENT_IP")) {
+      $ip = getenv("HTTP_CLIENT_IP");
+    } else if (getenv("HTTP_X_FORWARDED_FOR")) {
+      $ip = getenv("HTTP_X_FORWARDED_FOR");
+    } else if (getenv("REMOTE_ADDR")) {
+      $ip = getenv("REMOTE_ADDR");
+    }
+    return $ip;
+  }
+  /**
    * 是否是AJAX异步请求
    *
    * @return bool
@@ -97,7 +114,7 @@ class Request
       if ($this->params->has("x-ajax")) return 1;
     }
 
-    if (array_key_exists("HTTP_X_REQUESTED_WITH",$_SERVER)) {
+    if (array_key_exists("HTTP_X_REQUESTED_WITH", $_SERVER)) {
       if ($_SERVER['HTTP_X_REQUESTED_WITH'] === "XMLHttpRequest" || $_SERVER['HTTP_X_REQUESTED_WITH'] === "fetch") return true;
     }
     if ($this->header->has("x-ajax") || $this->header->has("X-Ajax")) return 1;
