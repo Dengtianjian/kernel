@@ -222,25 +222,29 @@ class DataConversion
               $Data[$key] = $type($this->data[$key]);
             } else {
               if (is_array($this->data[$key])) {
-                if (Arr::isAssoc($this->data[$key])) {
-                  $Data[$key] = self::quick($this->data[$key], $type, $this->completion, $this->removeNotExistRuleKey);
-                } else {
-                  $Data[$key] = $this->data[$key];
-                  if (preg_match("/array<(\w+)>/", $type, $type)) {
-                    if (count($type) === 2) {
-                      foreach ($Data[$key] as &$item) {
-                        $item = $this->setType($item, $type[1]);
+                if ($this->data[$key]) {
+                  if (Arr::isAssoc($this->data[$key])) {
+                    $Data[$key] = self::quick($this->data[$key], $type, $this->completion, $this->removeNotExistRuleKey);
+                  } else {
+                    $Data[$key] = $this->data[$key];
+                    if (preg_match("/array<(\w+)>/", $type, $type)) {
+                      if (count($type) === 2) {
+                        foreach ($Data[$key] as &$item) {
+                          $item = $this->setType($item, $type[1]);
+                        }
+                      } else {
+                        foreach ($Data[$key] as &$item) {
+                          $item = $this->auto($item);
+                        }
                       }
                     } else {
                       foreach ($Data[$key] as &$item) {
                         $item = $this->auto($item);
                       }
                     }
-                  } else {
-                    foreach ($Data[$key] as &$item) {
-                      $item = $this->auto($item);
-                    }
                   }
+                } else {
+                  $Data[$key] = [];
                 }
               } else {
                 if (strpos($type, "/")) {
