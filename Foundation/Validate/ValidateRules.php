@@ -234,7 +234,7 @@ class ValidateRules
   /**
    * 自定义校验
    *
-   * @param Closure|callable  $callback 校验函数，函数返回值必须是继承自Response响应类的，例如ResponseError、ReturnResutl
+   * @param Closure|callable<value:mixed,rule:array,data:array>  $callback 校验函数，函数返回值必须是继承自Response响应类的，例如ResponseError、ReturnResutl
    * @return ValidateRules
    */
   public function custom($callback)
