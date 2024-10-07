@@ -151,7 +151,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     $fileInfo = null;
     if ($this->filesModel) {
       $fileInfo = $this->filesModel->item($fileKey);
-      if ($this->ACL_currentAuthId != $fileInfo['ownerId']) {
+      if ($this->getACAuthId() != $fileInfo['ownerId']) {
         // if ($this->verifyRequestAuth($fileKey) === FALSE) {
         //   return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
         // }

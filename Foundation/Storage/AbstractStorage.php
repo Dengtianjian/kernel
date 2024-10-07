@@ -115,7 +115,7 @@ abstract class AbstractStorage extends AbilityBaseObject
   }
   protected function getACAuthId()
   {
-    if (is_callable($this->ACL_currentAuthId)) return $this->ACL_currentAuthId;
+    if (is_callable($this->ACL_currentAuthId)) return call_user_func($this->ACL_currentAuthId);
 
     return $this->ACL_currentAuthId;
   }

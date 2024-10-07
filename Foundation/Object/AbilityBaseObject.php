@@ -113,6 +113,15 @@ class AbilityBaseObject extends BaseObject
     return FALSE;
   }
   /**
+   * 转发错误消息，相当于调用 break 时传入调用 return 方法的结果，$this->break($this->return());
+   *
+   * @return false
+   */
+  final protected function forwardBreak()
+  {
+    return $this->break($this->return());
+  }
+  /**
    * 获取错误信息
    *
    * @return string
