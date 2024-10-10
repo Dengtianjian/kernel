@@ -19,6 +19,7 @@ class ValidateRules
    */
   public $ErrorMessages = [];
   public $typeCheckNullAllowed = false;
+  public $typeCheckEmptyAllowed = false;
   /**
    * 快速实例化
    *
@@ -101,6 +102,11 @@ class ValidateRules
   public function nullAllow($allow = true)
   {
     $this->typeCheckNullAllowed = $allow;
+    return $this;
+  }
+  public function emptyAllow($allow = true)
+  {
+    $this->typeCheckEmptyAllowed = $allow;
     return $this;
   }
   /**

@@ -140,7 +140,15 @@ class Validator
       return $ValidatedResult;
     }
 
-    if (!($ValidateRule->typeCheckNullAllowed && is_null($Target))) {
+    $valueCheckPass = true;
+    if ($ValidateRule->typeCheckNullAllowed && is_null($Target)) {
+      $valueCheckPass = false;
+    }
+    if ($ValidateRule->typeCheckEmptyAllowed && empty($Target)) {
+      $valueCheckPass = false;
+    }
+
+    if ($valueCheckPass) {
       //* 必传检测
       if (isset($Rule['required'])) {
         $checkedPass = true;
