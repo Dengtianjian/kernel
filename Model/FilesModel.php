@@ -20,7 +20,7 @@ CREATE TABLE `{$tableName}`  (
   `key` varchar(280) NOT NULL COMMENT '文件名',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
   `belongsId` varchar(34) NULL DEFAULT NULL COMMENT '所属ID',
-  `belongsType` varchar(32) NULL DEFAULT NULL COMMENT '所属ID类型',
+  `belongsType` varchar(128) NULL DEFAULT NULL COMMENT '所属ID类型',
   `ownerId` varchar(32) NULL DEFAULT NULL COMMENT '文件所有者ID',
   `sourceFileName` varchar(255) NOT NULL COMMENT '原本的文件名称',
   `name` varchar(255) NOT NULL COMMENT '保存后的文件名称',
