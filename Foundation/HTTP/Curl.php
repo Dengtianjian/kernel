@@ -378,7 +378,7 @@ class Curl
     }
     if ($this->curlMethod !== "get") {
       $options[CURLOPT_POST] = true;
-      if($this->curlDatas&&!empty($this->curlDatas)){
+      if ($this->curlDatas && !empty($this->curlDatas)) {
         $options[CURLOPT_POSTFIELDS] = $sendDatas;
       }
       $options[CURLOPT_HTTPGET] = false;
@@ -412,7 +412,8 @@ class Curl
     }
     \curl_setopt_array($curl, $options);
     curl_setopt($curl, CURLOPT_HEADER, true);
-    curl_setopt($curl, CURLOPT_NOBODY, false);
+
+    curl_setopt($curl, CURLOPT_NOBODY, $this->curlMethod === "head");
 
     $result = \curl_exec($curl);
     $headerSize = curl_getinfo($curl, CURLINFO_HEADER_SIZE);

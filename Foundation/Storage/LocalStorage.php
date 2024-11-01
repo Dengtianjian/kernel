@@ -34,14 +34,14 @@ class LocalStorage extends AbstractStorage
     $fileInfo = null;
     if ($this->filesModel) {
       $fileInfo = $this->filesModel->item($fileKey);
-      if ($this->getACAuthId() != $fileInfo['ownerId']) {
-        if ($this->verifyRequestAuth($fileKey) === FALSE) {
-          return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
-        }
-        if ($this->accessAuthozationVerification($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId']) === FALSE) {
-          return $this->break(403, "getFile:403002", "抱歉，您无权获取该文件信息");
-        }
-      }
+      // if ($this->getACAuthId() != $fileInfo['ownerId']) {
+      //   if ($this->verifyRequestAuth($fileKey) === FALSE) {
+      //     return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
+      //   }
+      //   if ($this->accessAuthozationVerification($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId']) === FALSE) {
+      //     return $this->break(403, "getFile:403002", "抱歉，您无权获取该文件信息");
+      //   }
+      // }
     } else {
       $fileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $fileKey)));
       if (!$fileInfo) {
@@ -50,7 +50,7 @@ class LocalStorage extends AbstractStorage
     }
 
     $fileInfo['key'] = $fileKey;
-    $fileInfo['remote'] = false;
+    $fileInfo['remote'] = boolval($fileInfo['remote']);
     $fileInfo['url'] = $this->getFilePreviewURL($fileKey);
     $fileInfo['previewURL'] = $this->getFilePreviewURL($fileKey);
     $fileInfo['downloadURL'] = $this->getFileDownloadURL($fileKey);
@@ -59,7 +59,11 @@ class LocalStorage extends AbstractStorage
 
     return new StorageFileInfoData($fileInfo);
   }
-  public function getFileAuth($fileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  public function getFileAuth($fileKey = null, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  {
+    return $this->getFileTransferAuth($fileKey, $Expires, $URLParams, $Headers, $HTTPMethod);
+  }
+  public function getFileSign($fileKey = null, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     return $this->getFileTransferAuth($fileKey, $Expires, $URLParams, $Headers, $HTTPMethod);
   }

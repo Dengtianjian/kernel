@@ -7,13 +7,25 @@ abstract class AbstractOSSStroage extends AbstractStorage
   protected $platform = null;
   protected $client = null;
   protected $stsClient = null;
-  protected $sdkClient = null;
+  protected $SDKClient = null;
   protected $bucket = null;
   protected $region = null;
 
   protected $secretId = null;
   protected $secretKey = null;
 
+  /**
+   * 实例化抽象 OSS 存储
+   *
+   * @param string $secretId 密钥 ID
+   * @param string $secretKey 密钥
+   * @param string $region 存储桶所在的地区
+   * @param string $bucket 存储桶名称
+   * @param string $SignatureKey 生成签名的密钥，框架用于生成链接、上传授权等签名的密钥值
+   * @param string $RoutePrefix 路由前缀，默认 files
+   * @param string $BaseURL 基础URL 地址
+   * @param string $Platform 平台名称
+   */
   public function __construct($secretId, $secretKey, $region, $bucket, $SignatureKey = "ruyi_storage", $RoutePrefix = "files", $BaseURL = F_BASE_URL, $Platform = "local")
   {
     $this->secretId = $secretId;

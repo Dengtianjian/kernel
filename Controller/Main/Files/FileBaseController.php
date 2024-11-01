@@ -6,7 +6,6 @@ use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Storage\LocalStorage;
 use kernel\Foundation\Storage\AbstractStorage;
 use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;
-use kernel\Service\FileService;
 use kernel\Service\StorageService;
 
 class FileBaseController extends AuthController

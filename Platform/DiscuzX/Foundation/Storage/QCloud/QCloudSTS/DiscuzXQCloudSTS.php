@@ -1,16 +1,15 @@
 <?php
 
-namespace kernel\Platform\QCloud;
+namespace kernel\Platform\DiscuzX\Foundation\Storage\QCloud\QCloudSTS;
 
 use kernel\Foundation\Object\AbilityBaseObject;
-use QCloud\COSSTS\Sts;
 
 /**
  * 腾讯云STS安全凭证服务  
  * 基于腾讯云的STS类扩展
  * @inheritDoc STS实例文档 https://github.com/tencentyun/qcloud-cos-sts-sdk/tree/master/php
  */
-class QCloudSTS extends AbilityBaseObject
+class DiscuzXQCloudSTS extends AbilityBaseObject
 {
   /**
    * 腾讯云用户ID
@@ -58,7 +57,7 @@ class QCloudSTS extends AbilityBaseObject
    */
   function __construct($SecretId, $SecretKey, $Region, $Bucket)
   {
-    $this->STSInstance = new Sts();
+    $this->STSInstance = new DiscuzXQCloudStsBase();
 
     $this->SecretId = $SecretId;
     $this->SecretKey = $SecretKey;

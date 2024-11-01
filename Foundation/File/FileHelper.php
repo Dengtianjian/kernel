@@ -136,22 +136,33 @@ class FileHelper
    * 递归扫描目标文件夹
    *
    * @param string $rootDir 被扫描的目标文件夹路径
-   * @param boolean $includeDir 包含文件夹路径
+   * @param string|boolean $parentDir 包含文件夹路径
+   * @param boolean $includeRootDir 包含根文件夹路径
    * @return string[] 扫描后的文件列表，没有分层
    */
-  public static function recursionScanDir($rootDir, $includeDir = false)
+  public static function recursionScanDir($rootDir, $parentDir = null, $includeRootDir = false)
   {
     if (!is_dir($rootDir)) return [];
     $dirs = self::scandir($rootDir);
     $allDirs = [];
     foreach ($dirs as $dir) {
       if (is_dir(self::combinedFilePath($rootDir, $dir))) {
-        $allDirs = array_merge($allDirs, self::recursionScanDir(self::combinedFilePath($rootDir, $dir)));
-        if ($includeDir) {
+        $allDirs = array_merge($allDirs, self::recursionScanDir(self::combinedFilePath($rootDir, $dir), is_null($parentDir) || $parentDir === false ? false : $dir, $includeRootDir));
+        if ($includeRootDir) {
           array_push($allDirs, self::combinedFilePath($rootDir, $dir));
+        } else if ($parentDir !== false && !is_null($parentDir)) {
+          array_push($allDirs, is_bool($parentDir) ?  $dir : self::combinedFilePath($parentDir, $dir));
+        } else {
+          array_push($allDirs, $dir);
         }
       } else {
-        array_push($allDirs, self::combinedFilePath($rootDir, $dir));
+        if ($includeRootDir) {
+          array_push($allDirs, self::combinedFilePath($rootDir, $dir));
+        } else if ($parentDir !== false && !is_null($parentDir)) {
+          array_push($allDirs, is_bool($parentDir) ?  $dir : self::combinedFilePath($parentDir, $dir));
+        } else {
+          array_push($allDirs, $dir);
+        }
       }
     }
     return $allDirs;

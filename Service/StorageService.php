@@ -43,6 +43,34 @@ class StorageService extends Service
    */
   static protected $fileNameMatchPattern = "[\w\/\u4e00-\u9fa5]+?\.\w+";
 
+  /**
+   * 通过文件路径、文件名称组合成一个文件键名
+   *
+   * @param string $filePath 文件路径
+   * @param string $fileName 文件名称
+   * @param boolean $encode 对文件名进行编码
+   * @return string 文件键名
+   */
+  static function combinedFileKey($filePath, $fileName, $encode = false)
+  {
+    $filePath = str_replace("\\", "/", $filePath);
+    $fileName = str_replace("\\", "/", $fileName);
+
+    $fileKey = implode("/", [
+      $filePath,
+      $fileName
+    ]);
+    if (substr($fileKey, 0, 1) === "/") {
+      $fileKey = substr($fileKey, 1);
+    }
+
+    if ($encode) {
+      $fileKey = rawurlencode($fileKey);
+    }
+
+    return $fileKey;
+  }
+
   static function useService($usePlatforms = null, $routePrefix = "files")
   {
     $FileNamePattern = self::$fileNameMatchPattern;
@@ -78,6 +106,7 @@ class StorageService extends Service
     self::registerRoute("get", FilesNamespace\GetFileController::class);
     self::registerRoute("delete", FilesNamespace\DeleteFileController::class);
     self::registerRoute("post", FilesNamespace\UploadFileController::class);
+    self::registerRoute("patch", FilesNamespace\UpdateFileController::class);
 
     self::registerRoute("get", FilesNamespace\PrewiewFileController::class, "preview");
     self::registerRoute("get", FilesNamespace\DownloadFileController::class, "download");
@@ -110,6 +139,10 @@ class StorageService extends Service
     self::$usePlatform = self::$platformInstances[$name];
 
     return self::class;
+  }
+  static function hasPlatform($name)
+  {
+    return array_key_exists($name, self::$platformInstances);
   }
   static function switchToLocal()
   {
@@ -230,25 +263,29 @@ class StorageService extends Service
   {
     return self::$usePlatform->getFileAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod);
   }
+  static function getFileSign()
+  {
+    return call_user_func_array([self::$usePlatform, "getFileSign"], func_get_args());
+  }
   static function getFileTransferAuth($FileKey, $Expires = 1800, $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     return self::$usePlatform->getFileTransferAuth($FileKey, $Expires, $URLParams, $Headers, $HTTPMethod);
   }
 
-  static function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
+  static function getFilePreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
-    return self::$usePlatform->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
+    return self::$usePlatform->getFilePreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
   }
-  static function getFileTransferPreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
+  static function getFileTransferPreviewURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     return self::$usePlatform->getFileTransferPreviewURL($FileKey, $URLParams, $Expires, $WithSignature);
   }
-  static function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
+  static function getFileDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
-    return self::$usePlatform->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
+    return self::$usePlatform->getFileDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
   }
-  static function getFileTransferDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE, $WithAccessControl = TRUE)
+  static function getFileTransferDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
-    return self::$usePlatform->getFileTransferDownloadURL($FileKey, $URLParams, $Expires, $WithSignature, $WithAccessControl);
+    return self::$usePlatform->getFileTransferDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
   }
 }

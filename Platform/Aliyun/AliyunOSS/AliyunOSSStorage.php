@@ -34,7 +34,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
    *
    * @var OssClient
    */
-  protected $sdkClient = null;
+  protected $SDKClient = null;
 
   public function __construct(
     $secretId,
@@ -63,7 +63,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     ]);
 
     $OSSProvider = new AliyunOSSCredentialsProvider($this->secretId, $this->secretKey);
-    $this->sdkClient = new OssClient([
+    $this->SDKClient = new OssClient([
       "provider" => $OSSProvider,
       "endpoint" => $endPoint
     ]);
@@ -79,7 +79,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     }
 
     $accessTag = self::AUTHENTICATED_READ;
-    $ownerId = $this->currentLoginId;
+    $ownerId = $this->getACAuthId();
 
     if ($this->filesModel) {
       $FileData = $this->filesModel->item($fileKey);
@@ -118,7 +118,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     ];
 
     try {
-      $this->sdkClient->uploadFile($this->bucket, $fileKey, $TempFileInfo['filePath']);
+      $this->SDKClient->uploadFile($this->bucket, $fileKey, $TempFileInfo['filePath']);
 
       if (file_exists($TempFileInfo['filePath'])) {
         unlink($TempFileInfo['filePath']);
@@ -135,7 +135,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     if (!$FileInfo) return $this->return();
 
     try {
-      $DeletedResult = $this->sdkClient->deleteObject($this->bucket, $fileKey);
+      $DeletedResult = $this->SDKClient->deleteObject($this->bucket, $fileKey);
     } catch (OssException $e) {
       throw new Exception("服务器错误", 500, 500, $e);
     }
@@ -144,7 +144,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
       return $this->filesModel->remove(true, $fileKey);
     }
 
-    return FALSE;
+    return TRUE;
   }
   function getFile($fileKey)
   {
@@ -181,14 +181,18 @@ class AliyunOSSStorage extends AbstractOSSStroage
 
     return new StorageFileInfoData($fileInfo);
   }
-  function getFileAuth($FileKey, $Expires = 600,  $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  function getFileAuth($FileKey = null, $Expires = 600,  $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  {
+    return $this->getSTSToken($Expires);
+  }
+  function getFileSign($FileKey, $Expires = 600,  $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     return $this->getSTSToken($Expires);
   }
 
   protected function getFileSignURL($ObjectKey, $Expires = 60, $Options = [])
   {
-    return $this->sdkClient->signUrl($this->bucket, $ObjectKey, $Expires, $this->sdkClient::OSS_HTTP_GET, $Options);
+    return $this->SDKClient->signUrl($this->bucket, $ObjectKey, $Expires, $this->SDKClient::OSS_HTTP_GET, $Options);
   }
 
   function getFilePreviewURL($fileKey, $URLParams = [], $Expires = 60)
@@ -205,7 +209,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
       return $this->break(403, "getFile:403001", "抱歉，您无权获取该文件信息");
     }
 
-    return $this->sdkClient->doesObjectExist($this->bucket, $fileKey);
+    return $this->SDKClient->doesObjectExist($this->bucket, $fileKey);
   }
 
   /**

@@ -7,6 +7,7 @@ use kernel\Foundation\File\FileManager;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Model\FilesModel;
+use kernel\Service\StorageService;
 
 abstract class AbstractStorage extends AbilityBaseObject
 {
@@ -121,6 +122,40 @@ abstract class AbstractStorage extends AbilityBaseObject
   }
 
   /**
+   * 验证操作授权
+   *
+   * @param string $fileKey 文件名
+   * @param "read"|"write" $operation 操作，只允许传入read（读）和write（写）参数
+   * @return bool
+   */
+  public function verifyOperationAuthorization($fileKey, $operation = "read")
+  {
+    $fileInfo = null;
+    if ($this->filesModel) {
+      $fileInfo = $this->filesModel->field("ownerId", "accessControl")->item($fileKey);
+      if (!$fileInfo) {
+        return $this->break(404, "operationAuthorization:404", "文件不存在");
+      };
+
+      if ($this->getACAuthId() != $fileInfo['ownerId']) {
+        // if ($this->verifyRequestAuth($fileKey) === FALSE) {
+        //   return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
+        // }
+        if ($this->accessAuthozationVerification($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId'], $operation) === FALSE) {
+          return $this->break(403, "operationAuthorization:403001", "抱歉，您无权操作/获取该文件", [
+            "statusCode" => $this->errorStatusCode,
+            "code" => $this->errorCode,
+            "message" => $this->errorMessage,
+          ]);
+        }
+      }
+    } else if ($this->verifyRequestAuth($fileKey) === FALSE) {
+      return $this->break(403, "operationAuthorization:403002", "抱歉，您无权操作/获取该文件");
+    }
+
+    return true;
+  }
+  /**
    * 文件授权校验
    *
    * @param string $fileKey 文件键
@@ -134,7 +169,7 @@ abstract class AbstractStorage extends AbilityBaseObject
     if (!$this->filesModel || !$this->ACLEnabled) return TRUE;
     $action = strtolower($action);
 
-    if ($OwnerId != $this->getACAuthId()) {
+    if (!$this->getACAuthId() || $OwnerId != $this->getACAuthId()) {
       if ($authTag === self::PRIVATE) {
         return FALSE;
       } else if (in_array($authTag, [
@@ -159,7 +194,8 @@ abstract class AbstractStorage extends AbilityBaseObject
     return TRUE;
   }
 
-  abstract function getFileAuth($FileKey);
+  abstract function getFileAuth();
+  abstract function getFileSign();
   function getFileTransferAuth(
     $FileKey,
     $Expires = 600,
@@ -192,10 +228,15 @@ abstract class AbstractStorage extends AbilityBaseObject
     }
 
     $SignAlgorithm = $RawURLParams['sign-algorithm'];
-    $SignTime = $RawURLParams['sign-time'];
-    $KeyTime = $RawURLParams['key-time'];
+    $SignTime = urldecode($RawURLParams['sign-time']);
+    $KeyTime = urldecode($RawURLParams['key-time']);
     $HeaderList = $RawURLParams['header-list'] ? explode(";", urldecode($RawURLParams['header-list'])) : [];
     $URLParamList = $RawURLParams['url-param-list'] ? explode(";", rawurldecode(urldecode($RawURLParams['url-param-list']))) : [];
+    if ($URLParamList) {
+      $URLParamList = array_map(function ($item) {
+        return rawurldecode($item);
+      }, $URLParamList);
+    }
     $Signature = $RawURLParams['signature'];
 
     if ($SignAlgorithm !== StorageSignature::getSignAlgorithm()) return $this->break(400, "verifyAuth:400002", "参数错误");
@@ -228,6 +269,11 @@ abstract class AbstractStorage extends AbilityBaseObject
     foreach ($RawURLParams as $key => $value) {
       $key = rawurldecode(urldecode($key));
       $value = rawurldecode(urldecode($value));
+
+      if (!$value) {
+        $key = strtolower($key);
+      }
+
       if (!in_array($key, $URLParamList)) {
         if (!in_array($key, $URLParamKeys)) {
           return $this->break(400, "verifyAuth:400010", "URL 参数缺失");
@@ -392,5 +438,45 @@ abstract class AbstractStorage extends AbilityBaseObject
     $AccessURL->queryParam($URLParams);
 
     return $AccessURL->toString();
+  }
+
+  /**
+   * 转换 URL 的 query 参数  
+   * 因为每个平台对文件的处理参数都不一样，所以就诞生了该方法，把统一的文件处理参数转换为指定平台的处理参数  
+   * 例如腾讯云 COS 的图片缩放是 `imageMogr2/thumbnail/!40p`，而文件链接的是传 `s=40`  
+   * 就需要使用该方法吧 `s=40` 转换为 `imageMogr2/thumbnail/!40p`，再去生成链接
+   *
+   * @param array $URLParams URL 参数
+   * @param string $targetPlatform 目标平台
+   * @return array
+   */
+  function convertURLParams($URLParams, $targetPlatform)
+  {
+    if ($targetPlatform === "cos") {
+      $keys = [];
+      $imageMogr2Keys = [];
+      if (array_key_exists("r", $URLParams)) {
+        $imageMogr2Keys[] = 'thumbnail/!' . $URLParams['r'] . 'p/ignore-error/1';
+        unset($URLParams['r']);
+      }
+      if (array_key_exists("q", $URLParams)) {
+        $imageMogr2Keys[] = 'quality/' . $URLParams['q'] . "/minsize/1/ignore-error/1";
+        unset($URLParams['q']);
+      }
+      if (array_key_exists("ext", $URLParams)) {
+        $imageMogr2Keys[] = 'format/' . $URLParams['ext'] . "/minsize/1/ignore-error/1";
+        unset($URLParams['ext']);
+      }
+      if (array_key_exists("rotate", $URLParams)) {
+        $imageMogr2Keys[] = 'rotate/' . $URLParams['rotate'] . "/ignore-error/1";
+        unset($URLParams['ext']);
+      }
+      if ($imageMogr2Keys) {
+        $keys[] = "imageMogr2/".join("/", $imageMogr2Keys);
+        $URLParams[] = join("/", $keys);
+      }
+    }
+
+    return $URLParams;
   }
 }

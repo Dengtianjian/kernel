@@ -196,7 +196,6 @@ class StorageSignature extends BaseObject
       sha1($HTTPString),
       ""
     ]);
-    // debug($KeyTime, hash_hmac("sha1", $StringToSign, $SignKey));
 
     return hash_hmac("sha1", $StringToSign, $SignKey);
   }
@@ -243,9 +242,9 @@ class StorageSignature extends BaseObject
       "url-param-list" => rawurlencode($URLParameterKeyString)
     ];
 
-    $QueryStrings = array_merge($QueryStrings, array_map(function ($item) {
-      return urlencode($item);
-    }, $URLParams));
+    // $QueryStrings = array_map(function ($item) {
+    //   return urlencode($item);
+    // }, $QueryStrings);
 
     return $QueryStrings;
   }

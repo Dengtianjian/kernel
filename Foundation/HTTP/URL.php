@@ -189,7 +189,7 @@ class URL
       // }
       return $item;
     }, array_filter($paths, function ($item) {
-      return !empty(trim($item));
+      return !empty(trim((string)$item));
     })));
     $path = str_replace([
       "//",
@@ -225,14 +225,15 @@ class URL
     if (is_array($value)) {
       foreach ($value as $key => $item) {
         if (is_numeric($key)) {
+          // $key = rawurldecode($item);
           $key = $item;
-          $item = null;
+          $item = "";
         }
         $this->queryParam($item, $key);
       }
-    } else if (!is_null($value) && !is_null($key)) {
+    } else if ($value || (!$value && $key)) {
       if (!$key) {
-        $key = $value;
+        $key = rawurldecode($value);
         $value = "";
       }
       $this->queryParams[$key] = $value;

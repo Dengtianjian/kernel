@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Aliyun;
 
-use kernel\Foundation\Network\Curl;
+use kernel\Foundation\HTTP\Curl;
 
 class AliyunRequest extends Aliyun
 {

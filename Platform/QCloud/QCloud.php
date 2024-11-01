@@ -4,9 +4,10 @@ namespace kernel\Platform\QCloud;
 
 use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\HTTP\Curl;
+use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
-class QCloud extends BaseObject
+class QCloud extends AbilityBaseObject
 {
   /**
    * 密钥对中的 SecretId
@@ -63,7 +64,7 @@ class QCloud extends BaseObject
    *
    * @var Curl
    */
-  private $Curl = null;
+  protected $Curl = null;
   /**
    * 实例化腾讯云类
    *

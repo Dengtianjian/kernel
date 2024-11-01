@@ -10,12 +10,12 @@ use forum_upload;
 use kernel\Foundation\Config;
 use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\File\FileManager;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Platform\DiscuzX\Controller\Attachment as AttachmentNamespace;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXFileStorage;
 
 class DiscuzXAttachmentService extends Service
 {
@@ -35,7 +35,7 @@ class DiscuzXAttachmentService extends Service
         mkdir($savePath, 0777, true);
       }
     }
-    return new ReturnResult(DiscuzXFileStorage::upload($files, $savePath));
+    return new ReturnResult(FileManager::upload($files, $savePath));
   }
   /**
    * 上传文件

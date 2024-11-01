@@ -214,7 +214,7 @@ class App
     $KernelRoutesDir = FileHelper::combinedFilePath(F_KERNEL_ROOT, "Routes");
     if (is_dir($KernelRoutesDir)) {
       //* 载入kernel路由
-      $KernelRouteFiles = FileHelper::recursionScanDir($KernelRoutesDir);
+      $KernelRouteFiles = FileHelper::recursionScanDir($KernelRoutesDir, null, true);
       if (count($KernelRouteFiles)) {
         $LocaRouteFiles = array_merge($LocaRouteFiles, $KernelRouteFiles);
       }
@@ -223,7 +223,7 @@ class App
     $AppRoutesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Routes");
     if (is_dir($AppRoutesDir)) {
       //* 载入App的路由
-      $AppRouteFiles = FileHelper::recursionScanDir($AppRoutesDir);
+      $AppRouteFiles = FileHelper::recursionScanDir($AppRoutesDir, null, true);
       if (count($AppRouteFiles)) {
         $LocaRouteFiles = array_merge($LocaRouteFiles, $AppRouteFiles);
       }

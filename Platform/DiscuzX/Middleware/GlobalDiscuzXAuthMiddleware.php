@@ -94,6 +94,16 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     } else {
       $memberInfo = DiscuzXMember::get(0);
     }
+
+    /**
+     * DiscuzX 登录的用户 ID
+     */
+    define("DISCUZX_MEMBER_ID", $memberInfo['uid']);
+    /**
+     * DiscuzX 登录状态
+     */
+    define("DISCUZX_MEMBER_LOGGED", true);
+
     Store::setApp([
       "member" => $memberInfo,
     ]);

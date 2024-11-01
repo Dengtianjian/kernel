@@ -9,7 +9,6 @@ class DiscuzXFilesModel extends DiscuzXModel
 {
   use FilesModelTrait;
 
-
   public function __construct($tableName = null)
   {
     $tableName = $tableName ?: F_APP_ID . "_files";
@@ -21,6 +20,7 @@ DROP TABLE IF EXISTS `pre_{$tableName}`;
 CREATE TABLE `pre_{$tableName}`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
   `key` varchar(280) NOT NULL COMMENT '文件名',
+  `platform` varchar(32) NOT NULL DEFAULT 'local' COMMENT '存储平台',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
   `belongsId` varchar(34) NULL DEFAULT NULL COMMENT '所属ID',
   `belongsType` varchar(32) NULL DEFAULT NULL COMMENT '所属ID类型',

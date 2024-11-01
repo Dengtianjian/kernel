@@ -2,7 +2,9 @@
 
 namespace kernel\Platform\QCloud\QCloudCos;
 
-class QCloudCosSignture extends QCloudCosBase
+use kernel\Platform\QCloud\QCloud;
+
+class QCloudCosSignture extends QCloud
 {
   /**
    * host开关
@@ -47,7 +49,7 @@ class QCloudCosSignture extends QCloudCosBase
     $this->SignHost = !is_null($host);
     $this->SecurityToken = $SecurityToken;
 
-    parent::__construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken);
+    parent::__construct($SecretId, $SecretKey, null, $host, $SecurityToken);
   }
 
   protected function getObjectKeys($object)
