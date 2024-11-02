@@ -17,6 +17,7 @@ class ServerSentEvent extends Response
    * @var string
    */
   protected $ResponseEventName = "message";
+  protected $closed = false;
   /**
    * 构建SSE响应
    *
@@ -41,7 +42,7 @@ class ServerSentEvent extends Response
     $this->header("Cache-Control", "no-cache", true);
     $this->OutputType = $outputType;
 
-    while (1) {
+    while (!$this->closed) {
       call_user_func($callback, $this);
 
       while (ob_get_level() > 0) {
@@ -134,5 +135,11 @@ class ServerSentEvent extends Response
     echo "id: " . (uniqid()) . "\n";
     echo "event: {$this->ResponseEventName}\n";
     echo "data: {$content}\n\n";
+  }
+  public function close()
+  {
+    $this->closed = true;
+
+    return $this;
   }
 }
