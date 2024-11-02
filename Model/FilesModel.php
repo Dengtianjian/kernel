@@ -19,6 +19,7 @@ CREATE TABLE `{$tableName}`  (
   `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
   `key` varchar(280) NOT NULL COMMENT '文件名',
   `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
+  `platform` varchar(32) NOT NULL DEFAULT 'local' COMMENT '存储平台',
   `belongsId` varchar(34) NULL DEFAULT NULL COMMENT '所属ID',
   `belongsType` varchar(128) NULL DEFAULT NULL COMMENT '所属ID类型',
   `ownerId` varchar(32) NULL DEFAULT NULL COMMENT '文件所有者ID',
