@@ -317,7 +317,7 @@ abstract class AbstractStorage extends AbilityBaseObject
     }
 
     $accessTag = self::AUTHENTICATED_READ;
-    $ownerId = $this->currentLoginId;
+    $ownerId = $this->getACAuthId();
 
     if ($this->filesModel) {
       $FileData = $this->filesModel->item($fileKey);
@@ -472,7 +472,7 @@ abstract class AbstractStorage extends AbilityBaseObject
         unset($URLParams['ext']);
       }
       if ($imageMogr2Keys) {
-        $keys[] = "imageMogr2/".join("/", $imageMogr2Keys);
+        $keys[] = "imageMogr2/" . join("/", $imageMogr2Keys);
         $URLParams[] = join("/", $keys);
       }
     }

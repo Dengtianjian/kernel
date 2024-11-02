@@ -196,9 +196,20 @@ class QCloudCOSStorage extends AbstractOSSStroage
   }
   function getFileAuth($AllowPrefix = null, $AllowActions = null, $DurationSeconds = 1800)
   {
-    $QCSTS = new QCloudSTS($this->secretId, $this->secretKey, $this->region, $this->bucket);
+    try {
+      return $this->STSClient->getTempKeys($AllowPrefix, $AllowActions, intval($DurationSeconds));
+    } catch (\Exception $e) {
+      $RawMessage = $e->getMessage();
+      $response = json_decode($RawMessage, true);
+      $code = "500";
+      $message = $RawMessage;
+      if ($response && $response['Error']) {
+        $code = "500:" . $response['Error']['Code'];
+        $message = $response['Error']['Message'];
+      }
 
-    return $QCSTS->getTempKeys($AllowPrefix, $AllowActions, intval($DurationSeconds));
+      return $this->break(500, $code, $message);
+    }
   }
   function getFileSign($fileKey = null, $Expires = 1800, $HTTPMethod = "get", $URLParams = [], $Headers = [])
   {

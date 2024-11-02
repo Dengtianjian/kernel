@@ -1,6 +1,7 @@
 <?php
 
 use kernel\Foundation\App;
+use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Output;
 
@@ -14,9 +15,14 @@ use kernel\Foundation\Output;
  */
 function Import($fileName, $args = [], $BasePath = F_APP_ROOT)
 {
-  if (function_exists("str_ends_with") && !str_ends_with($fileName, ".php")) {
+  $FileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+  if ($FileExt && $FileExt !== "php") {
+    throw new Exception(500, 500, "导入文件错误");
+  }
+  if (!$FileExt) {
     $fileName = "{$fileName}.php";
   }
+
   $RealFilePath = FileHelper::combinedFilePath($BasePath, $fileName);
   if (!file_exists($RealFilePath)) {
     return false;
