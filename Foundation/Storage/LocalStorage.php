@@ -34,15 +34,19 @@ class LocalStorage extends AbstractStorage
     $fileInfo = null;
     if ($this->filesModel) {
       $fileInfo = $this->filesModel->item($fileKey);
-      // if ($this->getACAuthId() != $fileInfo['ownerId']) {
-      //   if ($this->verifyRequestAuth($fileKey) === FALSE) {
-      //     return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
-      //   }
-      //   if ($this->accessAuthozationVerification($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId']) === FALSE) {
-      //     return $this->break(403, "getFile:403002", "抱歉，您无权获取该文件信息");
-      //   }
-      // }
+      if ($this->getACAuthId() != $fileInfo['ownerId']) {
+        if ($this->ACLEnabled) {
+          if ($this->accessAuthozationVerification($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId']) === FALSE) {
+            return $this->break(403, "getFile:403002", "抱歉，您无权获取该文件信息");
+          }
+        } else if ($this->authorizationEnabled && $this->verifyRequestAuth($fileKey) === FALSE) {
+          return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
+        }
+      }
     } else {
+      if ($this->authorizationEnabled && $this->verifyRequestAuth($fileKey) === FALSE) {
+        return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
+      }
       $fileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $fileKey)));
       if (!$fileInfo) {
         return $this->break(404, 404, "文件不存在");

@@ -295,7 +295,6 @@ abstract class AbstractStorage extends AbilityBaseObject
    * 校验请求的参数授权是否通过
    *
    * @param string $FileKey 文件名
-   * @param boolean $Force 是否强制校验，如果传入false，会看当前驱动实例的verifyAuth的值再去决定是否校验
    * @return boolean true=校验通过，false=校验失败
    */
   public function verifyRequestAuth($FileKey)

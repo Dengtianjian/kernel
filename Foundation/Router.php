@@ -445,10 +445,8 @@ class Router
   static private function matchParamRoute($URI, $routes)
   {
     $matchRoute = null;
-
     foreach ($routes as $pattern => $route) {
-      if (preg_match("/^$pattern$/", $URI)) {
-        preg_match_all("/^$pattern$/", $URI, $Params);
+      if (preg_match("/^$pattern$/u", $URI, $Params)) {
         array_shift($Params); //* 弹出第一个，因为匹配的是整个URI
 
         foreach ($route['params'] as &$item) {

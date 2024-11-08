@@ -41,7 +41,7 @@ class StorageService extends Service
    *
    * @var string
    */
-  static protected $fileNameMatchPattern = "[\w\/\u4e00-\u9fa5]+?\.\w+";
+  static protected $fileNameMatchPattern = "[\w\/]+?\.\w+";
 
   /**
    * 通过文件路径、文件名称组合成一个文件键名
