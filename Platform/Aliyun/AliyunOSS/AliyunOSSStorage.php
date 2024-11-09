@@ -185,7 +185,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
   {
     return $this->getSTSToken($Expires);
   }
-  function getFileSign($FileKey, $Expires = 600,  $URLParams = [], $Headers = [], $HTTPMethod = "get")
+  function getFileSign($FileKey = null, $Expires = 600,  $URLParams = [], $Headers = [], $HTTPMethod = "get")
   {
     return $this->getSTSToken($Expires);
   }
