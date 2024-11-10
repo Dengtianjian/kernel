@@ -2,6 +2,8 @@
 
 namespace kernel\Modules\SettingModule;
 
+use kernel\Foundation\Log;
+
 class SettingModuleBase
 {
   /**
@@ -32,16 +34,7 @@ class SettingModuleBase
    */
   public function item($name)
   {
-    $setting = $this->SettingModelInstance->item($name);
-    if (!$setting) return null;
-    $v = unserialize($setting['value']);
-    if (is_bool($v) && $v === false && strpos($setting['value'], "b:") === false) {
-      if (array_key_exists("value", $setting)) {
-        return $setting['value'];
-      }
-      return $setting;
-    }
-    return $v;
+    return $this->SettingModelInstance->item($name);
   }
   /**
    * 查询某个设置项是否存在
