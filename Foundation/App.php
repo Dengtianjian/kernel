@@ -31,7 +31,9 @@ class App
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
   protected $startTime = null; //* 开始时间戳
-  protected function __clone() {}
+  protected function __clone()
+  {
+  }
   /**
    * 构造App
    *
@@ -172,7 +174,8 @@ class App
   protected function initConfig()
   {
     $ConfigFilesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Configs");
-    if (!is_dir($ConfigFilesDir)) return true;
+    if (!is_dir($ConfigFilesDir))
+      return true;
     $ConfigFiles = FileHelper::scandir($ConfigFilesDir);
 
     if (in_array("Config.php", $ConfigFiles)) {
@@ -229,8 +232,10 @@ class App
       }
     }
     foreach ($LocaRouteFiles as $FileItem) {
-      include_once($FileItem);
-      Router::prefix(null);
+      if (!is_dir($FileItem)) {
+        include_once($FileItem);
+        Router::prefix(null);
+      }
     }
 
     return true;
@@ -288,7 +293,8 @@ class App
   }
   private function executeMiddleware($Middlewares, Controller $Controller, \Closure $callback)
   {
-    if (!count($Middlewares) === 0) return $callback();
+    if (!count($Middlewares) === 0)
+      return $callback();
 
     $middleware = array_shift($Middlewares);
     if (count($Middlewares) > 0) {
@@ -388,7 +394,8 @@ class App
     header('Access-Control-Max-Age:86400');
     header('Access-Control-Allow-Credentials: true');
 
-    if ($this->request()->method === "options") return;
+    if ($this->request()->method === "options")
+      return;
 
     //* 载入扩展
     if (Config::get("extensions")) {
