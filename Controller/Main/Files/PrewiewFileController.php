@@ -38,11 +38,11 @@ class PrewiewFileController extends FileBaseController
 
       return $this->response->redirect($URL, 302);
     } else {
-      // $FilePath = FileHelper::combinedFilePath(F_APP_STORAGE, $File->filePath);
-      if (!file_exists($File->filePath)) {
+      $FilePath = FileHelper::combinedFilePath(F_APP_STORAGE, $File->filePath);
+      if (!file_exists($FilePath)) {
         return $this->response->error(404, 404, "文件不存在", "文件实体不存在");
       }
-      return $this->response->file($File->filePath);
+      return $this->response->file($FilePath);
     }
   }
 }

@@ -242,7 +242,7 @@ abstract class AbstractStorage extends AbilityBaseObject
 
     if ($SignAlgorithm !== StorageSignature::getSignAlgorithm()) return $this->break(400, "verifyAuth:400002", "参数错误");
     if (strpos($SignTime, ";") === false || strpos($KeyTime, ";") === false) return $this->break(400, "verifyAuth:400003", "参数错误");
-    if ($SignTime !== $KeyTime) return $this->break(400, "verifyAuth:400004", "参数错误");;
+    if ($SignTime !== $KeyTime) return $this->break(400, "verifyAuth:400004", "参数错误");
     list($startTime, $endTime) = explode(";", $SignTime);
     list($keyStartTime, $keyEndTime) = explode(";", $KeyTime);
     $startTime = intval($startTime);
