@@ -226,6 +226,7 @@ abstract class AbstractStorage extends AbilityBaseObject
         return $this->break(400, "verifyAuth:400001", "缺少参数");
       }
     }
+    unset($RawURLParams['__storage_platform']);
 
     $SignAlgorithm = $RawURLParams['sign-algorithm'];
     $SignTime = urldecode($RawURLParams['sign-time']);

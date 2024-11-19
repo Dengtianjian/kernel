@@ -20,6 +20,10 @@ class FileBaseController extends AuthController
   {
     parent::__construct($R);
 
+    if ($this->request->query->get("__storage_platform") && StorageService::hasPlatform($this->request->query->get("__storage_platform"))) {
+      StorageService::switchPlatform($this->request->query->get("__storage_platform"));
+    }
+
     $this->platform = StorageService::getPlatform();
   }
 }
