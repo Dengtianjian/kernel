@@ -37,12 +37,12 @@ use kernel\Foundation\Output;
       Trace:
     <pre><? Output::printContent(implode("\n", $traceString)) ?></pre>
     </p>
-    <?php if(F_APP_MODE==="development"){ ?>
-    <p>
-      Details:
-    <pre><? Output::printContent($error) ?></pre>
-    </p>
-   <?php } ?>
+    <?php if (F_APP_MODE === "development") { ?>
+      <p>
+        Details:
+      <pre><? Output::printContent($error) ?></pre>
+      </p>
+    <?php } ?>
   </section>
 </body>
 

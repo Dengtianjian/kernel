@@ -103,18 +103,33 @@ abstract class AbstractStorage extends AbilityBaseObject
 
     return $this;
   }
+  public function disableAuth()
+  {
+    $this->authorizationEnabled = FALSE;
+
+    return $this;
+  }
 
   protected $ACLEnabled = false;
   protected $ACL_currentAuthId = null;
-  public function enableACL($AuthId)
+  public function enableACL($AuthId = null)
   {
-    $this->ACLEnabled = true;
-    $this->ACL_currentAuthId = $AuthId;
+    $this->ACLEnabled = TRUE;
+    if ($AuthId) {
+      $this->ACL_currentAuthId = $AuthId;
+    }
     $this->enableAuth();
 
     return $this;
   }
-  protected function getACAuthId()
+  public function disableAC()
+  {
+    $this->ACLEnabled = FALSE;
+    $this->disableAuth();
+
+    return $this;
+  }
+  function getACAuthId()
   {
     if (is_callable($this->ACL_currentAuthId)) return call_user_func($this->ACL_currentAuthId);
 

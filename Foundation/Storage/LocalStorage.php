@@ -48,6 +48,10 @@ class LocalStorage extends AbstractStorage
         return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
       }
       $fileInfo = FileManager::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $fileKey)));
+
+      $dirName = pathinfo($fileKey, PATHINFO_DIRNAME);
+      $fileInfo['path'] = !$dirName || $dirName === '.' ? NULL : $dirName;
+
       if (!$fileInfo) {
         return $this->break(404, 404, "文件不存在");
       };
