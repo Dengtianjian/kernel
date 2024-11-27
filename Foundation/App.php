@@ -31,9 +31,7 @@ class App
   protected $request = null; //* 请求相关
   public $Route = null; //* 当前匹配到的路由
   protected $startTime = null; //* 开始时间戳
-  protected function __clone()
-  {
-  }
+  protected function __clone() {}
   /**
    * 构造App
    *
@@ -176,32 +174,42 @@ class App
     $ConfigFilesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Configs");
     if (!is_dir($ConfigFilesDir))
       return true;
-    $ConfigFiles = FileHelper::scandir($ConfigFilesDir);
 
-    if (in_array("Config.php", $ConfigFiles)) {
-      Config::read(FileHelper::combinedFilePath($ConfigFilesDir, "Config.php"));
+    $ReadConfigFiles = ["Config.php", "Config.development.php", "Config.local.php", "Config.production.php", "Config.release.php"];
+
+    /**
+     ** 读取配置文件顺序
+     ** default(Config.php) -> 
+     ** development(Config.development.php) -> 
+     ** local(Config.local.php) -> 
+     ** production(Config.production.php) -> 
+     ** release(Config.release.php)
+
+     ** 先读取（存在的话） Config.php 默认配置文件
+     ** 再读取（存在的话） Config.development.php 开发配置文件
+     ** 再读取（存在的话） Config.local.php 本地配置文件
+     ** 再读取（存在的话） Config.production.php 产品配置文件
+     ** 再读取（存在的话） Config.release.php 发布配置文件
+
+     ** 最后读取的文件覆盖之前的文件配置 releae 覆盖 production 覆盖 local 覆盖 development 覆盖 default
+     */
+
+    $mode = "production";
+    foreach ($ReadConfigFiles as $ConfigFileName) {
+      // preg_match("/Config\.(\w+)\.php/", $ConfigFileName, $Matchs);
+      // $fileMode = null;
+      // if ($Matchs && count($Matchs) === 2) {
+      //   $fileMode = $Matchs[1];
+      // }
+
+      $ReadConfigs = Config::read(FileHelper::combinedFilePath($ConfigFilesDir, $ConfigFileName));
+      if ($ReadConfigs && $ReadConfigs[F_APP_ID]) {
+        $mode = array_key_exists("mode", $ReadConfigs[F_APP_ID]) ? $ReadConfigs[F_APP_ID]['mode'] : $mode;
+      }
     }
-    $CurrentMode = Config::get("mode");
-    $WalkModes = [$CurrentMode];
-    //* 有可能读取了配置文件后，改变了模式。例如默认配置文件是release模式，但是release里面的mode是production，也就是release基于production模式，就需要读取production模式的文件，合并配置
-    //* 这里会循环寻找继承的配置文件。不管找到的配置文件mode是否还有继承，找到的配置文件mode在WalkModes里面，就会终止掉循环
-    //* 因为找到了已经合并过的配置，说明到头，如果再去找就会出现死循环，default -> development -> local 如果这时local配置的mode是default 那default的mode又是development 那么就会进入到死循环，所以就需要终止。
-    while (in_array($CurrentMode, $WalkModes)) {
-      $CurrentMode = Config::get("mode");
-      if (!isset($CurrentMode) || $CurrentMode === null) {
-        break;
-      }
-      if (!defined("F_APP_MODE")) {
-        define("F_APP_MODE", Config::get("mode"));
-      }
-      if (in_array("Config.$CurrentMode.php", $ConfigFiles)) {
-        Config::read(FileHelper::combinedFilePath($ConfigFilesDir, "Config.$CurrentMode.php"));
-      } else {
-        break;
-      }
-    }
+
     if (!defined("F_APP_MODE")) {
-      define("F_APP_MODE", Config::get("mode"));
+      define("F_APP_MODE", $mode);
     }
 
     return true;
