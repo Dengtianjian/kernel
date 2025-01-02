@@ -6,20 +6,25 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
-use DB;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Date;
 
 class DiscuzXModel extends Model
 {
-  function __construct($tableName = null)
+  function __construct($tableName = null, $prefix = null)
   {
-    if ($tableName) {
-      $this->tableName = $tableName;
-    } else {
+    if (!$tableName) {
       $tableName = $this->tableName;
     }
+    if ($prefix) {
+      $tableName = join("_", [
+        $prefix,
+        $tableName
+      ]);
+    }
+
+    $this->tableName = $tableName;
     $this->query = new DiscuzXQuery($tableName);
 
     $this->DB = \DB::class;
