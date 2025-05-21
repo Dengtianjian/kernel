@@ -124,6 +124,21 @@ class ResponseFile extends ResponseDownload
     imagedestroy($targetImage);
     imagedestroy($sourceImage);
   }
+  protected function setCache($fileTag)
+  {
+    $fileTag = md5($fileTag);
+
+    if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
+      $Etag = $_SERVER['HTTP_IF_NONE_MATCH'];
+      if ($fileTag === $Etag) {
+        header("HTTP/1.1 304 Not Modified");
+        exit;
+      }
+    }
+    header("Last-modified:" . date("D, d M Y H:i:s", time()));
+    header("etag: " . $fileTag);
+    header("cache-control:no-cache");
+  }
   public function output()
   {
     header('Accept-Ranges: bytes');
@@ -147,25 +162,17 @@ class ResponseFile extends ResponseDownload
           header("Content-type: image/{$outputExtension};", true);
         }
 
-        $fileTag = $this->filePath . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio";
-        $fileTag = md5($fileTag);
-
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
-          $etag = $_SERVER['HTTP_IF_NONE_MATCH'];
-          if ($fileTag === $etag) {
-            header("HTTP/1.1 304 Not Modified");
-            exit;
-          }
-        }
-        header("Last-modified:" . date("D, d M Y H:i:s", time()));
-        header("etag: " . $fileTag);
-        header("cache-control:no-cache");
+        $this->setCache($this->filePath . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio");
 
         $this->createThumb($this->filePath, $this->fileName, $targetWdith, $targetHeight, $targetRatio, $outputExtension);
       } else {
+        $this->setCache($this->filePath);
+
         $this->printContent(false);
       }
     } else {
+      $this->setCache($this->filePath);
+
       if (file_exists($this->filePath)) {
         $this->printContent(true);
       } else {
