@@ -49,6 +49,14 @@ class Arr
    */
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
+    usort($arr, function ($a, $b) {
+      if ($a['parentId'] && $b['parentId']) return 0;
+      if ($a['parentId']) return 1;
+      if ($b['parentId']) return -1;
+
+      return 0;
+    });
+
     $arr = self::indexToAssoc($arr, $dataPrimaryKey);
     $result = [];
     foreach ($arr as &$arrItem) {
