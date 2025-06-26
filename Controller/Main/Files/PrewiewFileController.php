@@ -42,7 +42,8 @@ class PrewiewFileController extends FileBaseController
       if (!file_exists($FilePath)) {
         return $this->response->error(404, 404, "文件不存在", "文件实体不存在");
       }
-      return $this->response->file($FilePath);
+
+      return $this->response->file($FilePath, $File->fileName, null, "max-age=43200");
     }
   }
 }

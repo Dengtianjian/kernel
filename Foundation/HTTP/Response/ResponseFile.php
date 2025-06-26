@@ -14,16 +14,28 @@ class ResponseFile extends ResponseDownload
    */
   private $imageQuality = null;
   /**
+   * HTTP 缓存控制
+   */
+  private $cacheControl = "no-cache";
+  /**
+   * HTTP 资源过期时间，秒级时间戳
+   */
+  private $httpExpires = null;
+  /**
    * 文件格式输出响应
    *
    * @param Request $R 请求体
    * @param string $filePath 下载的文件绝对路径
    * @param ?string $downloadFileName 下载到下载者设备时保存的文件名
    * @param int $imageQuality 如果是图片类型文件，该值将影响输出的图片质量
+   * @param string $cacheControl HTTP 缓存控制属性值
+   * @param string $httpExpires HTTP 资源过期时间，秒级时间戳
    */
-  public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = null)
+  public function __construct(Request $R, $filePath, $downloadFileName = null, $imageQuality = null, $cacheControl = "no-cache", $httpExpires = null)
   {
     $this->imageQuality = $imageQuality;
+    $this->cacheControl = $cacheControl;
+    $this->httpExpires = $httpExpires;
     parent::__construct($R, $filePath, $downloadFileName, false);
   }
   private function createThumb($filePath, $fileName, $targetWdith, $targetHeight, $targetRatio, $NewExtension = null)
@@ -137,7 +149,12 @@ class ResponseFile extends ResponseDownload
     }
     header("Last-modified:" . date("D, d M Y H:i:s", time()));
     header("etag: " . $fileTag);
-    header("cache-control:no-cache");
+
+    header("cache-control: {$this->cacheControl}");
+
+    if ($this->httpExpires) {
+      header("expires: {$this->httpExpires}");
+    }
   }
   public function output()
   {

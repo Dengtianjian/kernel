@@ -16,11 +16,13 @@ class ControllerResponse extends Response
    * @param string $filePath 下载的文件绝对路径
    * @param ?string $downloadFileName 下载到下载者设备时保存的文件名
    * @param int $imageQuality 如果是图片类型文件，该值将影响输出的图片质量
+   * @param string $cacheControl HTTP 缓存控制属性值
+   * @param string $httpExpires HTTP 资源过期时间，秒级时间戳
    * @return ResponseFile
    */
-  function file($filePath, $downloadFileName = null, $imageQuality = null)
+  function file($filePath, $downloadFileName = null, $imageQuality = null, $cacheControl = "no-cache", $httpExpires = null)
   {
-    return new ResponseFile(getApp()->request(), $filePath, $downloadFileName, $imageQuality);
+    return new ResponseFile(getApp()->request(), $filePath, $downloadFileName, $imageQuality, $cacheControl, $httpExpires);
   }
   /**
    * 下载文件响应
