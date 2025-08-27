@@ -288,7 +288,7 @@ class App
   /**
    * 设置中间件
    *
-   * @param \Closure|object $classOrFun 中间件类或者函数
+   * @param \Closure|object|string $classOrFun 中间件类或者函数
    * @param array $executeParams 执行中间件时传入的参数
    * @return void
    */
