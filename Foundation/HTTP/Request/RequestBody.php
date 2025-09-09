@@ -14,8 +14,12 @@ class RequestBody extends RequestData
 
     $RequestHeaders = getallheaders();
     $contentType = $RequestHeaders['Content-Type'] ?: null;
-    if (strpos($contentType, "multipart/form-data") !== false) $contentType = "multipart/form-data";
-    if (strpos($contentType, "application/x-www-form-urlencoded") !== false) $contentType = "application/x-www-form-urlencoded";
+    if (strpos($contentType, "multipart/form-data") !== false)
+      $contentType = "multipart/form-data";
+    if (strpos($contentType, "application/x-www-form-urlencoded") !== false)
+      $contentType = "application/x-www-form-urlencoded";
+
+    $contentType = explode(";", $contentType)[0];
 
     $input = \file_get_contents("php://input");
 

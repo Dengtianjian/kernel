@@ -84,7 +84,7 @@ class Response
    * @param string $message 响应信息
    * @param array $details 响应详情，主要针对报错
    */
-  public function __construct($data = [], $statusCode = 200, $code = 200000, $message = "ok", $details = [])
+  public function __construct($data = [], $statusCode = 200, $code = 200, $message = "ok", $details = [])
   {
     $this->ResponseStatusCode = $statusCode;
     $this->ResponseData = $data;
@@ -213,7 +213,7 @@ class Response
    * @param string $message 响应信息
    * @return Response
    */
-  public function success($data, $statusCode = 200, $code = 200000, $message = "ok")
+  public function success($data, $statusCode = 200, $code = 200, $message = "ok")
   {
     $this->ResponseStatusCode = $statusCode;
     $this->ResponseData = $data;

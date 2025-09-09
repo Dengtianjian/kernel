@@ -38,6 +38,11 @@ class App
    * @param string $AppId AppId，也是项目文件夹名称
    * @param string $KernelId 指定kernel所在文件夹名称，也是kernel的ID
    */
+  /**
+   * 构建 App
+   * @param string $AppId 设定一个 APP 唯一 ID，跟项目目录同名
+   * @param string $KernelId 修改内核默认AppId。内核也是一个 APP，所有也有ID，默认是 kernel
+   */
   function __construct($AppId, $KernelId = "kernel")
   {
     $this->startTime = Date::milliseconds();
@@ -288,7 +293,7 @@ class App
   /**
    * 设置中间件
    *
-   * @param \Closure|object $classOrFun 中间件类或者函数
+   * @param \Closure|object|string $classOrFun 中间件类或者函数
    * @param array $executeParams 执行中间件时传入的参数
    * @return void
    */

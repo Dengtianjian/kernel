@@ -263,7 +263,7 @@ class Curl
    * @param string $password 代理用户密码
    * @return Curl
    */
-  public function proxy($url, $port,  $username = "", $password = "")
+  public function proxy($url, $port, $username = "", $password = "")
   {
     $this->proxy["open"] = true;
     $this->proxy["url"] = $url;
@@ -364,12 +364,12 @@ class Curl
       }
     }
     $headers = Arr::merge($defaultHeaders, $this->curlHeaders);
-    $headers = $this->buildHeaders($headers);
+    $headerString = $this->buildHeaders($headers);
     $options = [
       CURLOPT_URL => $this->requestUrl, //* 请求地址
       CURLOPT_RETURNTRANSFER => true, //* 直接返回原生rawData
       CURLOPT_TIMEOUT => $this->curlTimeout, //* 超时
-      CURLOPT_HTTPHEADER => $headers, //* headers
+      CURLOPT_HTTPHEADER => $headerString, //* headers
       CURLOPT_CUSTOMREQUEST => \strtoupper($this->curlMethod), //* 请求方法
       CURLOPT_COOKIE => $this->buildCookie($this->curlCookie) //* cookies
     ];
@@ -379,6 +379,9 @@ class Curl
     if ($this->curlMethod !== "get") {
       $options[CURLOPT_POST] = true;
       if ($this->curlDatas && !empty($this->curlDatas)) {
+        if (array_key_exists("Content-Type", $headers) && $headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+          $sendDatas = http_build_query($sendDatas);
+        }
         $options[CURLOPT_POSTFIELDS] = $sendDatas;
       }
       $options[CURLOPT_HTTPGET] = false;
@@ -401,9 +404,9 @@ class Curl
     //* 开启代理
     if ($this->proxy['open']) {
       $options[CURLOPT_PROXY] = $this->proxy['url'];
-      $options[CURLOPT_PROXYPORT] =  $this->proxy['port'];
+      $options[CURLOPT_PROXYPORT] = $this->proxy['port'];
       if ($this->proxy['username']) {
-        $options[CURLOPT_PROXYUSERPWD] =  $this->proxy['username'] . ":" . $this->proxy['password'];
+        $options[CURLOPT_PROXYUSERPWD] = $this->proxy['username'] . ":" . $this->proxy['password'];
       }
     }
 
@@ -431,7 +434,7 @@ class Curl
           $this->responseStatusCode = $responseHeaders['http-status-code'];
         }
       } else {
-        $key = trim(substr($headerItem, 0,  $firstColon));
+        $key = trim(substr($headerItem, 0, $firstColon));
         $value = trim(substr($headerItem, $firstColon + 1));
         $responseHeaders[$key] = $value;
       }
