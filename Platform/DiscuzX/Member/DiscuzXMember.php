@@ -482,8 +482,10 @@ class DiscuzXMember
       ])->getAll();
       $memberCredits = array_merge($memberCredits, $archiveMemberArchive);
     }
-    if (!count($memberCredits) && !is_array($memberId)) return null;
-    if (is_array($memberId)) return Arr::indexToAssoc($memberCredits, "uid");
+    if (!count($memberCredits) && !is_array($memberId))
+      return null;
+    if (is_array($memberId))
+      return Arr::indexToAssoc($memberCredits, "uid");
     return $memberCredits[0];
   }
   public static function group($groupId = null, $simple = false)
@@ -502,8 +504,10 @@ class DiscuzXMember
     foreach ($memberGroups as &$item) {
       $item['icon'] = get_groupimg($item['icon']);
     }
-    if (!count($memberGroups) && !is_array($groupId)) return null;
-    if (is_array($groupId)) return Arr::indexToAssoc($memberGroups, "groupid");
+    if (!count($memberGroups) && !is_array($groupId))
+      return null;
+    if (is_array($groupId))
+      return Arr::indexToAssoc($memberGroups, "groupid");
     return $memberGroups[0];
   }
   public static function newPrompt($memberId = null)
@@ -522,8 +526,10 @@ class DiscuzXMember
         unset($promptItem['data']);
       }
     }
-    if (!count($prompts) && !is_array($memberId)) return null;
-    if (is_array($memberId)) return $prompts;
+    if (!count($prompts) && !is_array($memberId))
+      return null;
+    if (is_array($memberId))
+      return $prompts;
     return $prompts[$memberId];
   }
   public static function get($memberId = null, $detailed = true, $dataConversionRules = null)
@@ -546,9 +552,10 @@ class DiscuzXMember
       $members = array_merge($members, $archiveMembers);
     }
 
-    if (empty($members)) return is_array($memberId) ? [] : null;
+    if (empty($members))
+      return is_array($memberId) ? [] : null;
 
-    $Groups =  self::group(array_column($members, "groupid"), !$detailed);
+    $Groups = self::group(array_column($members, "groupid"), !$detailed);
     $Credits = [];
     $Prompts = [];
     $userForumFields = [];
@@ -614,5 +621,16 @@ class DiscuzXMember
       "list" => $Members,
       "total" => $CMT->count()
     ];
+  }
+  /**
+   * 查看用户是否存在
+   * @param int $UserId 查询的用户 ID
+   * @return bool true=存在，false=不存在
+   */
+  public static function exist($UserId)
+  {
+    $CM = new DiscuzXModel("common_member");
+
+    return (bool)$CM->where("uid", $UserId)->exist();
   }
 }
