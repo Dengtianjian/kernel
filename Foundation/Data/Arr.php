@@ -50,9 +50,12 @@ class Arr
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
     usort($arr, function ($a, $b) {
-      if ($a['parentId'] && $b['parentId']) return 0;
-      if ($a['parentId']) return 1;
-      if ($b['parentId']) return -1;
+      if ($a['parentId'] && $b['parentId'])
+        return 0;
+      if ($a['parentId'])
+        return 1;
+      if ($b['parentId'])
+        return -1;
 
       return 0;
     });
@@ -90,7 +93,8 @@ class Arr
       if (!$array) {
         continue;
       }
-      if (!is_array($array)) continue;
+      if (!is_array($array))
+        continue;
       foreach ($array as $key => $value) {
         if (is_string($key)) {
           if (
@@ -140,7 +144,7 @@ class Arr
    * @param array $keys 要抽取的key值
    * @return array
    */
-  static function partial($target,  $keys)
+  static function partial($target, $keys)
   {
     $result = [];
     foreach ($keys as $key) {
@@ -157,7 +161,7 @@ class Arr
    * @param string $byKey 每个数组共同的key，就是根据这个key来分组
    * @return array
    */
-  static function group($target,  $byKey)
+  static function group($target, $byKey)
   {
     $result = [];
     foreach ($target as $item) {
@@ -214,5 +218,16 @@ class Arr
     }
 
     return $res;
+  }
+  /**
+   * 过滤空值 并且 移除数组中重复的值
+   * @param array $Target 操作的数组
+   * @return array 过滤后的数组
+   */
+  static function filterNullUnique($Target)
+  {
+    return array_unique(array_filter($Target, function ($item) {
+      return !is_null($item) && !empty($item);
+    }));
   }
 }
