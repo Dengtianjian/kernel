@@ -116,6 +116,8 @@ class Controller
       $this->response->addData(Serializer::serialization($this->serializes->useRuleName, $this->response->getData()), true);
     } else if (is_array($this->serializes)) {
       $this->response->addData(Serializer::serialization($this->serializes, $this->response->getData(), $ClassName), true);
+    } else if (gettype($this->serializes) === "string") {
+      $this->response->addData(Serializer::serialization($this->serializes, $this->response->getData(), $ClassName), true);
     }
   }
   /**
@@ -128,7 +130,8 @@ class Controller
     if (!$this->request->query->has("_pipes") && !$this->request->body->has("_pipes")) {
       return;
     }
-    if ($this->response->error) return;
+    if ($this->response->error)
+      return;
     $requestPipes = $this->request->query->get("_pipes");
     if (!$requestPipes) {
       $requestPipes = $this->request->body->get("_pipes");

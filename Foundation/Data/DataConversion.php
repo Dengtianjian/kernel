@@ -32,6 +32,7 @@ class DataConversion
   private $removeNotExistRuleKey = false;
   /**
    * 字符串处理方式  
+   * **false**不处理
    * **0**=使用**addslashed**进行处理  
    * **1**=使用**stripslashes**进行处理
    *
@@ -44,7 +45,7 @@ class DataConversion
    * @param array|string $types 期望转换的目标类型，或者目标类型数组。例如传入string，那通过data传入的数据就会被转换为string，如果type为空，调用convert时也没传入类型规则或者目标类型，就会自动识别并转换类型。传入是数组的话就会和data的键值相匹配，把data对应规则的值转换，例如规则是[username=>int] 那传入的数据是[username=>"9910"] 调用convert就会返回[username=>9910] 9910被转换为了整数
    * @param boolean $completion 补全data不存在的键。假设传入类型数组是[username=>string,age=>int]，而传入需要转换的数据是[username=>"admin"]，当调用convert时就会返回[username=>"admin",age=>null]
    * @param boolean $removeNotExistRuleKey 剔除不存在类型规则的键。假设传入类型数组是[username=>string]，而传入需要转换的数据是[username=>"admin",age=>8]，当调用convert时就会返回[username=>"admin"]
-   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理
+   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理，**false**不处理字符串
    */
   public function __construct($types = null, $completion = false, $removeNotExistRuleKey = false, $stringHandleMethod = 0)
   {
@@ -134,7 +135,8 @@ class DataConversion
    */
   private function auto($target)
   {
-    if (is_null($target)) return $target;
+    if (is_null($target))
+      return $target;
 
     if (is_numeric($target)) {
       if (strpos(strval($target), ".") === false) {
@@ -145,7 +147,7 @@ class DataConversion
     } else if (is_string($target)) {
       if ($this->stringHandleMethod == 0) {
         $target = addslashes($target);
-      } else {
+      } else if ($this->stringHandleMethod == 1) {
         $target = stripslashes($target);
       }
     }
@@ -188,16 +190,19 @@ class DataConversion
    */
   public function convert($types = null)
   {
-    if (is_null($this->data)) return false;
+    if (is_null($this->data))
+      return false;
     if (is_null($types)) {
-      if (is_null($this->types)) return false;
+      if (is_null($this->types))
+        return false;
       $types = $this->types;
     }
 
     $Data = $this->removeNotExistRuleKey ? [] : $this->data;
 
     if (is_array($types)) {
-      if (!is_array($this->data)) return false;
+      if (!is_array($this->data))
+        return false;
 
       if (Arr::isAssoc($this->data)) {
         foreach ($types as $key => $type) {
@@ -291,7 +296,7 @@ class DataConversion
    * @param string|array $type 类型规则或者目标类型
    * @param boolean $completion 是否补全不存在的键
    * @param boolean $removeNotExistRuleKey 是否剔除规则不存在的键
-   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理
+   * @param int $stringHandleMethod 字符串处理方式。**0**=使用**addslashed**进行处理，**1**=使用**stripslashes**进行处理，**false**不处理字符串
    * @return mixed 转换后的数据
    */
   public static function quick($target, $type = null, $completion = false, $removeNotExistRuleKey = false, $stringHandleMethod = 0)

@@ -39,15 +39,19 @@ class Serializer
    */
   static function get($Names, $upperLevel = null)
   {
-    if (is_null($upperLevel)) $upperLevel = self::$Rules;
+    if (is_null($upperLevel))
+      $upperLevel = self::$Rules;
     if (!is_array($Names)) {
       $Names = explode(".", $Names);
     }
     $Name = array_shift($Names);
-    if (!isset($upperLevel[$Name])) return null;
+    if (!isset($upperLevel[$Name]))
+      return null;
     $Rule = $upperLevel[$Name];
-    if (is_null($Rule)) return null;
-    if (count($Names) === 0) return $Rule;
+    if (is_null($Rule))
+      return null;
+    if (count($Names) === 0)
+      return $Rule;
     return self::get($Names, $Rule);
   }
   /**
@@ -72,21 +76,31 @@ class Serializer
    */
   static function serialization($RuleOrName, $Data, $SerializerName = "temp")
   {
-    if (is_null($Data) || !is_array($Data) || count($Data) === 0) return $Data;
+    if (is_null($Data))
+      return $Data;
+    if (!is_array($Data)) {
+      return DataConversion::quick($Data, $RuleOrName, false, false, false);
+    }
+
+    if (count($Data) === 0)
+      return $Data;
     $Rule = is_array($RuleOrName) ? $RuleOrName : self::get($RuleOrName);
     if (is_null($Rule)) {
       throw new Exception("序列化规则不存在");
     }
     if (!Arr::isAssoc($Data)) {
       foreach ($Data as &$dataItem) {
-        if (!is_array($dataItem)) continue;
-        if (array_key_exists("_serilizer", $dataItem)) continue;
+        if (!is_array($dataItem))
+          continue;
+        if (array_key_exists("_serilizer", $dataItem))
+          continue;
         $dataItem = self::serialization($Rule, $dataItem, $SerializerName);
       }
       return $Data;
     }
 
-    if (array_key_exists("_serilizer", $Data)) return $Data;
+    if (array_key_exists("_serilizer", $Data))
+      return $Data;
     $DataKeys = array_keys($Data);
     $ruleKeys = [];
     //* 考虑到可能传入的是关联素组和索引数组混合，那索引数组的键是索引，而值才是要的的字段名称，通过array_filter函数把索引元素的值推送到ruleKeys里面
@@ -107,7 +121,8 @@ class Serializer
           $Data[$RuleItem] = null;
         }
         continue;
-      };
+      }
+      ;
       if (isset($Data[$FieldName])) {
         if ($RuleItem instanceof Serializer) {
           $Data[$FieldName] = self::serialization($RuleItem->useRuleName, $Data[$FieldName]);
