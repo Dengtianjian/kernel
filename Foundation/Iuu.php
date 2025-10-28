@@ -21,7 +21,7 @@ class Iuu
   }
   public function install()
   {
-    $installFile =  F_APP_ROOT . "/Iuu/Install/Install.php";
+    $installFile = F_APP_ROOT . "/Iuu/Install/Install.php";
     if (\file_exists($installFile)) {
       // include_once($installFile);
       $className = "\\" . F_APP_ID . "\Iuu\Install\Install";
@@ -32,16 +32,19 @@ class Iuu
     }
     return $this;
   }
-  public function upgrade($TargetVersion = null, $UpgradeCallback = null)
+  public function upgrade($TargetVersion = null, $UpgradeCallback = null, $UpgradeListFileName = null): bool|Iuu
   {
-    $UpgradeListFile = FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "UpgradeList.php");
-    if (!file_exists($UpgradeListFile)) return true;
+    $UpgradeListFile = $UpgradeListFileName ? $UpgradeListFileName : FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "UpgradeList.php");
+    if (!file_exists($UpgradeListFile))
+      return true;
     $UpgradeList = include_once($UpgradeListFile);
     ksort($UpgradeList);
     $currentVersion = $this->fromVersion;
     foreach ($UpgradeList as $Version => $VersionCallback) {
-      if ($TargetVersion && version_compare($Version, $TargetVersion, ">") === true) continue;
-      if (version_compare($currentVersion, $Version, ">=") === true) continue;
+      if ($TargetVersion && version_compare($Version, $TargetVersion, ">") === true)
+        continue;
+      if (version_compare($currentVersion, $Version, ">=") === true)
+        continue;
 
       if (!is_null($VersionCallback)) {
         if (is_callable($VersionCallback)) {
@@ -66,7 +69,7 @@ class Iuu
   }
   public function uninstall()
   {
-    $uninstallFile =  F_APP_ROOT . "/Iuu/Uninstall/Uninstall.php";
+    $uninstallFile = F_APP_ROOT . "/Iuu/Uninstall/Uninstall.php";
     if (\file_exists($uninstallFile)) {
       // include_once($installFile);
       $className = "\\" . F_APP_ID . "\Iuu\Uninstall\Uninstall";
