@@ -12,7 +12,7 @@ class ResponseError extends Response
    *
    * @param array $data 响应的数据
    * @param integer $statusCode HTTP状态码
-   * @param integer $code 响应码
+   * @param integer|string $code 响应码
    * @param string $message 响应信息
    * @param array $details 响应详情，主要针对报错
    * @inherits Response
