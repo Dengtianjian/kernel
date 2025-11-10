@@ -65,7 +65,7 @@ class Response
   /**
    * 响应输出的格式
    *
-   * @var json|text|xml|html
+   * @var "json"|"text"|"xml"|"html"
    */
   protected $OutputType = NULL;
   /**
@@ -78,13 +78,13 @@ class Response
   /**
    * 构建响应
    *
-   * @param array $data 响应的数据
+   * @param array|null $data 响应的数据
    * @param integer $statusCode HTTP状态码
    * @param integer $code 响应码
    * @param string $message 响应信息
    * @param array $details 响应详情，主要针对报错
    */
-  public function __construct($data = [], $statusCode = 200, $code = 200, $message = "ok", $details = [])
+  public function __construct($data = null, $statusCode = 200, $code = 200, $message = "ok", $details = [])
   {
     $this->ResponseStatusCode = $statusCode;
     $this->ResponseData = $data;
@@ -157,7 +157,7 @@ class Response
    * @param boolean $replace 是否替换
    * @return Response
    */
-  public function header($key,  $value,  $replace = true)
+  public function header($key, $value, $replace = true)
   {
     array_push($this->ResponseHeaders, [
       "key" => $key,
@@ -227,7 +227,7 @@ class Response
    * 设置/获取HTTP状态码
    *
    * @param integer $statusCode
-   * @return Response
+   * @return Response|int
    */
   public function statusCode($statusCode = null)
   {
@@ -260,7 +260,7 @@ class Response
   public function addBody($responseBody, $cover = false)
   {
     if ($cover) {
-      $this->ResponseAddBody =  $responseBody;
+      $this->ResponseAddBody = $responseBody;
     } else {
       unset($responseBody['data']);
       $this->ResponseAddBody = array_merge($this->ResponseAddBody, $responseBody);

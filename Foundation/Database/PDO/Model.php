@@ -2,13 +2,13 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use InvalidArgumentException;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Date;
-use kernel\Foundation\Object\AbilityBaseObject;
 use mysqli_result;
 
-class Model extends AbilityBaseObject
+class Model extends Table
 {
   /**
    * 数据表名称
@@ -54,6 +54,23 @@ class Model extends AbilityBaseObject
   public static $UpdatedAt = "updatedAt";
   public static $DeletedAt = "deletedAt";
   public static $TimestampFields = [];
+
+  public $attributes = [];
+  private $queryData = [];
+  public function __get($name)
+  {
+    if (property_exists($this, $name)) {
+      return $this->$name;
+    }
+    if (array_key_exists($name, $this->attributes)) {
+      return $this->queryData->$name;
+    }
+
+    throw new InvalidArgumentException("属性 {$name} 不存在于数据表中");
+  }
+  public function __set($name, $value){
+
+  }
 
   /**
    * 构建模型
@@ -198,7 +215,8 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $InsertResult = $DB::query($sql);
     $InsertId = $DB::insertId();
@@ -239,13 +257,15 @@ class Model extends AbilityBaseObject
     }
 
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
   function update($data)
   {
-    if (!$data) return 0;
+    if (!$data)
+      return 0;
     $Call = get_class($this);
     if ($Call::$Timestamps) {
       $now = time();
@@ -260,7 +280,8 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->update($data)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
@@ -280,11 +301,12 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
-  function delete($directly = false)
+  function delete($directly = true)
   {
     if ($directly) {
       $sql = $this->query->delete($directly)->sql();
@@ -309,25 +331,59 @@ class Model extends AbilityBaseObject
       $sql = $this->query->update($data)->sql();
     }
 
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
+  /**
+   * 软删除
+   * 只更新 deleteAt 字段，不做记录删除
+   */
+  function softDelete()
+  {
+    return $this->delete(true);
+  }
   function getAll()
   {
-    if ($this->returnSql) return $this->query->get()->sql();
+    if ($this->returnSql)
+      return $this->query->get()->sql();
     $DB = $this->DB;
     return $DB::getAll($this->query);
   }
   function getOne()
   {
-    if ($this->returnSql) return $this->query->limit(1)->get()->sql();
+    if ($this->returnSql)
+      return $this->query->limit(1)->get()->sql();
     $DB = $this->DB;
     return $DB::getOne($this->query);
   }
+  /**
+   * 列表总条数 
+   * @var int
+   */
+  private $listTotal = [
+    "page" => null,
+    "perPage" => null,
+    "total" => null
+  ];
+  function listTotal(): int
+  {
+    return $this->listTotal;
+  }
+  function list()
+  {
+    $this->filterNullWhere(func_get_args());
+    $this->listTotal = $this->count();
+
+    $this->filterNullWhere(func_get_args());
+
+    return $this->getAll();
+  }
   function each($callback)
   {
-    if ($this->returnSql) return $this->query->get()->sql();
+    if ($this->returnSql)
+      return $this->query->get()->sql();
     $DB = $this->DB;
     $DB::each($this->query, $callback);
     return $this;
@@ -335,11 +391,12 @@ class Model extends AbilityBaseObject
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $countResult = $DB::query($sql);
     if (!empty($countResult)) {
-      return (int)$countResult['0']["COUNT('$field')"];
+      return (int) $countResult['0']["COUNT('$field')"];
     }
     return null;
   }
@@ -351,7 +408,8 @@ class Model extends AbilityBaseObject
   function exist()
   {
     $sql = $this->query->exist()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $exist = $DB::query($sql);
     if ($exist instanceof mysqli_result) {
@@ -383,19 +441,22 @@ class Model extends AbilityBaseObject
 
   function createTable()
   {
-    if (empty($this->tableStructureSQL)) return true;
+    if (empty($this->tableStructureSQL))
+      return true;
     return DB::query($this->tableStructureSQL);
   }
   function increment($field, $value = 1)
   {
     $sql = $this->query->increment($field, $value)->sql();
-    if ($this->returnSql) return $sql;
-    return (int)DB::query($sql);
+    if ($this->returnSql)
+      return $sql;
+    return (int) DB::query($sql);
   }
   function decrement($field, $value = 1)
   {
     $sql = $this->query->decrement($field, $value)->sql();
-    if ($this->returnSql) return $sql;
-    return (int)DB::query($sql);
+    if ($this->returnSql)
+      return $sql;
+    return (int) DB::query($sql);
   }
 }

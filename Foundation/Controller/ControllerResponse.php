@@ -59,6 +59,6 @@ class ControllerResponse extends Response
    */
   function view($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page", $viewFileDir = null)
   {
-    return new ResponseView($viewFile, $viewData, $viewData, $viewFileBaseDir, $templateId, $viewFileDir);
+    return new ResponseView($viewFile, $viewData, $viewFileBaseDir, $templateId, $viewFileDir);
   }
 }

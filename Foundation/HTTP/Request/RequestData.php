@@ -69,7 +69,7 @@ class RequestData
    * 批量获取某些键的值
    *
    * @param string[] $keys 键名索引数组
-   * @return array
+   * @return array|null
    */
   public function some(
     $keys = null,

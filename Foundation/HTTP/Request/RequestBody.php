@@ -2,8 +2,6 @@
 
 namespace kernel\Foundation\HTTP\Request;
 
-use kernel\Foundation\Log;
-
 class RequestBody extends RequestData
 {
   protected $body = [];
@@ -28,7 +26,11 @@ class RequestBody extends RequestData
       switch ($contentType) {
         case "application/xml":
           $data = simplexml_load_string($input, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
-          $this->data = \array_merge($data, $_POST);
+          if ($data) {
+            $this->data = \array_merge((array) $data, $_POST);
+          } else {
+            $this->data = $_POST;
+          }
           break;
         case "application/json":
           $data = json_decode($input, true);
