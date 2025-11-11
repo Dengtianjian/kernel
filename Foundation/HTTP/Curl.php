@@ -322,7 +322,7 @@ class Curl
     return $this;
   }
   /**
-   * 处理cookie数据，转换称curl要求格式
+   * 处理cookie数据，转换成curl要求格式
    *
    * @param array[$key=>$value] $datas 数据
    * @return string 转换后的字符串
