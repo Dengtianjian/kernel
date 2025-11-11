@@ -24,7 +24,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * 8. //DONE 正则查询
  * 9. //DONE wherExists、whereNotExists
  * 10. //DONE where 第一个参数支持传入数组，数组里面的子数组支持设置运算符
- * 11. 解析 raw
+ * 11. 解析 raw，差 insert、update、delete
  * 12. 多数据库连接、切换
  * 13. insert功能
  * 14. update 功能
@@ -217,7 +217,9 @@ class Query extends AbilityBaseObject
       $SQLs['order'] = $orderSQL;
     }
     if ($this->options['pagination'] && $this->executeType != "delete") {
-      $SQLs['pagination'] = SQL::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
+      if (!is_null($this->options['pagination']['limit']) || !is_null($this->options['pagination']['offset'])) {
+        $SQLs['pagination'] = SQL::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
+      }
     }
 
     if ($this->options['groupBy']) {
@@ -230,12 +232,52 @@ class Query extends AbilityBaseObject
 
     return join(" ", $SQLs);
   }
+  /**
+   * 原始 SQL 语句
+   * @param mixed $sql
+   * @return SQL
+   */
+  function raw($sql)
+  {
+    return new SQL($sql);
+  }
+  /**
+   * 设置查询的主表
+   * 
+   * 指定查询操作的目标数据表，支持表别名
+   * 
+   * @example
+   * // 设置用户表
+   * ->from('users')
+   * 
+   * // 设置带别名的表
+   * ->from('users', 'u')
+   * 
+   * @param string $tableName 表名
+   * @param string|null $ASName 表别名（可选）
+   * @return $this
+   */
   function from($tableName, $ASName = null)
   {
     $this->options['from']['tableName'] = $tableName;
     $this->options['from']['asName'] = $ASName;
     return $this;
   }
+  /**
+   * 设置子查询作为数据源
+   * 
+   * 使用子查询或闭包作为查询的数据源
+   * 
+   * @example
+   * // 使用子查询作为数据源
+   * ->fromSub(function($query) {
+   *     return $query->select('id', 'name')->from('users');
+   * }, 'subquery')
+   * 
+   * @param callable|Query $callableOrQuery 子查询或闭包
+   * @param string|null $ASName 子查询别名（可选）
+   * @return $this
+   */
   function fromSub($callableOrQuery, $ASName = null)
   {
     $this->options['from']['tableName'] = $callableOrQuery;
@@ -244,38 +286,72 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * select 语句
-   * @param array $fieldNames 字段名称
-   * @return static
+   * 设置查询字段
+   * 
+   * 指定要查询的字段列表，支持多个参数
+   * 
+   * @example
+   * // 查询指定字段
+   * ->select('id', 'name', 'email')
+   * 
+   * // 查询所有字段
+   * ->select('*')
+   * 
+   * @param mixed ...$column 字段名列表
+   * @return $this
    */
-  function select(...$fieldNames)
+  function select(...$column)
   {
     $this->executeType = "select";
 
-    $this->addSelect(...$fieldNames);
+    $this->addSelect(...$column);
 
     return $this;
   }
   /**
-   * select raw 方法，传入的是字段 SQL
-   * @param string $fieldSQL 字段 SQL
-   * @return static
+   * 设置原始SQL查询字段
+   * 
+   * 使用原始SQL表达式作为查询字段
+   * 
+   * @example
+   * // 使用SQL表达式
+   * ->selectRaw('COUNT(*) as total')
+   * 
+   * // 使用计算字段
+   * ->selectRaw('price * quantity as total_price')
+   * 
+   * @param string $columnSQL 原始SQL字段表达式
+   * @return $this
    */
-  function selectRaw($fieldSQL)
+  function selectRaw($columnSQL)
   {
     $this->executeType = "select";
 
     $this->options['select']['fields'][] = [
       "type" => "raw",
-      "value" => $fieldSQL
+      "value" => $columnSQL
     ];
 
     return $this;
   }
   /**
-   * 添加查询的字段
-   * @param array $column 查询的字段
-   * @return static
+   * 添加查询字段
+   * 
+   * 向现有查询字段列表中添加新字段
+   * 自动识别字段类型（普通字段、原始SQL、带别名字段、SQL 实例）
+   * 
+   * @example
+   * // 添加普通字段
+   * ->addSelect('created_at')
+   * 
+   * // 添加带别名字段
+   * ->addSelect('name as username')
+   * 
+   * // 添加多个字段
+   * ->addSelect('field1', 'field2', 'field3')
+   * 
+   * @param mixed ...$column 字段名或表达式
+   * @return $this
    */
   function addSelect(...$column)
   {
@@ -302,6 +378,21 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+  /**
+   * 设置子查询作为查询字段
+   * 
+   * 使用子查询的结果作为查询的一个字段
+   * 
+   * @example
+   * // 使用子查询作为字段
+   * ->selectSub(function($query) {
+   *     return $query->selectRaw('COUNT(*)')->from('orders');
+   * }, 'order_count')
+   * 
+   * @param callable|Query $callbackOrQuery 子查询或闭包
+   * @param string $asName 字段别名
+   * @return $this
+   */
   function selectSub($callbackOrQuery, $asName)
   {
     $this->executeType = "select";
@@ -315,31 +406,55 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 去重
-   * @param array $fieldNames 字段名称，没有则为 *，即所有字段去重
-   * @return static
+   * 设置去重查询
+   * 
+   * 查询结果去重，可指定去重字段
+   * 
+   * @example
+   * // 简单去重
+   * ->distinct()
+   * 
+   * // 按指定字段去重
+   * ->distinct('category', 'status')
+   * 
+   * @param mixed ...$column 去重字段列表（可选）
+   * @return $this
    */
-  function distinct(...$fieldNames)
+  function distinct(...$column)
   {
     $this->executeType = "select";
 
     $this->options['select']['distinct'] = true;
-    if ($fieldNames) {
-      array_push($this->options['select']['fields'], ...$fieldNames);
+    if ($column) {
+      array_push($this->options['select']['fields'], ...$column);
     }
 
     return $this;
   }
   /**
-   * 排序
-   * @param string|SQL $field 字段名
-   * @param string $by 顺序，ASC=正序、DESC=倒序
-   * @return static
+   * 设置排序条件
+   * 
+   * 按指定字段和方向排序查询结果
+   * 
+   * @example
+   * // 升序排序
+   * ->orderBy('created_at', 'ASC')
+   * 
+   * // 降序排序
+   * ->orderBy('price', 'DESC')
+   * 
+   * // 多字段排序
+   * ->orderBy('category', 'ASC')
+   * ->orderBy('price', 'DESC')
+   * 
+   * @param string $column 排序字段
+   * @param string $by 排序方向，'ASC' 或 'DESC'
+   * @return $this
    */
-  function orderBy($field, $by = "ASC")
+  function orderBy($column, $by = "ASC")
   {
     $this->options['orders'][] = [
-      "field" => $field,
+      "field" => $column,
       "by" => $by,
       "type" => "general"
     ];
@@ -347,9 +462,19 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 排序 raw 方法
-   * @param string $rawSQL 排序 SQL 字段
-   * @return static
+   * 设置原始SQL排序条件
+   * 
+   * 使用原始SQL表达式进行排序
+   * 
+   * @example
+   * // 使用SQL表达式排序
+   * ->orderByRaw('RAND()')
+   * 
+   * // 使用复杂排序条件
+   * ->orderByRaw('FIELD(status, "active", "pending", "inactive")')
+   * 
+   * @param string $rawSQL 原始SQL排序表达式
+   * @return $this
    */
   function orderByRaw($rawSQL)
   {
@@ -362,9 +487,19 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 随机排序
-   * @param string|array $seed 种子
-   * @return static
+   * 设置随机排序
+   * 
+   * 对查询结果进行随机排序
+   * 
+   * @example
+   * // 简单随机排序
+   * ->orderRandom()
+   * 
+   * // 带种子的随机排序（保证可重复性）
+   * ->orderRandom(12345)
+   * 
+   * @param mixed $seed 随机种子（可选）
+   * @return $this
    */
   function orderRandom($seed = null)
   {
@@ -377,16 +512,26 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 分组
-   * @param string|SQL $fieldNames 分组的字段名
-   * @return static
+   * 设置分组条件
+   * 
+   * 按指定字段对查询结果进行分组
+   * 
+   * @example
+   * // 单字段分组
+   * ->groupBy('category')
+   * 
+   * // 多字段分组
+   * ->groupBy('year', 'month')
+   * 
+   * @param mixed ...$column 分组字段列表
+   * @return $this
    */
-  function groupBy(...$fieldNames)
+  function groupBy(...$column)
   {
     if (!$this->options['groupBy'])
       $this->options['groupBy'] = [];
 
-    array_push($this->options['groupBy'], ...$fieldNames);
+    array_push($this->options['groupBy'], ...$column);
 
     return $this;
   }
@@ -1270,76 +1415,6 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
-  function insert($data, $isReplaceInto = false)
-  {
-    if ($isReplaceInto) {
-      $this->executeType = "replace";
-    } else {
-      $this->executeType = "insert";
-    }
-    $this->options['insertData'] = $data;
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function batchInsert($fieldNames, $values, $isReplaceInto = false)
-  {
-    if ($isReplaceInto) {
-      $this->executeType = "batchReplace";
-    } else {
-      $this->executeType = "batchInsert";
-    }
-    $this->options['batchInsert'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
-
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function batchInsertIgnore($fieldNames, $values)
-  {
-    $this->executeType = "batchInsertIgnore";
-    $this->options['batchInsert'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
-
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function update($data)
-  {
-    $this->executeType = "update";
-    $this->options['updateData'] = $data;
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function batchUpdate($fieldNames, $values)
-  {
-    $this->executeType = "batchUpdate";
-    $this->options['batchUpdateData'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function delete($directly = false)
-  {
-    if ($directly) {
-      $this->executeType = "delete";
-    } else {
-      $this->executeType = "softDelete";
-    }
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
   /**
    * 获取查询结果的第一条记录
    * 
@@ -1351,13 +1426,15 @@ class Query extends AbilityBaseObject
   function first()
   {
     $this->executeType = "select";
+    $this->limit(1);
     $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->fetchAll($this->sql);
+    $data = $this->databaseDriver->fetch($this->sql);
+
     if (!$data)
       return false;
 
-    return $data[array_key_first($data)];
+    return $data;
   }
   /**
    * 获取第一条记录的指定列值
@@ -1605,40 +1682,142 @@ class Query extends AbilityBaseObject
    */
   function count($column = "*")
   {
-    $this->executeType = "select";
     $this->addSelect($this->raw("COUNT({$column})"));
-    $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->fetch($this->sql);
+    $data = $this->first();
 
-    if (!$data)
+    if ($data === false)
       return false;
 
     return $data[array_key_first($data)];
   }
-  function increment($field, $value)
+  /**
+   * 获取指定列的最大值
+   * 
+   * 执行 MAX 聚合查询，返回指定列中的最大值
+   * 适用于数值、日期等可比较的数据类型
+   * 
+   * @example
+   * // 获取价格最大值
+   * ->max('price')
+   * 
+   * // 获取最新创建时间
+   * ->max('created_at')
+   * 
+   * @param string $column 要计算最大值的列名
+   * @return mixed|false 返回最大值，查询失败返回 false
+   * 
+   * @note 此方法会修改 SELECT 子句，添加 MAX 聚合函数
+   * @note 如果查询结果为空，返回 false
+   * @see first() 用于获取第一条记录
+   */
+  function max($column)
   {
-    $this->executeType = "increment";
-    $this->options["increment"] = [
-      "field" => $field,
-      "value" => $value
-    ];
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function decrement($field, $value)
-  {
-    $this->executeType = "decrement";
-    $this->options["decrement"] = [
-      "field" => $field,
-      "value" => $value
-    ];
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
+    $this->addSelect($this->raw("MAX({$column})"));
 
+    $data = $this->first();
+
+    if ($data === false)
+      return false;
+
+    return $data[array_key_first($data)];
+  }
+  /**
+   * 获取指定列的最小值
+   * 
+   * 执行 MIN 聚合查询，返回指定列中的最小值
+   * 适用于数值、日期等可比较的数据类型
+   * 
+   * @example
+   * // 获取价格最小值
+   * ->min('price')
+   * 
+   * // 获取最早创建时间
+   * ->min('created_at')
+   * 
+   * @param string $column 要计算最小值的列名
+   * @return mixed|false 返回最小值，查询失败返回 false
+   * 
+   * @note 此方法会修改 SELECT 子句，添加 MIN 聚合函数
+   * @note 如果查询结果为空，返回 false
+   * @see first() 用于获取第一条记录
+   */
+  function min($column)
+  {
+    $this->addSelect($this->raw("MIN({$column})"));
+
+    $data = $this->first();
+
+    if ($data === false)
+      return false;
+
+    return $data[array_key_first($data)];
+  }
+  /**
+   * 计算指定列的平均值
+   * 
+   * 执行 AVG 聚合查询，返回指定列的平均值
+   * 适用于数值类型的列
+   * 
+   * @example
+   * // 计算平均价格
+   * ->avg('price')
+   * 
+   * // 计算平均评分
+   * ->avg('rating')
+   * 
+   * @param string $column 要计算平均值的列名
+   * @return float|false 返回平均值，查询失败返回 false
+   * 
+   * @note 此方法会修改 SELECT 子句，添加 AVG 聚合函数
+   * @note AVG 函数会自动忽略 NULL 值
+   * @note 如果查询结果为空，返回 false
+   * @see first() 用于获取第一条记录
+   */
+  function avg($column)
+  {
+    $this->addSelect($this->raw("AVG({$column})"));
+
+    $data = $this->first();
+
+    if ($data === false)
+      return false;
+
+    return $data[array_key_first($data)];
+  }
+  /**
+   * 计算指定列的总和
+   * 
+   * 执行 SUM 聚合查询，返回指定列所有值的总和
+   * 适用于数值类型的列
+   * 
+   * @example
+   * // 计算销售总额
+   * ->sum('amount')
+   * 
+   * // 计算库存总量
+   * ->sum('quantity')
+   * 
+   * @param string $column 要计算总和的列名
+   * @return float|int|false 返回总和，查询失败返回 false
+   * 
+   * @note 此方法会修改 SELECT 子句，添加 SUM 聚合函数
+   * @note SUM 函数会自动忽略 NULL 值
+   * @note 如果查询结果为空，返回 false
+   * @note 对于空结果集，SUM 返回 NULL，但此方法会转换为 false
+   * @see first() 用于获取第一条记录
+   */
+  function sum($column)
+  {
+    $this->addSelect($this->raw("SUM({$column})"));
+
+    $data = $this->first();
+
+    if ($data === false)
+      return false;
+
+    return $data[array_key_first($data)];
+  }
   /**
    * 查询是否存在
    * @return bool `true`=存在，`false`=不存在
@@ -1667,13 +1846,96 @@ class Query extends AbilityBaseObject
 
     return boolval($data[array_key_first($data)]);
   }
-  /**
-   * 原始 SQL 语句
-   * @param mixed $sql
-   * @return SQL
-   */
-  function raw($sql)
+  function insert($data, $isReplaceInto = false)
   {
-    return new SQL($sql);
+    if ($isReplaceInto) {
+      $this->executeType = "replace";
+    } else {
+      $this->executeType = "insert";
+    }
+    $this->options['insertData'] = $data;
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function batchInsert($fieldNames, $values, $isReplaceInto = false)
+  {
+    if ($isReplaceInto) {
+      $this->executeType = "batchReplace";
+    } else {
+      $this->executeType = "batchInsert";
+    }
+    $this->options['batchInsert'] = [
+      "fields" => $fieldNames,
+      "values" => $values
+    ];
+
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function batchInsertIgnore($fieldNames, $values)
+  {
+    $this->executeType = "batchInsertIgnore";
+    $this->options['batchInsert'] = [
+      "fields" => $fieldNames,
+      "values" => $values
+    ];
+
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function update($data)
+  {
+    $this->executeType = "update";
+    $this->options['updateData'] = $data;
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function batchUpdate($fieldNames, $values)
+  {
+    $this->executeType = "batchUpdate";
+    $this->options['batchUpdateData'] = [
+      "fields" => $fieldNames,
+      "values" => $values
+    ];
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function delete($directly = false)
+  {
+    if ($directly) {
+      $this->executeType = "delete";
+    } else {
+      $this->executeType = "softDelete";
+    }
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function increment($field, $value)
+  {
+    $this->executeType = "increment";
+    $this->options["increment"] = [
+      "field" => $field,
+      "value" => $value
+    ];
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
+  }
+  function decrement($field, $value)
+  {
+    $this->executeType = "decrement";
+    $this->options["decrement"] = [
+      "field" => $field,
+      "value" => $value
+    ];
+    $this->sql = $this->generateSQL();
+    $this->reset();
+    return $this;
   }
 }
