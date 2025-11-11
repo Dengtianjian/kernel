@@ -143,6 +143,18 @@ class Driver
     return true;
   }
   /**
+   * 预处理要执行的语句，并返回语句对象
+   * 为 PDOStatement::execute() 方法预处理待执行的 SQL 语句。 语句模板可以包含零个或多个参数占位标记，格式是命名（:name）或问号（?）的形式，当它执行时将用真实数据取代。 在同一个语句模板里，命名形式和问号形式不能同时使用；只能选择其中一种参数形式。 请用参数形式绑定用户输入的数据，不要直接字符串拼接到查询里。
+   *
+   * @param string $query 必须是对目标数据库服务器有效的 SQL 语句模板。
+   * @param array $options 数组包含一个或多个 key=>value 键值对，为返回的 PDOStatement 对象设置属性。 常见用法是：设置 `PDO::ATTR_CURSOR` 为 `PDO::CURSOR_SCROLL`，将得到可滚动的光标。 某些驱动有驱动级的选项，在 prepare 时就设置。
+   * @return bool|\PDOStatement 如果数据库服务器已经成功预处理语句， PDO::prepare() 返回 PDOStatement 对象。 如果数据库服务器无法预处理语句， PDO::prepare() 返回 `false` 或抛出 PDOException (取决于 错误处理 )。
+   */
+  function prepare($query, $options = [])
+  {
+    return $this->PDOInstance->prepare($query, $options);
+  }
+  /**
    * 查询
    * @param string $querySQL 查询语句
    * @param PDO::FETCH_ASSOC|PDO::FETCH_BOTH|PDO::FETCH_BOUND|PDO::FETCH_CLASS|PDO::FETCH_INTO|PDO::FETCH_LAZY|PDO::FETCH_NAMED|PDO::FETCH_NUM|PDO::FETCH_OBJ|PDO::FETCH_PROPS_LATE $mode 控制下一行如何返回给调用者。此值必须是 PDO::FETCH_* 系列常量中的一个，缺省为 PDO::ATTR_DEFAULT_FETCH_MODE 的值 （默认为 PDO::FETCH_BOTH ）。  

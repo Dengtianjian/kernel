@@ -21,11 +21,16 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * ···
  * 6. //DONE 增加 orWhere，where 的 or 逻辑表达式版本
  * 7. //DONE Query一些方法可以增加比较运算符的方法就添加上
- * 8. 正则查询
+ * 8. //DONE 正则查询
  * 9. //DONE wherExists、whereNotExists
  * 10. //DONE where 第一个参数支持传入数组，数组里面的子数组支持设置运算符
  * 11. 解析 raw
  * 12. 多数据库连接、切换
+ * 13. insert功能
+ * 14. update 功能
+ * 15. delete 功能
+ * 16. //DONE get 功能
+ * 17. 基础聚合函数 max、min、count、avg、sum
  */
 //* 
 
@@ -45,7 +50,6 @@ class Query extends AbilityBaseObject
    * @var boolean
    */
   protected $executeReset = true;
-  protected $returnSQL = false;
   protected $databaseDriver = null;
   /**
    * 标识是**子句**
@@ -142,9 +146,9 @@ class Query extends AbilityBaseObject
       "execute" => null,
       "from" => null,
       "field" => null,
+      "condition" => null,
       "order" => null,
       "pagination" => null,
-      "condition" => null,
       "groupBy" => null
     ];
 
@@ -176,7 +180,7 @@ class Query extends AbilityBaseObject
         $SQLs['execute'] = SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
         break;
       case "batchInsertIgnore":
-        $SQLs['execute'] = SQL::batchInsertIgnore($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
+        // $SQLs['execute'] = SQL::batchInsertIgnore($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
         break;
       case "update":
         $SQLs['execute'] = SQL::update($this->tableName, $this->options['updateData']);
@@ -208,7 +212,7 @@ class Query extends AbilityBaseObject
     }
 
     if ($this->options['order']) {
-      $orderSQL = SQL::order($this->options['order']);
+      $orderSQL = SQL::order($this->options['orders']);
 
       $SQLs['order'] = $orderSQL;
     }
@@ -220,11 +224,11 @@ class Query extends AbilityBaseObject
       $SQLs['groupBy'] = SQL::groupBy($this->options['groupBy']);
     }
 
-    // debug($SQLs);
-
-    return join(" ", array_filter($SQLs, function ($item) {
+    $SQLs = array_filter($SQLs, function ($item) {
       return $item;
-    }));
+    });
+
+    return join(" ", $SQLs);
   }
   function from($tableName, $ASName = null)
   {
@@ -270,10 +274,10 @@ class Query extends AbilityBaseObject
   }
   /**
    * 添加查询的字段
-   * @param array $fieldNames 查询的字段
+   * @param array $column 查询的字段
    * @return static
    */
-  function addSelect(...$fieldNames)
+  function addSelect(...$column)
   {
     array_push($this->options['select']['fields'], ...array_map(function ($fieldItem) {
       if ($fieldItem instanceof SQL) {
@@ -294,7 +298,7 @@ class Query extends AbilityBaseObject
           ];
         }
       }
-    }, $fieldNames));
+    }, $column));
 
     return $this;
   }
@@ -334,7 +338,7 @@ class Query extends AbilityBaseObject
    */
   function orderBy($field, $by = "ASC")
   {
-    $this->options['order'][] = [
+    $this->options['orders'][] = [
       "field" => $field,
       "by" => $by,
       "type" => "general"
@@ -349,7 +353,7 @@ class Query extends AbilityBaseObject
    */
   function orderByRaw($rawSQL)
   {
-    $this->options['order'][] = [
+    $this->options['orders'][] = [
       "field" => $rawSQL,
       "by" => null,
       "type" => "raw"
@@ -484,7 +488,7 @@ class Query extends AbilityBaseObject
     $page = $this->options['pagination']['offset'] ?: 1;
     $perPage = $this->options['pagination']['limit'] ?: 10;
 
-    $Items = $this->page($page, $perPage)->get();
+    $Items = $this->get();
 
     return new Paginator($Items, $page, $perPage, $Total);
   }
@@ -1337,37 +1341,280 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 获取第一条数据
+   * 获取查询结果的第一条记录
+   * 
+   * 执行查询并返回结果集中的第一条记录
+   * 如果没有找到记录，返回 false
+   * 
+   * @return array|false 返回记录数组或false
    */
   function first()
   {
-    $data = $this->get();
+    $this->executeType = "select";
+    $this->sql = $this->generateSQL();
+
+    $data = $this->databaseDriver->fetchAll($this->sql);
     if (!$data)
-      return null;
+      return false;
 
     return $data[array_key_first($data)];
   }
+  /**
+   * 获取第一条记录的指定列值
+   * 
+   * 查询第一条记录并返回指定列的值
+   * 如果记录不存在或列不存在，返回 null
+   * 
+   * @param string $column 要获取值的列名
+   * @return mixed|null 返回列值或null
+   */
+  function value($column)
+  {
+    $data = $this->first();
+
+    if (!is_array($data) && !Arr::isAssoc((array) $data))
+      return null;
+    if (!array_key_exists($column, $data))
+      return null;
+
+    return $data[$column];
+  }
+  /**
+   * 获取所有查询结果
+   * 
+   * 执行查询并返回所有结果记录
+   * 
+   * @return array|string 返回记录数组
+   */
   function get()
   {
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
-    if ($this->returnSQL)
-      return $this->sql;
 
-    $data = $this->databaseDriver->fetch($this->sql);
+    $data = $this->databaseDriver->fetchAll($this->sql);
 
     return $data;
   }
   /**
-   * 统计函数
-   * @param string $fieldName 字段名称
-   * @return static
+   * 提取指定列的值作为数组
+   * 
+   * 查询结果并提取指定列的值，可选择使用另一列作为键
+   * 
+   * @example
+   * // 提取名称列表
+   * ->pluck('name')
+   * 
+   * // 提取以ID为键的名称列表
+   * ->pluck('name', 'id')
+   * 
+   * @param string $column 要提取值的列名
+   * @param string|null $indexKey 作为数组键的列名（可选）
+   * @return array 返回键值对数组
    */
-  function count($field = "*")
+  function pluck($column, $indexKey = null)
   {
-    $this->selectRaw("COUNT({$field})");
+    $this->options['select']['fields'] = [];
+    $this->addSelect($column);
+    if ($indexKey)
+      $this->addSelect($indexKey);
 
-    return $this->first();
+    $this->executeType = "select";
+    $this->sql = $this->generateSQL();
+
+    $data = $this->databaseDriver->fetchAll($this->sql);
+
+    return array_column($data, $column, $indexKey);
+  }
+  /**
+   * 使用游标遍历查询结果
+   * 
+   * 使用生成器逐行返回查询结果，适用于处理大量数据
+   * 减少内存占用，提高大数据集处理性能
+   * 
+   * @return \Generator 返回生成器，每次迭代返回一条记录
+   */
+  function cursor()
+  {
+    $this->executeType = "select";
+    $this->sql = $this->generateSQL();
+
+    /**
+     * @var \PDOStatement
+     */
+    $PDOStatement = $this->databaseDriver->prepare($this->sql, [
+      \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL
+    ]);
+    $PDOStatement->execute();
+
+    while ($record = $PDOStatement->fetch(\PDO::FETCH_ASSOC)) {
+      if (!$record)
+        break;
+
+      yield $record;
+    }
+  }
+  /**
+   * 分块处理查询结果
+   * 
+   * 将结果集分块处理，每次处理指定数量的记录
+   * 适用于处理大量数据，避免内存溢出
+   * 
+   * @example
+   * ->chunk(100, function($items, $page) {
+   *     foreach ($items as $item) {
+   *         // 处理每条记录
+   *     }
+   *     return true; // 返回 false 可中断处理
+   * });
+   * 
+   * @param int $size 每块的大小
+   * @param callable $callback 处理回调函数，接收当前块数据和页码
+   * @return bool 处理完成返回true，被中断返回false
+   */
+  function chunk($size, $callback)
+  {
+    $page = 1;
+    $pageItems = 0;
+
+    do {
+      /**
+       * @var Paginator
+       */
+      $result = $this->notReset()->page($page, $size)->paginate();
+      $pageItems = $result->getPageSize();
+      if ($pageItems === 0) {
+        break;
+      }
+
+      if ($callback($result->getItems(), $page) === false) {
+        return false;
+      }
+
+      $page++;
+    } while ($pageItems === $size);
+
+    return true;
+  }
+  /**
+   * 基于ID的分块处理
+   * 
+   * 使用ID字段进行高效的分块处理，避免偏移量性能问题
+   * 适用于大数据量的分页处理
+   * 
+   * @param int $size 每块的大小
+   * @param callable $callback 处理回调函数
+   * @param string $column 用于分块的列名，默认为"id"
+   * @return bool 处理完成返回true，被中断返回false
+   */
+  function chunkById($size, $callback, $column = "id")
+  {
+    $pageItems = 0;
+    $lastId = null;
+
+    do {
+      $this->options['orders'] = array_filter($this->options['orders'], function ($item) use ($column) {
+        return $item['field'] !== $column;
+      });
+
+      $this->orderBy($column, "ASC");
+      if ($lastId) {
+        $this->where($column, ">", $lastId);
+      }
+
+      $items = $this->select()->limit($size)->get();
+      $pageItems = count($items);
+
+      if (!$items || $pageItems === 0) {
+        break;
+      }
+
+      $lastId = $items[array_key_last($items)][$column];
+
+      if ($callback($items) === false) {
+        return false;
+      }
+
+    } while ($pageItems === $size);
+
+    return true;
+  }
+  /**
+   * 基于ID的分块流式处理
+   * 
+   * 使用生成器逐块返回数据，适用于流式处理大量数据
+   * 结合了chunkById的高效性和生成器的低内存占用
+   * 
+   * @param int $size 每块的大小
+   * @param string $column 用于分块的列名，默认为"id"
+   * @return \Generator 返回生成器，每次迭代返回一个数据块
+   */
+  function chunkStream($size, $column = "id")
+  {
+    $pageItems = 0;
+    $lastId = null;
+
+    do {
+      $this->options['orders'] = array_filter($this->options['orders'], function ($item) use ($column) {
+        return $item['field'] !== $column;
+      });
+
+      $this->orderBy($column, "ASC");
+      if ($lastId) {
+        $this->where($column, ">", $lastId);
+      }
+
+      $items = $this->select()->limit($size)->get();
+      $pageItems = count($items);
+
+      if (!$items || $pageItems === 0) {
+        break;
+      }
+
+      $lastId = $items[array_key_last($items)][$column];
+
+      foreach ($items as $item) {
+        yield $item;
+      }
+
+    } while ($pageItems === $size);
+
+    return true;
+  }
+  /**
+   * 统计查询结果数量
+   * 
+   * 执行 COUNT 聚合查询，统计满足条件的记录数量
+   * 可以指定统计的列，默认为统计所有记录数
+   * 
+   * @example
+   * // 统计所有记录
+   * ->count()
+   * 
+   * // 统计指定列的非空值数量
+   * ->count('user_id')
+   * 
+   * // 使用 DISTINCT 统计
+   * ->count('DISTINCT category')
+   * 
+   * @param string $column 要统计的列名，默认为 "*" 表示所有记录
+   * @return int|false 返回统计数量，查询失败返回 false
+   * 
+   * @note 此方法会修改 SELECT 子句，添加 COUNT 聚合函数
+   * @note 如果查询结果为空，返回 false
+   * @see raw() 用于创建原始 SQL 表达式
+   */
+  function count($column = "*")
+  {
+    $this->executeType = "select";
+    $this->addSelect($this->raw("COUNT({$column})"));
+    $this->sql = $this->generateSQL();
+
+    $data = $this->databaseDriver->fetch($this->sql);
+
+    if (!$data)
+      return false;
+
+    return $data[array_key_first($data)];
   }
   function increment($field, $value)
   {
