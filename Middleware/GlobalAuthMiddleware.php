@@ -85,7 +85,7 @@ class GlobalAuthMiddleware extends Middleware
     $ULM = new $this->LoginsModel();
     $auth = $ULM->getByToken($token);
     if ($auth === null) {
-      header("Authorization", "");
+      header("Authorization", true);
       if ($strongCheck) {
         $RR->error(401, "Auth:401003", "请登录后重试", "无效的Token");
         return $RR;
