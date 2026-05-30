@@ -4,6 +4,7 @@ namespace kernel\Foundation\Storage;
 
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\Object\DataObject;
+use kernel\Service\StorageService;
 
 /**
  * 文件信息
@@ -54,5 +55,15 @@ class StorageFileInfoData extends DataObject
     }
 
     parent::__construct($data);
+  }
+  public function improveURL(
+    $URLParams = [],
+    $Expires = 1800,
+    $WithSignature = TRUE
+  ) {
+    $this->previewURL = StorageService::getFilePreviewURL($this->key, $URLParams, $Expires, $WithSignature);
+    $this->downloadURL = StorageService::getFileDownloadURL($this->key, $URLParams, $Expires, $WithSignature);
+    $this->transferPreviewURL = StorageService::getFileTransferPreviewURL($this->key, $URLParams, $Expires, $WithSignature);
+    $this->transferDownloadURL = StorageService::getFileTransferDownloadURL($this->key, $URLParams, $Expires, $WithSignature);
   }
 }
