@@ -47,7 +47,10 @@ class Iuu
         if (is_callable($VersionCallback)) {
           $VersionCallback();
         } else {
-          new $VersionCallback();
+          $instance = new $VersionCallback();
+          if (method_exists($instance, 'up')) {
+            $instance->up();
+          }
         }
       }
 
@@ -59,6 +62,35 @@ class Iuu
     if (!array_key_exists($TargetVersion, $UpgradeList)) {
       if ($UpgradeCallback) {
         $UpgradeCallback($TargetVersion);
+      }
+    }
+
+    return $this;
+  }
+  /**
+   * 降级
+   * @param string|null $TargetVersion 目标版本号
+   * @param callable|null $DowngradeCallback 每降一级的回调，参数为当前级版本号
+   */
+  public function downgrade($TargetVersion = null, $DowngradeCallback = null)
+  {
+    $UpgradeListFile = FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "UpgradeList.php");
+    if (!file_exists($UpgradeListFile)) return true;
+    $UpgradeList = include_once($UpgradeListFile);
+    krsort($UpgradeList);
+    foreach ($UpgradeList as $Version => $VersionCallback) {
+      if ($TargetVersion && version_compare($Version, $TargetVersion, "<=") === true) continue;
+      if (version_compare($this->fromVersion, $Version, "<") === true) continue;
+
+      if (!is_null($VersionCallback) && !is_callable($VersionCallback)) {
+        $instance = new $VersionCallback();
+        if (method_exists($instance, 'down')) {
+          $instance->down();
+        }
+      }
+
+      if ($DowngradeCallback) {
+        $DowngradeCallback($Version);
       }
     }
 
