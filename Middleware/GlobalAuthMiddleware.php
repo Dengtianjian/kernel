@@ -110,8 +110,8 @@ class GlobalAuthMiddleware extends Middleware
       $ULM->deleteByToken($auth['token']);
       $newAuth = [
         "id" => $ULM->genId(),
-        "token" =>  $newToken['value'],
-        "expiration" =>  $newToken['expiration'],
+        "token" => $newToken['value'],
+        "expiration" => $newToken['expiration'],
         "userId" => $auth['userId']
       ];
       $ULM->insert($newAuth);
@@ -119,7 +119,7 @@ class GlobalAuthMiddleware extends Middleware
       $auth = array_merge($auth, $newAuth);
       $token = $newToken['value'];
     }
-    
+
     Store::setApp([
       "auth" => $auth,
       "token" => $token,

@@ -164,6 +164,14 @@ class DataConversion
     if ($type === "any") {
       return $this->auto($target);
     }
+    // 毫秒级时间戳：如果值是秒级（10位数字），自动乘以1000转为毫秒级
+    if ($type === "timestamp_ms") {
+      $target = intval($target);
+      if ($target > 0 && $target < 10000000000) {
+        $target = $target * 1000;
+      }
+      return $target;
+    }
     $setResult = settype($target, $type);
     if ($setResult) {
       if ($type === "string") {
