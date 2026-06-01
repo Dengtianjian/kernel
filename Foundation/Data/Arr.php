@@ -221,4 +221,19 @@ class Arr
 
     return $res;
   }
+  /**
+   * 提取数组指定列并去重、过滤空值
+   *
+   * 从二维数组中提取指定键名的列，去除重复值，并过滤掉空元素（如 null, '', false 等）。
+   *
+   * @param array $data 需要处理的二维数组
+   * @param string $key 需要提取的列名（键名）
+   * @return array 返回处理后的去重且不含空值的一维数组
+   */
+  static function extractUniqueValues($data, $key)
+  {
+    return array_filter(array_unique(array_column($data, $key)), function ($item) {
+      return $item;
+    });
+  }
 }

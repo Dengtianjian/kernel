@@ -140,6 +140,9 @@ class Model extends AbilityBaseObject
   }
   function field(...$fieldNames)
   {
+    if (count($fieldNames) === 1 && $fieldNames[0] === "*") {
+      return $this;
+    }
     $this->query->field($fieldNames);
     return $this;
   }
@@ -394,12 +397,12 @@ class Model extends AbilityBaseObject
    * @param array $columns 查询字段
    * @return array|null
    */
-  function find($id, $columns = ['*'])
+  function find($id, $columns = "*")
   {
     if (is_array($id)) {
       return $this->findMany($id, $columns);
     }
-    return $this->where($this->primaryKey, $id)->field(...$columns)->getOne();
+    return $this->where($this->primaryKey, $id)->field($columns)->getOne();
   }
   /**
    * 通过主键批量查找记录
