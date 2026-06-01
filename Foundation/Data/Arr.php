@@ -50,9 +50,12 @@ class Arr
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
     usort($arr, function ($a, $b) {
-      if ($a['parentId'] && $b['parentId']) return 0;
-      if ($a['parentId']) return 1;
-      if ($b['parentId']) return -1;
+      if ($a['parentId'] && $b['parentId'])
+        return 0;
+      if ($a['parentId'])
+        return 1;
+      if ($b['parentId'])
+        return -1;
 
       return 0;
     });
@@ -70,6 +73,8 @@ class Arr
         if ($arr[$arrItem[$relatedParentKey]]['reference']) {
           $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]] = $arrItem;
           $arrItem['reference'] = &$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]];
+        } else if (!$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]) {
+          $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = [];
         }
         $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = array_values($arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]);
       }
@@ -90,7 +95,8 @@ class Arr
       if (!$array) {
         continue;
       }
-      if (!is_array($array)) continue;
+      if (!is_array($array))
+        continue;
       foreach ($array as $key => $value) {
         if (is_string($key)) {
           if (
@@ -140,7 +146,7 @@ class Arr
    * @param array $keys 要抽取的key值
    * @return array
    */
-  static function partial($target,  $keys)
+  static function partial($target, $keys)
   {
     $result = [];
     foreach ($keys as $key) {
@@ -157,7 +163,7 @@ class Arr
    * @param string $byKey 每个数组共同的key，就是根据这个key来分组
    * @return array
    */
-  static function group($target,  $byKey)
+  static function group($target, $byKey)
   {
     $result = [];
     foreach ($target as $item) {
