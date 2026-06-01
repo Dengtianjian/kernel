@@ -11,6 +11,18 @@ use mysqli_result;
 class Model extends AbilityBaseObject
 {
   /**
+   * 主键字段名
+   *
+   * @var string
+   */
+  public $primaryKey = 'id';
+  /**
+   * 主键是否自增
+   *
+   * @var boolean
+   */
+  public $autoIncrement = true;
+  /**
    * 数据表名称
    *
    * @var string
@@ -198,7 +210,8 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->insert($data, $isReplaceInto)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $InsertResult = $DB::query($sql);
     $InsertId = $DB::insertId();
@@ -239,13 +252,15 @@ class Model extends AbilityBaseObject
     }
 
     $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
   function update($data)
   {
-    if (!$data) return 0;
+    if (!$data)
+      return 0;
     $Call = get_class($this);
     if ($Call::$Timestamps) {
       $now = time();
@@ -260,7 +275,8 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->update($data)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
@@ -280,7 +296,8 @@ class Model extends AbilityBaseObject
       }
     }
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
@@ -309,25 +326,29 @@ class Model extends AbilityBaseObject
       $sql = $this->query->update($data)->sql();
     }
 
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     return $DB::query($sql);
   }
   function getAll()
   {
-    if ($this->returnSql) return $this->query->get()->sql();
+    if ($this->returnSql)
+      return $this->query->get()->sql();
     $DB = $this->DB;
     return $DB::getAll($this->query);
   }
   function getOne()
   {
-    if ($this->returnSql) return $this->query->limit(1)->get()->sql();
+    if ($this->returnSql)
+      return $this->query->limit(1)->get()->sql();
     $DB = $this->DB;
     return $DB::getOne($this->query);
   }
   function each($callback)
   {
-    if ($this->returnSql) return $this->query->get()->sql();
+    if ($this->returnSql)
+      return $this->query->get()->sql();
     $DB = $this->DB;
     $DB::each($this->query, $callback);
     return $this;
@@ -335,11 +356,12 @@ class Model extends AbilityBaseObject
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $countResult = $DB::query($sql);
     if (!empty($countResult)) {
-      return (int)$countResult['0']["COUNT('$field')"];
+      return (int) $countResult['0']["COUNT('$field')"];
     }
     return null;
   }
@@ -351,7 +373,8 @@ class Model extends AbilityBaseObject
   function exist()
   {
     $sql = $this->query->exist()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->returnSql)
+      return $sql;
     $DB = $this->DB;
     $exist = $DB::query($sql);
     if ($exist instanceof mysqli_result) {
@@ -363,6 +386,31 @@ class Model extends AbilityBaseObject
       $exist = $exist[array_keys($exist)[0]];
     }
     return boolval($exist);
+  }
+  /**
+   * 通过主键查找单条记录
+   *
+   * @param int|string $id 主键值
+   * @param array $columns 查询字段
+   * @return array|null
+   */
+  function find($id, $columns = ['*'])
+  {
+    if (is_array($id)) {
+      return $this->findMany($id, $columns);
+    }
+    return $this->where($this->primaryKey, $id)->field(...$columns)->getOne();
+  }
+  /**
+   * 通过主键批量查找记录
+   *
+   * @param array $ids 主键值数组
+   * @param array $columns 查询字段
+   * @return array
+   */
+  function findMany($ids, $columns = ['*'])
+  {
+    return $this->where($this->primaryKey, $ids, 'IN')->field(...$columns)->getAll();
   }
   function reset($flag = true)
   {
@@ -383,19 +431,22 @@ class Model extends AbilityBaseObject
 
   function createTable()
   {
-    if (empty($this->tableStructureSQL)) return true;
+    if (empty($this->tableStructureSQL))
+      return true;
     return DB::query($this->tableStructureSQL);
   }
   function increment($field, $value = 1)
   {
     $sql = $this->query->increment($field, $value)->sql();
-    if ($this->returnSql) return $sql;
-    return (int)DB::query($sql);
+    if ($this->returnSql)
+      return $sql;
+    return (int) DB::query($sql);
   }
   function decrement($field, $value = 1)
   {
     $sql = $this->query->decrement($field, $value)->sql();
-    if ($this->returnSql) return $sql;
-    return (int)DB::query($sql);
+    if ($this->returnSql)
+      return $sql;
+    return (int) DB::query($sql);
   }
 }
