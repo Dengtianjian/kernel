@@ -64,7 +64,7 @@ class Model extends AbilityBaseObject
   public static $Timestamps = true;
   public static $CreatedAt = "createdAt";
   public static $UpdatedAt = "updatedAt";
-  public static $DeletedAt = "deletedAt";
+  public static $DeletedAt = false;
   public static $TimestampFields = [];
 
   /**
