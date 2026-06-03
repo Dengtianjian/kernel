@@ -6,6 +6,7 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Output;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
@@ -389,10 +390,13 @@ class Validator
     //* 自定义校验
     if (isset($Rule['CustomValidate'])) {
       $ValidatedResult = $Rule['CustomValidate']($Target, $Rule, $Data);
-      if (!($ValidatedResult instanceof Response)) {
-        throw new Exception("自定义校验函数返回值必须是继承自Response类的实例");
+      if (is_string($ValidatedResult)) {
+        return new ResponseError(400, 400, $ValidatedResult);
       }
-      if ($ValidatedResult->error) {
+      if (is_bool($ValidatedResult) && $ValidatedResult === false) {
+        return new ResponseError(400, 400, "参数错误");
+      }
+      if ($ValidatedResult instanceof Response && $ValidatedResult->error) {
         return $ValidatedResult;
       }
     }
@@ -420,8 +424,10 @@ class Validator
 
     if ($ValidatedResult->error) {
       $ValidatedResult->addData(false, true);
-    } else {
+    } else if ($ValidatedResult) {
       $ValidatedResult->addData(true, true);
+    } else {
+      $ValidatedResult = new ReturnResult(true);
     }
 
     return $ValidatedResult;

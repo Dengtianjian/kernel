@@ -227,7 +227,7 @@ class ValidateRules
   /**
    * 正则表达式校验
    *
-   * @param Regex $pattern 正则表达式
+   * @param string $pattern 正则表达式
    * @param string $message 校验失败报错信息
    * @return ValidateRules
    */
