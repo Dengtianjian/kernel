@@ -173,8 +173,10 @@ class StorageService extends Service
     $platformNames = count($platformNames) > 1 ? "(" . join("|", $platformNames) . ")" : $platformNames;
     $RouteURIs = [self::$routePrefix/*, "{name:{$platformNames}}"*/];
 
-    if ($WithFileKey) $RouteURIs[] = $matchParttern;
-    if ($URI) $RouteURIs[] = $URI;
+    if ($WithFileKey)
+      $RouteURIs[] = $matchParttern;
+    if ($URI)
+      $RouteURIs[] = $URI;
 
     Router::register("common", $Method, join("/", $RouteURIs), $Controller);
 
@@ -287,5 +289,16 @@ class StorageService extends Service
   static function getFileTransferDownloadURL($FileKey, $URLParams = [], $Expires = 1800, $WithSignature = TRUE)
   {
     return self::$usePlatform->getFileTransferDownloadURL($FileKey, $URLParams, $Expires, $WithSignature);
+  }
+  static function transformFileData(array $data)
+  {
+    $data['url'] = self::getFileDownloadURL($data['key'], [], 1800, $data['access_control'] !== 'public-read');
+    $data['link'] = self::getFilePreviewURL($data['key'], [], 1800, $data['access_control'] !== 'public-read');
+
+    return $data;
+  }
+  static function transformFilesData(array $files)
+  {
+    return array_map([self::class, "transformFileData"], $files);
   }
 }

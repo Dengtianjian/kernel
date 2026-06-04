@@ -373,7 +373,37 @@ class Model extends AbilityBaseObject
     $nowTime = Date::milliseconds();
     return $nowTime . substr(md5($prefix . time() . Str::generateRandomString(8) . $suffix), 0, 24 - strlen($nowTime));
   }
+  /**
+   * 检查当前查询条件是否至少存在一条匹配的记录。
+   * @deprecated 转用 exists
+   * 
+   * @return bool|string 默认返回布尔值（true/false）；若开启了 returnSql 模式，则返回生成的 SQL 字符串。
+   */
+
   function exist()
+  {
+    $sql = $this->query->exist()->sql();
+    if ($this->returnSql)
+      return $sql;
+    $DB = $this->DB;
+    $exist = $DB::query($sql);
+    if ($exist instanceof mysqli_result) {
+      $exist = $exist->fetch_assoc();
+      if (!empty($exist)) {
+        $exist = $exist[array_keys($exist)[0]];
+      }
+    } else if (is_array($exist)) {
+      $exist = $exist[array_keys($exist)[0]];
+    }
+    return boolval($exist);
+  }
+  /**
+   * 检查当前查询条件是否至少存在一条匹配的记录。
+   * 
+   * @return bool|string 默认返回布尔值（true/false）；若开启了 returnSql 模式，则返回生成的 SQL 字符串。
+   */
+
+  function exists()
   {
     $sql = $this->query->exist()->sql();
     if ($this->returnSql)
