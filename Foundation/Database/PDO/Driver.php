@@ -43,7 +43,7 @@ class Driver
   public function query(string $query, $selectCallback = null)
   {
     $result = null;
-    $isSelect = strtoupper(substr($query, 0, strpos($query, " "))) === "SELECT";
+    $isSelect = trim(strtoupper(substr($query, 0, strpos($query, " ")))) === "SELECT";
     $data = $this->PDOInstance->query($query);
     if ($data === false) {
       $errorDetails = [
