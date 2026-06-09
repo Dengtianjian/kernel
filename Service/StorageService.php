@@ -299,6 +299,13 @@ class StorageService extends Service
   }
   static function transformFilesData(array $files)
   {
-    return array_map([self::class, "transformFileData"], $files);
+    return array_map([get_called_class(), "transformFileData"], $files);
+  }
+  static function replaceURIKey($uri)
+  {
+    $matchParttern = "{key:" . self::$fileNameMatchPattern . "}";
+    $matchParttern = str_replace("\/", "/", $matchParttern);
+
+    return str_replace("{key}", $matchParttern, $uri);
   }
 }

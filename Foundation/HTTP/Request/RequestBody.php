@@ -18,7 +18,6 @@ class RequestBody extends RequestData
       $contentType = "multipart/form-data";
     if (strpos($contentType, "application/x-www-form-urlencoded") !== false)
       $contentType = "application/x-www-form-urlencoded";
-
     $contentType = explode(";", $contentType)[0];
 
     $input = \file_get_contents("php://input");
@@ -50,7 +49,7 @@ class RequestBody extends RequestData
           break;
       }
     } else {
-      $this->data = null;
+      $this->data = $_POST;
     }
   }
 }

@@ -167,4 +167,47 @@ class Request
       $this->URI = addslashes(substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI'])));
     }
   }
+  /**
+   * 获取当前请求的基础 URL
+   * @return string
+   */
+  function getCurrentBaseUrl(): string
+  {
+    // 判断是否为 HTTPS
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+      || $_SERVER['SERVER_PORT'] == 443
+      || (!empty($_SERVER['wHTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+      || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
+    // 协议
+    $protocol = $isHttps ? 'https' : 'http';
+
+    // 域名
+    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'];
+
+    return $protocol . '://' . $host;
+  }
+  /**
+   * 获取当前请求的完整 URL
+   * @return string
+   */
+  function getCurrentUrl(): string
+  {
+    // 判断是否为 HTTPS
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+      || $_SERVER['SERVER_PORT'] == 443
+      || (!empty($_SERVER['wHTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+      || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
+    // 协议
+    $protocol = $isHttps ? 'https' : 'http';
+
+    // 域名
+    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'];
+
+    // 请求 URI（包含路径和查询字符串）
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+
+    return $protocol . '://' . $uri;
+  }
 }
