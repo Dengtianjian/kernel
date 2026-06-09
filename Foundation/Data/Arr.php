@@ -39,47 +39,40 @@ class Arr
     return $result;
   }
   /**
-   * 分级
+   * 将一维数组转换为树形多维数组
    *
-   * @param array $arr 原数组
-   * @param string $dataPrimaryKey 主键，也是父子都有的一个唯一值
-   * @param string $relatedParentKey 关联键名，用于关联父子
-   * @param string $childArrayKeys = childs 子级保存在指定的键值下的数组名称
-   * @return array 分级后的数组
+   * @param array $arr 一维数组，每个元素包含 $dataPrimaryKey（唯一标识）和 $relatedParentKey（父级标识）
+   * @param string $dataPrimaryKey 主键，节点的唯一标识字段名
+   * @param string $relatedParentKey 关联父级键名，值为 0/null 表示顶级节点
+   * @param string $childArrayKeys 子级数组的键名，默认为 childs
+   * @return array 树形结构数组
    */
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
-    usort($arr, function ($a, $b) {
-      if ($a['parentId'] && $b['parentId'])
-        return 0;
-      if ($a['parentId'])
-        return 1;
-      if ($b['parentId'])
-        return -1;
+    if (!$arr) {
+      return [];
+    }
 
-      return 0;
-    });
+    // 第一阶段：建立索引映射表，通过主键直接定位节点
+    $nodes = [];
+    foreach ($arr as $item) {
+      $item[$childArrayKeys] = [];
+      $nodes[$item[$dataPrimaryKey]] = $item;
+    }
 
-    $arr = self::indexToAssoc($arr, $dataPrimaryKey);
-    $result = [];
-    foreach ($arr as &$arrItem) {
-      if (!$arrItem[$relatedParentKey]) { //* 最高级
-        if (!isset($result[$arrItem[$dataPrimaryKey]])) { //* 判断结果数组里是否存在，没有就加进去
-          $result[$arrItem[$dataPrimaryKey]] = $arrItem;
-          $arrItem['reference'] = &$result[$arrItem[$dataPrimaryKey]];
-          $arrItem['reference'][$childArrayKeys] = [];
-        }
-      } else { //* 下级
-        if ($arr[$arrItem[$relatedParentKey]]['reference']) {
-          $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]] = $arrItem;
-          $arrItem['reference'] = &$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]];
-        } else if (!$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]) {
-          $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = [];
-        }
-        $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = array_values($arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]);
+    // 第二阶段：组装父子关系
+    $roots = [];
+    foreach ($nodes as $id => &$node) {
+      $parentId = $node[$relatedParentKey] ?? 0;
+      // 值为 0/null/空字符串 表示顶级节点
+      if (!$parentId || !isset($nodes[$parentId])) {
+        $roots[] = &$node;
+      } else {
+        $nodes[$parentId][$childArrayKeys][] = &$node;
       }
     }
-    return array_values($result);
+
+    return $roots;
   }
   /**
    * 合并数组。支持多维数组合并

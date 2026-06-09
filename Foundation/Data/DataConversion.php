@@ -172,6 +172,13 @@ class DataConversion
       }
       return $target;
     }
+    if ($type === "timestamp") {
+      $target = intval($target);
+      if ($target > 0 && $target > 10000000000) {
+        $target = $target / 1000;
+      }
+      return $target;
+    }
     $setResult = settype($target, $type);
     if ($setResult) {
       if ($type === "string") {
