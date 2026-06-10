@@ -6,6 +6,11 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
+/**
+ * 日期时间工具类
+ *
+ * 提供时间戳转换、毫秒/微秒获取、数字补零等静态方法
+ */
 class Date
 {
   /**
@@ -50,5 +55,18 @@ class Date
 
     $timestamp = strtotime($time);
     return $timestamp !== false ? $timestamp : 0;
+  }
+  /**
+   * 数字左侧补零
+   *
+   * 例如 padZero(5) 返回 "05"，padZero(3, 4) 返回 "0003"
+   *
+   * @param int $num 需要补零的数字
+   * @param int $length 目标长度，默认为 2
+   * @return string 补零后的字符串
+   */
+  public static function padZero(int $num, int $length = 2): string
+  {
+    return str_pad((string)$num, $length, '0', STR_PAD_LEFT);
   }
 }
