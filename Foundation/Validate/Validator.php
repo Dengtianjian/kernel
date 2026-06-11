@@ -424,7 +424,7 @@ class Validator
 
     if ($ValidatedResult->error) {
       $ValidatedResult->addData(false, true);
-    } else if ($ValidatedResult) {
+    } else if ($ValidatedResult instanceof ReturnResult) {
       $ValidatedResult->addData(true, true);
     } else {
       $ValidatedResult = new ReturnResult(true);
