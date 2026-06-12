@@ -1,5 +1,7 @@
 <?php
 
+namespace kernel\Platform\DiscuzX\Template;
+
 class TemplateParser {
   static function parseSection(){
     

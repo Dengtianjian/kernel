@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\App\Main\Extensions;
+namespace kernel\Controller\Main\Extensions;
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');
