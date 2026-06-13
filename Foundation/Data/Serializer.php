@@ -114,8 +114,22 @@ class Serializer
         } else if ($RuleItem instanceof DataConversion) {
           $Data[$FieldName] = $RuleItem->data($Data[$FieldName])->convert();
         } else if ($RuleItem === "json") {
-          if (isset($Data[$FieldName]) && is_string($Data[$FieldName]) && !empty($Data[$FieldName])) {
-            $Data[$FieldName] = json_decode($Data[$FieldName], true);
+          $value = $Data[$FieldName];
+          if ($value && is_string($value) && !empty($value)) {
+            $value = str_replace("\r\n", "\\n", $value);
+            $value = str_replace("\r", "\\n", $value);
+            $value = str_replace("\n", "\\n", $value);
+
+            $value = trim($value);
+            if (substr($value, 0, 3) === "\xEF\xBB\xBF") {
+              $value = substr($value, 3);
+            }
+
+            $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $value);
+
+            if (json_validate($value)) {
+              $Data[$FieldName] = json_decode($value, true);
+            }
           } else {
             $Data[$FieldName] = [];
           }
