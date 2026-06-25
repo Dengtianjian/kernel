@@ -18,14 +18,6 @@ class DiscuzXDB extends \DB
     if (empty($data)) return [];
     return $data;
   }
-  static function batchInsert($query)
-  {
-    return self::query($query->sql());
-  }
-  static function batchUpdate($query)
-  {
-    return self::query($query->sql());
-  }
   static function count($query)
   {
     return self::result_first($query->sql());

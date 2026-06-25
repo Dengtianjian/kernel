@@ -82,38 +82,24 @@ SQL;
     foreach ($list as $item) {
       $attachId = md5($item['filePath'] . $item['fileName'] . ":" . $belongsId . $belongsType . ":" . $item['userId'] . ":" . uniqid("attachment"));
       array_push($values, [
-        $attachId,
-        $item['remote'] ?: 0,
-        $belongsId,
-        $belongsType,
-        $item['userId'],
-        $item['sourceFileName'],
-        $item['fileName'],
-        $item['fileSize'],
-        $item['filePath'],
-        $item['width'],
-        $item['height'],
-        $item['extension'],
-        $item['key']
+        "attachId" => $attachId,
+        "remote" => $item['remote'] ?: 0,
+        "belongsId" => $belongsId,
+        "belongsType" => $belongsType,
+        "userId" => $item['userId'],
+        "sourceFileName" => $item['sourceFileName'],
+        "fileName" => $item['fileName'],
+        "fileSize" => $item['fileSize'],
+        "filePath" => $item['filePath'],
+        "width" => $item['width'],
+        "height" => $item['height'],
+        "extension" => $item['extension'],
+        "key" => $item['key']
       ]);
     }
 
 
-    return $this->batchInsert([
-      "attachId",
-      "remote",
-      "belongsId",
-      "belongsType",
-      "userId",
-      "sourceFileName",
-      "fileName",
-      "fileSize",
-      "filePath",
-      "width",
-      "height",
-      "extension",
-      "key"
-    ], $values);
+    return $this->insert($values);
   }
   /**
    * 批量更新附件的所属ID以及所属ID类型

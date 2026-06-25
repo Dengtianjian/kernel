@@ -56,10 +56,6 @@ class DB
     }
     return $InsertResult;
   }
-  static function batchInsert($query)
-  {
-    return self::query($query->sql());
-  }
   static function update($query)
   {
     return self::query($query->sql());

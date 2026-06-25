@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Output;
 
 if (!defined("F_KERNEL")) {
@@ -81,8 +82,12 @@ class SQL
       } else {
         $target = serialize($target);
       }
+    } else if ($target instanceof Query) {
+      $target = "(" . $target->getSQL() . ")";
     } else if ($target instanceof SQL) {
       $target = $target->getSQL();
+    } else if (is_null($target)) {
+      $target = "NULL";
     }
 
     return $target;
@@ -324,7 +329,6 @@ class SQL
           $by = $orderItem['by'] ? strtoupper($orderItem['by']) : 'ASC';
           $OrderSQLs[] = join(" ", [$field, $by]);
         }
-
       } else if ($orderItem['type'] === 'raw') {
         $OrderSQLs[] = $orderItem['field'];
       } else if ($orderItem['type'] === 'random') {
@@ -369,68 +373,50 @@ class SQL
 
     return $sql;
   }
-  static function insert($tableName, $data, $isReplaceInto = false)
+  /**
+   * 生成插入 SQL
+   * 支持单行和批量插入，自动检测数据格式：
+   * - 单行：['col1' => 'val1', 'col2' => 'val2']
+   * - 批量：[['col1' => 'val1'], ['col1' => 'val2']]
+   * @param string $tableName 表名
+   * @param array $data 插入数据
+   * @param bool $isReplaceInto 是否使用 REPLACE INTO
+   * @param bool $isIgnore 是否使用 INSERT IGNORE
+   * @return string
+   */
+  static function insert($tableName, $data, $isReplaceInto = false, $isIgnore = false)
   {
-    $fields = \array_keys($data);
-    $fields = self::addQuotes($fields);
-    $fields = \implode(",", $fields);
-    $values = array_values($data);
-    $values = array_map(function ($item) {
-      if (is_null($item)) {
-        $item = 'NULL';
-      }
-      return $item;
-    }, self::addQuotes($values, "'", true));
-    $values = \implode(",", $values);
+    // 归一化：单行也包装为行列表
+    $isAssoc = Arr::isAssoc($data);
+    $rows = $isAssoc ? [$data] : $data;
 
-    $startSql = "INSERT INTO";
-    if ($isReplaceInto) {
-      $startSql = "REPLACE INTO";
+    $startSql = $isReplaceInto
+      ? "REPLACE INTO"
+      : "INSERT" . ($isIgnore ? " IGNORE" : "") . " INTO";
+
+    // 字段列表：从第一行取键名
+    $fieldSQL = "";
+    if (Arr::isAssoc($rows[0])) {
+      $fieldSQL = "(" . \implode(",", self::batchFormat(\array_keys($rows[0]))) . ")";
     }
-    return "$startSql `$tableName`($fields) VALUES($values);";
-  }
-  static function batchInsert($tableName, $fields, $datas, $isReplaceInto = false)
-  {
-    $fields = self::addQuotes($fields);
-    $fields = \implode(",", $fields);
-    $valueSql = [];
-    foreach ($datas as $dataItem) {
-      $dataItem = self::addQuotes($dataItem, "'", true);
-      if (is_null($dataItem)) {
-        $dataItem = 'NULL';
+
+    // 值列表：batchFormat 内部 format 会处理 SQL/Query 实例（raw、子查询），不会加引号
+    $valueSQLs = [];
+    $valueSQL = "";
+    if ($isAssoc || is_array($data[0])) {
+      foreach ($rows as $row) {
+        $valueSQLs[] = "(" . \implode(",", self::batchFormat($row, "'", 'json')) . ")";
       }
-      $valueSql[] = "(" . \implode(",", $dataItem) . ")";
+      $valueSQL = \implode(",", $valueSQLs);
+    } else {
+      $valueSQL = "(" . \implode(",", self::batchFormat($data, "'", 'json')) . ")";
     }
-    $valueSql = \implode(",", $valueSql);
-    $startSql = "INSERT INTO";
-    if ($isReplaceInto) {
-      $startSql = "REPLACE INTO";
-    }
-    return "$startSql `$tableName`($fields) VALUES$valueSql";
-  }
-  static function batchInsertIgnore($tableName, $fields, $datas)
-  {
-    $fields = self::addQuotes($fields);
-    $fields = \implode(",", $fields);
-    $valueSql = [];
-    foreach ($datas as $dataItem) {
-      $dataItem = self::addQuotes($dataItem, "'", true);
-      if (is_null($dataItem)) {
-        $dataItem = 'NULL';
-      }
-      $valueSql[] = "(" . \implode(",", $dataItem) . ")";
-    }
-    $valueSql = \implode(",", $valueSql);
-    $startSql = "INSERT IGNORE INTO";
-    return "$startSql `$tableName`($fields) VALUES$valueSql";
-  }
-  static function delete($tableName, $condition)
-  {
-    return "DELETE FROM `$tableName` $condition";
+
+    return "$startSql $tableName$fieldSQL VALUES $valueSQL;";
   }
   static function update($tableName, $data, $extraStatement = "")
   {
-    $updateData = self::addQuotes($data, "'", true);
+    $updateData = self::batchFormat($data, "'", true);
     foreach ($updateData as $field => &$value) {
       if ($value === null)
         $value = "NULL";
@@ -440,19 +426,24 @@ class SQL
     $sql = "UPDATE `$tableName` SET {$updateData} $extraStatement";
     return $sql;
   }
-  // BUG 批量更新不应该走batchInsert的replace，应该是多条update
   static function batchUpdate($tableName, $fields, $datas, $extraStatement = "")
   {
     $updateData = [];
     foreach ($datas as $item) {
-      if (is_null($item)) {
-        $item = 'NULL';
+      foreach ($item as &$value) {
+        if (is_null($value)) {
+          $value = 'NULL';
+        }
       }
-      $updateData[] = $item;
+      $updateData[] = array_combine($fields, $item);
     }
-    $sql = self::batchInsert($tableName, $fields, $updateData, true);
+    $sql = self::insert($tableName, $updateData, true);
     $sql .= " $extraStatement";
     return $sql;
+  }
+  static function delete($tableName, $condition)
+  {
+    return "DELETE FROM `$tableName` $condition";
   }
   /**
    * 选择语句的字段 SQL 生成

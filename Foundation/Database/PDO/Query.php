@@ -50,6 +50,9 @@ class Query extends AbilityBaseObject
    * @var boolean
    */
   protected $executeReset = true;
+  /**
+   * @var Driver
+   */
   protected $databaseDriver = null;
   /**
    * 标识是**子句**
@@ -173,14 +176,8 @@ class Query extends AbilityBaseObject
         break;
       case "insert":
       case "replace":
-        $SQLs['execute'] = SQL::insert($this->tableName, $this->options['insertData'], $this->executeType === "replace");
-        break;
-      case "batchInsert":
-      case "batchReplace":
-        $SQLs['execute'] = SQL::batchInsert($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
-        break;
-      case "batchInsertIgnore":
-        // $SQLs['execute'] = SQL::batchInsertIgnore($this->tableName, $this->options['batchInsert']['fields'], $this->options['batchInsert']['values'], $this->executeType === "batchReplace");
+        $SQLs['execute'] = SQL::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
+        $SQLs['from'] = null;
         break;
       case "update":
         $SQLs['execute'] = SQL::update($this->tableName, $this->options['updateData']);
@@ -1610,7 +1607,6 @@ class Query extends AbilityBaseObject
       if ($callback($items) === false) {
         return false;
       }
-
     } while ($pageItems === $size);
 
     return true;
@@ -1652,7 +1648,6 @@ class Query extends AbilityBaseObject
       foreach ($items as $item) {
         yield $item;
       }
-
     } while ($pageItems === $size);
 
     return true;
@@ -1846,7 +1841,7 @@ class Query extends AbilityBaseObject
 
     return boolval($data[array_key_first($data)]);
   }
-  function insert($data, $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false)
   {
     if ($isReplaceInto) {
       $this->executeType = "replace";
@@ -1854,37 +1849,17 @@ class Query extends AbilityBaseObject
       $this->executeType = "insert";
     }
     $this->options['insertData'] = $data;
+    $this->options['insertIsIgnore'] = $isIgnore;
     $this->sql = $this->generateSQL();
+    // debug($this->sql);
+    $result = $this->databaseDriver->query($this->sql);
     $this->reset();
-    return $this;
+    if ($returnId) return  $this->databaseDriver->insertId();
+    return $result;
   }
-  function batchInsert($fieldNames, $values, $isReplaceInto = false)
+  function insertGetId($data, $isReplaceInto = false, $isIgnore = false)
   {
-    if ($isReplaceInto) {
-      $this->executeType = "batchReplace";
-    } else {
-      $this->executeType = "batchInsert";
-    }
-    $this->options['batchInsert'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
-
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function batchInsertIgnore($fieldNames, $values)
-  {
-    $this->executeType = "batchInsertIgnore";
-    $this->options['batchInsert'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
-
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
+    return $this->insert($data, $isReplaceInto, $isIgnore, true);
   }
   function update($data)
   {

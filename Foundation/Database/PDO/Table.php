@@ -185,29 +185,48 @@ class Table extends AbilityBaseObject
     $this->returnSql = $yes;
     return $this;
   }
-  function insert($data, $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false, $isIgnore = false)
   {
+    $isBatch = isset($data[0]) && is_array($data[0]);
+
     $Call = get_class($this);
     if ($Call::$Timestamps) {
       $now = time();
-      if ($Call::$CreatedAt) {
-        $data[$Call::$CreatedAt] = $now;
-      }
-      if ($Call::$UpdatedAt) {
-        $data[$Call::$UpdatedAt] = $now;
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
+      if ($isBatch) {
+        foreach ($data as &$row) {
+          if ($Call::$CreatedAt) {
+            $row[$Call::$CreatedAt] = $now;
+          }
+          if ($Call::$UpdatedAt) {
+            $row[$Call::$UpdatedAt] = $now;
+          }
+          if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+            foreach ($Call::$TimestampFields as $item) {
+              $row[$item] = $now;
+            }
+          }
+        }
+      } else {
+        if ($Call::$CreatedAt) {
+          $data[$Call::$CreatedAt] = $now;
+        }
+        if ($Call::$UpdatedAt) {
+          $data[$Call::$UpdatedAt] = $now;
+        }
+        if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+          foreach ($Call::$TimestampFields as $item) {
+            $data[$item] = $now;
+          }
         }
       }
     }
-    $sql = $this->query->insert($data, $isReplaceInto)->sql();
+    $sql = $this->query->insert($data, $isReplaceInto, $isIgnore)->sql();
     if ($this->returnSql)
       return $sql;
     $DB = $this->DB;
     $InsertResult = $DB::query($sql);
+    if ($isBatch)
+      return $InsertResult;
     $InsertId = $DB::insertId();
 
     return $InsertId ?: $InsertResult;
@@ -216,40 +235,6 @@ class Table extends AbilityBaseObject
   {
     $DB = $this->DB;
     return $DB::insertId();
-  }
-  function batchInsert($fieldNames, $values, $isReplaceInto = false)
-  {
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($Call::$CreatedAt) {
-        array_push($fieldNames, $Call::$CreatedAt);
-        foreach ($values as &$ValueItem) {
-          array_push($ValueItem, $now);
-        }
-      }
-      if ($Call::$UpdatedAt) {
-        array_push($fieldNames, $Call::$UpdatedAt);
-        foreach ($values as &$ValueItem) {
-          array_push($ValueItem, $now);
-        }
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $fieldNames[] = $item;
-          foreach ($values as &$ValueItem) {
-            array_push($ValueItem, $now);
-          }
-        }
-      }
-    }
-
-    $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    return $DB::query($sql);
   }
   function update($data)
   {

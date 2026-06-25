@@ -37,89 +37,49 @@ class DiscuzXModel extends Model
     }
     return runquery($this->tableStructureSQL);
   }
-  function insert($data, $isReplaceInto = false)
+  function insert($data, $isReplaceInto = false, $isIgnore = false)
   {
+    $isBatch = isset($data[0]) && is_array($data[0]);
+
     $Call = get_class($this);
     if ($Call::$Timestamps) {
       $now = time();
-      if ($Call::$CreatedAt) {
-        $data[$Call::$CreatedAt] = $now;
-      }
-      if ($Call::$UpdatedAt) {
-        $data[$Call::$UpdatedAt] = $now;
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
+      if ($isBatch) {
+        foreach ($data as &$row) {
+          if ($Call::$CreatedAt) {
+            $row[$Call::$CreatedAt] = $now;
+          }
+          if ($Call::$UpdatedAt) {
+            $row[$Call::$UpdatedAt] = $now;
+          }
+          if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+            foreach ($Call::$TimestampFields as $item) {
+              $row[$item] = $now;
+            }
+          }
+        }
+      } else {
+        if ($Call::$CreatedAt) {
+          $data[$Call::$CreatedAt] = $now;
+        }
+        if ($Call::$UpdatedAt) {
+          $data[$Call::$UpdatedAt] = $now;
+        }
+        if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
+          foreach ($Call::$TimestampFields as $item) {
+            $data[$item] = $now;
+          }
         }
       }
     }
-    $sql = $this->query->insert($data, $isReplaceInto)->sql();
+    $sql = $this->query->insert($data, $isReplaceInto, $isIgnore)->sql();
     if ($this->returnSql) return $sql;
+    if ($isBatch) return \DB::query($sql);
     return \DB::query($sql);
   }
   function insertId()
   {
     return \DB::insert_id();
-  }
-  function batchInsert($fieldNames, $values, $isReplaceInto = false)
-  {
-    if (!count($values)) return null;
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($Call::$CreatedAt) {
-        array_push($fieldNames, "createdAt");
-        foreach ($values as &$value) {
-          array_push($value, $now);
-        }
-      }
-      if ($Call::$UpdatedAt) {
-        array_push($fieldNames, "updatedAt");
-        foreach ($values as &$value) {
-          array_push($value, $now);
-        }
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
-        }
-      }
-    }
-    $sql = $this->query->batchInsert($fieldNames, $values, $isReplaceInto)->sql();
-    if ($this->returnSql) return $sql;
-    return DiscuzXDB::batchInsert($this->query);
-  }
-  function batchInsertIgnore($fieldNames, $values)
-  {
-    if (!count($values)) return null;
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($Call::$CreatedAt) {
-        array_push($fieldNames, "createdAt");
-        foreach ($values as &$value) {
-          array_push($value, $now);
-        }
-      }
-      if ($Call::$UpdatedAt) {
-        array_push($fieldNames, "updatedAt");
-        foreach ($values as &$value) {
-          array_push($value, $now);
-        }
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
-        }
-      }
-    }
-    $sql = $this->query->batchInsertIgnore($fieldNames, $values)->sql();
-    if ($this->returnSql) return $sql;
-    return DiscuzXDB::batchInsert($this->query);
   }
   function update($data)
   {
