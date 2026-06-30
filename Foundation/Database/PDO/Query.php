@@ -3,7 +3,6 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Data\Arr;
-use Kernel\Foundation\Database\Database;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /** //TODO
@@ -24,15 +23,37 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * 8. //DONE 正则查询
  * 9. //DONE wherExists、whereNotExists
  * 10. //DONE where 第一个参数支持传入数组，数组里面的子数组支持设置运算符
- * 11. 解析 raw，差 insert、update、delete
+ * 11. //DONE 解析 raw，差 insert、update、delete
  * 12. 多数据库连接、切换
- * 13. insert功能
- * 14. update 功能
- * 15. delete 功能
+ * 13. //DONE insert功能
+ * 14. //DONE update 功能
+ * 15. //DONE delete 功能
  * 16. //DONE get 功能
- * 17. 基础聚合函数 max、min、count、avg、sum
+ * 17. //DONE 基础聚合函数 max、min、count、avg、sum
  */
-//* 
+
+/**
+ * PDO 查询构建器
+ *
+ * 流式 API 构建 SQL 并执行，核心能力：
+ * - 查询 (SELECT)、插入 (INSERT)、更新 (UPDATE)、删除 (DELETE)
+ * - 条件链 (where / orWhere)、子查询、聚合函数 (count/max/min/avg/sum)
+ * - 原始 SQL 表达式 (raw)、分页、游标遍历、分块处理
+ *
+ * @example
+ * // 查询
+ * Query::create('users')->where('status', 'active')->orderBy('id', 'DESC')->limit(10)->get();
+ *
+ * // 插入
+ * Query::create('users')->insert(['name' => 'John', 'age' => 18]);
+ *
+ * // 更新
+ * Query::create('users')->where('id', 1)->update(['status' => 'banned']);
+ *
+ * // 删除
+ * Query::create('logs')->where('created_at', '<', '2024-01-01')->delete();
+ 
+ */
 
 if (!defined('F_KERNEL')) {
   exit('Access Denied');
@@ -42,7 +63,6 @@ class Query extends AbilityBaseObject
 {
   private $executeType = "";
   private $options = [];
-  private $conditions = [];
   private $filterNullConditions = [];
   protected $sql = "";
   /**
@@ -59,6 +79,16 @@ class Query extends AbilityBaseObject
    * @var boolean
    */
   protected $clause = false;
+  /**
+   * 构造查询构建器实例
+   *
+   * @param string|null $tableName 表名（可选，也可通过 from() 链式设置）
+   * @param Driver|null $databaseDriver 数据库驱动，默认使用当前连接
+   *
+   * @example
+   * new Query('users');                     // 自动绑定默认驱动
+   * new Query('users', $customDriver);      // 指定驱动
+   */
   function __construct($tableName = null, $databaseDriver = null)
   {
     $this->reset();
@@ -69,10 +99,31 @@ class Query extends AbilityBaseObject
     ];
     $this->databaseDriver = $databaseDriver ?: Connections::getUseDriver();
   }
+  /**
+   * 静态工厂方法
+   *
+   * 创建 Query 实例的便捷入口，等价于 new Query(...)，更符合链式调用风格
+   *
+   * @param string|null $tableName 表名
+   * @param Driver|null $databaseDriver 数据库驱动
+   * @return static
+   *
+   * @example
+   * Query::create('users')->where('id', 1)->first();
+   */
   static function create($tableName = null, $databaseDriver = null)
   {
     return new Query($tableName, $databaseDriver);
   }
+  /**
+   * 填充执行类型与选项
+   *
+   * 用于子查询或 Model 层注入预构建的查询状态，不经过完整链式调用
+   *
+   * @param string $executeType 执行类型 (select/insert/update/delete)
+   * @param array $options 选项数组（from、select、conditions 等）
+   * @return $this
+   */
   function fill($executeType, $options)
   {
     $this->executeType = $executeType;
@@ -160,8 +211,6 @@ class Query extends AbilityBaseObject
       $asName = $this->options['from']['asName'];
 
       $from = SQL::from($from, $asName);
-
-      $SQLs['from'] = "FROM {$from}";
     }
 
     if ($this->options['select']) {
@@ -170,6 +219,8 @@ class Query extends AbilityBaseObject
 
     switch ($this->executeType) {
       case "select":
+        $SQLs['from'] = "FROM {$from}";
+
         $SQLs['field'] = $SQLs['field'] ?: "*";
         $SQLs['execute'] = "SELECT {$SQLs['field']}";
         $SQLs['field'] = null;
@@ -177,30 +228,20 @@ class Query extends AbilityBaseObject
       case "insert":
       case "replace":
         $SQLs['execute'] = SQL::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
-        $SQLs['from'] = null;
         break;
       case "update":
-        $SQLs['execute'] = SQL::update($this->tableName, $this->options['updateData']);
-        break;
-      case "batchUpdate":
-        $SQLs['execute'] = SQL::batchUpdate($this->tableName, $this->options['batchUpdateData']['fields'], $this->options['batchUpdateData']['values']);
+        $SQLs['execute'] = SQL::update($from, $this->options['updateData']);
         break;
       case "delete":
-        $SQLs['execute'] = SQL::delete($this->tableName, $this->sql);
-        break;
-      case "increment":
-        $SQLs['execute'] = SQL::increment($this->tableName, $this->options['increment']['field'], $this->options['increment']['value']);
-        break;
-      case "decrement":
-        $SQLs['execute'] = SQL::decrement($this->tableName, $this->options['decrement']['field'], $this->options['decrement']['value']);
+        $SQLs['execute'] = SQL::delete($from, $this->sql);
         break;
     }
 
     if (count($this->options['conditions']) > 0 || count($this->filterNullConditions) > 0) {
-      $conditions = array_filter($this->filterNullConditions, function ($item) {
-        return !is_null($item['value']) || !empty($item['value']);
+      // 过滤值为空的 filterNull 条件
+      $this->filterNullConditions = array_filter($this->filterNullConditions, function ($item) {
+        return !is_null($item['value']) && !empty($item['value']);
       });
-      $conditions = array_merge($this->conditions, $conditions);
 
       if (count($this->options['conditions'])) {
         $whereSql = SQL::where($this->options['conditions']);
@@ -694,6 +735,9 @@ class Query extends AbilityBaseObject
     } else {
       if ($column instanceof Query || is_callable($column)) {
         $type = "sub";
+        $value = $column;
+        $column = null;
+        $operator = null;
       } else if (is_string($column) && preg_match("/(\s[=|(|)|<|>|BETWEEN|IN|LIKE|NULL|REGEXP]\s+)+/i", $column)) {
         $type = "raw";
         $value = $column;
@@ -730,20 +774,29 @@ class Query extends AbilityBaseObject
   }
   /**
    * 基础 WHERE 条件
-   * 
+   *
    * 支持多种调用方式：
    * - where('column', 'value')                    // 默认操作符 '='
    * - where('column', 'operator', 'value')        // 指定操作符
    * - where(['col1' => 'val1', 'col2' => 'val2']) // 多条件数组
-   * - where(['column','operator',"value"], ['column',"value"]]) // 多条件数组
-   * 
-   * @param mixed $column 列名或条件数组
+   * - where(['column','operator',"value'], ['column',"value"]]) // 多条件数组
+   * - where(function ($q) { ... })                 // 闭包分组
+   *
+   * @example
+   * // 闭包分组 - 括号包裹
+   * $query->from('users')
+   *     ->where('status', 'active')
+   *     ->where(function ($q) {
+   *         $q->where('age', '>', 18)->orWhere('role', 'vip');
+   *     });
+   * // → WHERE `status` = 'active' AND (`age` > '18' OR `role` = 'vip')
+   *
+   * @param mixed $column 列名、条件数组或闭包
    * @param mixed $valueOrOperator 值或操作符
    * @param mixed $value 值（当使用三个参数时）
-   * @param string $boolean 逻辑连接符，默认为 'AND'
    * @return $this
    */
-  function where($column, $valueOrOperator = null, $value = null, $boolean = "AND")
+  function where($column, $valueOrOperator = null, $value = null)
   {
     $args = func_num_args();
 
@@ -754,7 +807,7 @@ class Query extends AbilityBaseObject
       $valueOrOperator = null;
     }
 
-    return $this->addWhere($column, $valueOrOperator, $value, $boolean);
+    return $this->addWhere($column, $valueOrOperator, $value, "AND");
   }
   /**
    * 原始 SQL WHERE 条件
@@ -1061,17 +1114,40 @@ class Query extends AbilityBaseObject
   }
   /**
    * OR WHERE 条件
-   * 
-   * 用法与 where() 相同，但使用 OR 连接
-   * 
-   * @param mixed $column 列名或条件数组
+   *
+   * 用法与 where() 相同，但使用 OR 连接。
+   * 支持闭包分组：传入 callable 时，闭包内的所有条件会自动用括号包裹。
+   *
+   * @example
+   * // 基础用法
+   * $query->from('users')->where('status', 'active')->orWhere('role', 'admin');
+   * // → WHERE `status` = 'active' OR `role` = 'admin'
+   *
+   * // 闭包分组
+   * $query->from('users')
+   *     ->where('status', 'active')
+   *     ->orWhere(function ($q) {
+   *         $q->where('votes', '>', 100)->where('title', '<>', 'Admin');
+   *     });
+   * // → WHERE `status` = 'active' OR (`votes` > '100' AND `title` <> 'Admin')
+   *
+   * @param mixed $column 列名、条件数组或闭包
    * @param mixed $valueOrOperator 值或操作符
    * @param mixed $value 值（当使用三个参数时）
    * @return $this
    */
   function orWhere($column, $valueOrOperator = null, $value = null)
   {
-    return $this->where($column, $valueOrOperator, $value, "OR");
+    $args = func_num_args();
+
+    if ($args >= 3) {
+      $valueOrOperator = strtoupper($valueOrOperator);
+    } else {
+      $value = $valueOrOperator;
+      $valueOrOperator = null;
+    }
+
+    return $this->addWhere($column, $valueOrOperator, $value, "OR");
   }
 
   /**
@@ -1380,6 +1456,29 @@ class Query extends AbilityBaseObject
     return $this->addWhere(null, null, $queryOrCallable, "OR", "NOT EXISTS", "func");
   }
 
+  /**
+   * 添加可空过滤条件
+   *
+   * 与 where() 参数形式相同，但生成 SQL 时会自动过滤值为 null 或空的条件项。
+   * 适用于前端传入的可选筛选参数场景，避免手动判断是否添加条件。
+   *
+   * @example
+   * // 以下两个条件中，第二个因为值为空会被自动跳过
+   * $query->from('users')
+   *     ->filterNullWhere('status', 'active')
+   *     ->filterNullWhere('role', '')      // 自动跳过
+   *     ->get();
+   *
+   * @param string|array $params 列名、原始 SQL 或条件数组
+   * @param mixed $value 值
+   * @param string $glue 比较运算符（=、>、< 等）
+   * @param string $operator 逻辑连接符（AND/OR），默认 AND
+   * @return $this
+   *
+   * @deprecated 请使用 whereFilter() 替代，传入数组自动过滤空值
+   * @see whereFilter() 批量过滤空值条件
+   * @see where() 标准条件方法
+   */
   function filterNullWhere($params, $value = null, $glue = "=", $operator = "AND")
   {
     if (is_string($params) && \preg_match_all("/\s+[=|<|>|BETWEEN|IN|LIKE|NULL|REGEXP]+/i", $params)) {
@@ -1408,6 +1507,40 @@ class Query extends AbilityBaseObject
         "glue" => $glue,
         "operator" => $operator
       ]);
+    }
+
+    return $this;
+  }
+  /**
+   * 从数组中批量添加过滤条件，自动跳过空值
+   *
+   * 接收关联数组（如 $_GET），将键作为字段名、值作为条件值，
+   * 自动过滤值为 null、空字符串的项，仅添加有效条件。
+   * 适用于前端传入的搜索/筛选参数场景，无需控制器逐个判断。
+   *
+   * @example
+   * // $_GET = ['age' => '18', 'name' => '', 'nickname' => '']
+   * $query->from('users')->whereFilter($_GET)->get();
+   * // → SELECT * FROM `users` WHERE `age` = '18'
+   *
+   * // 多个参数同时有效
+   * // $_GET = ['age' => '18', 'role' => 'admin']
+   * $query->from('users')->whereFilter($_GET)->get();
+   * // → SELECT * FROM `users` WHERE `age` = '18' AND `role` = 'admin'
+   *
+   * @param array $data 关联数组，键为字段名，值为条件值
+   * @param string $operator 逻辑连接符（AND/OR），默认 AND
+   * @return $this
+   *
+   * @see where() 标准条件方法
+   */
+  function whereFilter($data, $operator = "AND")
+  {
+    foreach ($data as $fieldName => $value) {
+      if ($value === null || $value === '') {
+        continue;
+      }
+      $this->addWhere($fieldName, "=", $value, $operator);
     }
 
     return $this;
@@ -1815,7 +1948,18 @@ class Query extends AbilityBaseObject
   }
   /**
    * 查询是否存在
+   *
+   * 将当前查询包装为 EXISTS 子查询，高效判断是否有满足条件的记录
+   *
+   * @example
+   * // 检查是否存在活跃用户
+   * $exists = Query::create('users')->where('status', 'active')->exists();
+   *
    * @return bool `true`=存在，`false`=不存在
+   *
+   * @note 此方法会忽略 select()、orderBy() 等子句，仅检查条件
+   * @note 等价于 SQL: SELECT EXISTS(SELECT * FROM ... WHERE ...)
+   * @see notExists() 检查是否不存在
    */
   function exists()
   {
@@ -1829,7 +1973,17 @@ class Query extends AbilityBaseObject
   }
   /**
    * 查询是否不存在
-   * @return bool true`=不存在，`false`=存在
+   *
+   * 将当前查询包装为 NOT EXISTS 子查询，判断是否没有满足条件的记录
+   *
+   * @example
+   * // 检查用户是否没有订单
+   * $noOrders = Query::create('orders')->where('user_id', $userId)->notExists();
+   *
+   * @return bool `true`=不存在，`false`=存在
+   *
+   * @note 等价于 SQL: SELECT NOT EXISTS(SELECT * FROM ... WHERE ...)
+   * @see exists() 检查是否存在
    */
   function notExists()
   {
@@ -1841,6 +1995,46 @@ class Query extends AbilityBaseObject
 
     return boolval($data[array_key_first($data)]);
   }
+  /**
+   * 执行插入操作
+   * 
+   * 支持单行和批量插入，自动检测数据格式：
+   * - 单行：['col1' => 'val1', 'col2' => 'val2']
+   * - 批量：[['col1' => 'val1'], ['col1' => 'val2']]
+   * 
+   * @example
+   * // 单行插入
+   * $query->from('users')->insert(['name' => 'John', 'age' => 18]);
+   * 
+   * // 批量插入
+   * $query->from('logs')->insert([
+   *   ['type' => 'login', 'uid' => 1],
+   *   ['type' => 'logout', 'uid' => 1],
+   * ]);
+   * 
+   * // REPLACE INTO
+   * $query->from('users')->insert(['id' => 1, 'name' => 'John'], true);
+   * 
+   * // INSERT IGNORE
+   * $query->from('users')->insert(['name' => 'John'], false, true);
+   * 
+   * // 使用 raw 表达式
+   * $query->from('users')->insert([
+   *   'name'       => 'John',
+   *   'created_at' => $query->raw('NOW()'),
+   * ]);
+   * 
+   * @param array $data 插入数据
+   * @param bool $isReplaceInto 是否使用 REPLACE INTO，默认 false
+   * @param bool $isIgnore 是否使用 INSERT IGNORE，默认 false
+   * @param bool $returnId 是否返回自增 ID 而非执行结果，默认 false
+   * @return int|bool 当 $returnId 为 true 时返回自增 ID，否则返回执行结果（true/false）
+   * 
+   * @note 自动检测数据格式：关联数组为单行，索引数组为批量
+   * @note 批量插入时，所有行必须拥有相同的列结构
+   * @note 值可以是 raw 表达式（$query->raw('NOW()')）或子查询（Query 实例）
+   * @see insertGetId() 直接获取自增 ID 的便捷方法
+   */
   function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false)
   {
     if ($isReplaceInto) {
@@ -1851,66 +2045,92 @@ class Query extends AbilityBaseObject
     $this->options['insertData'] = $data;
     $this->options['insertIsIgnore'] = $isIgnore;
     $this->sql = $this->generateSQL();
-    // debug($this->sql);
     $result = $this->databaseDriver->query($this->sql);
     $this->reset();
     if ($returnId) return  $this->databaseDriver->insertId();
     return $result;
   }
+  /**
+   * 执行插入操作并返回自增 ID
+   * 
+   * insert() 的便捷方法，插入成功后直接返回自增 ID
+   * 
+   * @example
+   * // 插入并获取 ID
+   * $id = $query->from('users')->insertGetId(['name' => 'John']);
+   * 
+   * // REPLACE INTO 并获取 ID
+   * $id = $query->from('users')->insertGetId(['id' => 1, 'name' => 'John'], true);
+   * 
+   * @param array $data 插入数据
+   * @param bool $isReplaceInto 是否使用 REPLACE INTO，默认 false
+   * @param bool $isIgnore 是否使用 INSERT IGNORE，默认 false
+   * @return int|string 返回自增 ID
+   * 
+   * @note 等同于 insert($data, $isReplaceInto, $isIgnore, true)
+   * @see insert() 完整的插入方法
+   */
   function insertGetId($data, $isReplaceInto = false, $isIgnore = false)
   {
     return $this->insert($data, $isReplaceInto, $isIgnore, true);
   }
+  /**
+   * 执行更新操作
+   * 
+   * 更新当前查询表的数据，必须结合 where() 指定更新范围，否则会更新全表
+   * 
+   * @example
+   * // 基础更新
+   * $query->from('users')->where('id', 1)->update(['name' => 'Jane']);
+   * 
+   * // 多字段更新
+   * $query->from('users')->where('status', 'inactive')->update([
+   *   'status' => 'active',
+   *   'updated_at' => $query->raw('NOW()'),
+   * ]);
+   * 
+   * @param array $data 要更新的字段和值，键为字段名，值为新值
+   * @return int|bool 返回影响的行数或 false（执行失败）
+   * 
+   * @note 必须结合 where() 使用，否则会更新全表数据
+   * @note 值可以是 raw 表达式（$query->raw('NOW()')）或子查询（Query 实例）
+   * @note 调用后会自动 reset()，可链式进行下一次查询
+   * @see where() 添加更新条件
+   * @see insert() 插入操作
+   */
   function update($data)
   {
     $this->executeType = "update";
     $this->options['updateData'] = $data;
     $this->sql = $this->generateSQL();
+    $result = $this->databaseDriver->query($this->sql);
     $this->reset();
-    return $this;
+    return $result;
   }
-  function batchUpdate($fieldNames, $values)
+  /**
+   * 执行删除操作
+   * 
+   * 删除当前查询表的数据，必须结合 where() 指定删除范围，否则会删除全表
+   * 
+   * @example
+   * // 按主键删除
+   * $query->from('users')->where('id', 1)->delete();
+   * 
+   * // 按条件批量删除
+   * $query->from('logs')->where('created_at', '<', '2024-01-01')->delete();
+   * 
+   * @return int|bool 返回影响的行数或 false（执行失败）
+   * 
+   * @note 必须结合 where() 使用，否则会删除全表数据
+   * @note 调用后会自动 reset()，可链式进行下一次查询
+   * @see where() 添加删除条件
+   */
+  function delete()
   {
-    $this->executeType = "batchUpdate";
-    $this->options['batchUpdateData'] = [
-      "fields" => $fieldNames,
-      "values" => $values
-    ];
+    $this->executeType = "delete";
     $this->sql = $this->generateSQL();
+    $result = $this->databaseDriver->query($this->sql);
     $this->reset();
-    return $this;
-  }
-  function delete($directly = false)
-  {
-    if ($directly) {
-      $this->executeType = "delete";
-    } else {
-      $this->executeType = "softDelete";
-    }
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function increment($field, $value)
-  {
-    $this->executeType = "increment";
-    $this->options["increment"] = [
-      "field" => $field,
-      "value" => $value
-    ];
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
-  }
-  function decrement($field, $value)
-  {
-    $this->executeType = "decrement";
-    $this->options["decrement"] = [
-      "field" => $field,
-      "value" => $value
-    ];
-    $this->sql = $this->generateSQL();
-    $this->reset();
-    return $this;
+    return $result;
   }
 }

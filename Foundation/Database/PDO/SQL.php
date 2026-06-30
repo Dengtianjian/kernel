@@ -423,7 +423,7 @@ class SQL
       $value = "`$field` = $value";
     }
     $updateData = implode(",", $updateData);
-    $sql = "UPDATE `$tableName` SET {$updateData} $extraStatement";
+    $sql = "UPDATE $tableName SET {$updateData} $extraStatement";
     return $sql;
   }
   static function batchUpdate($tableName, $fields, $datas, $extraStatement = "")
@@ -443,7 +443,7 @@ class SQL
   }
   static function delete($tableName, $condition)
   {
-    return "DELETE FROM `$tableName` $condition";
+    return "DELETE FROM $tableName $condition";
   }
   /**
    * 选择语句的字段 SQL 生成
