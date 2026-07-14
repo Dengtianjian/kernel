@@ -359,7 +359,7 @@ class Model extends AbilityBaseObject
       if (!empty($exist)) {
         $exist = $exist[array_keys($exist)[0]];
       }
-    } else if (is_array($exist)) {
+    } else if (is_array($exist) && $exist) {
       $exist = $exist[array_keys($exist)[0]];
     }
     return boolval($exist);
