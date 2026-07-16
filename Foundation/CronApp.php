@@ -36,12 +36,22 @@ class CronApp extends App
   }
   public function executeController($callTarget, $callParams, &$Controller)
   {
-    $Ins = new $Controller($this->request());
-    $Ins->data();
+    /** @var \kernel\Foundation\Controller\Controller $Instance */
+    $Instance = new $Controller($this->request());
+    $Instance->before();
+
+    if (!$Instance->response->error) {
+      $Instance->data();
+    }
+
+    $Instance->after();
+
+    // 将实例引用传回调用方
+    $Controller = $Instance;
   }
   function run()
   {
-    //* 调用生命周期“启动”钩子
+    //* 调用生命周期"启动"钩子
     if ($this->LifeCycle['bootUp']) {
       foreach ($this->LifeCycle['bootUp'] as $item) {
         if (is_callable($item)) {
@@ -60,13 +70,10 @@ class CronApp extends App
         $controller();
       } else {
         $this->executeController([], [], $controller);
-        if (method_exists($controller, "after") && $controller->after) {
-          $controller->after();
-        }
       }
     }
 
-    //* 调用生命周期“结束”钩子
+    //* 调用生命周期"结束"钩子
     if ($this->LifeCycle['shutdown']) {
       foreach ($this->LifeCycle['shutdown'] as $item) {
         if (is_callable($item)) {

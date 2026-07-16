@@ -19,7 +19,7 @@ use kernel\Model\ExtensionsModel;
  */
 class UpgradeExtensionController extends AuthController
 {
-  protected $Admin = 1;
+  public $Admin = 1;
   public function data($request)
   {
     $extensionId = \addslashes($request->params("extension_id"));

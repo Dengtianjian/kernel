@@ -8,49 +8,26 @@ if (!defined('F_KERNEL')) {
   exit('Access Denied');
 }
 
+/**
+ * 带认证能力的控制器基类
+ *
+ * $Admin / $Auth 属性启用认证，由 Middleware 执行 Token 校验及 verifyAdmin/verifyAuth 分发。
+ * 子类可覆盖 verifyAdmin() / verifyAuth() 添加额外校验。
+ */
 class AuthController extends Controller
 {
-  public function __get($name)
-  {
-    return $this->$name;
-  }
-
-  /**
-   * 校验管理员  
-   * 布尔值：为true时，就说明需要校验管理员，会执行verifyAdmin方法  
-   * ~~函数：当函数执行后返回为true时，就说明需要校验管理员，会执行verifyAdmin方法~~
-   *
-   * @var boolean|Closure
-   */
+  /** @var bool|int|string|array */
   public $Admin = false;
-  /**
-   * 验证管理员  
-   * 需要返回ReturnResult实例
-   *
-   * @return \kernel\Foundation\ReturnResult
-   */
-  function verifyAdmin()
+  /** @var bool|int|string|array */
+  public $Auth = false;
+
+  function verifyAdmin(): ReturnResult
   {
-    // $calledAdmin = get_called_class()::$Admin;
-    return new ReturnResult(false);
+    return new ReturnResult(null);
   }
 
-  /**
-   * 是否需要校验用户权限  
-   * 布尔值：为true时会调用verifyAuth方法  
-   * ~~函数：当返回true时会调用verifyAuth方法~~
-   *
-   * @var boolean|Closure
-   */
-  public $Auth = false;
-  /**
-   * 验证用户是否已登录
-   *
-   * @return \kernel\Foundation\ReturnResult
-   */
-  function verifyAuth()
+  function verifyAuth(): ReturnResult
   {
-    // Output::debug(self::$Admin);
-    return new ReturnResult(false);
+    return new ReturnResult(null);
   }
 }

@@ -19,7 +19,7 @@ use kernel\Model\ExtensionsModel;
  */
 class InstallExtensionController extends AuthController
 {
-  protected $Admin = true;
+  public $Admin = true;
   public function data($request)
   {
     $extensionId = \addslashes($request->params("extension_id"));
