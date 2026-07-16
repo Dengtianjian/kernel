@@ -57,7 +57,7 @@ class AbilityBaseObject extends BaseObject
    * @param boolean $return 直接返回ReturnResult
    * @param mixed $data 主体数据
    * @param mixed $details 错误详情
-   * @return this
+   * @return AbilityBaseObject
    */
   final protected function setError(
     $statusCode = 500,

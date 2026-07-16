@@ -47,7 +47,7 @@ SQL;
   }
   public function list($id = null, $attachId = null, $remote = null, $belongsId = null, $belongsType = null, $userId = null, $extension = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "remote" => $remote,
@@ -59,14 +59,14 @@ SQL;
   }
   public function listBelongsSameIdType($belongsId = null, $belongsType = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "belongsId" => $belongsId,
       "belongsType" => $belongsType
     ])->getAll();
   }
   public function item($id = null, $attachId = null, $remote = null, $belongsId = null, $belongsType = null, $userId = null, $extension = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "remote" => $remote,

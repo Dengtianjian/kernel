@@ -27,7 +27,7 @@ class SQLiteModel extends BaseObject
    */
   protected $SQLite = null;
   protected $query;
-  protected $returnSql = false;
+  protected $dryRun = false;
   protected $DB = null;
   /**
    * 实例化模型
@@ -93,32 +93,32 @@ class SQLiteModel extends BaseObject
     $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
     return $this;
   }
-  function filterNullWhere($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
+  function whereFilter($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
   {
-    $this->query->filterNullWhere($fieldNameOrFieldValue, $value, $glue, $operator);
+    $this->query->whereFilter($fieldNameOrFieldValue, $value, $glue, $operator);
     return $this;
   }
   function sql($yes = true)
   {
-    $this->returnSql = $yes;
+    $this->dryRun = $yes;
     return $this;
   }
   function getAll()
   {
     $sql = $this->query->get()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return $this->fetchAll($sql);
   }
   function getOne()
   {
     $sql = $this->query->limit(1)->get()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return $this->fetchOne($sql);
   }
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     $countResult = $this->fetch($sql);
     if (!empty($countResult)) {
       return (int)$countResult["COUNT('$field')"];

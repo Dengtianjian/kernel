@@ -12,6 +12,8 @@ use kernel\Foundation\Date;
 
 class DiscuzXModel extends Model
 {
+  protected $dryRun = false;
+
   function __construct($tableName = null, $prefix = null)
   {
     if (!$tableName) {
@@ -73,7 +75,7 @@ class DiscuzXModel extends Model
       }
     }
     $sql = $this->query->insert($data, $isReplaceInto, $isIgnore)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     if ($isBatch) return \DB::query($sql);
     return \DB::query($sql);
   }
@@ -97,13 +99,13 @@ class DiscuzXModel extends Model
       }
     }
     $sql = $this->query->update($data)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return \DB::query($sql);
   }
   function batchUpdate($fieldNames, $values)
   {
     $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return DiscuzXDB::batchUpdate($this->query);
   }
   function delete($directly = false)
@@ -131,19 +133,19 @@ class DiscuzXModel extends Model
       $sql = $this->query->update($data)->sql();
     }
 
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return \DB::query($sql);
   }
   function getAll()
   {
     $sql = $this->query->get()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return DiscuzXDB::fetch_all($sql);
   }
   function getOne()
   {
     $sql = $this->query->limit(1)->get()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     $res = DiscuzXDB::fetch_first($sql);
     if (empty($res)) return null;
     return $res;
@@ -151,7 +153,7 @@ class DiscuzXModel extends Model
   function count($field = "*")
   {
     $sql = $this->query->count($field)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return (int)\DB::result_first($sql);
   }
   function genId($prefix = "", $suffix = "")
@@ -162,20 +164,20 @@ class DiscuzXModel extends Model
   function exist()
   {
     $sql = $this->query->count()->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     $exist = DiscuzXDB::result_first($sql);
     return boolval($exist);
   }
   function increment($field, $value = 1)
   {
     $sql = $this->query->increment($field, $value)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return (int)\DB::query($sql);
   }
   function decrement($field, $value = 1)
   {
     $sql = $this->query->decrement($field, $value)->sql();
-    if ($this->returnSql) return $sql;
+    if ($this->dryRun) return $sql;
     return (int)\DB::query($sql);
   }
 }

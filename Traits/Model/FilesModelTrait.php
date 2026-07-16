@@ -27,7 +27,7 @@ trait FilesModelTrait
   }
   function save($Data, $FileKey = null, $Id = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $Id,
       "key" => $FileKey
     ])->update($Data);
@@ -41,7 +41,7 @@ trait FilesModelTrait
   }
   function item($FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null, $Platform = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $Id,
       "key" => $FileKey,
       "ownerId" => $OwnerId,
@@ -57,7 +57,7 @@ trait FilesModelTrait
   }
   function list($Page = 1, $PerPage = 10, $FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null, $Platform = null)
   {
-    $this->ListTotal = $this->filterNullWhere([
+    $this->ListTotal = $this->whereFilter([
       "id" => $Id,
       "key" => $FileKey,
       "ownerId" => $OwnerId,
@@ -72,7 +72,7 @@ trait FilesModelTrait
   }
   function remove($directly = false, $FileKey = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null, $Platform = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $Id,
       "key" => $FileKey,
       "ownerId" => $OwnerId,
@@ -83,7 +83,7 @@ trait FilesModelTrait
   }
   public function existItem($Key = null, $BelongsId = null, $BelongsType = null, $OwnerId = null, $Id = null, $Platform = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $Id,
       "key" => $Key,
       "ownerId" => $OwnerId,

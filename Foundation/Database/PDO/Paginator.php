@@ -46,7 +46,7 @@ class Paginator extends AbilityBaseObject
    */
   function getPage()
   {
-    return $this->currentPage;
+    return $this->page;
   }
   /**
    * 每页获取的条数

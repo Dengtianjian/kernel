@@ -4,56 +4,64 @@ namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Object\AbilityBaseObject;
-use mysqli_result;
 
 class Table extends AbilityBaseObject
 {
   /**
-   * 数据表名称
+   * 数据表名称（含前缀）
    *
    * @var string
    */
   protected $tableName = "";
+
   /**
-   * 数据表结构SQL
+   * DB 类名（子类可覆盖实现多态切换）
    *
    * @var string
    */
-  protected $tableStructureSQL = "";
-  /**
-   * 查询实例
-   *
-   * @var Query
-   */
-  protected $query;
-  /**
-   * 查询是否不执行，而是返回SQL
-   *
-   * @var boolean
-   */
-  protected $returnSql = false;
-  /**
-   * DB静态类
-   *
-   * @var DB
-   */
   protected $DB = null;
-  protected $prefixReplaces = [
-    "{AppId}" => F_APP_ID
-  ];
-  protected $querys = [
-    "executeType" => "select",
-    "where" => [],
-    "order" => [],
-    "fields" => []
-  ];
 
   /**
-   * 表类构建
+   * 表前缀占位替换
    *
-   * @param string $tableName 数据表名称
+   * 键为占位符，值为替换值。在表名拼接前对前缀进行替换。
+   *
+   * @var array<string, string>
    */
-  function __construct($tableName = null)
+  protected $prefixReplaces = [];
+
+  /**
+   * 表结构定义（DDL 用）
+   *
+   * 存放 Schema 对象数组，用于 create() 生成建表 SQL。
+   * 子类覆盖示例：
+   *
+   *   public $schema = [
+   *       new Schema('id')->bigint()->unsigned()->autoIncrement()->comment('主键'),
+   *       new Schema('name')->varchar(100)->nullable(false)->comment('名称'),
+   *   ];
+   *
+   * 注意：CRUD 读写时的类型转换请使用 Model::$casts。
+   *
+   * @var Schema[]
+   */
+  public $schema = [];
+
+  /**
+   * 配置前缀缓存
+   *
+   * @var string|null
+   */
+  private static $prefixCache = null;
+
+  // ===================================================================
+  // 构造
+  // ===================================================================
+
+  /**
+   * @param string|null $tableName 数据表名称
+   */
+  public function __construct($tableName = null)
   {
     if ($tableName) {
       $this->tableName = $tableName;
@@ -62,333 +70,267 @@ class Table extends AbilityBaseObject
 
     $this->DB = DB::class;
   }
-  private function _query()
-  {
-    $query = new Query($this->tableName);
-  }
+
+  // ===================================================================
+  // 表名
+  // ===================================================================
+
   /**
    * 表名添加前缀
    *
-   * @param string $tableName 表名称
-   * @return string 添加前缀后的表名称
+   * @param  string $tableName
+   * @return string
    */
   public function prefix($tableName)
   {
-    $prefix = $this->getPrefix();
-    if ($prefix) {
-      $tableName = "{$prefix}_{$tableName}";
+    $prefix = self::getPrefix();
+    if (!$prefix) {
+      return $tableName;
     }
-    return $tableName;
+
+    if ($this->prefixReplaces) {
+      $prefix = str_replace(
+        array_keys($this->prefixReplaces),
+        array_values($this->prefixReplaces),
+        $prefix
+      );
+    }
+
+    return "{$prefix}_{$tableName}";
   }
+
   /**
-   * 获取表名称
+   * 获取当前表名
+   *
    * @return string
    */
-  public function getTableName()
+  public function tableName()
   {
     return $this->tableName;
   }
-  /**
-   * 获取表前缀
-   * @return string
-   */
-  public function getPrefix()
-  {
-    if (Config::get("database/mysql/prefix")) {
-      $prefix = Config::get("database/mysql/prefix");
-      $prefix = str_replace(array_keys($this->prefixReplaces), array_values($this->prefixReplaces), $prefix);
 
-      return is_array($prefix) ? join($prefix, "_") : $prefix;
-    }
+  // ===================================================================
+  // DDL
+  // ===================================================================
 
-    return "";
-  }
   /**
    * 创建表
-   */
-  function create()
-  {
-    if (empty($this->tableStructureSQL))
-      return true;
-    return DB::query($this->tableStructureSQL);
-  }
-  /**
-   * 排序
-   * @param string $field 字段
-   * @param string $by 排序方式，DESC=倒序，ASC=正序
-   * @return static
-   */
-  function order($field, $by = "ASC")
-  {
-    $this->query->order($field, $by);
-    return $this;
-  }
-  /**
-   * 获取指定字段
-   * @param array $fieldNames 获取的字段名称
-   * @return static
-   */
-  function field(...$fieldNames)
-  {
-    $this->query->field($fieldNames);
-    return $this;
-  }
-  function distinct($fieldName)
-  {
-    $this->query->distinct($fieldName);
-    return $this;
-  }
-  function groupBy($fieldName)
-  {
-    $this->query->groupBy($fieldName);
-    return $this;
-  }
-  function limit($startOrNumber, $number = null)
-  {
-    $this->query->limit($startOrNumber, $number);
-    return $this;
-  }
-  function page($pages, $perPage = 10)
-  {
-    if ($pages === 0 && $perPage === 0) {
-      return $this;
-    }
-    $this->query->page($pages, $perPage);
-    return $this;
-  }
-  function cancelPage()
-  {
-    $this->query->clearPage();
-    return $this;
-  }
-  function skip($number)
-  {
-    $this->query->skip($number);
-    return $this;
-  }
-  function where($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
-  {
-    $this->query->where($fieldNameOrFieldValue, $value, $glue, $operator);
-    return $this;
-  }
-  function whereNotNull($fields, $operator = "AND")
-  {
-
-  }
-  function filterNullWhere($fieldNameOrFieldValue, $value = null, $glue = "=", $operator = "AND")
-  {
-    $this->query->filterNullWhere($fieldNameOrFieldValue, $value, $glue, $operator);
-    return $this;
-  }
-  function getSQL($yes = true)
-  {
-    $this->returnSql = $yes;
-    return $this;
-  }
-  function insert($data, $isReplaceInto = false, $isIgnore = false)
-  {
-    $isBatch = isset($data[0]) && is_array($data[0]);
-
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($isBatch) {
-        foreach ($data as &$row) {
-          if ($Call::$CreatedAt) {
-            $row[$Call::$CreatedAt] = $now;
-          }
-          if ($Call::$UpdatedAt) {
-            $row[$Call::$UpdatedAt] = $now;
-          }
-          if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-            foreach ($Call::$TimestampFields as $item) {
-              $row[$item] = $now;
-            }
-          }
-        }
-      } else {
-        if ($Call::$CreatedAt) {
-          $data[$Call::$CreatedAt] = $now;
-        }
-        if ($Call::$UpdatedAt) {
-          $data[$Call::$UpdatedAt] = $now;
-        }
-        if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-          foreach ($Call::$TimestampFields as $item) {
-            $data[$item] = $now;
-          }
-        }
-      }
-    }
-    $sql = $this->query->insert($data, $isReplaceInto, $isIgnore)->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    $InsertResult = $DB::query($sql);
-    if ($isBatch)
-      return $InsertResult;
-    $InsertId = $DB::insertId();
-
-    return $InsertId ?: $InsertResult;
-  }
-  function insertId()
-  {
-    $DB = $this->DB;
-    return $DB::insertId();
-  }
-  function update($data)
-  {
-    if (!$data)
-      return 0;
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($Call::$UpdatedAt) {
-        $data[$Call::$UpdatedAt] = $now;
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
-        }
-      }
-    }
-    $sql = $this->query->update($data)->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    return $DB::query($sql);
-  }
-  function batchUpdate($fieldNames, $values)
-  {
-    $Call = get_class($this);
-    if ($Call::$Timestamps) {
-      $now = time();
-      if ($Call::$UpdatedAt) {
-        $data[$Call::$UpdatedAt] = $now;
-      }
-
-      if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-        foreach ($Call::$TimestampFields as $item) {
-          $data[$item] = $now;
-        }
-      }
-    }
-    $sql = $this->query->batchUpdate($fieldNames, $values)->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    return $DB::query($sql);
-  }
-  function delete($directly = true)
-  {
-    if ($directly) {
-      $sql = $this->query->delete($directly)->sql();
-    } else {
-      $data = [];
-      $Call = get_class($this);
-      if ($Call::$Timestamps) {
-        $now = time();
-        if ($Call::$UpdatedAt) {
-          $data[$Call::$UpdatedAt] = $now;
-        }
-        if ($Call::$DeletedAt) {
-          $data[$Call::$DeletedAt] = $now;
-        }
-
-        if ($Call::$TimestampFields && count($Call::$TimestampFields)) {
-          foreach ($Call::$TimestampFields as $item) {
-            $data[$item] = $now;
-          }
-        }
-      }
-      $sql = $this->query->update($data)->sql();
-    }
-
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    return $DB::query($sql);
-  }
-  function getAll()
-  {
-    if ($this->returnSql)
-      return $this->query->get()->sql();
-    $DB = $this->DB;
-    return $DB::getAll($this->query);
-  }
-  function getOne()
-  {
-    if ($this->returnSql)
-      return $this->query->limit(1)->get()->sql();
-    $DB = $this->DB;
-    return $DB::getOne($this->query);
-  }
-  function each($callback)
-  {
-    if ($this->returnSql)
-      return $this->query->get()->sql();
-    $DB = $this->DB;
-    $DB::each($this->query, $callback);
-    return $this;
-  }
-  function count($field = "*")
-  {
-    $sql = $this->query->count($field)->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    $countResult = $DB::query($sql);
-    if (!empty($countResult)) {
-      return (int) $countResult['0']["COUNT('$field')"];
-    }
-    return null;
-  }
-  function exist()
-  {
-    $sql = $this->query->exist()->sql();
-    if ($this->returnSql)
-      return $sql;
-    $DB = $this->DB;
-    $exist = $DB::query($sql);
-    if ($exist instanceof mysqli_result) {
-      $exist = $exist->fetch_assoc();
-      if (!empty($exist)) {
-        $exist = $exist[array_keys($exist)[0]];
-      }
-    } else if (is_array($exist)) {
-      $exist = $exist[array_keys($exist)[0]];
-    }
-    return boolval($exist);
-  }
-  function reset($flag = true)
-  {
-    $this->query->reset($flag);
-    return $this;
-  }
-  /**
-   * 执行sql
    *
-   * @param string $sql sql语句
+   * 根据 $this->schema 生成 CREATE TABLE SQL 并执行。
+   *
+   * @return bool
+   */
+  public function create()
+  {
+    if (empty($this->schema)) {
+      return true;
+    }
+
+    $sql = Schema::createTableSQL($this->tableName, $this->schema);
+    return $this->query($sql);
+  }
+
+  /**
+   * 删除表
+   *
+   * @return bool
+   */
+  public function drop()
+  {
+    return $this->query("DROP TABLE IF EXISTS `{$this->tableName}`");
+  }
+
+  /**
+   * 清空表（保留结构，重置自增）
+   *
+   * @return bool
+   */
+  public function truncate()
+  {
+    return $this->query("TRUNCATE TABLE `{$this->tableName}`");
+  }
+
+  /**
+   * 重命名表
+   *
+   * @param  string $newName 新表名（不含前缀，自动补充）
+   * @return bool
+   */
+  public function rename($newName)
+  {
+    $newName = $this->prefix($newName);
+    return $this->query("RENAME TABLE `{$this->tableName}` TO `{$newName}`");
+  }
+
+  /**
+   * 复制表
+   *
+   * @param  string $newName  新表名（不含前缀）
+   * @param  bool   $withData 是否连带数据，默认仅复制结构
+   * @return bool
+   */
+  public function copy($newName, $withData = false)
+  {
+    $newName = $this->prefix($newName);
+    $this->query("CREATE TABLE `{$newName}` LIKE `{$this->tableName}`");
+
+    if ($withData) {
+      return $this->query("INSERT INTO `{$newName}` SELECT * FROM `{$this->tableName}`");
+    }
+    return true;
+  }
+
+  // ===================================================================
+  // 信息查询
+  // ===================================================================
+
+  /**
+   * 表是否存在
+   *
+   * @return bool
+   */
+  public function exists()
+  {
+    $result = $this->query("SHOW TABLES LIKE '{$this->tableName}'");
+    return !empty($result);
+  }
+
+  /**
+   * 获取建表 DDL
+   *
+   * @return string
+   */
+  public function getCreateSQL()
+  {
+    $result = $this->query("SHOW CREATE TABLE `{$this->tableName}`");
+    return $result[0]['Create Table'] ?? '';
+  }
+
+  /**
+   * 获取表字段结构
+   *
+   * @return array 每个字段的类型、是否可空、默认值、注释
+   */
+  public function getColumns()
+  {
+    return $this->query("SHOW FULL COLUMNS FROM `{$this->tableName}`");
+  }
+
+  /**
+   * 获取表索引
+   *
+   * @return array 索引名称、字段、类型、基数
+   */
+  public function getIndexes()
+  {
+    return $this->all("SHOW INDEX FROM `{$this->tableName}`");
+  }
+
+  /**
+   * 获取表状态信息
+   *
+   * @return array|null 引擎、行数、数据大小、自增值、创建时间
+   */
+  public function getStatus()
+  {
+    $result = $this->all("SHOW TABLE STATUS LIKE '{$this->tableName}'");
+    return $result[0] ?? null;
+  }
+
+  /**
+   * 优化表（整理碎片，回收空间）
+   *
+   * @return bool
+   */
+  public function optimize()
+  {
+    return $this->query("OPTIMIZE TABLE `{$this->tableName}`");
+  }
+
+  // ===================================================================
+  // Schema 类型映射
+  // ===================================================================
+
+  /**
+   * 将 $schema 中的 Schema 对象转换为字段 → PHP 类型映射
+   *
+   * @example
+   * // 返回 ['id' => 'int', 'name' => 'string']
+   *
+   * @return array<string, string>
+   */
+  public function getPhpSchema()
+  {
+    if (empty($this->schema)) {
+      return [];
+    }
+
+    $map = [];
+    foreach ($this->schema as $col) {
+      if ($col instanceof Schema) {
+        $map[$col->getName()] = $col->getPhpType();
+      }
+    }
+    return $map;
+  }
+
+  // ===================================================================
+  // SQL 执行
+  // ===================================================================
+
+  /**
+   * 执行 SQL（写操作）
+   *
+   * @param  string $sql
    * @return mixed
    */
-  function query($sql)
+  public function query($sql)
   {
-    $DB = $this->DB;
-    return $DB::query($sql);
+    return $this->DB::query($sql);
   }
-  function increment($field, $value = 1)
+
+  /**
+   * 执行 SQL（读操作，返回全部结果）
+   *
+   * @param  string $sql
+   * @return array
+   */
+  public function all($sql)
   {
-    $sql = $this->query->increment($field, $value)->sql();
-    if ($this->returnSql)
-      return $sql;
-    return (int) DB::query($sql);
+    return $this->DB::all($sql);
   }
-  function decrement($field, $value = 1)
+
+  /**
+   * 最后插入的自增 ID
+   *
+   * @return int
+   */
+  public function insertId()
   {
-    $sql = $this->query->decrement($field, $value)->sql();
-    if ($this->returnSql)
-      return $sql;
-    return (int) DB::query($sql);
+    return $this->DB::insertId();
+  }
+
+  // ===================================================================
+  // 内部
+  // ===================================================================
+
+  /**
+   * 获取配置中的表前缀（静态缓存）
+   *
+   * @return string
+   */
+  private static function getPrefix()
+  {
+    if (self::$prefixCache !== null) {
+      return self::$prefixCache;
+    }
+
+    $prefix = Config::get("database/mysql/prefix");
+    if (is_array($prefix)) {
+      $prefix = join("_", $prefix);
+    }
+
+    self::$prefixCache = (string) $prefix;
+    return self::$prefixCache;
   }
 }

@@ -24,7 +24,7 @@ class AttachmentKeysModel extends Model
   }
   public function list($id = null, $attachId = null, $userId = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "userId" => $userId
@@ -32,7 +32,7 @@ class AttachmentKeysModel extends Model
   }
   public function item($id = null, $key = null, $attachId = null, $userId = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "key" => $key,

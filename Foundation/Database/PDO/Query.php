@@ -5,54 +5,22 @@ namespace kernel\Foundation\Database\PDO;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\AbilityBaseObject;
 
-/** //TODO
- * 1. //DONE 子查询实现
- * (SELECT user_id FROM orders);
- * 2. //DONE 多条件查询
- * SELECT * FROM `users` WHERE (`age` > 18 OR `status` = 'active') AND `email_verified` = 
- * 3. //DONE IN、NOT IN 子查询
- * SELECT * FROM `users` WHERE `id` IN (SELECT `user_id` FROM `orders` WHERE `total` > 100)
- * 4. //DONE 日期函数查询
- * 5. //DONE where 方法，第二个参数可接受多种运算符
- * where("username","=","admin")
- * where("uid","like","admin")
- * where("uid","in","admin")
- * ···
- * 6. //DONE 增加 orWhere，where 的 or 逻辑表达式版本
- * 7. //DONE Query一些方法可以增加比较运算符的方法就添加上
- * 8. //DONE 正则查询
- * 9. //DONE wherExists、whereNotExists
- * 10. //DONE where 第一个参数支持传入数组，数组里面的子数组支持设置运算符
- * 11. //DONE 解析 raw，差 insert、update、delete
- * 12. 多数据库连接、切换
- * 13. //DONE insert功能
- * 14. //DONE update 功能
- * 15. //DONE delete 功能
- * 16. //DONE get 功能
- * 17. //DONE 基础聚合函数 max、min、count、avg、sum
- */
-
 /**
- * PDO 查询构建器
+ * 数据库查询构建器
  *
- * 流式 API 构建 SQL 并执行，核心能力：
- * - 查询 (SELECT)、插入 (INSERT)、更新 (UPDATE)、删除 (DELETE)
- * - 条件链 (where / orWhere)、子查询、聚合函数 (count/max/min/avg/sum)
- * - 原始 SQL 表达式 (raw)、分页、游标遍历、分块处理
+ * 提供流畅的链式 API 构建 SQL 查询，支持 SELECT / INSERT / UPDATE / DELETE，
+ * 以及子查询、联结、聚合函数、分页等高级特性。
  *
- * @example
- * // 查询
- * Query::create('users')->where('status', 'active')->orderBy('id', 'DESC')->limit(10)->get();
+ * 使用方式：
+ * ```php
+ * // 通过 table() 静态入口创建实例并链式调用
+ * Query::table('users')->where('status', 'active')->get();
  *
- * // 插入
- * Query::create('users')->insert(['name' => 'John', 'age' => 18]);
+ * // 或直接 new
+ * (new Query('users'))->where('id', 1)->first();
+ * ```
  *
- * // 更新
- * Query::create('users')->where('id', 1)->update(['status' => 'banned']);
- *
- * // 删除
- * Query::create('logs')->where('created_at', '<', '2024-01-01')->delete();
- 
+ * @method static Query table(string|null $tableName = null, Driver|null $databaseDriver = null) 创建 Query 实例并指定表名
  */
 
 if (!defined('F_KERNEL')) {
@@ -61,24 +29,96 @@ if (!defined('F_KERNEL')) {
 
 class Query extends AbilityBaseObject
 {
+  /**
+   * 当前 SQL 操作类型
+   * 
+   * 可选值: 'select' | 'insert' | 'replace' | 'update' | 'delete'
+   * 决定 generateSQL() 生成的 SQL 语句类型
+   * 
+   * @var string
+   */
   private $executeType = "";
+  /**
+   * 查询选项数组
+   * 
+   * 存储构建 SQL 所需的所有参数，结构如下：
+   * - 'from'        => ['tableName' => string, 'asName' => string|null]
+   * - 'select'      => ['fields' => array, 'distinct' => bool]
+   * - 'conditions'  => array  // where 条件列表
+   * - 'orders'      => array  // order by 排序列表
+   * - 'pagination'  => ['limit' => int|null, 'offset' => int|null]
+   * - 'groupBy'     => array|null
+   * - 'having'      => mixed|null
+   * - 'data'        => mixed|null  // insert/update 数据
+   * - 'insertData'  => array  // insert 专用数据
+   * - 'updateData'  => array  // update 专用数据
+   * - 'insertIsIgnore' => bool  // INSERT IGNORE 标记
+   * 
+   * @var array
+   */
   private $options = [];
+  /**
+   * 可空过滤条件集合
+   * 
+   * 通过 filterNullWhere() 添加的条件存储在此数组中，
+   * 在 generateSQL() 中生成 WHERE 子句之前会自动过滤值为空的条目
+   * 
+   * @var array
+   */
   private $filterNullConditions = [];
+  /**
+   * 当前构建的 SQL 语句
+   * 
+   * 由 generateSQL() 生成并缓存，供执行方法使用
+   * 
+   * @var string
+   */
   protected $sql = "";
   /**
-   * 执行语句后重置 options
+   * 执行后是否自动重置查询参数
+   * 
+   * 默认为 true。设置为 false（通过 notReset()）后可保持查询状态，
+   * 适用于需要在多次执行中复用同一查询参数的场景（如 chunk 分块、paginate 分页）
+   * 
    * @var boolean
    */
   protected $executeReset = true;
   /**
+   * 数据库驱动实例
+   * 
+   * 负责实际执行 SQL 查询、参数绑定、结果获取等底层操作
+   * 
    * @var Driver
    */
   protected $databaseDriver = null;
   /**
-   * 标识是**子句**
+   * 标识当前查询是否为子查询子句
+   * 
+   * 当为 true 时，generateSQL() 不拼接执行关键字（SELECT/INSERT/UPDATE/DELETE），
+   * 只生成 FROM / WHERE / ORDER BY 等子句部分
+   * 
    * @var boolean
    */
   protected $clause = false;
+  /**
+   * 参数绑定数组
+   * 
+   * 存储预处理占位符与值的映射，键为占位符名称（如 ':id'、':__in_0'），值为实际绑定值。
+   * 在首次添加 WHERE IN 条件时自动生成，也可通过 bind()/addBindings() 手动添加。
+   * 执行时通过 mergeBindings() 与调用参数合并，内部绑定优先于外部调用参数。
+   * 
+   * @var array
+   */
+  protected $bindings = [];
+  /**
+   * 自增绑定计数器
+   * 
+   * 用于 generateBindingKey() 生成唯一的内部占位符名称（格式 :__in_N），
+   * 每次调用 generateBindingKey() 自动递增，确保同一查询中的 IN 占位符不重名
+   * 
+   * @var int
+   */
+  private $bindingCounter = 0;
   /**
    * 构造查询构建器实例
    *
@@ -100,18 +140,53 @@ class Query extends AbilityBaseObject
     $this->databaseDriver = $databaseDriver ?: Connections::getUseDriver();
   }
   /**
-   * 静态工厂方法
+   * 设置执行 SQL 时使用的数据库驱动
+   * 
+   * 允许动态切换数据库连接，适用于多数据库或读写分离场景
+   * 
+   * @param Driver $driver 数据库驱动实例，需实现 Driver 接口
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * // 切换到只读从库
+   * $readonlyDriver = Connections::getReaderDriver();
+   * Query::table('users')->setDatabaseDriver($readonlyDriver)->where('id', 1)->first();
+   */
+  function setDatabaseDriver($driver)
+  {
+    $this->databaseDriver = $driver;
+
+    return $this;
+  }
+  /**
+   * 获取当前使用的数据库驱动
+   * 
+   * 返回当前查询构建器绑定的数据库驱动实例，可用于执行原生的 PDO 操作
+   * 
+   * @return Driver 数据库驱动实例
+   * 
+   * @example
+   * $driver = $query->getDatabaseDriver();
+   * $driver->query('SET NAMES utf8mb4');
+   */
+  function getDatabaseDriver()
+  {
+    return $this->databaseDriver;
+  }
+  /**
+   * 静态工厂：创建 Query 实例并指定表名
    *
-   * 创建 Query 实例的便捷入口，等价于 new Query(...)，更符合链式调用风格
+   * 命名更符合直觉，是 new Query($tableName) 的快捷方式
    *
    * @param string|null $tableName 表名
    * @param Driver|null $databaseDriver 数据库驱动
    * @return static
    *
    * @example
-   * Query::create('users')->where('id', 1)->first();
+   * Query::table('users')->where('id', 1)->first();
+   * Query::table('orders', $customDriver)->where('status', 'paid')->get();
    */
-  static function create($tableName = null, $databaseDriver = null)
+  static function table($tableName = null, $databaseDriver = null)
   {
     return new Query($tableName, $databaseDriver);
   }
@@ -132,19 +207,22 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 设置执行 SQL 时使用的数据库驱动
-   * @param mixed $driver 数据库驱动
-   * @return static
-   */
-  function setDatabaseDriver($driver)
-  {
-    $this->databaseDriver = $driver;
-
-    return $this;
-  }
-  /**
    * 重置查询参数
-   * @return static
+   * 
+   * 将所有查询选项恢复为初始状态，但保留 from（表名）和 databaseDriver 配置。
+   * 受 $this->executeReset 标志控制，若已设为 false 则跳过重置。
+   * 通常无需手动调用，executeWrite() 在 INSERT/UPDATE/DELETE 执行后会自动重置。
+   * 
+   * 重置内容包括：
+   * - executeType（操作类型）
+   * - orders（排序）、select 字段、conditions（WHERE 条件）
+   * - pagination（分页）、groupBy、having、data
+   * - SQL 语句缓存、绑定参数、绑定计数器
+   * 
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see notReset() 禁止自动重置
+   * @see executeWrite() 内部调用的重置触发点
    */
   function reset()
   {
@@ -166,13 +244,105 @@ class Query extends AbilityBaseObject
         "data" => null
       ];
       $this->sql = '';
+      $this->bindings = [];
+      $this->bindingCounter = 0;
     }
 
     return $this;
   }
   /**
-   * 执行 SQL 语句后不重置查询参数
-   * @return static
+   * 添加绑定参数
+   *
+   * 向查询中添加预处理绑定参数，用于占位符的值替换。
+   * 支持命名占位符（:name）和问号占位符（?）。
+   *
+   * @param string|int $key 占位符名称（如 ':id'）或位置索引
+   * @param mixed $value 绑定的值
+   * @return $this
+   *
+   * @example
+   * // 命名占位符
+   * $query->from('users')->whereRaw('status = :status')->bind(':status', 'active')->get();
+   *
+   * // 问号占位符
+   * $query->from('users')->whereRaw('age > ?')->bind(0, 18)->get();
+   */
+  function bind($key, $value)
+  {
+    $this->bindings[$key] = $value;
+    return $this;
+  }
+  /**
+   * 批量添加绑定参数
+   *
+   * @param array $bindings 绑定参数数组，键为占位符名称/索引，值为绑定的值
+   * @return $this
+   *
+   * @example
+   * $query->from('users')
+   *     ->whereRaw('status = :status AND age > :age')
+   *     ->addBindings([':status' => 'active', ':age' => 18])
+   *     ->get();
+   */
+  function addBindings(array $bindings)
+  {
+    foreach ($bindings as $key => $value) {
+      $this->bindings[$key] = $value;
+    }
+    return $this;
+  }
+  /**
+   * 获取所有累积的绑定参数
+   *
+   * @return array
+   */
+  function getBindings()
+  {
+    return $this->bindings;
+  }
+  /**
+   * 生成唯一的内部占位符名称
+   *
+   * @return string 如 ':__in_0', ':__in_1' 等
+   */
+  private function generateBindingKey()
+  {
+    return ':__in_' . ($this->bindingCounter++);
+  }
+  /**
+   * 合并累积的绑定参数与传入参数
+   *
+   * 内部 IN 占位符绑定优先，外部 $params 可覆盖同名键
+   *
+   * @param array $params 调用时传入的参数
+   * @return array 合并后的绑定参数
+   */
+  private function mergeBindings($params)
+  {
+    if (empty($this->bindings)) {
+      return $params;
+    }
+    return $this->bindings + $params;
+  }
+  /**
+   * 禁止执行后自动重置查询参数
+   * 
+   * 设置后 INSERT/UPDATE/DELETE 执行完毕不会清空 options，
+   * 适用于需要在多次执行中保持查询状态的场景。
+   * 
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * // 分块处理时不希望每次重置导致丢失条件
+   * $query->from('logs')->where('status', 'pending')->notReset();
+   * do {
+   *     $items = $query->page($page, 100)->get();
+   *     // 处理数据...
+   *     $page++;
+   * } while (!empty($items));
+   * 
+   * @see reset() 重置查询参数的核心方法
+   * @see chunk() 内部使用 notReset 保持查询条件
    */
   function notReset()
   {
@@ -181,16 +351,36 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 获取生成的参数
-   * @return string
+   * 获取当前查询对应的 SQL 语句（调试用）
+   * 
+   * 调用 generateSQL() 返回完整 SQL 字符串，可用于日志记录或调试。
+   * 注意：返回的 SQL 中包含占位符，不会替换为实际值。
+   * 
+   * @return string 生成的 SQL 语句（含占位符）
+   * 
+   * @example
+   * $sql = Query::table('users')->where('status', 'active')->getSQL();
+   * // SELECT * FROM `users` WHERE `status` = 'active'
+   * 
+   * @see generateSQL() 内部 SQL 生成逻辑
    */
   function getSQL()
   {
     return $this->generateSQL();
   }
   /**
-   * 生成 SQL 语句
-   * @return string
+   * 根据当前选项生成完整 SQL 语句
+   * 
+   * 核心 SQL 生成方法，根据 executeType 和 options 动态拼接 SQL 各部分：
+   * 1. 解析 from（表名/别名/子查询）
+   * 2. 解析 select 字段（含 distinct）
+   * 3. 根据 executeType 生成执行子句（SELECT/INSERT/REPLACE/UPDATE/DELETE）
+   * 4. 拼接 WHERE 条件（自动过滤 filterNullConditions 中的空值条件）
+   * 5. 拼接 ORDER BY、LIMIT/OFFSET、GROUP BY 子句
+   * 
+   * @return string 生成的完整 SQL 语句
+   * 
+   * @note DELETE 操作不使用 LIMIT/OFFSET，以防止误删超过预期数量的记录
    */
   protected function generateSQL()
   {
@@ -210,11 +400,11 @@ class Query extends AbilityBaseObject
       $from = $this->options['from']['tableName'];
       $asName = $this->options['from']['asName'];
 
-      $from = SQL::from($from, $asName);
+      $from = Statement::from($from, $asName);
     }
 
     if ($this->options['select']) {
-      $SQLs['field'] = SQL::selectField($this->options['select']['fields'], $this->options['select']['distinct']);
+      $SQLs['field'] = Statement::selectField($this->options['select']['fields'], $this->options['select']['distinct']);
     }
 
     switch ($this->executeType) {
@@ -227,13 +417,13 @@ class Query extends AbilityBaseObject
         break;
       case "insert":
       case "replace":
-        $SQLs['execute'] = SQL::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
+        $SQLs['execute'] = Statement::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
         break;
       case "update":
-        $SQLs['execute'] = SQL::update($from, $this->options['updateData']);
+        $SQLs['execute'] = Statement::update($from, $this->options['updateData']);
         break;
       case "delete":
-        $SQLs['execute'] = SQL::delete($from, $this->sql);
+        $SQLs['execute'] = Statement::delete($from, $this->sql);
         break;
     }
 
@@ -244,24 +434,22 @@ class Query extends AbilityBaseObject
       });
 
       if (count($this->options['conditions'])) {
-        $whereSql = SQL::where($this->options['conditions']);
+        $whereSql = Statement::where($this->options['conditions']);
         $SQLs['condition'] = $this->executeType ? "WHERE {$whereSql}" : $whereSql;
       }
     }
 
-    if ($this->options['order']) {
-      $orderSQL = SQL::order($this->options['orders']);
-
-      $SQLs['order'] = $orderSQL;
+    if (!empty($this->options['orders'])) {
+      $SQLs['order'] = Statement::order($this->options['orders']);
     }
     if ($this->options['pagination'] && $this->executeType != "delete") {
       if (!is_null($this->options['pagination']['limit']) || !is_null($this->options['pagination']['offset'])) {
-        $SQLs['pagination'] = SQL::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
+        $SQLs['pagination'] = Statement::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
       }
     }
 
     if ($this->options['groupBy']) {
-      $SQLs['groupBy'] = SQL::groupBy($this->options['groupBy']);
+      $SQLs['groupBy'] = Statement::groupBy($this->options['groupBy']);
     }
 
     $SQLs = array_filter($SQLs, function ($item) {
@@ -271,13 +459,29 @@ class Query extends AbilityBaseObject
     return join(" ", $SQLs);
   }
   /**
-   * 原始 SQL 语句
-   * @param mixed $sql
-   * @return SQL
+   * 创建原始 SQL 表达式包装器
+   * 
+   * 将字符串标记为原始 SQL，插入到查询中时不会被转义或加引号。
+   * 适用于需要插入 SQL 函数调用、表达式等场景。
+   * 
+   * @param string $sql 原始 SQL 表达式
+   * @return Statement 返回 Statement 对象，可传入 insert/update/where 等方法
+   * 
+   * @example
+   * // INSERT 中使用 NOW() 函数
+   * $query->from('users')->insert([
+   *     'name'       => 'John',
+   *     'created_at' => $query->raw('NOW()'),
+   * ]);
+   * 
+   * // 聚合查询中使用表达式
+   * $query->from('orders')->addSelect($query->raw('price * quantity as total'));
+   * 
+   * @warning 传入 raw 的值未经任何过滤，务必确保 SQL 来自可信来源，避免 SQL 注入风险
    */
   function raw($sql)
   {
-    return new SQL($sql);
+    return new Statement($sql);
   }
   /**
    * 设置查询的主表
@@ -394,7 +598,7 @@ class Query extends AbilityBaseObject
   function addSelect(...$column)
   {
     array_push($this->options['select']['fields'], ...array_map(function ($fieldItem) {
-      if ($fieldItem instanceof SQL) {
+      if ($fieldItem instanceof Statement) {
         return [
           "type" => "raw",
           "value" => $fieldItem->getSQL()
@@ -541,7 +745,7 @@ class Query extends AbilityBaseObject
    */
   function orderRandom($seed = null)
   {
-    $this->options['order'][] = [
+    $this->options['orders'][] = [
       "field" => null,
       "by" => $seed,
       "type" => "random"
@@ -594,17 +798,27 @@ class Query extends AbilityBaseObject
    * 
    * @note 使用原始 SQL 时需要注意 SQL 注入风险，确保传入的 SQL 是安全的
    * @see groupBy() 实际处理分组的核心方法
-   * @see SQL 自定义 SQL 表达式类
+   * @see Statement 自定义 SQL 表达式类
    */
   function groupByRaw($rawSQL)
   {
-    return $this->groupBy(new SQL($rawSQL));
+    return $this->groupBy(new Statement($rawSQL));
   }
   /**
-   * 设置查询的 `limit` 值
+   * 设置查询结果数量限制（LIMIT）
    * 
-   * @param int|SQL $value 条数
-   * @return static
+   * 限制查询返回的最大记录数，对应 SQL LIMIT 子句
+   * 
+   * @param int|Statement $value 最多返回的记录数量
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * // 获取前 10 条记录
+   * $query->from('users')->limit(10)->get();
+   * 
+   * @see take() 别名方法
+   * @see offset() 配合使用实现分页
+   * @see page() 更便捷的分页方式
    */
   function limit($value)
   {
@@ -613,18 +827,38 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 设置查询的 `limit` 值
-   * @param int|SQL $value 条数
-   * @return static
+   * 设置查询结果数量限制（LIMIT 的别名）
+   * 
+   * 功能与 limit() 完全一致，提供更语义化的方法名
+   * 
+   * @param int|Statement $value 最多获取的记录数量
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * $query->from('users')->take(5)->get();
+   * 
+   * @see limit() 原始方法
    */
   function take($value)
   {
     return $this->limit($value);
   }
   /**
-   * 设置查询的 `offset` 值  
-   * @param int|SQL $value 偏移值
-   * @return static
+   * 设置查询结果的偏移量（OFFSET）
+   * 
+   * 跳过指定数量的记录后开始返回结果，对应 SQL OFFSET 子句。
+   * 通常与 limit() 配合使用实现分页。
+   * 
+   * @param int|Statement $value 跳过的记录数量（偏移值）
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * // 跳过前 10 条，获取接下来的 10 条（第 2 页）
+   * $query->from('users')->offset(10)->limit(10)->get();
+   * 
+   * @see skip() 别名方法
+   * @see limit() 配合使用
+   * @see page() 更便捷的分页方式
    */
   function offset($value)
   {
@@ -633,21 +867,39 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 设置查询的 `offset` 值   
-   * offset 的别名
-   * @param int|SQL $value 偏移值
-   * @return static
+   * 设置查询结果的偏移量（OFFSET 的别名）
+   * 
+   * 功能与 offset() 完全一致，命名更直观
+   * 
+   * @param int|Statement $value 跳过的记录数量
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * $query->from('users')->skip(20)->take(10)->get();
+   * 
+   * @see offset() 原始方法
+   * @see limit() / take() 配合使用
    */
   function skip($value)
   {
     return $this->offset($value);
   }
   /**
-   * 设置查询的 `limit` 值  
-   * limit 的别名，但是会根据传入的页码计算偏移值
-   * @param int $page 页码
-   * @param int $perPage 每页获取的数量
-   * @return static
+   * 基于页码的便捷分页
+   * 
+   * 根据页码和每页数量自动计算 offset 值。
+   * 等价于同时调用 limit($perPage) 和 offset(($page - 1) * $perPage)。
+   * 
+   * @param int $page    页码，从 1 开始（小于 1 时视为第 1 页）
+   * @param int $perPage 每页记录数，默认 10
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @example
+   * // 获取第 3 页，每页 20 条
+   * $query->from('users')->page(3, 20)->get();
+   * 
+   * @see limit() / offset() 手动分页
+   * @see paginate() 更完整的分页查询（含总数统计）
    */
   function page($page, $perPage = 10)
   {
@@ -660,18 +912,41 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * 分页查询
-   * @return Paginator
+   * 分页查询（含总数统计）
+   * 
+   * 克隆当前查询实例执行 COUNT 统计总数，然后执行当前查询获取当前页数据，
+   * 返回包含数据、页码、总数等信息的 Paginator 对象。
+   * 需配合 limit()/offset() 或 page() 设置分页参数。
+   * 
+   * @param array $params 预处理参数，传递给底层 count() 和 get() 调用
+   * @return Paginator 分页结果对象，包含 items、page、perPage、total 等信息
+   * 
+   * @example
+   * // 手动设置 limit/offset
+   * $paginator = $query->from('users')->limit(15)->paginate();
+   * 
+   * // 配合 page() 使用
+   * $paginator = $query->from('users')->page(1, 20)->paginate();
+   * foreach ($paginator->getItems() as $user) {
+   *     echo $user['name'];
+   * }
+   * echo "共 {$paginator->getTotal()} 条记录";
+   * 
+   * @note 内部通过克隆查询实例执行 COUNT，不会影响原查询条件
+   * @note 页码通过 offset / limit 反算得出，仅作估算参考
+   * @see page() 设置分页参数
+   * @see Paginator 分页结果封装类
    */
-  function paginate()
+  function paginate($params = [])
   {
     $TotalQuery = clone $this;
-    $Total = $TotalQuery->count();
+    $Total = $TotalQuery->count("*", $params);
 
-    $page = $this->options['pagination']['offset'] ?: 1;
     $perPage = $this->options['pagination']['limit'] ?: 10;
+    $offset = $this->options['pagination']['offset'] ?: 0;
+    $page = ($offset / $perPage) + 1; // 简单推算当前页
 
-    $Items = $this->get();
+    $Items = $this->get($params);
 
     return new Paginator($Items, $page, $perPage, $Total);
   }
@@ -700,8 +975,31 @@ class Query extends AbilityBaseObject
   protected function addWhere($column, $operator = null, $value = null, $boolean = "AND", $funcName = null, $type = "comparsion")
   {
     $operator = $operator ?: "=";
-    $boolean = is_null($boolean) ? "AND" : $boolean;
 
+    // 数组列：递归展开每个条件元素，各自负责插入 boolean 分隔符
+    if (is_array($column)) {
+      foreach ($column as $fieldName => $param) {
+        if (is_string($fieldName)) {
+          $this->addWhere($fieldName, $operator, $param, $boolean);
+        } else {
+          $paramCount = count($param);
+          $columnOperator = $operator;
+          $columnBoolean = $boolean;
+          $columnValue = $paramCount >= 3 ? $param[2] : $param[1];
+          if ($paramCount >= 3) {
+            $columnOperator = $param[1];
+          }
+          if ($paramCount >= 4) {
+            $columnBoolean = $param[3];
+          }
+
+          $this->addWhere($param[0], $columnOperator, $columnValue, $columnBoolean);
+        }
+      }
+      return $this;
+    }
+
+    // 非首个条件时插入 boolean 分隔符（AND/OR）
     if (count($this->options['conditions'])) {
       $this->options['conditions'][] = [
         "column" => null,
@@ -713,62 +1011,59 @@ class Query extends AbilityBaseObject
       ];
     }
 
-    if (is_array($column)) {
-      foreach ($column as $fieldName => $param) {
-        if (is_string($fieldName)) {
-          $this->addWhere($fieldName, $operator, $param);
-        } else {
-          $paramCount = count($param);
-          $columnOperator = $operator;
-          $columnBoolean = $boolean;
-          $columnValue = $paramCount >= 3 ? $param[2] : $param[1];
-          if ($paramCount >= 3) {
-            $columnOperator = $param[1];
-          }
-          if ($paramCount >= 4) {
-            $columnOperator = $param[3];
-          }
-
-          $this->addWhere($param[0], $columnOperator, $columnValue, $columnBoolean);
-        }
-      }
+    if ($column instanceof Query || is_callable($column)) {
+      $type = "sub";
+      $value = $column;
+      $column = null;
+      $operator = null;
+    } else if (is_string($column) && preg_match('/\s+(?:=|!=|<>|<=|>=|<|>|\(|\)|BETWEEN|IN|LIKE|IS\s+NULL|IS\s+NOT\s+NULL|REGEXP)(?:\s+|$)/i', $column)) {
+      $type = "raw";
+      $value = $column;
+      $column = null;
+      $operator = null;
     } else {
-      if ($column instanceof Query || is_callable($column)) {
-        $type = "sub";
-        $value = $column;
-        $column = null;
-        $operator = null;
-      } else if (is_string($column) && preg_match("/(\s[=|(|)|<|>|BETWEEN|IN|LIKE|NULL|REGEXP]\s+)+/i", $column)) {
-        $type = "raw";
-        $value = $column;
-        $column = null;
-        $operator = null;
-      } else {
-        if (in_array($operator, ["IS NULL", "IS NOT NULL"])) {
-          $type = "nullValue";
-        } else if (in_array($operator, ["BETWEEN", "NOT BETWEEN", "IN", "NOT IN"])) {
-          $type = "rangeTesting";
-        } else if (in_array($operator, ["LIKE", "NOT LIKE"])) {
-          $type = "patternMatching";
-        } else if (is_null($value)) {
-          $type = "nullValue";
-          if ($operator === "!=" || $operator === "<>") {
-            $operator = "IS NOT NULL";
-          } else {
-            $operator = "IS NULL";
-          }
+      if (in_array($operator, ["IS NULL", "IS NOT NULL"])) {
+        $type = "nullValue";
+      } else if (in_array($operator, ["BETWEEN", "NOT BETWEEN", "IN", "NOT IN"])) {
+        $type = "rangeTesting";
+      } else if (in_array($operator, ["LIKE", "NOT LIKE"])) {
+        $type = "patternMatching";
+      } else if (is_null($value)) {
+        $type = "nullValue";
+        if ($operator === "!=" || $operator === "<>") {
+          $operator = "IS NOT NULL";
+        } else {
+          $operator = "IS NULL";
         }
       }
-
-      $this->options['conditions'][] = [
-        "column" => $column,
-        "value" => $value,
-        "operator" => $operator,
-        "type" => $type,
-        "boolean" => $boolean,
-        "funcName" => $funcName
-      ];
     }
+
+    // IN / NOT IN 数组值 → 占位符绑定，防止 SQL 注入
+    if (is_array($value) && !is_callable($value) && !($value instanceof Query)) {
+      if ($type === 'comparsion') {
+        // comparsion 类型 + 数组值 → 自动转为 IN
+        $operator = 'IN';
+        $type = 'rangeTesting';
+      }
+      if ($type === 'rangeTesting' && in_array($operator, ['IN', 'NOT IN'], true)) {
+        $placeholders = [];
+        foreach ($value as $val) {
+          $key = $this->generateBindingKey();
+          $placeholders[] = $key;
+          $this->bindings[$key] = $val;
+        }
+        $value = new Statement(implode(', ', $placeholders));
+      }
+    }
+
+    $this->options['conditions'][] = [
+      "column" => $column,
+      "value" => $value,
+      "operator" => $operator,
+      "type" => $type,
+      "boolean" => $boolean,
+      "funcName" => $funcName
+    ];
 
     return $this;
   }
@@ -798,16 +1093,28 @@ class Query extends AbilityBaseObject
    */
   function where($column, $valueOrOperator = null, $value = null)
   {
-    $args = func_num_args();
+    list($operator, $value) = $this->resolveWhereArgs($valueOrOperator, $value, func_num_args());
+    return $this->addWhere($column, $operator, $value, "AND");
+  }
 
-    if ($args >= 3) {
-      $valueOrOperator = strtoupper($valueOrOperator);
-    } else {
-      $value = $valueOrOperator;
-      $valueOrOperator = null;
+  /**
+   * 解析 where/orWhere 的 2/3 参数重载
+   * 
+   * 支持两种调用方式：
+   * - 2 参数: where('column', 'value') → 操作符默认为 '='
+   * - 3 参数: where('column', '>', 'value') → 使用指定操作符
+   * 
+   * @param mixed       $op  操作符（3参时）或值（2参时）
+   * @param mixed       $val 值（3参时有效，2参时为 null）
+   * @param int         $argc 实际传入的参数数量（通过 func_num_args() 获取）
+   * @return array      返回 [$operator, $value]，操作符会被转为大写
+   */
+  private function resolveWhereArgs($op, $val, $argc)
+  {
+    if ($argc >= 3) {
+      return [strtoupper($op), $val];
     }
-
-    return $this->addWhere($column, $valueOrOperator, $value, "AND");
+    return [null, $op];
   }
   /**
    * 原始 SQL WHERE 条件
@@ -825,12 +1132,21 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
-   * BETWEEN 条件
+   * BETWEEN 范围条件
+   * 
+   * 筛选列值在指定区间 [min, max] 内的记录
+   * 
+   * @example
+   * // 查询价格在 100 到 500 之间的商品
+   * $query->from('products')->whereBetween('price', 100, 500)->get();
    * 
    * @param string $column 列名
-   * @param mixed $min 最小值
-   * @param mixed $max 最大值
-   * @return $this
+   * @param mixed  $min    区间最小值
+   * @param mixed  $max    区间最大值
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereNotBetween() 取反操作
+   * @see orWhereBetween() OR 连接版本
    */
   function whereBetween($column, $min, $max)
   {
@@ -840,12 +1156,21 @@ class Query extends AbilityBaseObject
     ]);
   }
   /**
-   * NOT BETWEEN 条件
+   * NOT BETWEEN 范围条件
+   * 
+   * 筛选列值不在指定区间内的记录
+   * 
+   * @example
+   * // 查询价格不在 100~500 区间的商品
+   * $query->from('products')->whereNotBetween('price', 100, 500)->get();
    * 
    * @param string $column 列名
-   * @param mixed $min 最小值
-   * @param mixed $max 最大值
-   * @return $this
+   * @param mixed  $min    区间最小值
+   * @param mixed  $max    区间最大值
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereBetween() 正选操作
+   * @see orWhereNotBetween() OR 连接版本
    */
   function whereNotBetween($column, $min, $max)
   {
@@ -855,81 +1180,158 @@ class Query extends AbilityBaseObject
     ]);
   }
   /**
-   * IN 条件
+   * IN 列表条件
    * 
-   * @param string $column 列名
-   * @param array|Query $valueOrQuery IN的值数组或子查询
-   * @return $this
+   * 筛选列值在给定值集合或子查询结果中的记录。
+   * 数组值会自动生成占位符绑定，防止 SQL 注入。
+   * 
+   * @example
+   * // 值列表
+   * $query->from('users')->whereIn('status', ['active', 'pending', 'verified'])->get();
+   * 
+   * // 子查询
+   * $subQuery = Query::table('orders')->select('user_id')->where('amount', '>', 1000);
+   * $query->from('users')->whereIn('id', $subQuery)->get();
+   * 
+   * @param string       $column       列名
+   * @param array|Query  $valueOrQuery IN 的值数组或子查询
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @note 传入 Query 实例时生成子查询，传入数组时使用占位符绑定
+   * @see whereNotIn() 取反操作
+   * @see orWhereIn() OR 连接版本
    */
   function whereIn($column, $valueOrQuery)
   {
     return $this->addWhere($column, "IN", $valueOrQuery);
   }
   /**
-   * NOT IN 条件
+   * NOT IN 列表条件
    * 
-   * @param string $column 列名
-   * @param array|Query $valueOrQuery NOT IN的值数组或子查询
-   * @return $this
+   * 筛选列值不在给定值集合或子查询结果中的记录
+   * 
+   * @example
+   * // 排除指定状态
+   * $query->from('users')->whereNotIn('status', ['banned', 'deleted'])->get();
+   * 
+   * // 子查询排除
+   * $blockedIds = Query::table('blacklist')->select('user_id');
+   * $query->from('users')->whereNotIn('id', $blockedIds)->get();
+   * 
+   * @param string       $column       列名
+   * @param array|Query  $valueOrQuery NOT IN 的值数组或子查询
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereIn() 正选操作
+   * @see orWhereNotIn() OR 连接版本
    */
   function whereNotIn($column, $valueOrQuery)
   {
     return $this->addWhere($column, "NOT IN", $valueOrQuery);
   }
   /**
-   * NULL 值条件
+   * IS NULL 条件
+   * 
+   * 筛选列值为 NULL 的记录
+   * 
+   * @example
+   * // 查询未设置邮箱的用户
+   * $query->from('users')->whereNull('email')->get();
    * 
    * @param string $column 列名
-   * @return $this
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereNotNull() 取反操作
+   * @see orWhereNull() OR 连接版本
    */
   function whereNull($column)
   {
     return $this->addWhere($column, "IS NULL", null);
   }
   /**
-   * NOT NULL 值条件
+   * IS NOT NULL 条件
+   * 
+   * 筛选列值不为 NULL 的记录
+   * 
+   * @example
+   * // 查询已设置手机号的用户
+   * $query->from('users')->whereNotNull('phone')->get();
    * 
    * @param string $column 列名
-   * @return $this
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereNull() 取反操作
+   * @see orWhereNotNull() OR 连接版本
    */
   function whereNotNull($column)
   {
     return $this->addWhere($column, "IS NOT NULL", null);
   }
   /**
-   * LIKE 条件
+   * LIKE 模糊匹配条件
+   * 
+   * 使用 SQL LIKE 进行模式匹配。通配符 % 和 _ 需要在传入值中自行添加。
+   * 
+   * @example
+   * // 前缀匹配
+   * $query->from('users')->whereLike('name', 'John%')->get();
+   * 
+   * // 包含匹配
+   * $query->from('products')->whereLike('description', '%keyword%')->get();
    * 
    * @param string $column 列名
-   * @param string $value 匹配值
-   * @return $this
+   * @param string $value  匹配模式（需自行添加 % 和 _ 通配符）
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @note 传入值不会被自动添加通配符，需手动添加
+   * @see whereNotLike() 取反操作
+   * @see orWhereLike() OR 连接版本
    */
   function whereLike($column, $value)
   {
     return $this->addWhere($column, "LIKE", $value);
   }
   /**
-   * NOT LIKE 条件
+   * NOT LIKE 不匹配条件
+   * 
+   * 筛选不匹配指定模式的记录
+   * 
+   * @example
+   * // 排除测试用户
+   * $query->from('users')->whereNotLike('email', '%@test.com')->get();
    * 
    * @param string $column 列名
-   * @param string $value 不匹配的值
-   * @return $this
+   * @param string $value  不匹配的模式
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereLike() 正选操作
+   * @see orWhereNotLike() OR 连接版本
    */
   function whereNotLike($column, $value)
   {
     return $this->addWhere($column, "NOT LIKE", $value);
   }
   /**
-   * 列比较条件
+   * 列与列比较条件
    * 
-   * 比较两个列的值
+   * 比较两个列的值，而非列与常量比较。
    * 支持两种调用方式：
-   * - whereColumn('col1', 'col2')           // 默认操作符 '='
-   * - whereColumn('col1', 'operator', 'col2') // 指定操作符
+   * - whereColumn('col1', 'col2')              → col1 = col2
+   * - whereColumn('col1', '>', 'col2')         → col1 > col2
    * 
-   * @param string $column1 第一个列名
-   * @param string $operatorOrColumn2 操作符或第二个列名
-   * @param string|null $column2 第二个列名（当使用三个参数时）
-   * @return $this
+   * @example
+   * // 查找余额低于信用额度的用户
+   * $query->from('users')->whereColumn('balance', '<', 'credit_limit')->get();
+   * 
+   * // 查找修改时间大于创建时间的记录
+   * $query->from('posts')->whereColumn('updated_at', '>', 'created_at')->get();
+   * 
+   * @param string      $column1             第一个列名
+   * @param string      $operatorOrColumn2   操作符（3参时）或第二个列名（2参时）
+   * @param string|null $column2             第二个列名（3参时使用）
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereColumn() OR 连接版本
    */
   function whereColumn($column1, $operatorOrColumn2, $column2 = null)
   {
@@ -939,6 +1341,26 @@ class Query extends AbilityBaseObject
 
     return $this->addWhere($column1, $operator, $column2, "AND", null, "columnComparsion");
   }
+  /**
+   * 日期/时间函数条件通用方法
+   * 
+   * 将列名包装为 SQL 日期/时间函数调用，如 DATE(`column`)、YEAR(`column`) 等。
+   * 所有 whereDate/whereYear/... 及其 OR 变体均通过此方法实现。
+   * 
+   * @param string $func     日期/时间 SQL 函数名（DATE/YEAR/MONTH/DAY/TIME/HOUR/MINUTE/SECOND）
+   * @param string $column   数据库列名（会自动加上反引号）
+   * @param string $operator 比较操作符（=、>、< 等）
+   * @param mixed  $value    比较值
+   * @param string $boolean  逻辑连接符（AND/OR），默认 AND
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereDate() / orWhereDate() 等 16 个日期/时间条件方法
+   */
+  private function addDateWhere($func, $column, $operator, $value, $boolean = "AND")
+  {
+    return $this->addWhere("{$func}(`$column`)", $operator, $value, $boolean, $func, "func");
+  }
+
   /**
    * 日期条件
    * 
@@ -951,11 +1373,8 @@ class Query extends AbilityBaseObject
    */
   function whereDate($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("DATE(`$column`)", $operator, $value, "AND", "DATE", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("DATE", $column, $operator, $value);
   }
 
   /**
@@ -970,11 +1389,8 @@ class Query extends AbilityBaseObject
    */
   function whereYear($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("YEAR(`$column`)", $operator, $value, "AND", "YEAR", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("YEAR", $column, $operator, $value);
   }
 
   /**
@@ -989,11 +1405,8 @@ class Query extends AbilityBaseObject
    */
   function whereMonth($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("MONTH(`$column`)", $operator, $value, "AND", "MONTH", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("MONTH", $column, $operator, $value);
   }
 
   /**
@@ -1008,11 +1421,8 @@ class Query extends AbilityBaseObject
    */
   function whereDay($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("DAY(`$column`)", $operator, $value, "AND", "DAY", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("DAY", $column, $operator, $value);
   }
 
   /**
@@ -1027,11 +1437,8 @@ class Query extends AbilityBaseObject
    */
   function whereTime($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("TIME(`$column`)", $operator, $value, "AND", "TIME", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("TIME", $column, $operator, $value);
   }
 
   /**
@@ -1046,11 +1453,8 @@ class Query extends AbilityBaseObject
    */
   function whereHour($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("HOUR(`$column`)", $operator, $value, "AND", "HOUR", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("HOUR", $column, $operator, $value);
   }
 
   /**
@@ -1065,11 +1469,8 @@ class Query extends AbilityBaseObject
    */
   function whereMinute($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("MINUTE(`$column`)", $operator, $value, "AND", "MINUTE", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("MINUTE", $column, $operator, $value);
   }
 
   /**
@@ -1084,18 +1485,32 @@ class Query extends AbilityBaseObject
    */
   function whereSecond($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("SECOND(`$column`)", $operator, $value, "AND", "SECOND", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("SECOND", $column, $operator, $value);
   }
 
   /**
-   * EXISTS 条件
+   * EXISTS 子查询条件
    * 
-   * @param Query|callable $queryOrCallable 子查询或闭包
-   * @return $this
+   * 使用 EXISTS 子查询，仅当子查询存在结果时当前记录才被选中。
+   * 常用于关联表的存在性判断。
+   * 
+   * @example
+   * // 查询有订单的用户
+   * $query->from('users')->whereExists(function ($q) {
+   *     $q->from('orders')->whereColumn('orders.user_id', 'users.id');
+   * })->get();
+   * 
+   * // 使用 Query 实例
+   * $subQuery = Query::table('orders')->where('status', 'paid');
+   * $query->from('users')->whereExists($subQuery)->get();
+   * 
+   * @param Query|callable $queryOrCallable 子查询实例或闭包
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @note 闭包接收一个新的 Query 实例作为参数
+   * @see whereNotExists() 取反操作
+   * @see orWhereExists() OR 连接版本
    */
   function whereExists($queryOrCallable)
   {
@@ -1103,10 +1518,21 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * NOT EXISTS 条件
+   * NOT EXISTS 子查询条件
    * 
-   * @param Query|callable $queryOrCallable 子查询或闭包
-   * @return $this
+   * 使用 NOT EXISTS 子查询，仅当子查询无结果时当前记录才被选中
+   * 
+   * @example
+   * // 查询没有订单的用户
+   * $query->from('users')->whereNotExists(function ($q) {
+   *     $q->from('orders')->whereColumn('orders.user_id', 'users.id');
+   * })->get();
+   * 
+   * @param Query|callable $queryOrCallable 子查询实例或闭包
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereExists() 正选操作
+   * @see orWhereNotExists() OR 连接版本
    */
   function whereNotExists($queryOrCallable)
   {
@@ -1138,16 +1564,8 @@ class Query extends AbilityBaseObject
    */
   function orWhere($column, $valueOrOperator = null, $value = null)
   {
-    $args = func_num_args();
-
-    if ($args >= 3) {
-      $valueOrOperator = strtoupper($valueOrOperator);
-    } else {
-      $value = $valueOrOperator;
-      $valueOrOperator = null;
-    }
-
-    return $this->addWhere($column, $valueOrOperator, $value, "OR");
+    list($operator, $value) = $this->resolveWhereArgs($valueOrOperator, $value, func_num_args());
+    return $this->addWhere($column, $operator, $value, "OR");
   }
 
   /**
@@ -1165,12 +1583,24 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR BETWEEN 条件
+   * OR BETWEEN 范围条件
+   * 
+   * 以 OR 连接，筛选列值在指定区间内的记录。
+   * 用法与 whereBetween() 相同，但使用 OR 连接符。
+   * 
+   * @example
+   * $query->from('products')
+   *     ->where('category', 'electronics')
+   *     ->orWhereBetween('price', 100, 500)
+   *     ->get();
    * 
    * @param string $column 列名
-   * @param mixed $min 最小值
-   * @param mixed $max 最大值
-   * @return $this
+   * @param mixed  $min    区间最小值
+   * @param mixed  $max    区间最大值
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereBetween() AND 连接版本
+   * @see orWhereNotBetween() 取反操作
    */
   function orWhereBetween($column, $min, $max)
   {
@@ -1178,12 +1608,17 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NOT BETWEEN 条件
+   * OR NOT BETWEEN 范围条件
+   * 
+   * 以 OR 连接，筛选列值不在指定区间内的记录
    * 
    * @param string $column 列名
-   * @param mixed $min 最小值
-   * @param mixed $max 最大值
-   * @return $this
+   * @param mixed  $min    区间最小值
+   * @param mixed  $max    区间最大值
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereBetween() 正选操作
+   * @see whereNotBetween() AND 连接版本
    */
   function orWhereNotBetween($column, $min, $max)
   {
@@ -1191,11 +1626,22 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR IN 条件
+   * OR IN 列表条件
    * 
-   * @param string $column 列名
-   * @param array|Query $valueOrQuery IN的值数组或子查询
-   * @return $this
+   * 以 OR 连接，筛选列值在给定值集合中的记录
+   * 
+   * @example
+   * $query->from('users')
+   *     ->where('role', 'admin')
+   *     ->orWhereIn('status', ['active', 'pending'])
+   *     ->get();
+   * 
+   * @param string       $column       列名
+   * @param array|Query  $valueOrQuery IN 的值数组或子查询
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereIn() AND 连接版本
+   * @see orWhereNotIn() 取反操作
    */
   function orWhereIn($column, $valueOrQuery)
   {
@@ -1203,11 +1649,16 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NOT IN 条件
+   * OR NOT IN 列表条件
    * 
-   * @param string $column 列名
-   * @param array|Query $valueOrQuery NOT IN的值数组或子查询
-   * @return $this
+   * 以 OR 连接，筛选列值不在给定值集合中的记录
+   * 
+   * @param string       $column       列名
+   * @param array|Query  $valueOrQuery NOT IN 的值数组或子查询
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereIn() 正选操作
+   * @see whereNotIn() AND 连接版本
    */
   function orWhereNotIn($column, $valueOrQuery)
   {
@@ -1215,10 +1666,21 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NULL 值条件
+   * OR IS NULL 条件
+   * 
+   * 以 OR 连接，筛选列值为 NULL 的记录
+   * 
+   * @example
+   * $query->from('users')
+   *     ->where('status', 'active')
+   *     ->orWhereNull('deleted_at')
+   *     ->get();
    * 
    * @param string $column 列名
-   * @return $this
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereNull() AND 连接版本
+   * @see orWhereNotNull() 取反操作
    */
   function orWhereNull($column)
   {
@@ -1226,10 +1688,15 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NOT NULL 值条件
+   * OR IS NOT NULL 条件
+   * 
+   * 以 OR 连接，筛选列值不为 NULL 的记录
    * 
    * @param string $column 列名
-   * @return $this
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereNull() 取反操作
+   * @see whereNotNull() AND 连接版本
    */
   function orWhereNotNull($column)
   {
@@ -1237,11 +1704,22 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR LIKE 条件
+   * OR LIKE 模糊匹配条件
+   * 
+   * 以 OR 连接，使用 LIKE 进行模糊匹配
+   * 
+   * @example
+   * $query->from('users')
+   *     ->where('role', 'admin')
+   *     ->orWhereLike('name', 'John%')
+   *     ->get();
    * 
    * @param string $column 列名
-   * @param mixed $value 匹配值
-   * @return $this
+   * @param mixed  $value  匹配模式（需自行添加通配符）
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereLike() AND 连接版本
+   * @see orWhereNotLike() 取反操作
    */
   function orWhereLike($column, $value)
   {
@@ -1249,11 +1727,16 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NOT LIKE 条件
+   * OR NOT LIKE 不匹配条件
+   * 
+   * 以 OR 连接，筛选不匹配指定模式的记录
    * 
    * @param string $column 列名
-   * @param mixed $value 不匹配的值
-   * @return $this
+   * @param mixed  $value  不匹配的模式
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereLike() 正选操作
+   * @see whereNotLike() AND 连接版本
    */
   function orWhereNotLike($column, $value)
   {
@@ -1261,17 +1744,25 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR 列比较条件
+   * OR 列与列比较条件
    * 
-   * 比较两个列的值，使用 OR 连接
+   * 以 OR 连接，比较两个列的值。
    * 支持两种调用方式：
-   * - orWhereColumn('col1', 'col2')           // 默认操作符 '='
-   * - orWhereColumn('col1', 'operator', 'col2') // 指定操作符
+   * - orWhereColumn('col1', 'col2')              → col1 = col2
+   * - orWhereColumn('col1', '>', 'col2')         → col1 > col2
    * 
-   * @param string $column1 第一个列名
-   * @param string $operatorOrColumn2 操作符或第二个列名
-   * @param string|null $column2 第二个列名（当使用三个参数时）
-   * @return $this
+   * @example
+   * $query->from('users')
+   *     ->where('status', 'active')
+   *     ->orWhereColumn('balance', '<', 'min_balance')
+   *     ->get();
+   * 
+   * @param string      $column1             第一个列名
+   * @param string      $operatorOrColumn2   操作符（3参时）或第二个列名（2参时）
+   * @param string|null $column2             第二个列名（3参时使用）
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereColumn() AND 连接版本
    */
   function orWhereColumn($column1, $operatorOrColumn2, $column2 = null)
   {
@@ -1294,11 +1785,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereDate($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("DATE(`$column`)", $operator, $value, "OR", "DATE", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("DATE", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1313,11 +1801,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereYear($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("YEAR(`$column`)", $operator, $value, "OR", "YEAR", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("YEAR", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1332,11 +1817,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereMonth($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("MONTH(`$column`)", $operator, $value, "OR", "MONTH", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("MONTH", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1351,11 +1833,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereDay($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("DAY(`$column`)", $operator, $value, "OR", "DAY", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("DAY", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1370,11 +1849,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereTime($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("TIME(`$column`)", $operator, $value, "OR", "TIME", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("TIME", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1389,11 +1865,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereHour($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("HOUR(`$column`)", $operator, $value, "OR", "HOUR", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("HOUR", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1408,11 +1881,8 @@ class Query extends AbilityBaseObject
    */
   function orWhereMinute($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("MINUTE(`$column`)", $operator, $value, "OR", "MINUTE", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("MINUTE", $column, $operator, $value, "OR");
   }
 
   /**
@@ -1427,18 +1897,28 @@ class Query extends AbilityBaseObject
    */
   function orWhereSecond($column, $operatorOrValue, $value = null)
   {
-    $args = func_num_args();
-    $value = $args === 3 ? $value : $operatorOrValue;
-    $operator = $args === 3 ? $operatorOrValue : "=";
-
-    return $this->addWhere("SECOND(`$column`)", $operator, $value, "OR", "SECOND", "func");
+    list($operator, $value) = $this->resolveWhereArgs($operatorOrValue, $value, func_num_args());
+    return $this->addDateWhere("SECOND", $column, $operator, $value, "OR");
   }
 
   /**
-   * OR EXISTS 条件
+   * OR EXISTS 子查询条件
    * 
-   * @param Query|callable $queryOrCallable 子查询或闭包
-   * @return $this
+   * 以 OR 连接，使用 EXISTS 子查询进行存在性判断
+   * 
+   * @example
+   * $query->from('users')
+   *     ->where('vip', 1)
+   *     ->orWhereExists(function ($q) {
+   *         $q->from('orders')->whereColumn('orders.user_id', 'users.id')
+   *           ->where('amount', '>', 1000);
+   *     })->get();
+   * 
+   * @param Query|callable $queryOrCallable 子查询实例或闭包
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see whereExists() AND 连接版本
+   * @see orWhereNotExists() 取反操作
    */
   function orWhereExists($queryOrCallable)
   {
@@ -1446,71 +1926,21 @@ class Query extends AbilityBaseObject
   }
 
   /**
-   * OR NOT EXISTS 条件
+   * OR NOT EXISTS 子查询条件
    * 
-   * @param Query|callable $queryOrCallable 子查询或闭包
-   * @return $this
+   * 以 OR 连接，使用 NOT EXISTS 子查询判断不存在
+   * 
+   * @param Query|callable $queryOrCallable 子查询实例或闭包
+   * @return $this 返回当前实例以支持链式调用
+   * 
+   * @see orWhereExists() 正选操作
+   * @see whereNotExists() AND 连接版本
    */
   function orWhereNotExists($queryOrCallable)
   {
     return $this->addWhere(null, null, $queryOrCallable, "OR", "NOT EXISTS", "func");
   }
-
-  /**
-   * 添加可空过滤条件
-   *
-   * 与 where() 参数形式相同，但生成 SQL 时会自动过滤值为 null 或空的条件项。
-   * 适用于前端传入的可选筛选参数场景，避免手动判断是否添加条件。
-   *
-   * @example
-   * // 以下两个条件中，第二个因为值为空会被自动跳过
-   * $query->from('users')
-   *     ->filterNullWhere('status', 'active')
-   *     ->filterNullWhere('role', '')      // 自动跳过
-   *     ->get();
-   *
-   * @param string|array $params 列名、原始 SQL 或条件数组
-   * @param mixed $value 值
-   * @param string $glue 比较运算符（=、>、< 等）
-   * @param string $operator 逻辑连接符（AND/OR），默认 AND
-   * @return $this
-   *
-   * @deprecated 请使用 whereFilter() 替代，传入数组自动过滤空值
-   * @see whereFilter() 批量过滤空值条件
-   * @see where() 标准条件方法
-   */
-  function filterNullWhere($params, $value = null, $glue = "=", $operator = "AND")
-  {
-    if (is_string($params) && \preg_match_all("/\s+[=|<|>|BETWEEN|IN|LIKE|NULL|REGEXP]+/i", $params)) {
-      array_push($this->filterNullConditions, [
-        "statement" => $params,
-        "fieldName" => null,
-        "value" => null,
-        "glue" => null,
-        "operator" => $operator
-      ]);
-    } else if (is_array($params)) {
-      foreach ($params as $fieldName => $param) {
-        array_push($this->filterNullConditions, [
-          "statement" => null,
-          "fieldName" => $fieldName,
-          "value" => $param,
-          "glue" => $glue,
-          "operator" => $operator
-        ]);
-      }
-    } else {
-      array_push($this->filterNullConditions, [
-        "statement" => null,
-        "fieldName" => $params,
-        "value" => $value,
-        "glue" => $glue,
-        "operator" => $operator
-      ]);
-    }
-
-    return $this;
-  }
+  
   /**
    * 从数组中批量添加过滤条件，自动跳过空值
    *
@@ -1548,36 +1978,54 @@ class Query extends AbilityBaseObject
   /**
    * 获取查询结果的第一条记录
    * 
-   * 执行查询并返回结果集中的第一条记录
-   * 如果没有找到记录，返回 false
+   * 自动添加 LIMIT 1 约束后执行查询，返回第一条记录。
+   * 若没有匹配记录，返回 false。
    * 
-   * @return array|false 返回记录数组或false
+   * @param array $params 预处理参数，用于 SQL 中的占位符替换
+   * @return array|false 返回关联数组形式的记录，无结果时返回 false
+   * 
+   * @example
+   * // 获取 ID 为 1 的用户
+   * $user = Query::table('users')->where('id', 1)->first();
+   * if ($user) {
+   *     echo $user['name'];
+   * }
+   * 
+   * @note 此方法会强制添加 LIMIT 1，覆盖之前设置的 limit()
+   * @note 返回 false 表示没有匹配记录，需用 === 判断
+   * @see get() 获取所有记录
+   * @see value() 直接获取单个列值
    */
-  function first()
+  function first($params = [])
   {
     $this->executeType = "select";
     $this->limit(1);
     $this->sql = $this->generateSQL();
-
-    $data = $this->databaseDriver->fetch($this->sql);
-
-    if (!$data)
-      return false;
-
-    return $data;
+    $data = $this->databaseDriver->first($this->sql, $this->mergeBindings($params));
+    return $data ?: false;
   }
   /**
    * 获取第一条记录的指定列值
    * 
-   * 查询第一条记录并返回指定列的值
-   * 如果记录不存在或列不存在，返回 null
+   * 查询第一条记录并直接返回指定列的值，无需手动访问数组。
+   * 记录不存在或列名不存在时返回 null。
    * 
    * @param string $column 要获取值的列名
-   * @return mixed|null 返回列值或null
+   * @param array  $params 预处理参数
+   * @return mixed|null 返回列值；记录不存在或列不存在时返回 null
+   * 
+   * @example
+   * // 直接获取用户名
+   * $name = Query::table('users')->where('id', 1)->value('name');
+   * echo $name; // "John"
+   * 
+   * @note 底层调用 first()，因此会自动添加 LIMIT 1
+   * @see first() 获取完整记录
+   * @see pluck() 获取多行的单列值
    */
-  function value($column)
+  function value($column, $params = [])
   {
-    $data = $this->first();
+    $data = $this->first($params);
 
     if (!is_array($data) && !Arr::isAssoc((array) $data))
       return null;
@@ -1589,36 +2037,54 @@ class Query extends AbilityBaseObject
   /**
    * 获取所有查询结果
    * 
-   * 执行查询并返回所有结果记录
+   * 执行查询并返回所有匹配的记录，每条记录为关联数组。
    * 
-   * @return array|string 返回记录数组
+   * @param array $params 预处理参数，用于 SQL 中的占位符替换
+   * @return array 返回二维数组，每行一个关联数组。无结果时返回空数组 []
+   * 
+   * @example
+   * // 获取所有活跃用户
+   * $users = Query::table('users')->where('status', 'active')->get();
+   * foreach ($users as $user) {
+   *     echo $user['name'];
+   * }
+   * 
+   * @note 与 first() 不同，get() 没有强制 LIMIT 约束，会返回所有匹配数据
+   * @see first() 获取第一条记录
+   * @see cursor() 大数据集时使用游标逐行处理
    */
-  function get()
+  function get($params = [])
   {
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->fetchAll($this->sql);
+    $data = $this->databaseDriver->all($this->sql, $this->mergeBindings($params));
 
     return $data;
   }
   /**
    * 提取指定列的值作为数组
    * 
-   * 查询结果并提取指定列的值，可选择使用另一列作为键
+   * 查询所有结果并提取指定列的值。可选择使用另一列作为结果数组的键名。
+   * 内部使用 PHP 的 array_column() 实现。
+   * 
+   * @param string      $column   要提取值的列名
+   * @param string|null $indexKey 作为数组键名的列名（可选，为 null 时使用数字索引）
+   * @param array       $params   预处理参数
+   * @return array 返回一维数组（无 indexKey）或关联数组（有 indexKey）
    * 
    * @example
-   * // 提取名称列表
-   * ->pluck('name')
+   * // 提取名称列表 [0 => 'John', 1 => 'Jane', ...]
+   * $names = Query::table('users')->pluck('name');
    * 
-   * // 提取以ID为键的名称列表
-   * ->pluck('name', 'id')
+   * // 以 ID 为键的名称映射 [1 => 'John', 2 => 'Jane', ...]
+   * $nameMap = Query::table('users')->pluck('name', 'id');
    * 
-   * @param string $column 要提取值的列名
-   * @param string|null $indexKey 作为数组键的列名（可选）
-   * @return array 返回键值对数组
+   * @note 此方法会清空之前的 select 设置，重新设置查询字段
+   * @see value() 获取单条记录的单列值
+   * @see get() 获取完整记录
    */
-  function pluck($column, $indexKey = null)
+  function pluck($column, $indexKey = null, $params = [])
   {
     $this->options['select']['fields'] = [];
     $this->addSelect($column);
@@ -1628,19 +2094,31 @@ class Query extends AbilityBaseObject
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->fetchAll($this->sql);
+    $data = $this->databaseDriver->all($this->sql, $this->mergeBindings($params));
 
     return array_column($data, $column, $indexKey);
   }
   /**
-   * 使用游标遍历查询结果
+   * 使用游标（Generator）逐行遍历查询结果
    * 
-   * 使用生成器逐行返回查询结果，适用于处理大量数据
-   * 减少内存占用，提高大数据集处理性能
+   * 创建 PDOStatement 游标逐行取回数据，通过 yield 返回生成器。
+   * 适用于处理大量数据时避免一次性加载到内存中，显著降低内存占用。
    * 
-   * @return \Generator 返回生成器，每次迭代返回一条记录
+   * @param array $params 预处理参数
+   * @return \Generator 生成器，每次迭代 yield 一条关联数组形式的记录
+   * 
+   * @example
+   * // 逐行处理百万级数据，内存友好
+   * foreach ($query->from('logs')->cursor() as $row) {
+   *     processLog($row);
+   * }
+   * 
+   * @note 使用 PDO::CURSOR_SCROLL 游标模式，逐行 fetch
+   * @note 生成器不支持 rewind，只能遍历一次
+   * @see chunk() 分块处理替代方案
+   * @see chunkStream() 基于 ID 的分块流式处理
    */
-  function cursor()
+  function cursor($params = [])
   {
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
@@ -1651,32 +2129,45 @@ class Query extends AbilityBaseObject
     $PDOStatement = $this->databaseDriver->prepare($this->sql, [
       \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL
     ]);
+
+    $allParams = $this->mergeBindings($params);
+    if (!empty($allParams)) {
+      $this->databaseDriver->bindValues($PDOStatement, $allParams);
+    }
+
     $PDOStatement->execute();
 
     while ($record = $PDOStatement->fetch(\PDO::FETCH_ASSOC)) {
-      if (!$record)
-        break;
-
       yield $record;
     }
   }
   /**
    * 分块处理查询结果
    * 
-   * 将结果集分块处理，每次处理指定数量的记录
-   * 适用于处理大量数据，避免内存溢出
+   * 将结果集按指定大小分块，每次回调处理一个数据块。
+   * 内部使用 page() + paginate() 实现分页，适用于批量处理。
+   * 回调返回 false 可提前中断处理。
+   * 
+   * @param int      $size     每块的大小（记录数）
+   * @param callable $callback 处理回调，签名: function(array $items, int $page): ?bool
+   *                           - $items: 当前块的记录数组
+   *                           - $page:  当前页码（从 1 开始）
+   *                           - 返回 false 可中断处理，返回其他值继续
+   * @return bool 处理完成返回 true，被中断返回 false
    * 
    * @example
-   * ->chunk(100, function($items, $page) {
-   *     foreach ($items as $item) {
-   *         // 处理每条记录
+   * // 每 100 条处理一次，返回 false 终止
+   * $query->from('users')->chunk(100, function ($users, $page) {
+   *     foreach ($users as $user) {
+   *         sendEmail($user['email']);
    *     }
-   *     return true; // 返回 false 可中断处理
+   *     if ($page >= 10) return false; // 最多处理 10 页
    * });
    * 
-   * @param int $size 每块的大小
-   * @param callable $callback 处理回调函数，接收当前块数据和页码
-   * @return bool 处理完成返回true，被中断返回false
+   * @note 使用 notReset() 避免每次分页重置查询条件
+   * @note 大偏移量场景下 OFFSET 性能较差，考虑使用 chunkById()
+   * @see chunkById() 基于 ID 的高效分块处理
+   * @see chunkStream() 基于生成器的逐条流式处理
    */
   function chunk($size, $callback)
   {
@@ -1703,15 +2194,30 @@ class Query extends AbilityBaseObject
     return true;
   }
   /**
-   * 基于ID的分块处理
+   * 基于 ID 的分块处理（高性能）
    * 
-   * 使用ID字段进行高效的分块处理，避免偏移量性能问题
-   * 适用于大数据量的分页处理
+   * 使用 WHERE id > lastId 替代 OFFSET，避免大偏移量带来的性能下降。
+   * 适用于有自增 ID 主键的大表分块处理。
    * 
-   * @param int $size 每块的大小
-   * @param callable $callback 处理回调函数
-   * @param string $column 用于分块的列名，默认为"id"
-   * @return bool 处理完成返回true，被中断返回false
+   * @param int      $size     每块的大小
+   * @param callable $callback 处理回调，签名: function(array $items): ?bool
+   *                           - $items: 当前块的记录数组
+   *                           - 返回 false 可中断处理
+   * @param string   $column   用于分块的递增列名，默认 'id'
+   * @return bool 处理完成返回 true，被中断返回 false
+   * 
+   * @example
+   * // 按 ID 升序分块处理，避免 OFFSET 性能问题
+   * $query->from('logs')->chunkById(500, function ($logs) {
+   *     foreach ($logs as $log) {
+   *         archive($log);
+   *     }
+   * });
+   * 
+   * @note 自动按指定列升序排序，并移除已有的同名排序列
+   * @note 每块最后一条记录的列值作为下一次查询的起始点
+   * @see chunk() 基于 OFFSET 的分块处理
+   * @see chunkStream() 生成器版本
    */
   function chunkById($size, $callback, $column = "id")
   {
@@ -1745,14 +2251,24 @@ class Query extends AbilityBaseObject
     return true;
   }
   /**
-   * 基于ID的分块流式处理
+   * 基于 ID 的分块流式处理（生成器）
    * 
-   * 使用生成器逐块返回数据，适用于流式处理大量数据
-   * 结合了chunkById的高效性和生成器的低内存占用
+   * 结合了 chunkById 的高性能（WHERE id > lastId）和 cursor 的生成器模式，
+   * 逐条 yield 记录，内存占用极小。
    * 
-   * @param int $size 每块的大小
-   * @param string $column 用于分块的列名，默认为"id"
-   * @return \Generator 返回生成器，每次迭代返回一个数据块
+   * @param int    $size   每块的大小
+   * @param string $column 用于分块的递增列名，默认 'id'
+   * @return \Generator 生成器，每次迭代 yield 一条记录
+   * 
+   * @example
+   * // 逐条处理百万级数据
+   * foreach ($query->from('logs')->chunkStream(1000, 'id') as $record) {
+   *     processRecord($record);
+   * }
+   * 
+   * @note 内部以块为单位查询，但逐条 yield 返回
+   * @see chunkById() 回调版本
+   * @see cursor() 更简单的游标遍历（无分块策略）
    */
   function chunkStream($size, $column = "id")
   {
@@ -1786,6 +2302,26 @@ class Query extends AbilityBaseObject
     return true;
   }
   /**
+   * 聚合查询通用方法
+   * 
+   * 通过 addSelect() 添加聚合函数表达式后执行 first() 获取单值结果。
+   * 所有 count/max/min/avg/sum 方法均委托此方法执行。
+   * 
+   * @param string $func   聚合函数名（COUNT/MAX/MIN/AVG/SUM）
+   * @param string $column 目标列名（传入 raw() 表达式）
+   * @param array  $params 预处理参数
+   * @return mixed|false 聚合结果值，查询失败（无结果）时返回 false
+   * 
+   * @see count() / max() / min() / avg() / sum() 具体聚合方法
+   */
+  private function aggregate($func, $column, $params = [])
+  {
+    $this->addSelect($this->raw("{$func}({$column})"));
+    $data = $this->first($params);
+    return $data === false ? false : $data[array_key_first($data)];
+  }
+
+  /**
    * 统计查询结果数量
    * 
    * 执行 COUNT 聚合查询，统计满足条件的记录数量
@@ -1808,17 +2344,11 @@ class Query extends AbilityBaseObject
    * @note 如果查询结果为空，返回 false
    * @see raw() 用于创建原始 SQL 表达式
    */
-  function count($column = "*")
+  function count($column = "*", $params = [])
   {
-    $this->addSelect($this->raw("COUNT({$column})"));
-
-    $data = $this->first();
-
-    if ($data === false)
-      return false;
-
-    return $data[array_key_first($data)];
+    return $this->aggregate("COUNT", $column, $params);
   }
+
   /**
    * 获取指定列的最大值
    * 
@@ -1833,119 +2363,114 @@ class Query extends AbilityBaseObject
    * ->max('created_at')
    * 
    * @param string $column 要计算最大值的列名
+   * @param array  $params 预处理参数
    * @return mixed|false 返回最大值，查询失败返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 MAX 聚合函数
    * @note 如果查询结果为空，返回 false
    * @see first() 用于获取第一条记录
    */
-  function max($column)
+  function max($column, $params = [])
   {
-    $this->addSelect($this->raw("MAX({$column})"));
-
-    $data = $this->first();
-
-    if ($data === false)
-      return false;
-
-    return $data[array_key_first($data)];
+    return $this->aggregate("MAX", $column, $params);
   }
+
   /**
    * 获取指定列的最小值
    * 
    * 执行 MIN 聚合查询，返回指定列中的最小值
-   * 适用于数值、日期等可比较的数据类型
    * 
    * @example
-   * // 获取价格最小值
+   * // 获取最低价格
    * ->min('price')
    * 
-   * // 获取最早创建时间
+   * // 获取最早注册时间
    * ->min('created_at')
    * 
    * @param string $column 要计算最小值的列名
-   * @return mixed|false 返回最小值，查询失败返回 false
+   * @param array  $params 预处理参数
+   * @return mixed|false 返回最小值，查询失败或结果为空时返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 MIN 聚合函数
-   * @note 如果查询结果为空，返回 false
-   * @see first() 用于获取第一条记录
+   * @see aggregate() 内部聚合查询实现
+   * @see max() 获取最大值
    */
-  function min($column)
+  function min($column, $params = [])
   {
-    $this->addSelect($this->raw("MIN({$column})"));
-
-    $data = $this->first();
-
-    if ($data === false)
-      return false;
-
-    return $data[array_key_first($data)];
+    return $this->aggregate("MIN", $column, $params);
   }
+
   /**
    * 计算指定列的平均值
    * 
-   * 执行 AVG 聚合查询，返回指定列的平均值
-   * 适用于数值类型的列
+   * 执行 AVG 聚合查询，返回指定列中所有值的算术平均值
    * 
    * @example
    * // 计算平均价格
    * ->avg('price')
    * 
-   * // 计算平均评分
-   * ->avg('rating')
+   * // 按条件计算平均分
+   * Query::table('scores')->where('subject', 'math')->avg('score')
    * 
    * @param string $column 要计算平均值的列名
-   * @return float|false 返回平均值，查询失败返回 false
+   * @param array  $params 预处理参数
+   * @return float|false 返回平均值（浮点数），查询失败或结果为空时返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 AVG 聚合函数
-   * @note AVG 函数会自动忽略 NULL 值
-   * @note 如果查询结果为空，返回 false
-   * @see first() 用于获取第一条记录
+   * @note NULL 值会被自动忽略，不参与计算
+   * @see aggregate() 内部聚合查询实现
    */
-  function avg($column)
+  function avg($column, $params = [])
   {
-    $this->addSelect($this->raw("AVG({$column})"));
-
-    $data = $this->first();
-
-    if ($data === false)
-      return false;
-
-    return $data[array_key_first($data)];
+    return $this->aggregate("AVG", $column, $params);
   }
+
   /**
    * 计算指定列的总和
    * 
-   * 执行 SUM 聚合查询，返回指定列所有值的总和
-   * 适用于数值类型的列
+   * 执行 SUM 聚合查询，返回指定列中所有值的总和
    * 
    * @example
-   * // 计算销售总额
+   * // 计算订单总金额
    * ->sum('amount')
    * 
-   * // 计算库存总量
-   * ->sum('quantity')
+   * // 按用户计算消费总额
+   * Query::table('orders')->where('user_id', $uid)->sum('amount')
    * 
    * @param string $column 要计算总和的列名
-   * @return float|int|false 返回总和，查询失败返回 false
+   * @param array  $params 预处理参数
+   * @return float|int|false 返回总和，查询失败或结果为空时返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 SUM 聚合函数
-   * @note SUM 函数会自动忽略 NULL 值
-   * @note 如果查询结果为空，返回 false
-   * @note 对于空结果集，SUM 返回 NULL，但此方法会转换为 false
-   * @see first() 用于获取第一条记录
+   * @note NULL 值会被自动忽略，不参与计算
+   * @see aggregate() 内部聚合查询实现
    */
-  function sum($column)
+  function sum($column, $params = [])
   {
-    $this->addSelect($this->raw("SUM({$column})"));
-
-    $data = $this->first();
-
-    if ($data === false)
-      return false;
-
-    return $data[array_key_first($data)];
+    return $this->aggregate("SUM", $column, $params);
   }
+  /**
+   * EXISTS / NOT EXISTS 查询通用方法
+   * 
+   * 将当前查询包装为 EXISTS 或 NOT EXISTS 子查询，返回布尔值。
+   * 内部先生成 SELECT SQL，再用 SELECT EXISTS(...) 或 SELECT NOT EXISTS(...) 包裹执行。
+   * 
+   * @param bool  $not    是否取反（true = NOT EXISTS，false = EXISTS）
+   * @param array $params 预处理参数
+   * @return bool 查询结果，true 表示存在（或不存在，取决于 $not）
+   * 
+   * @see exists() / notExists() 具体入口方法
+   */
+  private function checkExists($not, $params = [])
+  {
+    $this->executeType = "select";
+    $this->sql = $this->generateSQL();
+    $prefix = $not ? "NOT EXISTS" : "EXISTS";
+    $this->sql = "SELECT {$prefix}({$this->sql}) as exist";
+    $data = $this->databaseDriver->first($this->sql, $this->mergeBindings($params));
+    return boolval($data[array_key_first($data)]);
+  }
+
   /**
    * 查询是否存在
    *
@@ -1953,7 +2478,7 @@ class Query extends AbilityBaseObject
    *
    * @example
    * // 检查是否存在活跃用户
-   * $exists = Query::create('users')->where('status', 'active')->exists();
+   * $exists = Query::table('users')->where('status', 'active')->exists();
    *
    * @return bool `true`=存在，`false`=不存在
    *
@@ -1961,16 +2486,11 @@ class Query extends AbilityBaseObject
    * @note 等价于 SQL: SELECT EXISTS(SELECT * FROM ... WHERE ...)
    * @see notExists() 检查是否不存在
    */
-  function exists()
+  function exists($params = [])
   {
-    $this->executeType = "select";
-    $this->sql = $this->generateSQL();
-    $this->sql = "SELECT EXISTS($this->sql) as exist";
-
-    $data = $this->databaseDriver->fetch($this->sql);
-
-    return boolval($data[array_key_first($data)]);
+    return $this->checkExists(false, $params);
   }
+
   /**
    * 查询是否不存在
    *
@@ -1978,23 +2498,60 @@ class Query extends AbilityBaseObject
    *
    * @example
    * // 检查用户是否没有订单
-   * $noOrders = Query::create('orders')->where('user_id', $userId)->notExists();
+   * $noOrders = Query::table('orders')->where('user_id', $userId)->notExists();
    *
    * @return bool `true`=不存在，`false`=存在
    *
    * @note 等价于 SQL: SELECT NOT EXISTS(SELECT * FROM ... WHERE ...)
    * @see exists() 检查是否存在
    */
-  function notExists()
+  function notExists($params = [])
   {
-    $this->executeType = "select";
-    $this->sql = $this->generateSQL();
-    $this->sql = "SELECT NOT EXISTS($this->sql) as exist";
-
-    $data = $this->databaseDriver->fetch($this->sql);
-
-    return boolval($data[array_key_first($data)]);
+    return $this->checkExists(true, $params);
   }
+  /**
+   * 设置写操作状态并返回 SQL（不执行，供外层获取 SQL 后自行执行）
+   *
+   * @param  string      $type    操作类型: insert, replace, update, delete
+   * @param  mixed       $data    数据（insert/replace/update 需要）
+   * @param  array       $options 额外选项，如 ['insertIsIgnore' => true]
+   * @return string
+   */
+  public function writeSql($type, $data = null, $options = [])
+  {
+    $this->executeType = $type;
+    if (in_array($type, ['insert', 'replace'])) {
+      $this->options['insertData'] = $data;
+      $this->options['insertIsIgnore'] = $options['insertIsIgnore'] ?? false;
+    } elseif ($type === 'update') {
+      $this->options['updateData'] = $data;
+    }
+    return $this->generateSQL();
+  }
+
+  /**
+   * 执行写操作（INSERT/UPDATE/DELETE）的通用方法
+   * 
+   * 生成 SQL → 合并绑定参数 → 执行查询 → 自动重置选项。
+   * 有绑定参数时使用 prepare + execute（预处理防注入），无参数时使用 query。
+   * 
+   * @param array $params 预处理参数，将与内部 bindings 合并
+   * @return int|\PDOStatement|bool 返回影响行数或 PDOStatement（取决于驱动实现），失败返回 false
+   * 
+   * @note 执行后自动调用 reset() 清理查询选项，下一次链式调用从干净状态开始
+   * @see insert() / update() / delete() 具体入口方法
+   */
+  private function executeWrite($params = [])
+  {
+    $this->sql = $this->generateSQL();
+    $allParams = $this->mergeBindings($params);
+    $result = empty($allParams)
+      ? $this->databaseDriver->query($this->sql)
+      : $this->databaseDriver->execute($this->sql, $allParams);
+    $this->reset();
+    return $result;
+  }
+
   /**
    * 执行插入操作
    * 
@@ -2035,20 +2592,13 @@ class Query extends AbilityBaseObject
    * @note 值可以是 raw 表达式（$query->raw('NOW()')）或子查询（Query 实例）
    * @see insertGetId() 直接获取自增 ID 的便捷方法
    */
-  function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false)
+  function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false, $params = [])
   {
-    if ($isReplaceInto) {
-      $this->executeType = "replace";
-    } else {
-      $this->executeType = "insert";
-    }
+    $this->executeType = $isReplaceInto ? "replace" : "insert";
     $this->options['insertData'] = $data;
     $this->options['insertIsIgnore'] = $isIgnore;
-    $this->sql = $this->generateSQL();
-    $result = $this->databaseDriver->query($this->sql);
-    $this->reset();
-    if ($returnId) return  $this->databaseDriver->insertId();
-    return $result;
+    $result = $this->executeWrite($params);
+    return $returnId ? $this->databaseDriver->insertId() : $result;
   }
   /**
    * 执行插入操作并返回自增 ID
@@ -2070,9 +2620,9 @@ class Query extends AbilityBaseObject
    * @note 等同于 insert($data, $isReplaceInto, $isIgnore, true)
    * @see insert() 完整的插入方法
    */
-  function insertGetId($data, $isReplaceInto = false, $isIgnore = false)
+  function insertGetId($data, $isReplaceInto = false, $isIgnore = false, $params = [])
   {
-    return $this->insert($data, $isReplaceInto, $isIgnore, true);
+    return $this->insert($data, $isReplaceInto, $isIgnore, true, $params);
   }
   /**
    * 执行更新操作
@@ -2098,14 +2648,11 @@ class Query extends AbilityBaseObject
    * @see where() 添加更新条件
    * @see insert() 插入操作
    */
-  function update($data)
+  function update($data, $params = [])
   {
     $this->executeType = "update";
     $this->options['updateData'] = $data;
-    $this->sql = $this->generateSQL();
-    $result = $this->databaseDriver->query($this->sql);
-    $this->reset();
-    return $result;
+    return $this->executeWrite($params);
   }
   /**
    * 执行删除操作
@@ -2125,12 +2672,9 @@ class Query extends AbilityBaseObject
    * @note 调用后会自动 reset()，可链式进行下一次查询
    * @see where() 添加删除条件
    */
-  function delete()
+  function delete($params = [])
   {
     $this->executeType = "delete";
-    $this->sql = $this->generateSQL();
-    $result = $this->databaseDriver->query($this->sql);
-    $this->reset();
-    return $result;
+    return $this->executeWrite($params);
   }
 }

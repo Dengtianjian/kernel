@@ -41,7 +41,7 @@ SQL;
   }
   public function item($id = null, $attachId = null, $belongsId = null, $belongsType = null, $userId = null, $extension = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "belongsId" => $belongsId,
@@ -52,7 +52,7 @@ SQL;
   }
   public function list($id = null, $attachId = null, $belongsId = null, $belongsType = null, $userId = null, $extension = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "belongsId" => $belongsId,
@@ -63,7 +63,7 @@ SQL;
   }
   public function deleteItem($id = null, $attachId = null, $belongsId = null, $belongsType = null, $userId = null, $extension = null)
   {
-    return $this->filterNullWhere([
+    return $this->whereFilter([
       "id" => $id,
       "attachId" => $attachId,
       "belongsId" => $belongsId,
