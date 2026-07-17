@@ -2,33 +2,34 @@
 
 namespace kernel\Foundation;
 
-use Closure;
-use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\HTTP\Response;
 
-class Middleware
+abstract class Middleware
 {
   /**
    * 请求实例
    *
    * @var Request
    */
-  protected $request = null;
+  protected $request;
+
   /**
-   * 控制器
+   * 控制器实例
    *
-   * @var Controller|AuthController|Closure
+   * @var Controller|AuthController|\Closure|null
    */
-  protected $controller = null;
+  protected $controller;
+
   /**
-   * 中间件基类构建函数
+   * 中间件基类构造函数
    *
-   * @param Request $R 请求实例
-   * @param Controller|AuthController|null $Controller 控制器实例，如果控制器不是类是个闭包就会传入null
-   * @return \kernel\Foundation\HTTP\Response
+   * @param Request $request 请求实例
+   * @param Controller|AuthController|\Closure|null $controller 控制器实例，闭包路由时为 null
    */
-  public function __construct($request, $controller)
+  public function __construct(Request $request, $controller = null)
   {
     $this->request = $request;
     $this->controller = $controller;

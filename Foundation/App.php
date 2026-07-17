@@ -306,27 +306,30 @@ class App
   }
   private function executeMiddleware($Middlewares, Controller $Controller, \Closure $callback)
   {
-    if (!count($Middlewares) === 0)
+    if (count($Middlewares) === 0)
       return $callback();
 
     $middleware = array_shift($Middlewares);
-    if (count($Middlewares) > 0) {
-      $next = function () use ($Middlewares, $Controller, $callback) {
-        return $this->executeMiddleware($Middlewares, $Controller, $callback);
-      };
-    } else {
-      $next = $callback;
-    }
+    $next = function () use ($Middlewares, $Controller, $callback) {
+      return $this->executeMiddleware($Middlewares, $Controller, $callback);
+    };
 
     $params = $middleware['params'] ?: [];
     array_push($params, $next);
 
-    if (is_callable($middleware['target'])) {
+    if (is_string($middleware['target'])) {
+      $MInstance = new $middleware['target']($this->request, $Controller);
+      $executedResponse = $MInstance->handle(...$params);
+    } else {
       array_unshift($params, $this->request);
       $executedResponse = $middleware['target'](...$params);
-    } else {
-      $MInstance = new $middleware['target']($this->request, $Controller);
-      $executedResponse = call_user_func_array([$MInstance, "handle"], array_values($params));
+    }
+
+    if ($executedResponse === null) {
+      throw new \RuntimeException(sprintf(
+        'Middleware [%s]::handle() 未返回 Response，可能缺少 return $next()',
+        is_string($middleware['target']) ? $middleware['target'] : 'Closure'
+      ));
     }
 
     return $executedResponse;
@@ -379,7 +382,7 @@ class App
    * 运行开始，配置、请求已经获取到之后，匹配路由、执行中间件、控制器之前
    *
    * @param callback|Closure|string $callback 回调函数
-   * @return this
+   * @return $this
    */
   public function bootUp($callback)
   {
@@ -391,7 +394,7 @@ class App
    * 运行结束之前，已经从控制器输出中获取到响应数据之后
    *
    * @param callback|Closure|string $callback 回调函数
-   * @return this
+   * @return $this
    */
   public function shutdown($callback)
   {
@@ -401,13 +404,23 @@ class App
   }
   public function run()
   {
-    header("Access-Control-Allow-Origin:*");
-    header('Access-Control-Allow-Methods:*');
-    header('Access-Control-Allow-Headers:*');
-    header('Access-Control-Max-Age:86400');
-    header('Access-Control-Allow-Credentials: true');
+    //* 如果已经注册了 GlobalCorsMiddleware，则跳过基础 CORS 头设置，由中间件精细处理
+    $hasCorsMiddleware = false;
+    foreach ($this->globalMiddlware as $gm) {
+      if (is_string($gm['target']) && strpos($gm['target'], 'CorsMiddleware') !== false) {
+        $hasCorsMiddleware = true;
+        break;
+      }
+    }
+    if (!$hasCorsMiddleware) {
+      header("Access-Control-Allow-Origin:*");
+      header('Access-Control-Allow-Methods:*');
+      header('Access-Control-Allow-Headers:*');
+      header('Access-Control-Max-Age:86400');
+      header('Access-Control-Allow-Credentials: true');
+    }
 
-    if ($this->request()->method === "options")
+    if ($this->request()->method === "options" && !$hasCorsMiddleware)
       return;
 
     //* 载入扩展

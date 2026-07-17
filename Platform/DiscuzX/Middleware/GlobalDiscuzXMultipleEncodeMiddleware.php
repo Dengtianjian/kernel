@@ -7,10 +7,11 @@ if (!defined('F_KERNEL')) {
 }
 
 use kernel\Foundation\Config;
+use kernel\Foundation\Middleware;
 use kernel\Foundation\Store;
 use kernel\Foundation\View;
 
-class GlobalDiscuzXMultipleEncodeMiddleware
+class GlobalDiscuzXMultipleEncodeMiddleware extends Middleware
 {
   public function handle($next)
   {
