@@ -7,7 +7,7 @@ if (!defined("F_KERNEL")) {
 }
 
 $SubmitCodes = [
-  ErrorCode::make("LLLEGAL_SUBMISSION", 403, "SUBMIT_403001", "该内容被隐藏了")
+  ErrorCode::make("LLLEGAL_SUBMISSION", 403, "SUBMIT_403001", "该内容被隐藏了，您无权查看")
 ];
 
 $AuthCodes = [];
