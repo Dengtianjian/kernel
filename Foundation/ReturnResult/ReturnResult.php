@@ -29,6 +29,34 @@ class ReturnResult extends Response
     }
   }
   /**
+   * 静态工厂：快速创建成功结果
+   *
+   * @param mixed       $data       返回的数据
+   * @param int         $statusCode HTTP 状态码
+   * @param int|string  $code       响应码
+   * @param string      $message    响应信息
+   * @return static
+   */
+  public static function succeeded($data = null, $statusCode = 200, $code = 200, $message = "ok")
+  {
+    $instance = new static($data, $statusCode, $code, $message);
+    return $instance;
+  }
+  /**
+   * 静态工厂：快速创建失败结果
+   *
+   * @param int         $statusCode HTTP 状态码
+   * @param int|string  $code       错误码
+   * @param string      $message    错误信息
+   * @param mixed       $details    错误详情
+   * @return static
+   */
+  public static function failed($statusCode = 400, $code = "400:FAIL", $message = "error", $details = null)
+  {
+    $instance = new static(null, $statusCode, $code, $message, $details);
+    return $instance;
+  }
+  /**
    * 获取成功的处理结果
    *
    * @return mixed

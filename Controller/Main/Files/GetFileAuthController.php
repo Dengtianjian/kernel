@@ -2,7 +2,7 @@
 
 namespace kernel\Controller\Main\Files;
 
-use kernel\Foundation\Validate\ValidateRules;
+use kernel\Foundation\Validation\Rule;
 
 /**
  * 获取文件授权信息  

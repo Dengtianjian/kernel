@@ -67,9 +67,9 @@ class Controller
   /**
    * GET 参数校验规则
    *
-   * 键为参数名，值为 ValidateRules 实例。设为 null 表示不校验 GET 参数。
+   * 键为参数名，值为 Rule 实例。设为 null 表示不校验 GET 参数。
    *
-   * @var array{string: \kernel\Foundation\Validate\ValidateRules}|\kernel\Foundation\Validate\Validator|null
+   * @var array{string: \kernel\Foundation\Validation\Rule}|\kernel\Foundation\Validation\Validator|null
    */
   protected $requestQueryValidator = null;
 
@@ -95,9 +95,9 @@ class Controller
   /**
    * Body 参数校验规则
    *
-   * 键为参数名，值为 ValidateRules 实例。设为 null 表示不校验 Body 参数。
+   * 键为参数名，值为 Rule 实例。设为 null 表示不校验 Body 参数。
    *
-   * @var array{string: \kernel\Foundation\Validate\ValidateRules}|\kernel\Foundation\Validate\Validator|null
+   * @var array{string: \kernel\Foundation\Validation\Rule}|\kernel\Foundation\Validation\Validator|null
    */
   protected $requestBodyValidator = null;
 
@@ -309,27 +309,6 @@ class Controller
     if ($this->requestBody->validatedResult->error) {
       $this->response = $this->requestBody->validatedResult;
     }
-  }
-
-  /**
-   * 业务逻辑入口
-   *
-   * 子类必须覆盖此方法（或通过路由指定自定义 handle 方法）。
-   *
-   * ## 返回值约定
-   * | 返回类型       | 行为                                        |
-   * |---------------|---------------------------------------------|
-   * | `null`        | 不做任何处理                                |
-   * | `array/object`| 作为响应数据写入 response                   |
-   * | `Response`    | 直接替换当前 response（success/fail 即此方式）|
-   * | `ReturnList`  | 自动包装为 ResponsePagination（分页列表）    |
-   * | `ReturnResult`| getData() 作为响应数据                      |
-   *
-   * 路由参数通过 `$this->params()` 获取，或直接作为方法参数（需在路由配置中声明）。
-   */
-  public function data()
-  {
-    return null;
   }
 
   /**
