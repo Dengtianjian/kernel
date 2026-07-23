@@ -25,9 +25,9 @@ class UninstallExtensionController extends AuthController
       return true;
     }
     $extension = $extension[0];
-    $installFile = \DISCUZ_ROOT . $extension['path'] . "/Iuu/Uninstall.php";
+    $installFile = \DISCUZ_ROOT . $extension['path'] . "/Provisioner/Uninstall.php";
     if (\file_exists($installFile)) {
-      $namespace = "\\" . $extension['plugin_id'] . "\\Extensions\\" . $extension['extension_id'] . "\\Iuu\\Uninstall";
+      $namespace = "\\" . $extension['plugin_id'] . "\\Extensions\\" . $extension['extension_id'] . "\\Provisioner\\Uninstall";
       $instance = new $namespace();
       $instance->handle();
     }
