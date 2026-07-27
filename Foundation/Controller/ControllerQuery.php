@@ -8,9 +8,9 @@ use kernel\Foundation\Output;
 
 class ControllerQuery extends RequestQuery
 {
-  public function __construct(Request $request, $queryDataConversion = null, $queryValidator = null)
+  public function __construct(Request $request, $queryMutator = null, $queryValidator = null)
   {
-    parent::__construct($queryDataConversion, $queryValidator);
+    parent::__construct($queryMutator, $queryValidator);
     $this->data = $request->query->some();
     $this->handle();
   }

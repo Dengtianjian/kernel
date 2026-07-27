@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Member;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Data\DataConversion;
+use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Date;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
@@ -596,7 +596,7 @@ class DiscuzXMember
     }
 
     if ($dataConversionRules) {
-      $members = DataConversion::quick($members, $dataConversionRules, true, true);
+      $members = (new Mutator($dataConversionRules, true, true))->data($members)->convert();
     }
 
     return is_array($memberId) ? $members : $members[0];

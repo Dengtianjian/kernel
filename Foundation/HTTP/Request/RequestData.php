@@ -3,7 +3,7 @@
 
 namespace kernel\Foundation\HTTP\Request;
 
-use kernel\Foundation\Data\DataConversion;
+use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Validation\Rules;
 use kernel\Foundation\Validation\Rule;
@@ -20,9 +20,9 @@ class RequestData
   /**
    * 数据转换规则
    *
-   * @var DataConversion|array|null
+   * @var Mutator|array|null
    */
-  protected $dataConversion = null;
+  protected $mutator = null;
   /**
    * 数据校验规则或者数据校验器
    *
@@ -32,12 +32,12 @@ class RequestData
   /**
    * 实例化请求数据类
    *
-   * @param DataConversion|array|null $dataConversion 数据转换规则
+   * @param Mutator|array|null $mutator 数据转换规则
    * @param Validator|array|null $validator 数据校验规则或者数据校验器
    */
-  public function __construct($dataConversion = null, $validator = null)
+  public function __construct($mutator = null, $validator = null)
   {
-    $this->dataConversion = $dataConversion;
+    $this->mutator = $mutator;
     $this->validator = $validator;
   }
   /**
@@ -81,7 +81,7 @@ class RequestData
     if ($keys === null) {
       $data = $this->data;
       if ($completion) {
-        $data = DataConversion::quick($data, $this->dataConversion, true);
+        $data = (new Mutator($this->mutator, true))->data($data)->convert();
       }
       return $data;
     };
@@ -136,16 +136,16 @@ class RequestData
       }
     }
 
-    if (!is_null($this->dataConversion)) {
-      if ($this->dataConversion instanceof DataConversion) {
-        $ConvertedData = $this->dataConversion->data($this->data)->convert();
-        if ($ConvertedData !== false) {
-          $this->data = $ConvertedData;
+    if (!is_null($this->mutator)) {
+      if ($this->mutator instanceof Mutator) {
+        $convertedData = $this->mutator->data($this->data)->convert();
+        if ($convertedData !== false) {
+          $this->data = $convertedData;
         }
       } else {
-        $ConvertedData = DataConversion::quick($this->data, $this->dataConversion, false, true, 0);
-        if ($ConvertedData !== false) {
-          $this->data = $ConvertedData;
+        $convertedData = (new Mutator($this->mutator, false, true))->data($this->data)->convert();
+        if ($convertedData !== false) {
+          $this->data = $convertedData;
         }
       }
     }

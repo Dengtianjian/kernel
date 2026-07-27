@@ -6,9 +6,9 @@ use kernel\Foundation\Output;
 
 class RequestQuery extends RequestData
 {
-  public function __construct($dataConversion = null, $validator = null)
+  public function __construct($mutator = null, $validator = null)
   {
-    $this->dataConversion = $dataConversion;
+    $this->mutator = $mutator;
     $this->validator = $validator;
 
     foreach ($_GET as $key => $value) {

@@ -7,9 +7,9 @@ use kernel\Foundation\HTTP\Request\RequestBody;
 
 class ControllerBody extends RequestBody
 {
-  public function __construct(Request $request, $bodyDataConversion = null, $bodyValidator = null)
+  public function __construct(Request $request, $bodyMutator = null, $bodyValidator = null)
   {
-    parent::__construct($bodyDataConversion, $bodyValidator);
+    parent::__construct($bodyMutator, $bodyValidator);
     $this->data = $request->body->some();
     $this->handle();
   }

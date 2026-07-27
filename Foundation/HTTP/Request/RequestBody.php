@@ -5,9 +5,9 @@ namespace kernel\Foundation\HTTP\Request;
 class RequestBody extends RequestData
 {
   protected $body = [];
-  public function __construct($dataConversion = null, $validator = null)
+  public function __construct($mutator = null, $validator = null)
   {
-    $this->dataConversion = $dataConversion;
+    $this->mutator = $mutator;
     $this->validator = $validator;
 
     $RequestHeaders = getallheaders();

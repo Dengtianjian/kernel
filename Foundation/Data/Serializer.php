@@ -79,7 +79,7 @@ class Serializer
     if (is_null($Data))
       return $Data;
     if (!is_array($Data)) {
-      return DataConversion::quick($Data, $RuleOrName, false, false, false);
+      return (new Mutator($RuleOrName, false, false))->data($Data)->convert();
     }
 
     if (count($Data) === 0)
@@ -126,7 +126,7 @@ class Serializer
       if (isset($Data[$FieldName])) {
         if ($RuleItem instanceof Serializer) {
           $Data[$FieldName] = self::serialization($RuleItem->useRuleName, $Data[$FieldName]);
-        } else if ($RuleItem instanceof DataConversion) {
+        } else if ($RuleItem instanceof Mutator) {
           $Data[$FieldName] = $RuleItem->data($Data[$FieldName])->convert();
         } else if ($RuleItem === "json") {
           if (isset($Data[$FieldName]) && is_string($Data[$FieldName]) && !empty($Data[$FieldName])) {
@@ -145,7 +145,7 @@ class Serializer
         } else if (is_array($RuleItem)) {
           $Data[$FieldName] = self::serialization($RuleItem, $Data[$FieldName]);
         } else if (is_string($RuleItem)) {
-          $Data[$FieldName] = DataConversion::quick($Data[$FieldName], $RuleItem, false, false, 1);
+          $Data[$FieldName] = (new Mutator($RuleItem, false, false))->data($Data[$FieldName])->convert();
         }
       } else {
         $Data[$FieldName] = null;

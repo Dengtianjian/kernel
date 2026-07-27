@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Controller;
 
-use kernel\Foundation\Data\DataConversion;
+use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Data\Serializer;
 use kernel\Foundation\Data\Transform;
 use kernel\Foundation\HTTP\Request;
@@ -60,7 +60,7 @@ class Controller
    * 格式与 Serializer 规则一致，支持标量类型（"int"/"string"/"bool"/"float"）和嵌套结构。
    * 设为 null 表示不对 GET 参数做类型转换。
    *
-   * @var array{string: string}|DataConversion|null
+   * @var array{string: string}|Mutator|null
    */
   protected $requestQuerySerializes = null;
 
@@ -88,7 +88,7 @@ class Controller
    *
    * 格式与 Serializer 规则一致。设为 null 表示不对 Body 参数做类型转换。
    *
-   * @var array{string: string}|DataConversion|null
+   * @var array{string: string}|Mutator|null
    */
   protected $requestBodySerializes = null;
 
@@ -111,12 +111,12 @@ class Controller
    * 支持四种形式：
    * - `array` — 序列化规则数组，键为字段名，值为类型/嵌套规则
    * - `string` — Serializer 规则名称
-   * - `DataConversion` 实例 — 通过 data()->convert() 管道处理
+   * - `Mutator` 实例 — 通过 data()->convert() 管道处理
    * - `Serializer` 实例 — 使用其 useRuleName 指定的规则
    *
    * 设为 null 表示不序列化，原样输出。
    *
-   * @var array{string: mixed}|string|DataConversion|Serializer|null
+   * @var array{string: mixed}|string|Mutator|Serializer|null
    */
   protected $responseSerializes = null;
 
@@ -336,7 +336,7 @@ class Controller
    * 响应数据序列化
    *
    * 根据 $responseSerializes 的类型执行不同的序列化逻辑：
-   * - DataConversion 实例 → 调用其 data()->convert() 管道
+   * - Mutator 实例 → 调用其 data()->convert() 管道
    * - Serializer 实例      → 使用其 useRuleName 规则
    * - 数组 / 字符串         → 作为序列化规则名传入 Serializer::serialization()
    */
@@ -346,7 +346,7 @@ class Controller
     $ClassName = $ClassNamespace[count($ClassNamespace) - 1];
     $ClassName = str_replace("Controller", "", $ClassName);
     $ClassName = lcfirst($ClassName);
-    if ($this->responseSerializes instanceof DataConversion) {
+    if ($this->responseSerializes instanceof Mutator) {
       $this->response->addData($this->responseSerializes->data($this->response->getData())->convert(), true);
     } else if ($this->responseSerializes instanceof Serializer) {
       $this->response->addData(Serializer::serialization($this->responseSerializes->useRuleName, $this->response->getData()), true);
