@@ -47,12 +47,13 @@ class Query extends AbilityBaseObject
    * - 'conditions'  => array  // where 条件列表
    * - 'orders'      => array  // order by 排序列表
    * - 'pagination'  => ['limit' => int|null, 'offset' => int|null]
-   * - 'groupBy'     => array|null
-   * - 'having'      => mixed|null
-   * - 'data'        => mixed|null  // insert/update 数据
-   * - 'insertData'  => array  // insert 专用数据
-   * - 'updateData'  => array  // update 专用数据
-   * - 'insertIsIgnore' => bool  // INSERT IGNORE 标记
+ * - 'joins'       => array  // JOIN 定义列表，每项: ['type'=>'INNER','table'=>'profiles','alias'=>'p','first'=>'users.id','operator'=>'=','second'=>'p.user_id']
+ * - 'groupBy'     => array|null
+ * - 'having'      => mixed|null
+ * - 'data'        => mixed|null  // insert/update 数据
+ * - 'insertData'  => array  // insert 专用数据
+ * - 'updateData'  => array  // update 专用数据
+ * - 'insertIsIgnore' => bool  // INSERT IGNORE 标记
    * 
    * @var array
    */
@@ -174,6 +175,14 @@ class Query extends AbilityBaseObject
     return $this->databaseDriver;
   }
   /**
+   * 获取当前查询绑定的表名
+   * @return string|null
+   */
+  function getTableName()
+  {
+    return $this->options['from']['tableName'] ?? null;
+  }
+  /**
    * 静态工厂：创建 Query 实例并指定表名
    *
    * 命名更符合直觉，是 new Query($tableName) 的快捷方式
@@ -235,6 +244,7 @@ class Query extends AbilityBaseObject
           "distinct" => false
         ],
         "conditions" => [],
+        "joins" => [],
         "pagination" => [
           "limit" => null,
           "offset" => null
@@ -389,6 +399,7 @@ class Query extends AbilityBaseObject
     $SQLs = [
       "execute" => null,
       "from" => null,
+      "join" => null,
       "field" => null,
       "condition" => null,
       "order" => null,
@@ -425,6 +436,10 @@ class Query extends AbilityBaseObject
       case "delete":
         $SQLs['execute'] = Statement::delete($from, $this->sql);
         break;
+    }
+
+    if (!empty($this->options['joins']) && $this->executeType === 'select') {
+      $SQLs['join'] = Statement::join($this->options['joins']);
     }
 
     if (count($this->options['conditions']) > 0 || count($this->filterNullConditions) > 0) {
@@ -528,8 +543,79 @@ class Query extends AbilityBaseObject
     return $this;
   }
   /**
+   * 添加 JOIN 子句
+   *
+   * 在查询中添加 JOIN 关联，支持 INNER/LEFT/RIGHT JOIN 及其 ON 条件。
+   * 多次调用可叠加多个 JOIN。ON 条件中的列名自动添加 `` 包围。
+   *
+   * @param string $table    关联表名，支持 `表名 AS 别名` 格式自动解析
+   * @param string $first    ON 条件左侧列名（如 'users.id'）
+   * @param string $operator 比较运算符（如 '='）
+   * @param string $second   ON 条件右侧列名（如 'profiles.user_id'）
+   * @param string $type     JOIN 类型：'INNER' | 'LEFT' | 'RIGHT'，默认 'INNER'
+   * @return $this
+   */
+  function join($table, $first, $operator, $second, $type = 'INNER')
+  {
+    $this->executeType = $this->executeType ?: "select";
+
+    $alias = null;
+    if (stripos($table, ' as ') !== false) {
+      $parts = preg_split('/\s+as\s+/i', $table);
+      $table = $parts[0];
+      $alias = $parts[1];
+    }
+
+    $this->options['joins'][] = [
+      'type'     => strtoupper($type),
+      'table'    => $table,
+      'alias'    => $alias,
+      'first'    => $first,
+      'operator' => $operator,
+      'second'   => $second,
+    ];
+
+    return $this;
+  }
+  /**
+   * 添加 LEFT JOIN 子句
+   * @param string $table 关联表名
+   * @param string $first ON 条件左侧
+   * @param string $operator 比较运算符
+   * @param string $second ON 条件右侧
+   * @return $this
+   */
+  function leftJoin($table, $first, $operator, $second)
+  {
+    return $this->join($table, $first, $operator, $second, 'LEFT');
+  }
+  /**
+   * 添加 RIGHT JOIN 子句
+   * @param string $table 关联表名
+   * @param string $first ON 条件左侧
+   * @param string $operator 比较运算符
+   * @param string $second ON 条件右侧
+   * @return $this
+   */
+  function rightJoin($table, $first, $operator, $second)
+  {
+    return $this->join($table, $first, $operator, $second, 'RIGHT');
+  }
+  /**
+   * 添加 INNER JOIN 子句
+   * @param string $table 关联表名
+   * @param string $first ON 条件左侧
+   * @param string $operator 比较运算符
+   * @param string $second ON 条件右侧
+   * @return $this
+   */
+  function innerJoin($table, $first, $operator, $second)
+  {
+    return $this->join($table, $first, $operator, $second, 'INNER');
+  }
+  /**
    * 设置查询字段
-   * 
+   *
    * 指定要查询的字段列表，支持多个参数
    * 
    * @example
@@ -668,7 +754,12 @@ class Query extends AbilityBaseObject
 
     $this->options['select']['distinct'] = true;
     if ($column) {
-      array_push($this->options['select']['fields'], ...$column);
+      array_push($this->options['select']['fields'], ...array_map(function ($col) {
+        return [
+          "type" => "name",
+          "value" => $col
+        ];
+      }, $column));
     }
 
     return $this;

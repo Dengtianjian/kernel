@@ -5,6 +5,34 @@ namespace kernel\Foundation\Database\PDO;
 use kernel\Foundation\Config;
 use kernel\Foundation\Object\AbilityBaseObject;
 
+/**
+ * DDL 与表管理基类
+ *
+ * Table 提供数据库表的 DDL 操作和表结构信息查询能力。它是 Model 的基类，
+ * Model 在其上扩展了 ActiveRecord 操作 + 类型转换 + 软删除等特性。
+ *
+ * ## 职责范围
+ *
+ * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`
+ * - **信息查询**：`exists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
+ * - **表名管理**：`prefix()` 自动添加配置前缀，`prefixReplaces` 支持前缀占位替换
+ * - **Schema 映射**：`getPhpSchema()` 将 `$schema` 中的 Schema 定义转换为字段→PHP类型映射
+ *
+ * ## 表前缀机制
+ *
+ * Table 自动从 `Config::get('database/mysql/prefix')` 读取前缀并添加到表名前。
+ * 子类可通过 `$prefixReplaces` 属性对前缀中的占位符做动态替换。
+ *
+ * ## 继承关系
+ *
+ * ```
+ * Table (DDL + 信息查询)
+ *   └── Model (ActiveRecord + casts + 软删除)
+ * ```
+ *
+ * @see Model  子类，提供 ActiveRecord 能力
+ * @see Schema 字段定义类，配合 $this->schema 定义表结构
+ */
 class Table extends AbilityBaseObject
 {
   /**
@@ -319,7 +347,7 @@ class Table extends AbilityBaseObject
    *
    * @return string
    */
-  private static function getPrefix()
+  protected static function getPrefix()
   {
     if (self::$prefixCache !== null) {
       return self::$prefixCache;

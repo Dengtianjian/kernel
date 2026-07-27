@@ -5,6 +5,37 @@ namespace kernel\Foundation\Database\PDO;
 use kernel\Foundation\Exception\RuyiException;
 use PDO;
 
+/**
+ * PDO 驱动封装 — 数据库操作的底层引擎
+ *
+ * Driver 直接包裹 PHP 原生 PDO 实例，提供连接建立、SQL 执行、预处理语句、
+ * 事务管理等基础能力，是 ORM 四层架构的最底层。
+ *
+ * ## 职责范围
+ *
+ * - **连接管理**：构造时建立 PDO 连接，通过 `getPDO()` 暴露原生实例
+ * - **SQL 执行**：`query()` 自动区分 SELECT（返回 PDOStatement）和写操作（返回受影响行数），
+ *   写操作内部使用 `PDO::exec()` 确保跨驱动一致性
+ * - **预处理**：`prepare()` + `bindValues()` + `execute()` 完整参数绑定流程，
+ *   `bindValues()` 自动根据 PHP 值类型推断 PDO 参数类型
+ * - **便捷查询**：`first()` / `all()` / `value()` / `object()` / `map()`
+ *   统一支持传参预处理和直查两种模式
+ * - **事务**：`beginTransaction()` / `commit()` / `rollBack()` / `inTransaction()`
+ *
+ * ## 使用方式
+ *
+ * Driver 通常不直接使用，而是通过 Connections 注册后由 DB 门面、Query 构建器、
+ * Model 等上层组件间接调用。仅在需要底层 PDO 操作时直接使用：
+ *
+ * ```php
+ * $driver = new Driver('127.0.0.1', 'root', 'pass', 'my_db', 3306);
+ * $rows  = $driver->all('SELECT * FROM users WHERE status = ?', [1]);
+ * $count = $driver->value('SELECT COUNT(*) FROM users');
+ * ```
+ *
+ * @see Connections 多连接管理器
+ * @see DB         数据库门面（上层统一入口）
+ */
 class Driver
 {
   /** @var PDO PDO 连接实例 */
@@ -123,18 +154,25 @@ class Driver
    */
   public function query($querySQL)
   {
-    $statement = $this->PDOInstance->query($querySQL);
-    if ($statement === false) {
+    if ($this->isSelectStatement($querySQL)) {
+      $statement = $this->PDOInstance->query($querySQL);
+      if ($statement === false) {
+        throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
+          'error' => $this->error(),
+          'sql' => $querySQL,
+        ]);
+      }
+      return $statement;
+    }
+
+    $result = $this->PDOInstance->exec($querySQL);
+    if ($result === false) {
       throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
         'error' => $this->error(),
         'sql' => $querySQL,
       ]);
     }
-
-    if ($this->isSelectStatement($querySQL)) {
-      return $statement;
-    }
-    return $statement->rowCount();
+    return $result;
   }
   /**
    * 执行一条 SQL 语句并返回受影响行数

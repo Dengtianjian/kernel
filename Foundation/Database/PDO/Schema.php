@@ -346,9 +346,7 @@ class Schema
     if ($this->type === 'TINYINT' && $this->length === 1) return 'bool';
     if (in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT'])) return 'int';
     if (in_array($this->type, ['FLOAT', 'DOUBLE', 'DECIMAL'])) return 'float';
-    if (in_array($this->type, ['DATETIME', 'TIMESTAMP'])) {
-      return ($this->length >= 3) ? 'timestamp_ms' : 'timestamp';
-    }
+    if (in_array($this->type, ['DATETIME', 'TIMESTAMP'])) return 'timestamp';
     if ($this->type === 'DATE') return 'date';
     return 'string';
   }

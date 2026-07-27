@@ -2,6 +2,11 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Database\PDO\Relation\HasOne;
+use kernel\Foundation\Database\PDO\Relation\HasMany;
+use kernel\Foundation\Database\PDO\Relation\BelongsTo;
+use kernel\Foundation\Database\PDO\Relation\Relation;
+
 /**
  * Model — AR（Active Record）+ Query 代理 ORM 基类
  *
@@ -196,6 +201,26 @@ class Model extends Table
    * @var array<string, mixed>
    */
   private $data = [];
+
+  /**
+   * 已加载的关联数据缓存
+   *
+   * 懒加载或 eager loading 完成后将结果存入此数组，
+   * 后续通过 __get 访问同名属性时直接返回缓存，避免重复查询。
+   *
+   * @var array<string, mixed>
+   */
+  private $relations = [];
+
+  /**
+   * 待预加载的关联关系名列表
+   *
+   * 通过 with() 静态方法设置，在 get/first/find 等终端方法执行时
+   * 触发批量 eager loading。
+   *
+   * @var array<string>
+   */
+  private $eagerLoads = [];
 
   // ===================================================================
   // 构造 & 初始化
@@ -532,11 +557,201 @@ class Model extends Table
    *
    * 若 Query 方法返回 Query 自身（链式方法如 where / orderBy），
    * 替换为 $this 以保证 Model 链不间断。
+   *
+   * 对于 get/first 等终端方法，自动检测并执行 eager loading。
    */
   public function __call($method, $parameters)
   {
+    // find(id) 按主键查询，数据填充到当前实例（与 first 类似，但无需额外 query 链）
+    if ($method === 'find') {
+      $id = $parameters[0] ?? null;
+      $row = $this->query->where($this->primaryKey, $id)->first();
+      if ($row) {
+        foreach ($row as $key => $value) {
+          $this->$key = $value;  // __set → castToDb，数据存入 $data
+        }
+      }
+      if (!empty($this->eagerLoads)) {
+        $this->eagerLoadRelations([$this]);
+      }
+      return $this;
+    }
+
     $result = $this->query->$method(...$parameters);
-    return $result === $this->query ? $this : $result;
+
+    if ($result === $this->query) {
+      return $this;
+    }
+
+    // 终端方法：检测 eager loading
+    $terminalMethods = ['get', 'all', 'first', 'value', 'pluck', 'paginate'];
+    if (in_array($method, $terminalMethods) && !empty($this->eagerLoads)) {
+      return $this->handleEagerLoads($method, $result);
+    }
+
+    return $result;
+  }
+
+  /**
+   * 处理 eager loading
+   *
+   * 将查询结果转为 Model 实例，然后批量预加载关联数据。
+   *
+   * @param string $method 终端方法名
+   * @param mixed  $result Query 查询结果
+   * @return mixed
+   */
+  private function handleEagerLoads(string $method, mixed $result): mixed
+  {
+    if ($result === null || $result === false || (is_array($result) && empty($result))) {
+      return $result;
+    }
+
+    switch ($method) {
+      case 'first':
+        $model = $this->rowToModel($result);
+        if ($model) {
+          $this->eagerLoadRelations([$model]);
+        }
+        return $model;
+
+      case 'get':
+      case 'all':
+        $models = array_map(fn($row) => $this->rowToModel($row), $result);
+        $this->eagerLoadRelations($models);
+        return $models;
+
+      case 'paginate':
+        if ($result instanceof \kernel\Foundation\Database\PDO\Paginator) {
+          $items = $result->getItems();
+          $models = array_map(fn($row) => $this->rowToModel($row), $items);
+          $this->eagerLoadRelations($models);
+          $result->setItems($models);
+        }
+        return $result;
+
+      default:
+        return $result;
+    }
+  }
+
+  /**
+   * 批量执行 eager loading
+   *
+   * 对一组 Model 实例批量预加载指定的关联关系，消除 N+1 问题。
+   *
+   * @param array<static> $models Model 实例数组
+   */
+  private function eagerLoadRelations(array $models): void
+  {
+    if (empty($models) || empty($this->eagerLoads)) {
+      return;
+    }
+
+    foreach ($this->eagerLoads as $relation) {
+      if (!method_exists($this, $relation)) {
+        continue;
+      }
+
+      /** @var Relation $rel */
+      $rel = $this->$relation();
+      if (!($rel instanceof Relation)) {
+        continue;
+      }
+
+      $foreignKey   = $rel->getForeignKey();
+      $localKey     = $rel->getLocalKey();
+      $isBelongsTo  = $rel instanceof BelongsTo;
+
+      // BelongsTo: 收集 parent 的 FK 值 → 用 related 的 PK 查询
+      // HasOne/HasMany: 收集 parent 的 PK 值 → 用 related 的 FK 查询
+      $collectKey = $isBelongsTo ? $foreignKey : $localKey;
+      $queryKey   = $isBelongsTo ? $localKey   : $foreignKey;
+
+      $keys = [];
+      foreach ($models as $model) {
+        $val = $model->{$collectKey};
+        if ($val !== null) {
+          $keys[] = $val;
+        }
+      }
+
+      if (empty($keys)) {
+        $emptyResult = $rel instanceof HasMany ? [] : null;
+        foreach ($models as $model) {
+          $model->setRelation($relation, $emptyResult);
+        }
+        continue;
+      }
+
+      $keys = array_unique($keys);
+
+      // 创建新的关联 Query，批量查询
+      $query = (new Query($rel->getQuery()->getTableName()))
+        ->whereIn($queryKey, $keys);
+
+      $rows = $query->get();
+
+      // 按查询键分组
+      $grouped = [];
+      foreach ($rows as $row) {
+        $key = $row[$queryKey] ?? null;
+        if ($key !== null) {
+          $grouped[$key][] = $row;
+        }
+      }
+
+      // 分发给各 Model
+      // BelongsTo: 用 parent.FK 匹配 related.PK 分组
+      // HasOne/HasMany: 用 parent.PK 匹配 related.FK 分组
+      $matchKey = $isBelongsTo ? $foreignKey : $localKey;
+      $relatedClass = $rel->getRelatedClass();
+      foreach ($models as $model) {
+        $key = $model->{$matchKey};
+        if ($key === null || !isset($grouped[$key])) {
+          $model->setRelation($relation, $rel instanceof HasMany ? [] : null);
+          continue;
+        }
+
+        if ($rel instanceof HasMany) {
+          $items = [];
+          foreach ($grouped[$key] as $row) {
+            $items[] = $this->rowToModel($row, $relatedClass);
+          }
+          $model->setRelation($relation, $items);
+        } else {
+          $model->setRelation($relation, $this->rowToModel($grouped[$key][0], $relatedClass));
+        }
+      }
+    }
+
+    $this->eagerLoads = [];
+  }
+
+  /**
+   * 将数据库行数据转为 Model 实例
+   *
+   * @param array  $row   数据库行数据
+   * @param string $class Model 类名（默认当前类）
+   * @return static
+   */
+  private function rowToModel(array $row, string $class = ''): Model
+  {
+    $class = $class ?: static::class;
+    /** @var Model $instance */
+    $instance = new $class();
+    foreach ($row as $key => $value) {
+      $instance->$key = $value;
+    }
+    return $instance;
+  }
+
+  /**
+   * 设置关联数据缓存（用于 eager loading 分发）
+   */
+  public function setRelation(string $name, mixed $value): void
+  {
+    $this->relations[$name] = $value;
   }
 
   // ===================================================================
@@ -546,7 +761,7 @@ class Model extends Table
   /**
    * 读取属性
    *
-   * 优先级：类 property → $data[camelCase] → 不存在的字段返回 null
+   * 优先级：类 property → 已缓存的关联数据 → 关系懒加载 → $data → null
    * 若字段在 $casts 中声明，通过 castFromDb 转为 PHP 输出格式。
    */
   public function __get($name)
@@ -554,6 +769,20 @@ class Model extends Table
     if (property_exists($this, $name)) {
       return $this->$name;
     }
+
+    // 已缓存的关联数据
+    if (array_key_exists($name, $this->relations)) {
+      return $this->relations[$name];
+    }
+
+    // 尝试懒加载关联关系
+    if (method_exists($this, $name)) {
+      $relation = $this->$name();
+      if ($relation instanceof Relation) {
+        return $this->relations[$name] = $relation->getResults();
+      }
+    }
+
     $value = $this->data[$name] ?? null;
     if ($value !== null && isset($this->casts[$name])) {
       $value = $this->castFromDb($this->casts[$name], $value);
@@ -576,26 +805,6 @@ class Model extends Table
   // ===================================================================
   // Active Record：CRUD
   // ===================================================================
-
-  /**
-   * 按主键查找一行，数据自动填充到 $data
-   *
-   * 从 DB 取到的每列值经 __set → castToDb 转换为 DB 格式后存入 $data。
-   *
-   * @param int|string $id
-   * @return static
-   */
-  public static function find($id): static
-  {
-    $instance = new static();
-    $row = $instance->query->where($instance->primaryKey, $id)->first();
-    if ($row) {
-      foreach ($row as $key => $value) {
-        $instance->$key = $value;  // __set → castToDb，数据存入 $data
-      }
-    }
-    return $instance;
-  }
 
   /**
    * 持久化当前行数据
@@ -814,6 +1023,181 @@ class Model extends Table
     return $this->primaryKey;
   }
 
+  /**
+   * 获取底层 Query 构建器实例
+   *
+   * 用于 Relation 等组件获取 Query 来构建关联查询。
+   *
+   * @return Query
+   */
+  public function getQuery(): Query
+  {
+    return $this->query;
+  }
+
+  /**
+   * 获取去前缀后的表名
+   *
+   * 用于自动推断关联外键时生成 `{表名}_{主键}` 格式的字段名。
+   * 例如 prefix='ruyi_', tableName='ruyi_users' → 返回 'users'
+   *
+   * @return string
+   */
+  public function getTableBaseName(): string
+  {
+    $prefix = Table::getPrefix();
+    if ($prefix && str_starts_with($this->tableName, $prefix)) {
+      return substr($this->tableName, strlen($prefix));
+    }
+    return $this->tableName;
+  }
+
+  // ===================================================================
+  // 关联关系
+  // ===================================================================
+
+  /**
+   * 定义一对一关系
+   *
+   * 当前 Model 拥有一条关联 Model 记录。
+   *
+   * @param string $relatedClass 关联 Model 类名
+   * @param string $foreignKey   关联表外键（可选，自动推断为 {当前表名}_{当前主键}）
+   * @param string $localKey     当前表主键（可选，默认 $primaryKey）
+   * @return HasOne
+   *
+   * @example
+   * ```php
+   * class User extends Model {
+   *     public function profile() {
+   *         return $this->hasOne(Profile::class);
+   *         // 等价于 return $this->hasOne(Profile::class, 'user_id', 'id');
+   *     }
+   * }
+   * $user = User::find(1);
+   * echo $user->profile->bio;
+   * ```
+   */
+  public function hasOne(string $relatedClass, string $foreignKey = '', string $localKey = ''): HasOne
+  {
+    return new HasOne($relatedClass, $this, $foreignKey, $localKey);
+  }
+
+  /**
+   * 定义一对多关系
+   *
+   * 当前 Model 拥有多条关联 Model 记录。
+   *
+   * @param string $relatedClass 关联 Model 类名
+   * @param string $foreignKey   关联表外键（可选，自动推断）
+   * @param string $localKey     当前表主键（可选，默认 $primaryKey）
+   * @return HasMany
+   *
+   * @example
+   * ```php
+   * class Post extends Model {
+   *     public function comments() {
+   *         return $this->hasMany(Comment::class);
+   *     }
+   * }
+   * $post = Post::find(1);
+   * foreach ($post->comments as $comment) { ... }
+   * ```
+   */
+  public function hasMany(string $relatedClass, string $foreignKey = '', string $localKey = ''): HasMany
+  {
+    return new HasMany($relatedClass, $this, $foreignKey, $localKey);
+  }
+
+  /**
+   * 定义反向一对多关系
+   *
+   * 当前 Model 属于一条父 Model 记录（即当前表持有外键）。
+   *
+   * @param string $relatedClass 关联的父 Model 类名
+   * @param string $foreignKey   当前表外键（可选，自动推断为 {关联表名}_{关联表主键}）
+   * @param string $localKey     关联表主键（可选，默认关联 Model 的 $primaryKey）
+   * @return BelongsTo
+   *
+   * @example
+   * ```php
+   * class Comment extends Model {
+   *     public function post() {
+   *         return $this->belongsTo(Post::class);
+   *         // 等价于 return $this->belongsTo(Post::class, 'post_id', 'id');
+   *     }
+   * }
+   * $comment = Comment::find(1);
+   * echo $comment->post->title;
+   * ```
+   */
+  public function belongsTo(string $relatedClass, string $foreignKey = '', string $localKey = ''): BelongsTo
+  {
+    return new BelongsTo($relatedClass, $this, $foreignKey, $localKey);
+  }
+
+  /**
+   * 获取指定关联的查询结果（带缓存）
+   *
+   * 若关联已加载则直接返回缓存，否则通过关系方法查询并缓存。
+   *
+   * @param string $relation 关系方法名
+   * @return mixed
+   */
+  public function getRelation(string $relation): mixed
+  {
+    if (array_key_exists($relation, $this->relations)) {
+      return $this->relations[$relation];
+    }
+    if (method_exists($this, $relation)) {
+      $rel = $this->$relation();
+      if ($rel instanceof Relation) {
+        return $this->relations[$relation] = $rel->getResults();
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 手动加载指定关联
+   *
+   * 适用于已有 Model 实例时按需加载关联数据。
+   *
+   * @param string ...$relations 关系方法名列表
+   * @return $this
+   *
+   * @example
+   * $user = User::find(1);
+   * $user->load('profile', 'posts');
+   */
+  public function load(string ...$relations): static
+  {
+    foreach ($relations as $relation) {
+      $this->getRelation($relation);
+    }
+    return $this;
+  }
+
+  /**
+   * 设置需要预加载的关联关系（静态方法）
+   *
+   * 在 get/first/find 等终端方法调用前通过 with() 声明需要预加载的关联，
+   * 终端方法执行时会自动进行批量 eager loading。
+   *
+   * @param string ...$relations 关系方法名列表
+   * @return static
+   *
+   * @example
+   * $users = User::with('profile')->where('status', 1)->get();
+   * $post  = Post::with('comments', 'author')->first();
+   */
+  public static function with(string ...$relations): static
+  {
+    $instance = new static();
+    $instance->eagerLoads = $relations;
+    return $instance;
+  }
+
   // ===================================================================
   // 数据导出
   // ===================================================================
@@ -829,6 +1213,15 @@ class Model extends Table
     foreach ($this->data as $field => $value) {
       $type = $this->casts[$field] ?? null;
       $result[$field] = $type ? $this->castFromDb($type, $value) : $value;
+    }
+    foreach ($this->relations as $name => $value) {
+      if ($value instanceof Model) {
+        $result[$name] = $value->toArray();
+      } elseif (is_array($value)) {
+        $result[$name] = array_map(fn($item) => $item instanceof Model ? $item->toArray() : $item, $value);
+      } else {
+        $result[$name] = $value;
+      }
     }
     return $result;
   }

@@ -19,17 +19,16 @@ class DB
    * 切换或获取数据库连接
    *
    * @param string|null $name 连接名称，为 null 时使用默认连接
-   * @return static
    *
    * @example
-   * DB::connection('slave')->table('users')->get();
+   * DB::connection('slave');
+   * DB::table('users')->get();
    */
   static function connection($name = null)
   {
     if ($name !== null) {
       Connections::useDriver($name);
     }
-    return new static();
   }
 
   /**
