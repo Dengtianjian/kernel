@@ -4,9 +4,6 @@ namespace kernel\Foundation\Controller;
 
 use kernel\Foundation\ReturnResult\ReturnResult;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 /**
  * 带认证能力的控制器基类

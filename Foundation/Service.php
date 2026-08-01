@@ -5,9 +5,6 @@ namespace kernel\Foundation;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 if (!defined("F_KERNEL")) {
   exit('Access Denied');

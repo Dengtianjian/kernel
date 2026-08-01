@@ -2,9 +2,6 @@
 
 namespace kernel\Platform\DiscuzX\Foundation\Database;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;

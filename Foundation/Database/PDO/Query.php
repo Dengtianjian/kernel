@@ -23,9 +23,6 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * @method static Query table(string|null $tableName = null, Driver|null $databaseDriver = null) 创建 Query 实例并指定表名
  */
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 class Query extends AbilityBaseObject
 {

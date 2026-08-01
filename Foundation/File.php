@@ -5,9 +5,6 @@ namespace kernel\Foundation;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 /**
  * 文件操作类

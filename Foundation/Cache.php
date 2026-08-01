@@ -4,9 +4,6 @@ namespace kernel\Foundation;
 
 use kernel\Foundation\File\FileHelper;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 class Cache
 {

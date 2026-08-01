@@ -199,19 +199,11 @@ class App
      ** 最后读取的文件覆盖之前的文件配置 releae 覆盖 production 覆盖 local 覆盖 development 覆盖 default
      */
 
-    $mode = "production";
     foreach ($ReadConfigFiles as $ConfigFileName) {
-      // preg_match("/Config\.(\w+)\.php/", $ConfigFileName, $Matchs);
-      // $fileMode = null;
-      // if ($Matchs && count($Matchs) === 2) {
-      //   $fileMode = $Matchs[1];
-      // }
-
-      $ReadConfigs = Config::read(FileHelper::combinedFilePath($ConfigFilesDir, $ConfigFileName));
-      if ($ReadConfigs && $ReadConfigs[F_APP_ID]) {
-        $mode = array_key_exists("mode", $ReadConfigs[F_APP_ID]) ? $ReadConfigs[F_APP_ID]['mode'] : $mode;
-      }
+      Config::read(FileHelper::combinedFilePath($ConfigFilesDir, $ConfigFileName));
     }
+
+    $mode = Config::get("mode", "production");
 
     if (!defined("F_APP_MODE")) {
       define("F_APP_MODE", $mode);
@@ -297,7 +289,7 @@ class App
    * @param array $executeParams 执行中间件时传入的参数
    * @return void
    */
-  function setMiddlware($classOrFun, $executeParams = null)
+  function setMiddleware($classOrFun, $executeParams = null)
   {
     array_push($this->globalMiddlware, [
       "target" => $classOrFun,
@@ -426,7 +418,7 @@ class App
     //* 载入扩展
     if (Config::get("extensions")) {
       $this->loadExtensions();
-      // $this->setMiddlware(kernel\Foundation\GlobalExtensionsMiddleware::class);
+      // $this->setMiddleware(kernel\Foundation\GlobalExtensionsMiddleware::class);
     }
 
     //* 调用生命周期“启动”钩子

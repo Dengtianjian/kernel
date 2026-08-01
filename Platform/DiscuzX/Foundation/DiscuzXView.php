@@ -2,9 +2,6 @@
 
 namespace kernel\Platform\DiscuzX\Foundation;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;

@@ -4,9 +4,6 @@ namespace kernel\Foundation\File;
 
 use kernel\Foundation\Exception\Exception;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 class FileManager
 {

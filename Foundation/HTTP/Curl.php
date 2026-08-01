@@ -2,9 +2,6 @@
 
 namespace kernel\Foundation\HTTP;
 
-if (!defined('F_KERNEL')) {
-  exit('Access Denied');
-}
 
 use CURLFile;
 use kernel\Foundation\Data\Arr;
