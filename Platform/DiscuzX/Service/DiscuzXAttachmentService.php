@@ -10,7 +10,7 @@ use forum_upload;
 use kernel\Foundation\Config;
 use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\FileManager;
+use kernel\Foundation\File\Filesystem;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
@@ -35,7 +35,7 @@ class DiscuzXAttachmentService extends Service
         mkdir($savePath, 0777, true);
       }
     }
-    return new ReturnResult(FileManager::upload($files, $savePath));
+    return new ReturnResult(Filesystem::upload($files, $savePath));
   }
   /**
    * 上传文件

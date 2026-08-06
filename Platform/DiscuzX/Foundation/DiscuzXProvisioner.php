@@ -4,7 +4,7 @@ namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\FileManager;
+use kernel\Foundation\File\Filesystem;
 use kernel\Foundation\Provisioner;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXApp;
 
@@ -39,20 +39,20 @@ class DiscuzXProvisioner extends Provisioner
   public function uninstall()
   {
     parent::uninstall();
-    FileManager::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
+    Filesystem::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner"));
+    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner"));
   }
   public function cleanInstall()
   {
-    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Install"));
+    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Install"));
   }
   public function cleanUpgrade()
   {
-    return FileManager::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Upgrade"));
+    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Upgrade"));
   }
 }

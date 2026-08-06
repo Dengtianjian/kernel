@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Storage;
 
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File\FileManager;
+use kernel\Foundation\File\Filesystem;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Model\FilesModel;
@@ -349,7 +349,7 @@ abstract class AbstractStorage extends AbilityBaseObject
 
     $PathInfo = pathinfo($fileKey);
 
-    $FileInfo = FileManager::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
+    $FileInfo = Filesystem::upload($File, $PathInfo['dirname'], $PathInfo['basename']);
     if (!$FileInfo) {
       return $this->break(500, 500, "文件上传失败", TRUE);
     }
@@ -370,7 +370,7 @@ abstract class AbstractStorage extends AbilityBaseObject
 
     $PathInfo = pathinfo($fileKey);
 
-    $FileInfo = FileManager::upload($file, $PathInfo['dirname'], $PathInfo['basename']);
+    $FileInfo = Filesystem::upload($file, $PathInfo['dirname'], $PathInfo['basename']);
     if (!$FileInfo) {
       return $this->break(500, "saveFile:500001", "文件上传失败");
     }

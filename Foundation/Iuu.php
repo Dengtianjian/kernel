@@ -3,7 +3,7 @@
 namespace kernel\Foundation;
 
 use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\FileManager;
+use kernel\Foundation\File\Filesystem;
 use kernel\Foundation\File\FileStorage;
 
 if (!defined("F_KERNEL")) {
@@ -82,14 +82,14 @@ class Iuu
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return FileManager::deleteDirectory(F_APP_ROOT . "/Iuu");
+    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu");
   }
   public function cleanInstall()
   {
-    return FileManager::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
+    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
   }
   public function cleanUpgrade()
   {
-    return FileManager::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
+    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
   }
 }
