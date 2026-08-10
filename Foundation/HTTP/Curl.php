@@ -449,7 +449,7 @@ class Curl
           $result = $responseBody;
         }
       } else if (strpos($responseHeaders['Content-Type'], "xml") !== false) {
-        $result = Str::xmlToArray($responseBody);
+        $result = Str::fromXml($responseBody);
         if (!$result) {
           $result = $responseBody;
         }

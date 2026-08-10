@@ -156,7 +156,7 @@ class DiscuzXModel extends Model
   function genId($prefix = "", $suffix = "")
   {
     $nowTime = Date::milliseconds();
-    return $nowTime . substr(md5($prefix . time() . Str::generateRandomString(8) . $suffix), 0, 24 - strlen($nowTime));
+    return $nowTime . substr(md5($prefix . time() . Str::random(8) . $suffix), 0, 24 - strlen($nowTime));
   }
   function exist()
   {

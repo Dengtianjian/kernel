@@ -32,7 +32,7 @@ class WechatPay extends Wechat
    */
   protected function gererateTradeNo()
   {
-    return Str::generateSerialNumber();
+    return Str::serialNo();
   }
   /**
    * 生成32位随机字符串
