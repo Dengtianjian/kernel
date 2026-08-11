@@ -2,9 +2,9 @@
 
 namespace kernel\Middleware;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Middleware;
-use kernel\Foundation\Store;
 use kernel\Model\AccessTokenModel;
 use kernel\Platform\Wechat\AccessToken;
 
@@ -36,7 +36,7 @@ class GlobalWechatOfficialAccountMiddleware extends Middleware
         $LatestAccountToken = $ATM->where("platform", $Platform)->where("appId", $AppId)->where("expiredAt", time(), ">")->getOne();
       }
 
-      Store::setApp([
+      $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
         "Wechat" => [
           "OfficialAccount" => [
             "AccessToken" => $LatestAccountToken['accessToken'],

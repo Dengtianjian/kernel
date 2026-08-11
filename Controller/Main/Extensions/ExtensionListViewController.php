@@ -9,7 +9,6 @@ use kernel\Foundation\Extension\Extensions;
 use kernel\Foundation\Lang;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
-use kernel\Foundation\Store;
 use kernel\Foundation\View;
 use kernel\Model\ExtensionsModel;
 
@@ -21,14 +20,14 @@ class ExtensionListViewController extends AuthController
   public $Admin = true;
   public function data($request)
   {
-    $extensions = Extensions::scanDir("source/plugin/" . Store::getApp("id"));
+    $extensions = Extensions::scanDir("source/plugin/" . Arr::get($GLOBALS['_STORE'], '__App.id'));
     $extensionIds = array_keys($extensions);
     $EM = new ExtensionsModel();
     $DBExtensions = $EM->getByExtensionId($extensionIds);
     $DBExtensions = Arr::indexToAssoc($DBExtensions, "extension_id");
     $insertNewData = [];
     $now = time();
-    $pluginId = Store::getApp("id");
+    $pluginId = Arr::get($GLOBALS['_STORE'], '__App.id');
     foreach ($extensions as $id => &$extension) {
       if ($DBExtensions[$id]) {
         unset($extension['id']);

@@ -5,7 +5,7 @@ namespace kernel\Platform\DiscuzX\Middleware;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Middleware;
-use kernel\Foundation\Store;
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\View;
 
 class GlobalDiscuzXMultipleEncodeMiddleware extends Middleware
@@ -16,7 +16,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends Middleware
     if (Config::get("multipleEncode")) {
       $multipleEncodeJSScript = "";
       if (CHARSET === "gbk") {
-        $langJson = \serialize(Store::getApp("langs"));
+        $langJson = \serialize(Arr::get($GLOBALS['_STORE'], '__App.langs'));
         if ($langJson === false) {
           $langJson = \serialize([]);
         }
@@ -27,7 +27,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends Middleware
 </script>
     ";
       } else {
-        $langJson = \json_encode(Store::getApp("langs"));
+        $langJson = \json_encode(Arr::get($GLOBALS['_STORE'], '__App.langs'));
         if ($langJson === false) {
           $langJson = \json_encode([]);
         }

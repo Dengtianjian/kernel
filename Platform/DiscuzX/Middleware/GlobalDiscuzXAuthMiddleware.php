@@ -2,10 +2,10 @@
 
 namespace kernel\Platform\DiscuzX\Middleware;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\ReturnResult\ReturnResult;
-use kernel\Foundation\Store;
 use kernel\Middleware\GlobalAuthMiddleware;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Member\DiscuzXMember;
@@ -86,7 +86,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   private function login()
   {
     $memberInfo = null;
-    $Auth = Store::getApp("auth");
+    $Auth = Arr::get($GLOBALS['_STORE'], '__App.auth');
     if ($Auth && isset($Auth['userId'])) {
       $memberInfo = DiscuzXMember::get($Auth['userId']);
       include_once libfile("function/member");
@@ -104,7 +104,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
      */
     define("DISCUZX_MEMBER_LOGGED", true);
 
-    Store::setApp([
+    $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
       "member" => $memberInfo,
     ]);
   }
@@ -137,7 +137,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       $this->login();
     } else {
       $memberInfo = DiscuzXMember::get(getglobal("uid"));
-      Store::setApp([
+      $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
         "member" => $memberInfo
       ]);
     }

@@ -34,7 +34,6 @@ kernel/
 | Router | `Router.php` | 路由器，支持标准路由和 RESTful 风格 |
 | [Provisioner](ruyi-docs/docs/php/framework/provisioner) | `Provisioner.php` | 生命周期编排器，管理应用安装、升级、回滚和卸载 |
 | Config | `Config.php` | 配置管理 |
-| [Store](ruyi-docs/docs/php/framework/store) | `Store.php` | 全局数据存储 |
 | [Event](ruyi-docs/docs/php/framework/event) | `Event.php` | 事件系统 |
 | Cache | `Cache.php` | 缓存处理 |
 | Log | `Log.php` | 日志处理 |

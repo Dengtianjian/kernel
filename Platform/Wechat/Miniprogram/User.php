@@ -3,7 +3,7 @@
 namespace kernel\Platform\Wechat\Miniprogram;
 
 use kernel\Foundation\ReturnResult\ReturnResult;
-use kernel\Foundation\Store;
+use kernel\Foundation\Data\Arr;
 use kernel\Model\WechatUsersModel;
 
 if (!defined("F_KERNEL")) {
@@ -63,7 +63,7 @@ class User extends WechatMiniProgram
     }
     $res = $res->result();
     $WUM = new WechatUsersModel();
-    $member = Store::getApp("member");
+    $member = Arr::get($GLOBALS['_STORE'], '__App.member');
     return $WUM->bind($member['uid'], $res['openid'], $res['unionid']);
   }
   /**

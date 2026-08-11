@@ -6,10 +6,10 @@ namespace kernel\Middleware;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware;
 use kernel\Foundation\ReturnResult\ReturnResult;
-use kernel\Foundation\Store;
 use kernel\Model\LoginsModel;
 use kernel\Service\AuthService;
 
@@ -117,7 +117,7 @@ class GlobalAuthMiddleware extends Middleware
       $token = $newToken['value'];
     }
     
-    Store::setApp([
+    $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
       "auth" => $auth,
       "token" => $token,
       "logged" => true,
@@ -168,8 +168,9 @@ class GlobalAuthMiddleware extends Middleware
     }
 
     $res = $next();
-    if (Store::getApp("logged")) {
-      header("Authorization:" . Store::getApp("auth")['token'] . "/" . Store::getApp("auth")['expiration'], true);
+    if (Arr::get($GLOBALS['_STORE'], '__App.logged')) {
+      $auth = Arr::get($GLOBALS['_STORE'], '__App.auth');
+      header("Authorization:" . $auth['token'] . "/" . $auth['expiration'], true);
     }
 
     return $res;

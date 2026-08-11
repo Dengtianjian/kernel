@@ -8,7 +8,6 @@ use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Output;
-use kernel\Foundation\Store;
 
 class ResponseView extends Response
 {
@@ -69,10 +68,8 @@ class ResponseView extends Response
    */
   public function layout($layout = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
-    Store::set([
-      "__View_LayoutRenderViewFile" => $this->viewFilePath,
-      "__View_LayoutRenderViewData" => $this->ResponseData
-    ]);
+    $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] = $this->viewFilePath;
+    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->ResponseData;
 
     $this->templateId = $templateId;
     $this->viewFilePath = FileHelper::combinedFilePath(F_APP_ROOT, $fileBaseDir, $layout . ".php");
@@ -182,10 +179,9 @@ PHP;
    */
   public static function inject()
   {
-    $PageFilePath = Store::get("__View_LayoutRenderViewFile");
-    $RenderData = Store::get("__View_LayoutRenderViewData");
-    Store::remove("__View_LayoutRenderViewFile");
-    Store::remove("__View_LayoutRenderViewData");
+    $PageFilePath = $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] ?? null;
+    $RenderData = $GLOBALS['_STORE']['__View_LayoutRenderViewData'] ?? null;
+    unset($GLOBALS['_STORE']['__View_LayoutRenderViewFile'], $GLOBALS['_STORE']['__View_LayoutRenderViewData']);
 
     return static::render($PageFilePath, $RenderData, "inject");
   }

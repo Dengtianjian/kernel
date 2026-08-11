@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\HTTP\Response;
 
@@ -24,7 +25,7 @@ class Lang
     } else {
       throw new Exception("编码文件不存在", 500, "Lang:500001", $filePath);
     }
-    Store::setApp([
+    $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
       "langs" => Lang::all()
     ]);
   }

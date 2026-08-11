@@ -10,7 +10,6 @@ use kernel\Foundation\File;
 use kernel\Foundation\File\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Response;
-use kernel\Foundation\Store;
 
 class DiscuzXView extends ResponseView
 {
@@ -53,10 +52,8 @@ class DiscuzXView extends ResponseView
   }
   public function layout($layout = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
-    Store::set([
-      "__View_LayoutRenderViewFile" => $this->viewFilePath,
-      "__View_LayoutRenderViewData" => $this->ResponseData
-    ]);
+    $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] = $this->viewFilePath;
+    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->ResponseData;
 
     $this->templateId = $templateId;
     $this->viewFilePath = template($layout, implode("_", [
