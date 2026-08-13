@@ -1,11 +1,35 @@
+#!/usr/bin/env php
 <?php
 
-include_once("../kernel/vendor/autoload.php");
+/**
+ * 内核 CLI 入口
+ * 用法：php kernel/console <command> [options] [arguments]
+ * 例如：php kernel/console --help
+ */
 
-if (file_exists("./vendor/autoload.php")) {
-  include_once("./vendor/autoload.php");
+//* 定位 autoload：优先内核目录下的 vendor，其次项目根目录 vendor
+$kernelVendor = __DIR__ . "/vendor/autoload.php";
+$rootVendor = dirname(__DIR__) . "/vendor/autoload.php";
+
+if (file_exists($kernelVendor)) {
+  include_once($kernelVendor);
+} elseif (file_exists($rootVendor)) {
+  include_once($rootVendor);
+} else {
+  fwrite(STDERR, "autoload.php not found. Please run composer install.\n");
+  exit(1);
 }
 
-array_shift($argv);
+use kernel\Foundation\Console\Console;
 
-print_r(dirname(__DIR__, 3));
+//* 构造时已自动发现内核与当前应用的 Commands/ 目录命令类
+$console = new Console("kernel");
+
+//* 注册额外命令（非 Commands/ 目录的命令可在此手动注册或 discover）
+// $console->register("my:cmd", function ($console, $args, $options) { return 0; });
+
+//* 由 App 提供的通用生命周期（bootUp）可在此挂载，例如：
+// $console->bootUp(function ($console) {});
+
+//* 执行命令分发，并以退出码结束（Console::run 内部调用 handle 后 exit）
+$console->run();

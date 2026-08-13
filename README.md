@@ -102,12 +102,16 @@ $p->getStatus();        // 查看状态
 
 ## 依赖
 
-通过 Composer 管理，主要依赖：
+内核**零第三方依赖**，`composer.json` 仅声明 PSR-4 自动加载，`vendor/` 只有 `composer dump-autoload` 生成的轻量映射（约 44K）。云存储 SDK 由**业务应用按需安装**到自身的 `vendor/`：
 
-- 阿里云 OSS SDK（`aliyuncs/oss-sdk-php`）
-- 腾讯云 COS SDK（`qcloud/cos-sdk-v5`）
-- 腾讯云 STS SDK（`qcloud_sts/qcloud-sts-sdk`）
-- 阿里云通用 SDK（`alibabacloud/sdk`）
+| 功能 | 包名 | 安装命令（在应用目录执行） |
+|------|------|------------------------------|
+| 腾讯云 COS 对象存储 | `qcloud/cos-sdk-v5` | `composer require qcloud/cos-sdk-v5:2.*` |
+| 腾讯云 STS 临时密钥 | `qcloud_sts/qcloud-sts-sdk` | `composer require qcloud_sts/qcloud-sts-sdk:^3.0` |
+| 阿里云 OSS 对象存储 | `aliyuncs/oss-sdk-php` | `composer require aliyuncs/oss-sdk-php:^2.7` |
+| 阿里云 STS 临时密钥 | `alibabacloud/sts-20150401` | `composer require alibabacloud/sts-20150401:^1.1` |
+
+云存储类按需加载，未安装对应 SDK 且不使用该功能时无任何影响；使用时会抛 `Class not found` 提示先安装。详见[依赖按需安装](ruyi-docs/docs/php/framework/dependencies)。
 
 ## PSR-4 自动加载
 

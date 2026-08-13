@@ -42,8 +42,9 @@ class App
    * 构建 App
    * @param string $AppId 设定一个 APP 唯一 ID，跟项目目录同名
    * @param string $KernelId 修改内核默认AppId。内核也是一个 APP，所有也有ID，默认是 kernel
+   * @param boolean $initHTTP 是否初始化 HTTP 相关（路由加载、Request 实例）。CLI 环境（Console）下传 false
    */
-  function __construct($AppId, $KernelId = "kernel")
+  function __construct($AppId, $KernelId = "kernel", bool $initHTTP = true)
   {
     $this->startTime = Date::milliseconds();
     $this->AppId = $AppId;
@@ -67,12 +68,16 @@ class App
     ErrorCode::load(FileHelper::combinedFilePath(F_KERNEL_ROOT, "ErrorCodes.php")); //* 加载错误码
 
     //* 载入路由
-    $this->loadRoutes();
+    if ($initHTTP) {
+      $this->loadRoutes();
+    }
 
     //* 载入事件
     $this->loadEvents();
 
-    $this->request = new Request();
+    if ($initHTTP) {
+      $this->request = new Request();
+    }
   }
   /**
    * 初始化以及定义常量
