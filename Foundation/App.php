@@ -8,6 +8,7 @@ use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Exception\RuyiException;

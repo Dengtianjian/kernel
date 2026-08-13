@@ -5,7 +5,7 @@ namespace kernel\Platform\DiscuzX\Foundation\Database;
 
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Date;
+use kernel\Foundation\Data\Date;
 
 class DiscuzXModel extends Model
 {

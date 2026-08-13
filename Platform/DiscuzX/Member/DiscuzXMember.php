@@ -4,7 +4,7 @@ namespace kernel\Platform\DiscuzX\Member;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Mutator;
-use kernel\Foundation\Date;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
 use kernel\Foundation\ReturnResult\ReturnResult;
