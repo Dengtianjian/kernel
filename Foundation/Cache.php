@@ -10,7 +10,7 @@ namespace kernel\Foundation;
  *
  * 特性：
  * - 过期时间以"天"为单位，支持小数（如 1/24 表示 1 小时），<=0 或 null 表示永不过期
- * - write() 对数组内容做递归合并，overwrite() 完全替换，clear() 清空内容
+ * - write() 对数组内容做合并（一层，新键覆盖旧键），overwrite() 完全替换，clear() 清空内容
  * - has()/read() 均自动跳过已过期缓存，过期文件在读取时顺手清理
  * - remember() 一键"读-生成-写"，get() 支持默认值
  * - increment()/decrement() 基于文件锁的原子计数器
@@ -38,14 +38,14 @@ class Cache
    *
    * @var array
    */
-  static private $readedCaches = [];
+  static private $readCaches = [];
   /**
    * 已经读取的缓存元数据
    * 键是缓存 ID，值是缓存元数据
    *
    * @var array
    */
-  static private $readedCacheMetas = [];
+  static private $readCacheMetas = [];
   /**
    * 一天的秒数
    *
@@ -77,14 +77,14 @@ class Cache
   static function read($id)
   {
     //* 进程内已读取过：需校验内存缓存是否过期
-    if (array_key_exists($id, self::$readedCaches)) {
-      $expiredAt = self::$readedCacheMetas[$id]["expiredAt"] ?? 0;
+    if (array_key_exists($id, self::$readCaches)) {
+      $expiredAt = self::$readCacheMetas[$id]["expiredAt"] ?? 0;
       if ($expiredAt === null || $expiredAt <= 0 || $expiredAt >= time()) {
-        return self::$readedCaches[$id];
+        return self::$readCaches[$id];
       }
       //* 内存缓存已过期：清内存并删除文件
-      unset(self::$readedCaches[$id]);
-      unset(self::$readedCacheMetas[$id]);
+      unset(self::$readCaches[$id]);
+      unset(self::$readCacheMetas[$id]);
       @unlink(self::getFilePath($id));
       return null;
     }
@@ -106,8 +106,8 @@ class Cache
       return null;
     }
 
-    self::$readedCaches[$id] = $cache["content"];
-    self::$readedCacheMetas[$id] = $cache["meta"];
+    self::$readCaches[$id] = $cache["content"];
+    self::$readCacheMetas[$id] = $cache["meta"];
 
     return $cache["content"];
   }
@@ -121,8 +121,8 @@ class Cache
   static function meta($id)
   {
     //* 进程内已读取过元数据，直接返回
-    if (array_key_exists($id, self::$readedCacheMetas)) {
-      return self::$readedCacheMetas[$id];
+    if (array_key_exists($id, self::$readCacheMetas)) {
+      return self::$readCacheMetas[$id];
     }
 
     $targetPath = self::getFilePath($id);
@@ -158,8 +158,8 @@ class Cache
 
     //* 合并已有缓存：内存优先，否则读文件（过期/损坏视为无）
     $existing = null;
-    if (array_key_exists($id, self::$readedCaches)) {
-      $existing = self::$readedCaches[$id];
+    if (array_key_exists($id, self::$readCaches)) {
+      $existing = self::$readCaches[$id];
     } else {
       $readResult = self::read($id);
       if ($readResult !== false && $readResult !== null) {
@@ -176,7 +176,7 @@ class Cache
     $now = time();
     $meta = [
       "updatedAt" => $now,
-      "addedAt" => isset(self::$readedCacheMetas[$id]) ? self::$readedCacheMetas[$id]["addedAt"] : $now,
+      "addedAt" => isset(self::$readCacheMetas[$id]) ? self::$readCacheMetas[$id]["addedAt"] : $now,
       "expiredAt" => $expired,
       "format" => "php_serialize"
     ];
@@ -189,8 +189,8 @@ class Cache
       chmod($targetPath, 0700);
     }
 
-    self::$readedCaches[$id] = $cacheContent;
-    self::$readedCacheMetas[$id] = $meta;
+    self::$readCaches[$id] = $cacheContent;
+    self::$readCacheMetas[$id] = $meta;
 
     return $result !== false;
   }
@@ -224,8 +224,8 @@ class Cache
       chmod($targetPath, 0700);
     }
 
-    self::$readedCaches[$id] = $content;
-    self::$readedCacheMetas[$id] = $meta;
+    self::$readCaches[$id] = $content;
+    self::$readCacheMetas[$id] = $meta;
 
     return $result !== false;
   }
@@ -255,8 +255,8 @@ class Cache
     }
 
     $result = unlink($targetPath);
-    unset(self::$readedCaches[$id]);
-    unset(self::$readedCacheMetas[$id]);
+    unset(self::$readCaches[$id]);
+    unset(self::$readCacheMetas[$id]);
 
     return $result;
   }
@@ -305,7 +305,7 @@ class Cache
    * @param string $id 缓存 ID
    * @param int|float $step 增量，默认 1
    * @param int|float|null $expiresIn 有效期（天），<=0 或 null 表示永不过期
-   * @return int|float 自增后的新值
+   * @return int|float|false 自增后的新值（打开文件失败时返回 false）
    */
   static function increment($id, $step = 1, $expiresIn = 30)
   {
@@ -343,8 +343,8 @@ class Cache
     fclose($fp);
     chmod($targetPath, 0700);
 
-    self::$readedCaches[$id] = $value;
-    self::$readedCacheMetas[$id] = $meta;
+    self::$readCaches[$id] = $value;
+    self::$readCacheMetas[$id] = $meta;
 
     return $value;
   }
@@ -355,7 +355,7 @@ class Cache
    * @param string $id 缓存 ID
    * @param int|float $step 减量，默认 1
    * @param int|float|null $expiresIn 有效期（天），<=0 或 null 表示永不过期
-   * @return int|float 自减后的新值
+   * @return int|float|false 自减后的新值（打开文件失败时返回 false）
    */
   static function decrement($id, $step = 1, $expiresIn = 30)
   {
@@ -375,8 +375,8 @@ class Cache
         $removed++;
       }
     }
-    self::$readedCaches = [];
-    self::$readedCacheMetas = [];
+    self::$readCaches = [];
+    self::$readCacheMetas = [];
     return $removed;
   }
 
