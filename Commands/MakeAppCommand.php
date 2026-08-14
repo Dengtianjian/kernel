@@ -8,8 +8,9 @@ namespace kernel\Commands;
  * 在 kernel 同级目录（项目根）创建指定名称的应用骨架：
  * - console：应用 CLI 入口
  * - Configs/Config.php：应用配置（version、mode）
- * - Controller / Middleware / Model / Routes / Service / Storage / Data 目录
+ * - Controller / Crons / Middleware / Model / Routes / Service / Storage / Data 目录
  * - Controller/IndexController.php：示例控制器
+ * - Crons/ExampleTask.php：示例定时任务
  * - Routes/index.php：路由入口
  * - index.php：应用 HTTP 入口
  * - README.md、install.key（随机 16 位字符串）、composer.json（PSR-4 自动加载）
@@ -50,7 +51,7 @@ class MakeAppCommand
     }
 
     //* 目录骨架
-    $directories = ["Configs", "Controller", "Middleware", "Model", "Routes", "Service", "Storage", "Data"];
+    $directories = ["Configs", "Controller", "Crons", "Middleware", "Model", "Routes", "Service", "Storage", "Data"];
     foreach ($directories as $dir) {
       mkdir($appRoot . DIRECTORY_SEPARATOR . $dir, 0755, true);
     }
@@ -138,6 +139,47 @@ class IndexController extends Controller
   public function data()
   {
     return "Hello {$name}!";
+  }
+}
+PHP;
+
+    //* Crons/ExampleTask.php：示例定时任务
+    $files["Crons/ExampleTask.php"] = <<<PHP
+<?php
+
+namespace {$name}\\Crons;
+
+/**
+ * 示例定时任务
+ *
+ * \$schedule 属性声明执行时间，handle() 为任务主体。
+ * schedule:run 每次执行时扫描 Crons/ 目录，命中当前时刻的任务会被按需执行。
+ */
+class ExampleTask
+{
+  /**
+   * 执行时间表达式
+   *
+   * 例子：
+   *   null     每分钟（缺省）
+   *   "38"     每小时的 38 分
+   *   "12:00"  每天的 12 点
+   *   "h2"     每天的 2 点
+   *   "10-24"  每年的 10 月 24 日
+   *
+   * @var string|null
+   */
+  protected \$schedule = null;
+
+  /**
+   * 任务主体
+   *
+   * @param \\kernel\\Foundation\\Console\\Console \$console 控制台实例
+   * @return void
+   */
+  public function handle(\$console)
+  {
+    \$console->line("ExampleTask ran at " . date("Y-m-d H:i:s") . ".");
   }
 }
 PHP;

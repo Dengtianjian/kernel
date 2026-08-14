@@ -10,8 +10,9 @@ class RequestBody extends RequestData
     $this->mutator = $mutator;
     $this->validator = $validator;
 
-    $RequestHeaders = getallheaders();
-    $contentType = $RequestHeaders['Content-Type'] ?: null;
+    //* CLI 环境下不存在 getallheaders（php-fpm 专属），做兼容防护
+    $RequestHeaders = \function_exists("getallheaders") ? \getallheaders() : [];
+    $contentType = $RequestHeaders['Content-Type'] ?? "";
     if (strpos($contentType, "multipart/form-data") !== false)
       $contentType = "multipart/form-data";
     if (strpos($contentType, "application/x-www-form-urlencoded") !== false)

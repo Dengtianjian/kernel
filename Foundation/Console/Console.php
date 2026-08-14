@@ -222,6 +222,9 @@ class Console extends App
   /**
    * 分发执行命令
    *
+   * 分发前触发 App 生命周期"启动"钩子（bootUp），命令执行完毕后触发
+   * "结束"钩子（shutdown），供命令在统一时机做初始化与清理。
+   *
    * @param array|null $argv 命令行参数（不含脚本名）。不传时使用构造时捕获的 GLOBALS['argv']
    * @return integer 退出码
    */
@@ -238,19 +241,63 @@ class Console extends App
     $this->arguments = $arguments;
     $this->options = $options;
 
+    //* 调用生命周期"启动"钩子
+    $this->fireBootUp();
+
+    $exitCode = 0;
     //* 帮助
     if ($name === "" || $name === "help" || $name === "-h" || $name === "--help") {
-      return $this->listCommands();
-    }
-
-    if (!isset($this->commands[$name])) {
+      $exitCode = $this->listCommands();
+    } elseif (!isset($this->commands[$name])) {
       $this->error("Command \"{$name}\" is not defined.");
       $this->line("");
-      return $this->listCommands(1);
+      $exitCode = $this->listCommands(1);
+    } else {
+      $exitCode = $this->execute($this->commands[$name]);
     }
 
-    $command = $this->commands[$name];
-    return $this->execute($command);
+    //* 调用生命周期"结束"钩子
+    $this->fireShutdown($exitCode);
+
+    return $exitCode;
+  }
+  /**
+   * 触发生命周期"启动"钩子
+   *
+   * 遍历 App 注册的 bootUp 回调：可调用对象直接执行，类名则实例化。
+   * CLI 环境下请求实例不存在，回调收到 null。
+   *
+   * @return void
+   */
+  protected function fireBootUp()
+  {
+    if ($this->LifeCycle['bootUp']) {
+      foreach ($this->LifeCycle['bootUp'] as $item) {
+        if (is_callable($item)) {
+          $item($this->request);
+        } else {
+          new $item($this->request);
+        }
+      }
+    }
+  }
+  /**
+   * 触发生命周期"结束"钩子
+   *
+   * @param mixed $arg 传给钩子的参数（命令退出码）
+   * @return void
+   */
+  protected function fireShutdown($arg = null)
+  {
+    if ($this->LifeCycle['shutdown']) {
+      foreach ($this->LifeCycle['shutdown'] as $item) {
+        if (is_callable($item)) {
+          $item($arg);
+        } else {
+          new $item($arg);
+        }
+      }
+    }
   }
   /**
    * 解析命令行参数

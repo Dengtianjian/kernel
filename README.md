@@ -37,7 +37,6 @@ kernel/
 | [Event](ruyi-docs/docs/php/framework/event) | `Event.php` | 事件系统 |
 | Cache | `Cache.php` | 缓存处理 |
 | Log | `Log.php` | 日志处理 |
-| Cron | `Cron.php` | 定时任务调度 |
 | Command | `Command.php` | 命令行命令基类 |
 | Lang | `Lang.php` | 语言包管理 |
 | Middleware | `Middleware.php` | 中间件基类 |

@@ -164,7 +164,9 @@ class Request
     if ($this->query->has("uri")) {
       $this->URI = addslashes($this->query->get("uri"));
     } else {
-      $this->URI = addslashes(substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], "?") ?: strlen($_SERVER['REQUEST_URI'])));
+      //* CLI 环境下不存在 REQUEST_URI，使用 "/" 兜底
+      $requestURI = $_SERVER['REQUEST_URI'] ?? "/";
+      $this->URI = addslashes(substr($requestURI, 0, strpos($requestURI, "?") ?: strlen($requestURI)));
     }
   }
 }
