@@ -2,12 +2,9 @@
 
 namespace kernel\App\Main\Extensions;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\File\FileStorage;
+use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Model\ExtensionsModel;
 
 /**
@@ -34,7 +31,7 @@ class UninstallExtensionController extends AuthController
     $result = $EM->where("extension_id", $extensionId)->delete(true);
     if ($result) {
       $extensionRootPath = \DISCUZ_ROOT . $extension['path'];
-      FileStorage::deleteDirectory($extensionRootPath);
+      FileSystem::deleteDirectory($extensionRootPath);
     }
     return $result;
   }

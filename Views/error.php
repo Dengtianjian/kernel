@@ -1,5 +1,6 @@
 <?
 
+use kernel\Foundation\App;
 use kernel\Foundation\Output;
 
 ?>
@@ -37,7 +38,7 @@ use kernel\Foundation\Output;
       Trace:
     <pre><? Output::printContent(implode("\n", $traceString)) ?></pre>
     </p>
-    <?php if (F_APP_MODE === "development") { ?>
+    <?php if (App::mode() === "development") { ?>
       <p>
         Details:
       <pre><? Output::printContent($error) ?></pre>

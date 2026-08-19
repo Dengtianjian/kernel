@@ -10,9 +10,6 @@ use kernel\Foundation\Response;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class DiscuzXMember
 {

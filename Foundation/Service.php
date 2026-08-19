@@ -6,9 +6,6 @@ use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Foundation\ReturnResult\ReturnResult;
 
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class Service extends AbilityBaseObject
 {

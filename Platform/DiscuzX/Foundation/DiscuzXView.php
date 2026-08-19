@@ -1,13 +1,14 @@
 <?php
 
 namespace kernel\Platform\DiscuzX\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
 
+use kernel\Foundation\App;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Response;
 
@@ -20,7 +21,7 @@ class DiscuzXView extends ResponseView
    * @param array $viewData 渲染的数据
    * @param string $viewFileBaseDir 视图文件所在的目录，相对于根目录
    * @param string $templateId 模板ID，用于缓存模板
-   * @param string $viewFileDir 视图文件根目录，默认是基于F_APP_ROOT的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
+   * @param string $viewFileDir 视图文件根目录，默认是基于FileSystem::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    */
   public function __construct($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page", $viewFileDir = null)
   {
@@ -29,11 +30,11 @@ class DiscuzXView extends ResponseView
   static function generateTemplatePath($viewFile, $templateId, $viewFileDirBaseProject, $viewFileDir = null)
   {
     if (!$viewFileDir) {
-      $dir = F_APP_DIR;
+      $dir = FileSystem::dir();
     }
     if (strpos($viewFile, ".") === false) {
       return template($viewFile, implode("_", [
-        F_APP_ID,
+        App::id(),
         $templateId
       ]), FileHelper::combinedFilePath($dir, $viewFileDirBaseProject));
     } else {
@@ -57,9 +58,9 @@ class DiscuzXView extends ResponseView
 
     $this->templateId = $templateId;
     $this->viewFilePath = template($layout, implode("_", [
-      F_APP_ID,
+      App::id(),
       $templateId
-    ]), FileHelper::combinedFilePath(F_APP_DIR, $fileBaseDir));
+    ]), FileHelper::combinedFilePath(FileSystem::dir(), $fileBaseDir));
 
     $this->viewFileBaseDir = $fileBaseDir;
     $this->ResponseData = $viewData;

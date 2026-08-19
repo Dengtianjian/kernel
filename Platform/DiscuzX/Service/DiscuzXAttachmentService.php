@@ -1,16 +1,13 @@
 <?php
 
 namespace kernel\Platform\DiscuzX\Service;
+use kernel\Foundation\FileSystem\FileSystem;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 use forum_upload;
+use kernel\Foundation\App;
 use kernel\Foundation\Config;
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\Filesystem;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
@@ -22,7 +19,7 @@ class DiscuzXAttachmentService extends Service
   /**
    * 保存文件
    *
-   * @param File|array $files 上传的文件或者上传的文件列表
+   * @param array $files 上传的文件或者上传的文件列表
    * @param string $saveDir 保存的路径，基于data/plugindata/{插件ID}/attachments目录
    * @return ReturnResult
    */
@@ -30,17 +27,17 @@ class DiscuzXAttachmentService extends Service
   {
     $savePath = Config::get("attachmentPath");
     if (!$savePath) {
-      $savePath = FileHelper::combinedFilePath("data", "plugindata", F_APP_ID, "attachments", $saveDir);
+      $savePath = FileHelper::combinedFilePath("data", "plugindata", App::id(), "attachments", $saveDir);
       if (!is_dir($savePath)) {
         mkdir($savePath, 0777, true);
       }
     }
-    return new ReturnResult(Filesystem::upload($files, $savePath));
+    return new ReturnResult(FileSystem::upload($files, $savePath));
   }
   /**
    * 上传文件
    *
-   * @param File $file 上传的文件
+   * @param array $file 上传的文件
    * @return ReturnResult
    */
   public static function uploadFile($file)

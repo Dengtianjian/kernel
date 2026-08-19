@@ -1,6 +1,7 @@
 <?php
 
 namespace kernel\Foundation\Controller;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseDownload;
@@ -54,7 +55,7 @@ class ControllerResponse extends Response
    * @param array $viewData 渲染的数据
    * @param string $viewFileBaseDir 视图文件所在的目录，相对于根目录
    * @param string $templateId 模板ID，用于缓存模板
-   * @param string $viewFileDir 视图文件根目录，默认是基于F_APP_ROOT的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
+   * @param string $viewFileDir 视图文件根目录，默认是基于FileSystem::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    * @return ResponseView
    */
   function view($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page", $viewFileDir = null)

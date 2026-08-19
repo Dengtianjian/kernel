@@ -2,9 +2,6 @@
 
 namespace kernel\Service;
 
-if (!defined("F_KERNEL")) {
-  exit("Access Denied");
-}
 
 class LanguageService
 {

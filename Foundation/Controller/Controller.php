@@ -188,6 +188,60 @@ class Controller
   {
   }
 
+  // region 生命周期动态注册
+
+  /**
+   * 获取当前 App 实例
+   *
+   * HTTP 与 CLI 环境下均可调用（框架在 App 构造时已写入全局）。
+   *
+   * @return \kernel\Foundation\App|null
+   */
+  protected function app()
+  {
+    return getApp();
+  }
+
+  /**
+   * 注册启动钩子
+   *
+   * 控制器内调用时启动阶段已过，回调立即执行（业务阶段的按需初始化，
+   * 如按需加载配置、建立外部连接等）。回调收到当前 $request。
+   *
+   * @param callable $callback 启动回调，function ($request)
+   * @return $this
+   */
+  protected function onBootUp($callback)
+  {
+    $this->app()->onBootUp($callback);
+    return $this;
+  }
+
+  /**
+   * 注册结束钩子
+   *
+   * 请求结束（正常或异常）时执行，适合记录执行进度、释放资源等。
+   * 无论控制器内后续是否抛出异常（如外部 SDK 调用失败），本钩子都会触发。
+   *
+   * 回调签名 function ($response, $context = null)：
+   * - $response：当前响应对象（异常路径可能为 null）
+   * - $context["exception"]：非空表示异常结束，可读取错误信息
+   * - $context["error"]：是否异常结束
+   * 也可通过 $this->app()->exception() 读取异常对象。
+   *
+   * 示例：记录调用外部 SDK 时已执行到的步骤，SDK 抛错也能记录失败现场。
+   *
+   * @param callable $callback 结束回调，function ($response, $context = null)
+   * @return $this
+   */
+  protected function onShutdown($callback)
+  {
+    $this->app()->onShutdown($callback);
+    return $this;
+  }
+
+  // endregion
+
   /**
    * 获取路由参数（URL 中的占位符，如 /post/{id} 中的 id）
    *

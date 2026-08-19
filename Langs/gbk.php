@@ -2,9 +2,6 @@
 
 use kernel\Foundation\Lang;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 $langs = [
   "common" => [

@@ -2,11 +2,9 @@
 
 namespace kernel\Model;
 
+use kernel\Foundation\App;
 use kernel\Foundation\Database\PDO\Model;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class LoginsModel extends Model
 {
@@ -41,8 +39,9 @@ SQL;
    * @param string $appId 所属app
    * @return int 记录ID
    */
-  public function add($token, $expiration, $userId, $appId = F_APP_ID)
+  public function add($token, $expiration, $userId, $appId = null)
   {
+    $appId ??= App::id();
     return $this->insert([
       "id" => $this->genId(),
       "token" => $token,

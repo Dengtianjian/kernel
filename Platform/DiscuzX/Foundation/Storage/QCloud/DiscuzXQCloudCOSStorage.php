@@ -2,9 +2,10 @@
 
 namespace kernel\Platform\DiscuzX\Foundation\Storage\QCloud;
 
+use kernel\Foundation\App;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\URL;
-use kernel\Foundation\Storage\StorageSignature;
+use kernel\Foundation\FileSystem\Storage\StorageSignature;
 use kernel\Platform\DiscuzX\Foundation\Storage\QCloud\QCloudSTS\DiscuzXQCloudSTS;
 use kernel\Platform\QCloud\QCloudCos\QCloudCOSStorage;
 
@@ -39,8 +40,9 @@ class DiscuzXQCloudCOSStorage extends QCloudCOSStorage
     $SignatureKey = "ruyi_storage",
     $RoutePrefix = "files",
     $BaseURL = F_BASE_URL,
-    $PluginId = F_APP_ID
+    $PluginId = null
   ) {
+    $PluginId ??= App::id();
     $this->pluginId = $PluginId;
 
     parent::__construct($secretId, $secretKey, $region, $bucket, $SignatureKey, $RoutePrefix, $BaseURL);

@@ -132,7 +132,7 @@ class Upgrade_0_5_0
 //* 变更为当前插件的ID
 namespace kernel\Provisioner\Upgrade;
 
-use kernel\Foundation\File;
+use kernel\Foundation\FileSystem\FileHelper;
 
 if (!defined("F_KERNEL") || !defined('IN_ADMINCP')) {
   exit('Access Denied');
@@ -143,7 +143,7 @@ class Upgrade_0_2_1
 {
   public function __construct()
   {
-    $sql = file_get_contents(File::genPath(F_APP_BASE,"Provisioner/Upgrade/Upgrade_0_2_1",CHARSET.".sql"));
+    $sql = file_get_contents(FileHelper::combinedFilePath(F_APP_BASE,"Provisioner/Upgrade/Upgrade_0_2_1",CHARSET.".sql"));
     
     \runquery($sql);
   }
@@ -156,7 +156,6 @@ class Upgrade_0_2_1
 <?php
 
 use kernel\Foundation\Config;
-use kernel\Foundation\File;
 use kernel\Foundation\Provisioner;
 
 if (!defined('F_KERNEL') || !defined('IN_ADMINCP')) {

@@ -4,9 +4,6 @@ namespace kernel\Platform\Wechat;
 
 use kernel\Foundation\HTTP\Curl;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * AccessToken类

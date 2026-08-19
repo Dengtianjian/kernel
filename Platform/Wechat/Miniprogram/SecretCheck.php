@@ -4,9 +4,6 @@ namespace kernel\Platform\Wechat\Miniprogram;
 
 use kernel\Foundation\Network\Curl;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class SecretCheck extends WechatMiniProgram
 {

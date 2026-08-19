@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\HTTP;
 
+use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Output;
@@ -476,7 +477,7 @@ class Response
           Output::format($data);
         } else {
           if ($this->ResponseStatusCode > 299) {
-            $detailsText = F_APP_MODE === "development" ? Output::format($this->ResponseDetails) : "";
+            $detailsText = App::mode() === "development" ? Output::format($this->ResponseDetails) : "";
             $data = <<<EOT
 {$this->ResponseMessage}\n
 {$detailsText}
@@ -486,7 +487,7 @@ EOT;
         }
         break;
       default:
-        Output::printContent(F_APP_MODE === "development" ? $body : $data);
+        Output::printContent(App::mode() === "development" ? $body : $data);
         break;
     }
   }

@@ -3,8 +3,8 @@
 namespace kernel\Controller\Main\Files;
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Storage\LocalStorage;
-use kernel\Foundation\Storage\AbstractStorage;
+use kernel\Foundation\FileSystem\Storage\LocalStorage;
+use kernel\Foundation\FileSystem\Storage\AbstractStorage;
 use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;
 use kernel\Service\StorageService;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Commands;
+namespace kernel\Controller\Console;
 
 /**
  * 生成类命令的抽象基类
@@ -10,8 +10,7 @@ namespace kernel\Commands;
  * - 命名空间拼接
  * - 骨架文件写入（含已存在保护与 --force 覆盖）
  *
- * 注意：本类不定义 $name 属性，Console::discover() 扫描时会自动跳过，
- * 不会被注册为命令。
+ * 注意：本类为抽象基类，不定义 $name 属性，不会被注册为命令。
  */
 abstract class MakeCommand
 {

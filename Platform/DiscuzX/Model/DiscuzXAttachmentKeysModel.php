@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Model;
 
+use kernel\Foundation\App;
 use kernel\Model\AttachmentKeysModel;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
@@ -13,7 +14,7 @@ class DiscuzXAttachmentKeysModel extends AttachmentKeysModel
 
   function __construct()
   {
-    $tableName = F_APP_ID . "_attachment_keys";
+    $tableName = App::id() . "_attachment_keys";
 
     $this->query = new DiscuzXQuery($tableName);
 

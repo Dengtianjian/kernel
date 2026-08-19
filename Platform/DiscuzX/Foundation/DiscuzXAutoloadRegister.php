@@ -12,7 +12,7 @@
 //   foreach ($SDKClassName as $item) {
 //     $item = str_replace("\\", "/", $item);
 //     if (strpos($className, $item) !== false) {
-//       $className = F_APP_ID . "/SDK/{$className}";
+//       $className = \kernel\Foundation\App::id() . "/SDK/{$className}";
 //       $SDKLoaded = true;
 //     }
 //   }
@@ -29,7 +29,7 @@
 //   if (\file_exists($filePath)) {
 //     include_once($filePath);
 //   } else {
-//     if (strpos($filePath, "gstudio") !== false && defined("F_APP_MODE") && F_APP_MODE === "development") {
+//     if (strpos($filePath, "gstudio") !== false && \kernel\Foundation\App::mode() === "development") {
 //       debug($filePath);
 //     }
 //   }
@@ -47,7 +47,7 @@ return function ($SkipClassName = [], $SDKClassName = []) {
     foreach ($SDKClassName as $item) {
       $item = str_replace("\\", "/", $item);
       if (strpos($className, $item) !== false) {
-        $className = F_APP_ID . "/SDK/{$className}";
+        $className = \kernel\Foundation\App::id() . "/SDK/{$className}";
         $SDKLoaded = true;
       }
     }
@@ -64,7 +64,7 @@ return function ($SkipClassName = [], $SDKClassName = []) {
     if (\file_exists($filePath)) {
       include_once($filePath);
     } else {
-      if (strpos($filePath, "gstudio") !== false && defined("F_APP_MODE") && F_APP_MODE === "development") {
+      if (strpos($filePath, "gstudio") !== false && \kernel\Foundation\App::mode() === "development") {
         debug([
           $className,
           $filePath

@@ -4,8 +4,7 @@ namespace kernel\Foundation\Extension;
 
 
 use kernel\Foundation\Config;
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileStorage;
+use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\Provisioner;
 
 include_once \libfile("function/plugin");
@@ -129,7 +128,7 @@ class ExtensionProvisioner extends Provisioner
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return FileStorage::deleteDirectory($this->extensionsPath . "/Provisioner");
+    return FileSystem::deleteDirectory($this->extensionsPath . "/Provisioner");
   }
   /**
    * 清除扩展 Provisioner 下的 Install 文件和文件夹
@@ -138,7 +137,7 @@ class ExtensionProvisioner extends Provisioner
    */
   public function cleanInstall()
   {
-    return FileStorage::deleteDirectory($this->extensionsPath . "/Provisioner/Install");
+    return FileSystem::deleteDirectory($this->extensionsPath . "/Provisioner/Install");
   }
   /**
    * 清除扩展 Provisioner 下的 Upgrade 文件夹
@@ -147,6 +146,6 @@ class ExtensionProvisioner extends Provisioner
    */
   public function cleanUpgrade()
   {
-    return FileStorage::deleteDirectory($this->extensionsPath . "/Provisioner/Upgrade");
+    return FileSystem::deleteDirectory($this->extensionsPath . "/Provisioner/Upgrade");
   }
 }

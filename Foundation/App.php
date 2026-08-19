@@ -12,73 +12,85 @@ use kernel\Foundation\Data\Date;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Exception\RuyiException;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\HTTP\Response\ResponsePagination;
-
-/**
- * KERNEL标识符
- */
-if (!defined("F_KERNEL")) {
-  define("F_KERNEL", true);
-}
+use kernel\Foundation\Lifecycle;
 
 class App
 {
-  protected $AppId = null;
-  protected $KernelId = null;
-  protected $uri = null; //* 请求的URI
+  /**
+   * 当前应用的ID（id），也是项目文件夹名称。取自已实例化 App 的第一个构造参数，后实例化者覆盖
+   *
+   * @var string|null
+   */
+  protected $id = null;
+  /**
+   * 内核的ID（KernelId），也是内核目录文件夹名称，默认 "kernel"
+   *
+   * @var string|null
+   */
+  protected $kernelId = null;
   protected $globalMiddlware = []; //*全局中间件
   protected $router = null; //* 路由相关
   protected $request = null; //* 请求相关
-  public $Route = null; //* 当前匹配到的路由
   protected $startTime = null; //* 开始时间戳
+  protected $lifeCycle = null; //* 生命周期管理器（Lifecycle），委托管理引导/结束/错误钩子
+  /**
+   * 当前（最近实例化）的 App 实例
+   *
+   * 实例化 App 时自动注册（构造即注册），getApp() / App::getInstance() 从该存储获取当前实例。
+   *
+   * @var App|null
+   */
+  protected static $currentApp = null;
   protected function __clone() {}
   /**
-   * 构造App
-   *
-   * @param string $AppId AppId，也是项目文件夹名称
-   * @param string $KernelId 指定kernel所在文件夹名称，也是kernel的ID
-   */
-  /**
    * 构建 App
-   * @param string $AppId 设定一个 APP 唯一 ID，跟项目目录同名
-   * @param string $KernelId 修改内核默认AppId。内核也是一个 APP，所有也有ID，默认是 kernel
-   * @param boolean $initHTTP 是否初始化 HTTP 相关（路由加载、Request 实例）。CLI 环境（Console）下传 false
+   * @param string $id 设定一个 APP 唯一 ID，跟项目目录同名
+   * @param string $kernelId 修改内核默认id。内核也是一个 APP，所有也有ID，默认是 kernel
+   *
+   * 构造时实例化 Router（构造内按模式加载路由：http 模式注册 URI 路由、command 模式注册 CLI 命令，
+   * 模式自动判断：非 cli 环境为 http，否则 command）并始终实例化 Request。
+   * CLI 下 Request 的 URI 由 Console::handle() 置为命中的命令名；HTTP 下为请求 URI。
    */
-  function __construct($AppId, $KernelId = "kernel", bool $initHTTP = true)
+  function __construct($id, $kernelId = "kernel")
   {
+    //* 注册当前 App 实例：getApp() / App::getInstance() 返回该实例（后实例化者覆盖前者）
+    self::$currentApp = $this;
+
+    $this->id = $id;
+    $this->kernelId = $kernelId;
+
     $this->startTime = Date::milliseconds();
-    $this->AppId = $AppId;
-    $this->KernelId = $KernelId;
+
     //* 定义常量
     $this->defineConstants();
 
-    include_once(FileHelper::combinedFilePath(F_KERNEL_ROOT . "/Foundation/Common.php"));
+    //* 实例化 FileSystem（无参构造，不计算路径；路径在每次静态方法调用时自动计算）
+    new FileSystem;
 
     //* 初始化配置
-    $this->initConfig();
+    new Config;
 
-    //* 全局状态存储
-    $GLOBALS['_STORE'] = [];
+    //* 实例化 Cache（构造时生成 16 位随机 KEY，Cache::key() 读取）
+    new Cache;
+
+    include_once(FileHelper::combinedFilePath(FileSystem::kernelRoot() . "/Foundation/Common.php"));
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
 
-    ErrorCode::load(FileHelper::combinedFilePath(F_KERNEL_ROOT, "ErrorCodes.php")); //* 加载错误码
+    //* 实例化 Router：构造内加载路由（http 模式注册 URI 路由；command 模式注册 CLI 命令）
+    $this->router = new Router();
 
-    //* 载入路由
-    if ($initHTTP) {
-      $this->loadRoutes();
-    }
+    //* 请求实例：HTTP 与 CLI 都实例化（CLI 下 URI 由 Console::handle() 置为命中的命令名）
+    $this->request = new Request();
 
-    //* 载入事件
-    $this->loadEvents();
-
-    if ($initHTTP) {
-      $this->request = new Request();
-    }
+    //* 生命周期管理器：委托管理引导/结束/错误钩子（注入当前 Request，钩子与装配类触发时使用）
+    $this->lifeCycle = new Lifecycle(self::id(), $this->request);
   }
   /**
    * 初始化以及定义常量
@@ -87,75 +99,6 @@ class App
    */
   protected function defineConstants()
   {
-    /**
-     * 缓存动态KEY，主要用于静态文件
-     */
-    define("F_CACHE_KEY", time());
-    /**
-     * 根目录，绝对路径
-     */
-    define("F_ROOT", dirname(__DIR__, 2));
-    /**
-     * KERNEL的ID，默认是“kernel”，实例化App时传入的第二个参数便是该值。该常量也是kernel目录文件夹的名称
-     */
-    define("F_KERNEL_ID", $this->KernelId);
-    /**
-     * KERNEL的根目录
-     */
-    define("F_KERNEL_ROOT", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $this->KernelId);
-
-    /**
-     * 当前运行的项目APPID，也是项目的文件夹名称。值取自实例化APP时传入的第一个参数
-     */
-    define("F_APP_ID", $this->AppId);
-    /**
-     * 当前运行的项目APP根目录，绝对路径
-     */
-    define("F_APP_ROOT", dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $this->AppId);
-    /**
-     * 当前运行的项目Data目录，绝对路径
-     */
-    define("F_APP_DATA", F_APP_ROOT . DIRECTORY_SEPARATOR . "Data");
-    /**
-     * 当前运行的项目Storage目录，绝对路径，用于存储文件
-     */
-    define("F_APP_STORAGE", FileHelper::combinedFilePath(F_APP_ROOT, "Storage"));
-
-    $KernelRelativePath = "";
-    $AppRelativePath = "";
-    //* kernel和app的两个绝对路径对比，获取相对路径
-    if (F_KERNEL_ROOT === F_APP_ROOT) {
-      $KernelDirs = explode(DIRECTORY_SEPARATOR, F_KERNEL_ROOT);
-      $AppRelativePath = $KernelRelativePath = $KernelDirs[array_key_last($KernelDirs)];
-    } else {
-      $KernelDirs = explode(DIRECTORY_SEPARATOR, F_KERNEL_ROOT);
-      $AppDirs = explode(DIRECTORY_SEPARATOR, F_APP_ROOT);
-
-      $kernelDiffStartIndex = 0;
-      $appDiffStartIndex = 0;
-
-      foreach ($KernelDirs as $Index => $Dir) {
-        if (isset($AppDirs[$Index])) {
-          $kernelDiffStartIndex = $Index;
-          $appDiffStartIndex = $Index;
-        } else {
-          $kernelDiffStartIndex = $Index;
-        }
-      }
-
-      $KernelRelativePath = $KernelDirs[$kernelDiffStartIndex];
-      $AppRelativePath = $AppDirs[$appDiffStartIndex];
-    }
-
-    /**
-     * 内核目录，相对路径
-     */
-    define("F_KERNEL_DIR", $KernelRelativePath);
-    /**
-     * APP目录，相对路径
-     */
-    define("F_APP_DIR", $AppRelativePath);
-
     //* 获取URL地址
     $url = "";
 
@@ -176,117 +119,29 @@ class App
     define("F_BASE_URL", $url);
   }
   /**
-   * 初始化配置
+   * 注册应用引导装配类（Lifecycle\Bootup），或注册启动钩子
    *
-   * @return void
-   */
-  protected function initConfig()
-  {
-    $ConfigFilesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Configs");
-    if (!is_dir($ConfigFilesDir))
-      return true;
-
-    $ReadConfigFiles = ["Config.php", "Config.development.php", "Config.local.php", "Config.production.php", "Config.release.php"];
-
-    /**
-     ** 读取配置文件顺序
-     ** default(Config.php) -> 
-     ** development(Config.development.php) -> 
-     ** local(Config.local.php) -> 
-     ** production(Config.production.php) -> 
-     ** release(Config.release.php)
-
-     ** 先读取（存在的话） Config.php 默认配置文件
-     ** 再读取（存在的话） Config.development.php 开发配置文件
-     ** 再读取（存在的话） Config.local.php 本地配置文件
-     ** 再读取（存在的话） Config.production.php 产品配置文件
-     ** 再读取（存在的话） Config.release.php 发布配置文件
-
-     ** 最后读取的文件覆盖之前的文件配置 releae 覆盖 production 覆盖 local 覆盖 development 覆盖 default
-     */
-
-    foreach ($ReadConfigFiles as $ConfigFileName) {
-      Config::read(FileHelper::combinedFilePath($ConfigFilesDir, $ConfigFileName));
-    }
-
-    $mode = Config::get("mode", "production");
-
-    if (!defined("F_APP_MODE")) {
-      define("F_APP_MODE", $mode);
-    }
-
-    return true;
-  }
-  /**
-   * 加载路由
+   * 双语义方法：
+   * - 传字符串（类名）或不传：注册启动装配类——由 run() 在请求到达后、路由匹配前
+   *   实例化（构造即装配，构造参数为当前请求 $request；CLI 下同样收到 Request 实例，其 URI 为命中的命令名），可立即执行
+   *   注册事件（new Event(...)）、按需引入 Lifecycle/ 下其它文件（events.php 等）、
+   *   初始化数据库连接等；只注册一次（幂等），类不存在时静默跳过。
+   * - 传回调（闭包/数组等）：注册启动钩子。
    *
-   * @return void
-   */
-  protected function loadRoutes()
-  {
-    $LocaRouteFiles = [];
-    $KernelRoutesDir = FileHelper::combinedFilePath(F_KERNEL_ROOT, "Routes");
-    if (is_dir($KernelRoutesDir)) {
-      //* 载入kernel路由
-      $KernelRouteFiles = FileHelper::recursionScanDir($KernelRoutesDir, null, true);
-      if (count($KernelRouteFiles)) {
-        $LocaRouteFiles = array_merge($LocaRouteFiles, $KernelRouteFiles);
-      }
-    }
-
-    $AppRoutesDir = FileHelper::combinedFilePath(F_APP_ROOT, "Routes");
-    if (is_dir($AppRoutesDir)) {
-      //* 载入App的路由
-      $AppRouteFiles = FileHelper::recursionScanDir($AppRoutesDir, null, true);
-      if (count($AppRouteFiles)) {
-        $LocaRouteFiles = array_merge($LocaRouteFiles, $AppRouteFiles);
-      }
-    }
-    foreach ($LocaRouteFiles as $FileItem) {
-      if (!is_dir($FileItem)) {
-        include_once($FileItem);
-        Router::prefix(null);
-      }
-    }
-
-    return true;
-  }
-  /**
-   * 加载扩展
-   * 获取已开启的扩展，然后访问扩展Main入口文件，实例化扩展类
+   * 引导装配与关闭装配分离：关闭相关代码请放在 Lifecycle\Shutdown 中，通过 onShutdown() 注册。
+   * 不传类名时默认使用 App::id()\Lifecycle\Bootup（应用命名空间下的 Lifecycle 目录引导类）。
+   * HTTP 与 CLI（Console）入口都应在 run()/handle() 之前调用，例如入口文件中
+   * $app->onBootUp(\myapp\Lifecycle\Bootup::class)。
    *
-   * @return void
+   * @param string|\Closure|array|null $callback 应用引导装配类名（如 \myapp\Lifecycle\Bootup::class），
+   *                                             或启动钩子回调；不传时默认加载 App::id()\Lifecycle\Bootup
+   * @return $this
    */
-  protected function loadExtensions()
+  public function onBootUp($callback = null)
   {
-    // $EM = new ExtensionsModel();
-    // $enabledExtensions = $EM->where("enabled", 1)->getOne();
-    // foreach ($enabledExtensions as $extensionItem) {
-    //   $mainFilepath = FileHelper::combinedFilePath(F_APP_ROOT, $extensionItem['path'], "Main.php");
-    //   if (!\file_exists($mainFilepath)) {
-    //     Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
-    //   }
-    //   $namespace = implode("\\", [F_APP_ID, "Extensions", $extensionItem['extension_id'], "Main"]);
-    //   if (!\class_exists($namespace)) {
-    //     Response::error(500, 500, $extensionItem['name'] . " 扩展文件已损坏，请重新安装");
-    //   }
-    //   new $namespace();
-    // }
-  }
-  /**
-   * 载入事件
-   *
-   * @return void
-   */
-  protected function loadEvents()
-  {
-    if (!file_exists(FileHelper::combinedFilePath(F_APP_ROOT, "Events"))) {
-      return;
-    }
-    $EventFiles = FileHelper::recursionScanDir(FileHelper::combinedFilePath(F_APP_ROOT, "Events"));
-    foreach ($EventFiles as $item) {
-      include_once($item);
-    }
+    $this->lifeCycle->onBootUp($callback);
+
+    return $this;
   }
   /**
    * 设置中间件
@@ -302,22 +157,22 @@ class App
       "params" => $executeParams
     ]);
   }
-  private function executeMiddleware($Middlewares, Controller $Controller, \Closure $callback)
+  private function executeMiddleware($middlewares, Controller $controller, \Closure $callback)
   {
-    if (count($Middlewares) === 0)
+    if (count($middlewares) === 0)
       return $callback();
 
-    $middleware = array_shift($Middlewares);
-    $next = function () use ($Middlewares, $Controller, $callback) {
-      return $this->executeMiddleware($Middlewares, $Controller, $callback);
+    $middleware = array_shift($middlewares);
+    $next = function () use ($middlewares, $controller, $callback) {
+      return $this->executeMiddleware($middlewares, $controller, $callback);
     };
 
     $params = $middleware['params'] ?: [];
     array_push($params, $next);
 
     if (is_string($middleware['target'])) {
-      $MInstance = new $middleware['target']($this->request, $Controller);
-      $executedResponse = $MInstance->handle(...$params);
+      $middlewareInstance = new $middleware['target']($this->request, $controller);
+      $executedResponse = $middlewareInstance->handle(...$params);
     } else {
       array_unshift($params, $this->request);
       $executedResponse = $middleware['target'](...$params);
@@ -332,198 +187,201 @@ class App
 
     return $executedResponse;
   }
-  public function executeController($callTarget, $callParams, &$Controller)
+  public function executeController($callTarget, $callParams, &$controller)
   {
     try {
       $response = call_user_func_array($callTarget, array_values($callParams));
-    } catch (GlobalException $E) {
-      if ($E instanceof RuyiException) {
-        throw new RuyiException($E->getMessage(), $E->statusCode, $E->errorCode, $E->errorDetails ?: $E->getTrace());
+    } catch (GlobalException $e) {
+      if ($e instanceof RuyiException) {
+        throw new RuyiException($e->getMessage(), $e->statusCode, $e->errorCode, $e->errorDetails ?: $e->getTrace());
       } else {
-        throw new RuyiException($E->getMessage(), 500, "500:ServerError", $E->getTrace());
+        throw new RuyiException($e->getMessage(), 500, "500:ServerError", $e->getTrace());
       }
     }
 
-    if (is_callable($Controller) || is_null($Controller)) {
-      $Controller = new Controller($this->request);
+    if (is_callable($controller) || is_null($controller)) {
+      $controller = new Controller($this->request);
     }
 
     if (!is_null($response)) {
       if ($response instanceof \kernel\Foundation\HTTP\Response) {
-        $Controller->response = $response;
+        $controller->response = $response;
       }
 
       if (is_callable($response)) {
-        $Controller->response->setData($response);
+        $controller->response->setData($response);
       } else {
         if ($response instanceof ReturnList) {
-          $Controller->response = new ResponsePagination($this->request, $response->total(), $response->getData());
+          $controller->response = new ResponsePagination($this->request, $response->total(), $response->getData());
         }
 
         if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
-          $Controller->response->setData($response);
+          $controller->response->setData($response);
         }
       }
     }
   }
 
   /**
-   * 生命周期回调函数
+   * 注册应用关闭装配类（Lifecycle\Shutdown），或注册关闭钩子
    *
-   * @var array
-   */
-  protected $LifeCycle = [
-    "bootUp" => [],
-    "shutdown" => []
-  ];
-  /**
-   * 运行开始，配置、请求已经获取到之后，匹配路由、执行中间件、控制器之前
+   * 双语义方法：
+   * - 传字符串（类名）：注册关闭装配类——由 run() 在请求结束（正常或异常）时实例化
+   *   （构造即装配，构造参数为 $controller->response；CLI 下传命令退出码），可立即执行
+   *   记录日志、释放资源等；只注册一次（幂等），类不存在时静默跳过。
+   * - 传回调（闭包/数组等）：注册关闭钩子。可在控制器或任意业务代码中动态注册
+   *   （Controller::onShutdown() 便捷方法），回调签名 function ($response, $context = null)：
+   *   - $response：当前响应对象（异常路径可能为 null；CLI 下为命令退出码）
+   *   - $context["exception"]：非空表示异常结束（可通过 App::exception() 读取）
+   *   - $context["error"]：是否异常结束
+   *   关闭钩子无论请求正常结束还是异常结束都会执行（异常必达）。
    *
-   * @param callback|Closure|string $callback 回调函数
+   * @param callable|string $callback 回调函数，或关闭装配类名（如 \myapp\Lifecycle\Shutdown::class）
    * @return $this
    */
-  public function bootUp($callback)
+  public function onShutdown($callback)
   {
-    array_push($this->LifeCycle['bootUp'], $callback);
+    $this->lifeCycle->onShutdown($callback);
 
     return $this;
   }
   /**
-   * 运行结束之前，已经从控制器输出中获取到响应数据之后
+   * 注册错误钩子（请求处理过程中捕获到异常时触发）
    *
-   * @param callback|Closure|string $callback 回调函数
+   * 仿 Vue 3 的 onErrorCaptured：异常路径下，框架捕获异常后会先触发错误钩子（onError），
+   * 再触发结束钩子（onShutdown），最后交由全局异常处理器输出。可用于统一上报监控、
+   * 记录错误日志等，与结束钩子分工（onError 管错误处理，onShutdown 管资源释放/步骤记录）。
+   * 可叠加、可重复注册，按注册顺序依次执行；同一异常只触发一次。
+   *
+   * @param callable $callback 错误钩子回调，function (\Throwable $exception)
    * @return $this
    */
-  public function shutdown($callback)
+  public function onError($callback)
   {
-    array_push($this->LifeCycle['shutdown'], $callback);
+    $this->lifeCycle->onError($callback);
 
     return $this;
   }
   public function run()
   {
-    //* 如果已经注册了 GlobalCorsMiddleware，则跳过基础 CORS 头设置，由中间件精细处理
-    $hasCorsMiddleware = false;
-    foreach ($this->globalMiddlware as $gm) {
-      if (is_string($gm['target']) && strpos($gm['target'], 'CorsMiddleware') !== false) {
-        $hasCorsMiddleware = true;
-        break;
-      }
-    }
-    if (!$hasCorsMiddleware) {
-      header("Access-Control-Allow-Origin:*");
-      header('Access-Control-Allow-Methods:*');
-      header('Access-Control-Allow-Headers:*');
-      header('Access-Control-Max-Age:86400');
-      header('Access-Control-Allow-Credentials: true');
-    }
-
-    if ($this->request()->method === "options" && !$hasCorsMiddleware)
-      return;
-
-    //* 载入扩展
-    if (Config::get("extensions")) {
-      $this->loadExtensions();
-      // $this->setMiddleware(kernel\Foundation\GlobalExtensionsMiddleware::class);
-    }
-
-    //* 调用生命周期“启动”钩子
-    if ($this->LifeCycle['bootUp']) {
-      foreach ($this->LifeCycle['bootUp'] as $item) {
-        if (is_callable($item)) {
-          $item($this->request);
-        } else {
-          new $item($this->request);
-        }
-      }
-    }
-
-    //* 路由
-    $Route = Router::match($this->request);
-
-    if (!$Route) {
-      throw new Exception("路由不存在", 404, 404, [
-        "uri" => $this->request()->URI,
-        'method' => $this->request()->method
+    if ($this->request()->method === "options") {
+      //* 预检请求也执行结束钩子，保证生命周期有始有终（记录日志、释放资源等）
+      $this->lifeCycle->fireShutdown(null, [
+        "exception" => null,
+        "error" => false,
+        "preflight" => true
       ]);
+      return;
     }
-    $this->request->Route = $Route;
-    $this->request->params->set($Route['params']);
 
-    $Middlewares = $this->globalMiddlware ?: [];
-    if (is_array($Route['middlewares']) && count($Route['middlewares'])) {
-      foreach ($Route['middlewares'] as $RouteMiddleware) {
-        array_push($Middlewares, [
-          "target" => $RouteMiddleware,
-          "params" => []
+    //* 载入扩展 ~ 输出：正常与异常结束都会执行结束钩子（异常交由全局异常处理器输出）
+    try {
+      //* 调用生命周期"启动"钩子
+      $this->lifeCycle->fireBootUp();
+
+      //* 路由
+      $route = Router::match($this->request);
+
+      if (!$route) {
+        throw new Exception("路由不存在", 404, 404, [
+          "uri" => $this->request()->URI,
+          'method' => $this->request()->method
         ]);
       }
-    }
+      $this->request->Route = $route;
+      $this->request->params->set($route['params']);
 
-    $callTarget = [];
-    $callParams = $Route['params'] ?: [];
-    $RouteInstantiateParams = $Route['controllerInstantiateParams'];
-    $Controller = null;
-    if (is_callable($Route['controller'])) {
-      $callTarget = $Route['controller'];
-      array_unshift($callParams, $this->request, ...$RouteInstantiateParams);
-    } else {
-      $Controller = new $Route['controller']($this->request, ...$RouteInstantiateParams);
-      $Controller->before();
-      $ControllerHandleMethodName = is_null($Route['controllerHandleMethodName']) ? 'data' : $Route['controllerHandleMethodName'];
-      if (!method_exists($Controller, $ControllerHandleMethodName)) {
-        throw new Exception("控制器缺少 $ControllerHandleMethodName 方法");
-      }
-      $callTarget = [
-        $Controller,
-        $ControllerHandleMethodName
-      ];
-    }
-
-    if (!$Controller->response->error) {
-      //* 执行中间件
-      if (count($Middlewares)) {
-        $app = $this;
-        $MiddlewareExecutedResult = $this->executeMiddleware($Middlewares, $Controller, function () use ($app, $callTarget, $callParams, &$Controller) {
-          $app->executeController($callTarget, $callParams, $Controller);
-
-          return $Controller->response;
-        });
-        if ($MiddlewareExecutedResult->error) {
-          $Controller->response = $MiddlewareExecutedResult;
+      $middlewares = $this->globalMiddlware ?: [];
+      if (is_array($route['middlewares']) && count($route['middlewares'])) {
+        foreach ($route['middlewares'] as $routeMiddleware) {
+          array_push($middlewares, [
+            "target" => $routeMiddleware,
+            "params" => []
+          ]);
         }
+      }
+
+      $callTarget = [];
+      $callParams = $route['params'] ?: [];
+      $routeInstantiateParams = $route['controllerInstantiateParams'];
+      $controller = null;
+      if (is_callable($route['controller'])) {
+        $callTarget = $route['controller'];
+        array_unshift($callParams, $this->request, ...$routeInstantiateParams);
       } else {
-        $this->executeController($callTarget, $callParams, $Controller);
+        $controller = new $route['controller']($this->request, ...$routeInstantiateParams);
+        $controller->before();
+        $controllerHandleMethodName = is_null($route['controllerHandleMethodName']) ? 'data' : $route['controllerHandleMethodName'];
+        if (!method_exists($controller, $controllerHandleMethodName)) {
+          throw new Exception("控制器缺少 $controllerHandleMethodName 方法");
+        }
+        $callTarget = [
+          $controller,
+          $controllerHandleMethodName
+        ];
       }
-    }
 
-    $Controller->after();
+      if (!$controller->response->error) {
+        //* 执行中间件
+        if (count($middlewares)) {
+          $app = $this;
+          $middlewareExecutedResult = $this->executeMiddleware($middlewares, $controller, function () use ($app, $callTarget, $callParams, &$controller) {
+            $app->executeController($callTarget, $callParams, $controller);
 
-    $endTime = Date::milliseconds();
-    if ($this->request->ajax() && !$Controller->response->OutputType()) {
-      $Controller->response->json();
-      $Controller->response->addBody([
-        "requiredTime" => $endTime - $this->startTime . "ms"
-      ]);
-    }
-
-    //* 调用生命周期“结束”钩子
-    if ($this->LifeCycle['shutdown']) {
-      foreach ($this->LifeCycle['shutdown'] as $item) {
-        if (is_callable($item)) {
-          $item($Controller->response);
+            return $controller->response;
+          });
+          if ($middlewareExecutedResult->error) {
+            $controller->response = $middlewareExecutedResult;
+          }
         } else {
-          new $item($Controller->response);
+          $this->executeController($callTarget, $callParams, $controller);
         }
       }
-    }
 
-    if (is_callable($Controller->response->getData())) {
-      call_user_func_array($Controller->response->getData(), []);
-    } else {
-      $Controller->response->output();
+      $controller->after();
+
+      $endTime = Date::milliseconds();
+      if ($this->request->ajax() && !$controller->response->OutputType()) {
+        $controller->response->json();
+        $controller->response->addBody([
+          "requiredTime" => $endTime - $this->startTime . "ms"
+        ]);
+      }
+
+      //* 调用生命周期"结束"钩子
+      $this->lifeCycle->fireShutdown($controller->response, [
+        "exception" => null,
+        "error" => false
+      ]);
+
+      if (is_callable($controller->response->getData())) {
+        call_user_func_array($controller->response->getData(), []);
+      } else {
+        $controller->response->output();
+      }
+      exit;
+    } catch (\Throwable $e) {
+      //* 异常路径：先触发错误钩子（onError，统一上报/记录），再执行结束钩子（记录已执行到的步骤、释放资源），最后交由全局异常处理器输出
+      $this->lifeCycle->fireError($e);
+      $this->lifeCycle->fireShutdown(isset($controller) ? $controller->response : null, [
+        "exception" => $e,
+        "error" => true
+      ]);
+      throw $e;
     }
-    exit;
+  }
+  /**
+   * 获取当前请求处理过程中捕获的异常
+   *
+   * 正常结束返回 null；控制器/中间件/引导等任意环节抛出并被框架捕获后，
+   * shutdown 回调可通过该方法判断是否异常结束、读取错误信息
+   * （例如外部 SDK 调用失败时记录已执行到的步骤）。
+   *
+   * @return \Throwable|null
+   */
+  public function exception()
+  {
+    return $this->lifeCycle->exception();
   }
   /**
    * 获取请求实例
@@ -533,5 +391,51 @@ class App
   public function request()
   {
     return $this->request;
+  }
+  /**
+   * 获取当前（最近实例化）的 App 实例
+   *
+   * 实例化 App（new App($id)）时即自动注册到静态存储（后实例化者覆盖前者）。
+   * 全局函数 getApp() 等价于本方法。
+   *
+   * @return App|null 尚未实例化任何 App 时返回 null
+   */
+  public static function getInstance()
+  {
+    return self::$currentApp;
+  }
+  /**
+   * 获取当前应用的ID（id），即项目文件夹名称
+   *
+   * 取自已实例化 App 的第一个构造参数（后实例化者覆盖）。
+   *
+   * @return string|null 尚未实例化任何 App 时返回 null
+   */
+  public static function id(): ?string
+  {
+    return self::$currentApp === null ? null : self::$currentApp->id;
+  }
+  /**
+   * 获取内核的ID（KernelId），即内核目录文件夹名称，默认 "kernel"
+   *
+   * 取自已实例化 App 的第二个构造参数（后实例化者覆盖）。
+   *
+   * @return string|null 尚未实例化任何 App 时返回 null
+   */
+  public static function kernelId(): ?string
+  {
+    return self::$currentApp === null ? null : self::$currentApp->kernelId;
+  }
+  /**
+   * 获取当前运行模式（mode）
+   *
+   * 读取配置的 "mode" 键（Config::get("mode", "production")），未配置或未加载配置时默认 "production"。
+   * 替代原 F_APP_MODE 常量，无需提前定义，随时可安全调用。
+   *
+   * @return string 运行模式（production / development / local / release 等）
+   */
+  public static function mode(): string
+  {
+    return Config::get("mode", "production");
   }
 }

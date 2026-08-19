@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Model;
 
+use kernel\Foundation\App;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 use kernel\Traits\Model\FilesModelTrait;
 
@@ -11,7 +12,7 @@ class DiscuzXFilesModel extends DiscuzXModel
 
   public function __construct($tableName = null)
   {
-    $tableName = $tableName ?: F_APP_ID . "_files";
+    $tableName = $tableName ?: App::id() . "_files";
 
     parent::__construct($tableName);
 

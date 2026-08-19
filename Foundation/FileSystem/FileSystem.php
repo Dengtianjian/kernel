@@ -1,20 +1,161 @@
 <?php
 
-namespace kernel\Foundation\File;
+namespace kernel\Foundation\FileSystem;
 
+use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
 
-
 /**
- * 文件管理类
+ * 文件系统总管理
  *
- * 提供文件的上传、创建、复制、移动、删除、读取等高级文件操作。
- * 所有路径操作均通过 FileHelper 进行规范化处理，确保跨平台兼容。
+ * 负责文件系统的全局操作：路径计算（调用时自动计算）与文件操作（上传、创建、
+ * 复制、移动、删除、读取等）。所有路径操作均通过 FileHelper 进行规范化处理，
+ * 确保跨平台兼容。
  *
- * @package kernel\Foundation\File
+ * 无参构造（构造时确保应用 data/storage 目录存在），无任何静态属性、无缓存；
+ * App 在 defineConstants() 之后 `new FileSystem` 即可。
+ * 7 个路径 getter 在每次静态方法调用时自动计算：
+ *   kernelRoot  = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
+ *   projectRoot = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernelRoot 的上级目录
+ *   root        = kernelRoot 同级目录下的 {App::id()}
+ *   data        = root/Data
+ *   storage     = root/Storage
+ *   kernelDir/dir = kernelRoot/root 相对 projectRoot 的路径
+ *
+ * 依赖 App::id() 的 getter（root/data/storage/dir）在未实例化 App（App::id() 为 null）时返回 null；
+ * 此时构造也跳过目录创建。
  */
-class Filesystem
+final class FileSystem
 {
+  /**
+   * 无参构造，由 App 在 defineConstants() 之后实例化；构造时确保 data/storage 目录存在
+   */
+  public function __construct()
+  {
+    self::ensureDirectories();
+  }
+
+  /**
+   * 确保当前应用的 data/storage 目录存在，不存在则递归创建
+   *
+   * 未实例化 App（App::id() 为 null）时路径不可推导，直接跳过。
+   */
+  private static function ensureDirectories(): void
+  {
+    $appRoot = self::root();
+    if ($appRoot === null) {
+      return;
+    }
+    self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Data"));
+    self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Storage"));
+  }
+
+  /**
+   * 根目录（绝对路径）
+   *
+   * DiscuzX 平台返回 DISCUZ_ROOT（去尾斜杠）；普通项目返回内核目录的上级目录。
+   *
+   * @return string|null
+   */
+  public static function projectRoot(): ?string
+  {
+    if (defined("\\DISCUZ_ROOT")) {
+      return rtrim(\DISCUZ_ROOT, "/\\");
+    }
+    $kernelRoot = self::kernelRoot();
+    return $kernelRoot === null ? null : dirname($kernelRoot);
+  }
+
+  /**
+   * 内核根目录（绝对路径）
+   *
+   * 即本类所在目录，与 App::kernelId()、部署位置无关，永远正确。
+   *
+   * @return string
+   */
+  public static function kernelRoot(): ?string
+  {
+    return dirname(__DIR__, 2);
+  }
+
+  /**
+   * 当前应用根目录（绝对路径），默认 {kernelRoot 同级目录}/{App::id()}
+   *
+   * @return string|null
+   */
+  public static function root(): ?string
+  {
+    if (App::id() === null) {
+      return null;
+    }
+    return FileHelper::combinedFilePath(dirname(self::kernelRoot()), App::id());
+  }
+
+  /**
+   * 应用数据目录（绝对路径），默认 appRoot/Data
+   *
+   * @return string|null
+   */
+  public static function data(): ?string
+  {
+    $appRoot = self::root();
+    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Data");
+  }
+
+  /**
+   * 应用存储目录（绝对路径），默认 appRoot/Storage
+   *
+   * @return string|null
+   */
+  public static function storage(): ?string
+  {
+    $appRoot = self::root();
+    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Storage");
+  }
+
+  /**
+   * 内核目录（相对路径），即 kernelRoot 相对 root 的路径
+   *
+   * @return string|null
+   */
+  public static function kernelDir(): ?string
+  {
+    $root = self::root();
+    $kernelRoot = self::kernelRoot();
+    if ($root === null || $kernelRoot === null) {
+      return null;
+    }
+    return self::relativePath($kernelRoot, $root);
+  }
+
+  /**
+   * 应用目录（相对路径），即 appRoot 相对 root 的路径
+   *
+   * @return string|null
+   */
+  public static function dir(): ?string
+  {
+    $root = self::root();
+    $appRoot = self::root();
+    if ($root === null || $appRoot === null) {
+      return null;
+    }
+    return self::relativePath($appRoot, $root);
+  }
+
+  /**
+   * 求 $path 相对 $base（绝对路径前缀）的路径
+   *
+   * @param string $path 绝对路径
+   * @param string $base 绝对路径前缀
+   * @return string
+   */
+  private static function relativePath(string $path, string $base): string
+  {
+    $relative = substr($path, strlen($base));
+    return ltrim(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $relative), DIRECTORY_SEPARATOR);
+  }
+
   /**
    * 上传文件并保存到服务器
    *
@@ -22,7 +163,7 @@ class Filesystem
    * - 通过 $_FILES 数组上传（HTTP POST 文件上传）
    * - 通过本地文件路径上传（用于服务端已存在的文件）
    *
-   * 文件默认保存到 F_APP_STORAGE 常量指定的存储根目录下，
+   * 文件默认保存到 FileSystem::storage() 指定的存储根目录下，
    * 通过 $savePath 参数可指定相对子目录。
    *
    * 对于图片类型的文件，会自动获取宽高信息。
@@ -30,14 +171,14 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 通过 $_FILES 上传
-   * $fileInfo = Filesystem::upload($_FILES['avatar'], 'avatars', 'user_123.jpg');
+   * $fileInfo = FileSystem::upload($_FILES['avatar'], 'avatars', 'user_123.jpg');
    *
    * // 通过本地路径上传
-   * $fileInfo = Filesystem::upload('/tmp/export.csv', 'exports');
+   * $fileInfo = FileSystem::upload('/tmp/export.csv', 'exports');
    * ```
    *
    * @param array|string $file 上传的文件。可为 $_FILES 数组中的某一项（包含 error/tmp_name/name/size 键），或本地文件的完整路径
-   * @param string $savePath 保存的路径，相对于 F_APP_STORAGE 常量。传入 "." 或空字符串表示直接保存在存储根目录
+   * @param string $savePath 保存的路径，相对于 FileSystem::storage()。传入 "." 或空字符串表示直接保存在存储根目录
    * @param string|null $fileName 自定义存储文件名（不含扩展名）。未传入时自动使用 uniqid() 生成，扩展名从源文件名获取
    * @return array{name:string,sourceFileName:string,path:string|null,extension:string,size:int,filePath:string,width:int,height:int} 文件信息数组
    * @throws Exception 上传失败时抛出异常（错误码前缀 FileUpload 或 FileSave）
@@ -87,17 +228,17 @@ class Filesystem
     $path = $saveFullFileName;
     if ($savePath) {
       $path = FileHelper::combinedFilePath($savePath, $saveFullFileName);
-      $folderPath = FileHelper::combinedFilePath(F_APP_STORAGE, $savePath);
+      $folderPath = FileHelper::combinedFilePath(self::storage(), $savePath);
       if (!is_dir($folderPath)) {
         mkdir($folderPath, 0700, true);
       }
     }
     // 确保存储根目录存在
-    if (!is_dir(F_APP_STORAGE)) {
-      mkdir(F_APP_STORAGE, 0700, true);
+    if (!is_dir(self::storage())) {
+      mkdir(self::storage(), 0700, true);
     }
 
-    $saveFullPath = FileHelper::combinedFilePath(F_APP_STORAGE, $path);
+    $saveFullPath = FileHelper::combinedFilePath(self::storage(), $path);
     if (is_string($file)) {
       if (!file_exists($file)) {
         throw new Exception("文件保存失败", 500, "FileUpload:500002");
@@ -143,13 +284,13 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 将 templates/default 克隆到 themes/newtheme
-   * Filesystem::cloneDirectory('/path/to/templates/default', '/path/to/themes/newtheme');
+   * FileSystem::cloneDirectory('/path/to/templates/default', '/path/to/themes/newtheme');
    * ```
    *
    * @param string $sourcePath 被克隆的目录路径
    * @param string $destPath 克隆到的目标目录路径，不存在时自动创建
    * @return void
-   * @see Filesystem::copyFolder() 带白名单和失败回滚的目录复制
+   * @see FileSystem::copyFolder() 带白名单和失败回滚的目录复制
    */
   public static function cloneDirectory($sourcePath, $destPath)
   {
@@ -187,10 +328,10 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 创建新文件
-   * Filesystem::createFile('/path/to/newfile.txt', 'Hello World');
+   * FileSystem::createFile('/path/to/newfile.txt', 'Hello World');
    *
    * // 覆盖已存在的文件
-   * Filesystem::createFile('/path/to/existing.txt', 'New Content', true);
+   * FileSystem::createFile('/path/to/existing.txt', 'New Content', true);
    * ```
    *
    * @param string $filePath 文件完整路径（包含文件名和扩展名）
@@ -229,7 +370,7 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 删除临时目录
-   * Filesystem::deleteDirectory('/path/to/temp');
+   * FileSystem::deleteDirectory('/path/to/temp');
    * ```
    *
    * @param string $path 要删除的目录路径
@@ -267,7 +408,7 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 清空缓存目录，但保留 index.html
-   * Filesystem::clearFolder('/path/to/cache', ['/path/to/cache/index.html']);
+   * FileSystem::clearFolder('/path/to/cache', ['/path/to/cache/index.html']);
    * ```
    *
    * @param string $targetPath 被清除的文件夹路径
@@ -310,7 +451,7 @@ class Filesystem
    * ```php
    * // 复制主题文件夹，跳过配置文件
    * $whiteList = ['/themes/newtheme/config.php'];
-   * Filesystem::copyFolder('/themes/default', '/themes/newtheme', $whiteList);
+   * FileSystem::copyFolder('/themes/default', '/themes/newtheme', $whiteList);
    * ```
    *
    * @param string $targetPath 被复制的目录路径
@@ -361,7 +502,7 @@ class Filesystem
    *
    * 使用示例：
    * ```php
-   * $info = Filesystem::getFileInfo('/storage/avatars/user_123.jpg');
+   * $info = FileSystem::getFileInfo('/storage/avatars/user_123.jpg');
    * echo $info['size'];   // 文件大小（字节）
    * echo $info['width'];  // 图片宽度，非图片时为 null
    * ```
@@ -369,7 +510,7 @@ class Filesystem
    * @param string $filePath 文件完整路径
    * @return false|array{name:string,sourceFileName:string,path:string,extension:string,size:int,width:int|null,height:int|null,filePath:string} 文件信息数组，文件不存在时返回 false
    */
-  static function getFileInfo($filePath)
+  public static function getFileInfo($filePath)
   {
     $filePath = FileHelper::optimizedPath($filePath);
     if (!file_exists($filePath)) {
@@ -402,7 +543,7 @@ class Filesystem
    * @param string $filePath 文件完整路径
    * @return boolean 文件不存在时返回 true（视为已删除），删除操作返回 unlink 的实际结果
    */
-  static function deleteFile($filePath)
+  public static function deleteFile($filePath)
   {
     $filePath = FileHelper::optimizedPath($filePath);
     if (file_exists($filePath)) {
@@ -418,7 +559,7 @@ class Filesystem
    *
    * 使用示例：
    * ```php
-   * $content = Filesystem::readFile('/path/to/config.json');
+   * $content = FileSystem::readFile('/path/to/config.json');
    * if ($content !== false) {
    *     $config = json_decode($content, true);
    * }
@@ -427,7 +568,7 @@ class Filesystem
    * @param string $filePath 文件完整路径
    * @return string|false 文件内容字符串，文件不存在时返回 false
    */
-  static function readFile($filePath)
+  public static function readFile($filePath)
   {
     $filePath = FileHelper::optimizedPath($filePath);
     if (!file_exists($filePath)) {
@@ -444,19 +585,19 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 复制文件（不覆盖已存在的目标文件）
-   * Filesystem::copyFile('/path/to/source.txt', '/path/to/dest.txt');
+   * FileSystem::copyFile('/path/to/source.txt', '/path/to/dest.txt');
    *
    * // 复制并覆盖目标文件
-   * Filesystem::copyFile('/path/to/source.txt', '/path/to/dest.txt', true);
+   * FileSystem::copyFile('/path/to/source.txt', '/path/to/dest.txt', true);
    * ```
    *
    * @param string $sourcePath 源文件完整路径
    * @param string $destPath 目标文件完整路径
    * @param boolean $overwrite 是否覆盖已存在的目标文件。true=覆盖，false=目标存在时返回 false
    * @return boolean 复制成功返回 true，失败返回 false
-   * @see Filesystem::copyFolder() 复制整个目录
+   * @see FileSystem::copyFolder() 复制整个目录
    */
-  static function copyFile($sourcePath, $destPath, $overwrite = false)
+  public static function copyFile($sourcePath, $destPath, $overwrite = false)
   {
     $sourcePath = FileHelper::optimizedPath($sourcePath);
     $destPath = FileHelper::optimizedPath($destPath);
@@ -485,13 +626,13 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 重命名文件
-   * Filesystem::moveFile('/path/to/oldname.txt', '/path/to/newname.txt');
+   * FileSystem::moveFile('/path/to/oldname.txt', '/path/to/newname.txt');
    *
    * // 移动文件到另一个目录
-   * Filesystem::moveFile('/path/to/file.txt', '/another/path/file.txt');
+   * FileSystem::moveFile('/path/to/file.txt', '/another/path/file.txt');
    *
    * // 移动并覆盖目标文件
-   * Filesystem::moveFile('/path/to/source.txt', '/path/to/dest.txt', true);
+   * FileSystem::moveFile('/path/to/source.txt', '/path/to/dest.txt', true);
    * ```
    *
    * @param string $sourcePath 源文件完整路径
@@ -499,7 +640,7 @@ class Filesystem
    * @param boolean $overwrite 是否覆盖已存在的目标文件。true=先删除目标再移动，false=目标存在时返回 false
    * @return boolean 移动成功返回 true，失败返回 false
    */
-  static function moveFile($sourcePath, $destPath, $overwrite = false)
+  public static function moveFile($sourcePath, $destPath, $overwrite = false)
   {
     $sourcePath = FileHelper::optimizedPath($sourcePath);
     $destPath = FileHelper::optimizedPath($destPath);
@@ -529,17 +670,17 @@ class Filesystem
    * 使用示例：
    * ```php
    * // 确保日志目录存在
-   * Filesystem::ensureDirectory('/var/log/myapp');
+   * FileSystem::ensureDirectory('/var/log/myapp');
    *
    * // 指定目录权限
-   * Filesystem::ensureDirectory('/data/uploads', 0775);
+   * FileSystem::ensureDirectory('/data/uploads', 0775);
    * ```
    *
    * @param string $path 目录完整路径
    * @param integer $permissions 目录权限（八进制），默认 0755
    * @return boolean 目录已存在或创建成功返回 true，创建失败返回 false
    */
-  static function ensureDirectory($path, $permissions = 0755)
+  public static function ensureDirectory($path, $permissions = 0755)
   {
     $path = FileHelper::optimizedPath($path);
     if (is_dir($path)) {
@@ -555,7 +696,7 @@ class Filesystem
    *
    * 使用示例：
    * ```php
-   * $size = Filesystem::fileSize('/path/to/file.txt');
+   * $size = FileSystem::fileSize('/path/to/file.txt');
    * if ($size !== false) {
    *     echo '文件大小: ' . FileHelper::humanReadableSize($size);
    * }
@@ -565,7 +706,7 @@ class Filesystem
    * @return integer|false 文件大小（字节），文件不存在或读取失败时返回 false
    * @see FileHelper::humanReadableSize() 将字节数转为可读格式
    */
-  static function fileSize($filePath)
+  public static function fileSize($filePath)
   {
     $filePath = FileHelper::optimizedPath($filePath);
     if (!file_exists($filePath)) {

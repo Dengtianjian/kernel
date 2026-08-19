@@ -1,13 +1,11 @@
 <?php
 
 namespace kernel\Foundation\Exception;
+use kernel\Foundation\FileSystem\FileSystem;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Config;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Log;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseView;
@@ -71,12 +69,12 @@ class ExceptionHandler
         $Response->output();
         exit;
       } else {
-        $errorPagePath = FileHelper::combinedFilePath(F_APP_ROOT, "Views", "error.php");
+        $errorPagePath = FileHelper::combinedFilePath(FileSystem::root(), "Views", "error.php");
         if (file_exists($errorPagePath)) {
           $View = new ResponseView("error");
         } else {
-          $View = new ResponseView("error", [], "Views", "kernel_page", F_KERNEL_ROOT);
-          $errorPagePath = FileHelper::combinedFilePath(F_KERNEL_ROOT, "Views", "error.php");
+          $View = new ResponseView("error", [], "Views", "kernel_page", FileSystem::kernelRoot());
+          $errorPagePath = FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Views", "error.php");
         }
         $View->render($errorPagePath, [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,

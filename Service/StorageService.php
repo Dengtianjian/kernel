@@ -3,8 +3,8 @@
 namespace kernel\Service;
 
 use kernel\Foundation\Service;
-use kernel\Foundation\Storage\AbstractStorage;
-use kernel\Foundation\Storage\LocalStorage;
+use kernel\Foundation\FileSystem\Storage\AbstractStorage;
+use kernel\Foundation\FileSystem\Storage\LocalStorage;
 use kernel\Foundation\Exception\Exception;
 use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\Router;

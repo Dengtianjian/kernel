@@ -1,15 +1,15 @@
 <?php
 
 namespace kernel\Platform\Aliyun\AliyunOSS;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use AlibabaCloud\SDK\Sts\V20150401\Models\AssumeRoleRequest;
 use AlibabaCloud\SDK\Sts\V20150401\Sts;
 use AlibabaCloud\Tea\Utils\Utils\RuntimeOptions;
 use Darabonba\OpenApi\Models\Config;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File\Filesystem;
-use kernel\Foundation\Storage\AbstractOSSStroage;
-use kernel\Foundation\Storage\StorageFileInfoData;
+use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
+use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;
 use kernel\Service\StorageService;
 use OSS\OssClient;
 use OSS\Core\OssException;
@@ -95,7 +95,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     }
 
     $FileKeyPathInfo = pathinfo($fileKey);
-    $TempFileInfo = Filesystem::upload($file, "RemoteTemp", $FileKeyPathInfo['basename']);
+    $TempFileInfo = FileSystem::upload($file, "RemoteTemp", $FileKeyPathInfo['basename']);
 
     $FileInfo = [
       "key" => $fileKey,
@@ -164,7 +164,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
         return $this->break(403, "getFile:403001", "抱歉，您无权获取该文件信息");
       }
 
-      $fileInfo = Filesystem::getFileInfo($this->getFilePreviewURL($fileKey));
+      $fileInfo = FileSystem::getFileInfo($this->getFilePreviewURL($fileKey));
       $fileInfo['remote'] = false;
     }
     if (!$fileInfo) {

@@ -1,10 +1,10 @@
 <?php
 
 namespace kernel\Foundation\Database\SQLite;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use Exception;
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use SQLite3;
 
 class SQLite extends SQLite3
@@ -22,7 +22,7 @@ class SQLite extends SQLite3
    */
   public function __construct($tableFileName, $flags = SQLITE3_OPEN_READWRITE, $encryptionKey = null)
   {
-    $tableFileName = FileHelper::combinedFilePath(F_APP_ROOT, $tableFileName);
+    $tableFileName = FileHelper::combinedFilePath(FileSystem::root(), $tableFileName);
     if (!file_exists($tableFileName)) {
       throw new Exception("SQLite数据库文件不存在", 500);
     }

@@ -1,6 +1,7 @@
 <?php
 
 namespace kernel\Foundation\Database\SQLite;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\BaseObject;
 use kernel\Foundation\Database\PDO\Query;
@@ -14,7 +15,7 @@ class SQLiteModel extends BaseObject
    */
   protected $tableName = "";
   /**
-   * 表文件名，包含路径。相对于F_APP_ROOT的路径地址
+   * 表文件名，包含路径。相对于FileSystem::root()的路径地址
    *
    * @var string
    */

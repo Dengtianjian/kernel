@@ -1,12 +1,10 @@
 <?php
 
 namespace kernel\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * 应用生命周期编排器：安装 / 增量升级 / 回滚 / 卸载
@@ -64,12 +62,12 @@ class Provisioner
   protected string $currentSemver = '0.0.0';
 
   /**
-   * @param ?string $upgradesDir 升级脚本目录，null 时默认为 {F_APP_ROOT}/Upgrades
+   * @param ?string $upgradesDir 升级脚本目录，null 时默认为 {FileSystem::root()}/Upgrades
    */
   public function __construct(
     protected ?string $upgradesDir = null,
   ) {
-    $versionFile = FileHelper::combinedFilePath(F_APP_DATA, ".version");
+    $versionFile = FileHelper::combinedFilePath(FileSystem::data(), ".version");
     if (file_exists($versionFile)) {
       $this->latestVersion = trim(file_get_contents($versionFile));
       $this->currentSemver = $this->parseSemver($this->latestVersion);
@@ -100,11 +98,11 @@ class Provisioner
    */
   public function install()
   {
-    if (!is_dir(F_APP_DATA)) {
-      mkdir(F_APP_DATA, 0777, true);
+    if (!is_dir(FileSystem::data())) {
+      mkdir(FileSystem::data(), 0777, true);
     }
-    if (!is_dir(F_APP_STORAGE)) {
-      mkdir(F_APP_STORAGE, 0777, true);
+    if (!is_dir(FileSystem::storage())) {
+      mkdir(FileSystem::storage(), 0777, true);
     }
     return $this;
   }
@@ -189,10 +187,10 @@ class Provisioner
     return $this;
   }
 
-  /** 获取升级目录路径，未设置时返回默认路径 {F_APP_ROOT}/Upgrades */
+  /** 获取升级目录路径，未设置时返回默认路径 {FileSystem::root()}/Upgrades */
   private function upgradesDir(): string
   {
-    return $this->upgradesDir ?? FileHelper::combinedFilePath(F_APP_ROOT, "Upgrades");
+    return $this->upgradesDir ?? FileHelper::combinedFilePath(FileSystem::root(), "Upgrades");
   }
 
   /**
@@ -225,7 +223,7 @@ class Provisioner
   /**
    * 从升级目录路径和文件名构建类的完全限定名
    *
-   * 推导逻辑：upgradesDir 相对 F_APP_ROOT 的路径 → 目录分隔符转命名空间分隔符 → 拼接类短名
+   * 推导逻辑：upgradesDir 相对 FileSystem::root() 的路径 → 目录分隔符转命名空间分隔符 → 拼接类短名
    * 例：upgradesDir=/app/Controller/Iuu/Upgrades/List, file=Upgrade_1_1_0.php
    *     → Controller\Iuu\Upgrades\List\Upgrade_1_1_0
    *
@@ -235,7 +233,7 @@ class Provisioner
   private function buildUpgradeClassName(string $filePath): string
   {
     $shortName = pathinfo($filePath, PATHINFO_FILENAME);
-    $relativePath = ltrim(str_replace(F_APP_ROOT, '', $this->upgradesDir()), '/');
+    $relativePath = ltrim(str_replace(FileSystem::root(), '', $this->upgradesDir()), '/');
     $namespace = str_replace('/', '\\', $relativePath);
     return $namespace . '\\' . $shortName;
   }
@@ -304,7 +302,7 @@ class Provisioner
    */
   private function persistVersion(string $version): void
   {
-    $versionFile = FileHelper::combinedFilePath(F_APP_DATA, ".version");
+    $versionFile = FileHelper::combinedFilePath(FileSystem::data(), ".version");
     file_put_contents($versionFile, $version);
     $this->latestVersion = $version;
     $this->currentSemver = $this->parseSemver($version);
@@ -316,7 +314,7 @@ class Provisioner
    */
   public function uninstall()
   {
-    $versionFile = FileHelper::combinedFilePath(F_APP_DATA, ".version");
+    $versionFile = FileHelper::combinedFilePath(FileSystem::data(), ".version");
     if (file_exists($versionFile)) {
       unlink($versionFile);
     }
@@ -330,11 +328,11 @@ class Provisioner
   public function getStatus(): array
   {
     return [
-      'app_id' => F_APP_ID,
+      'app_id' => App::id(),
       'current_version' => $this->currentSemver,
       'latest_version' => $this->latestVersion,
       'upgrade_dir' => $this->upgradesDir(),
-      'data_dir' => F_APP_DATA,
+      'data_dir' => FileSystem::data(),
     ];
   }
 

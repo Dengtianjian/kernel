@@ -2,9 +2,10 @@
 
 namespace kernel\Platform\DiscuzX\Foundation\Storage;
 
+use kernel\Foundation\App;
 use kernel\Foundation\HTTP\URL;
-use kernel\Foundation\Storage\LocalStorage;
-use kernel\Foundation\Storage\StorageSignature;
+use kernel\Foundation\FileSystem\Storage\LocalStorage;
+use kernel\Foundation\FileSystem\Storage\StorageSignature;
 
 class DiscuzXLocalStorage extends LocalStorage
 {
@@ -17,8 +18,9 @@ class DiscuzXLocalStorage extends LocalStorage
    * @param string $BaseURL 基础地址
    * @param string $PluginId 插件 ID
    */
-  public function __construct($SignatureKey, $RoutePrefix = "files", $BaseURL = F_BASE_URL, $Platform = "local", $PluginId = F_APP_ID)
+  public function __construct($SignatureKey, $RoutePrefix = "files", $BaseURL = F_BASE_URL, $Platform = "local", $PluginId = null)
   {
+    $PluginId ??= App::id();
     $this->pluginId = $PluginId;
     parent::__construct($SignatureKey, $RoutePrefix, $BaseURL, $Platform);
   }

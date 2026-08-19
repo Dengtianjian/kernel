@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\HTTP;
 
+use kernel\Foundation\App;
 use kernel\Foundation\HTTP\Request\RequestBody;
 use kernel\Foundation\HTTP\Request\RequestHeader;
 use kernel\Foundation\HTTP\Request\RequestModelParams;
@@ -10,9 +11,6 @@ use kernel\Foundation\HTTP\Request\RequestParams;
 use kernel\Foundation\HTTP\Request\RequestQuery;
 use kernel\Foundation\Output;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class Request
 {
@@ -68,7 +66,9 @@ class Request
   /**
    * 当前匹配到的路由
    *
-   * @var array
+   * App::run() 路由匹配后写入；业务代码统一从 $request->Route 读取
+   *
+   * @var array|null
    */
   public $Route = null;
 
@@ -108,7 +108,7 @@ class Request
    */
   public function ajax()
   {
-    if (F_APP_MODE === "development") {
+    if (App::mode() === "development") {
       if ($this->query->has("x-ajax")) return 1;
       if ($this->body->has("x-ajax")) return 1;
       if ($this->params->has("x-ajax")) return 1;
@@ -129,7 +129,7 @@ class Request
    */
   public function async()
   {
-    if (F_APP_MODE === "development") {
+    if (App::mode() === "development") {
       if ($this->query->has("x-async")) return true;
       if ($this->body->has("x-async")) return true;
       if ($this->params->has("x-async")) return true;
@@ -147,7 +147,7 @@ class Request
   private function getMethod()
   {
     $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : "get";
-    if (F_APP_MODE === "development") {
+    if (App::mode() === "development") {
       if ($this->query->has("_method")) $method = $this->query->get("_method");
       if ($this->params->has("_method")) $method = $this->params->get("_method");
     }

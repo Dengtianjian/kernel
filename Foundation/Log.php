@@ -1,8 +1,9 @@
 <?php
 
 namespace kernel\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 
 
 class Log
@@ -37,7 +38,7 @@ class Log
    */
   static private function basePath()
   {
-    return defined("F_APP_DATA") ? F_APP_DATA . "/Logs" : "";
+    return FileSystem::data() ? FileSystem::data() . "/Logs" : "";
   }
   /**
    * 设置或读取最小记录级别

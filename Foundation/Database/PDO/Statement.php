@@ -5,9 +5,6 @@ namespace kernel\Foundation\Database\PDO;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Output;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * SQL 语句生成器 — 底层结构化条件到 SQL 字符串的转换引擎

@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Modules\SettingModule;
 
+use kernel\Foundation\App;
 use kernel\Modules\SettingModule\SettingsModel;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
@@ -12,7 +13,7 @@ class DiscuzXSettingsModel extends SettingsModel
   public function __construct($tableName = NULL)
   {
     if (is_null($tableName)) {
-      $tableName = F_APP_ID . "_settings";
+      $tableName = App::id() . "_settings";
     }
 
     $this->tableName = $tableName;
@@ -25,7 +26,7 @@ class DiscuzXSettingsModel extends SettingsModel
 
     $this->tableStructureSQL = <<<SQL
     -- ----------------------------
-    -- Table structure for pre_{F_APP_ID}_settings
+    -- Table structure for pre_{$tableName}_settings
     -- ----------------------------
     DROP TABLE IF EXISTS `pre_{$tableName}`;
     CREATE TABLE IF NOT EXISTS `pre_{$tableName}`  (

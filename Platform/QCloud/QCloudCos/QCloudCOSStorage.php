@@ -1,12 +1,12 @@
 <?php
 
 namespace kernel\Platform\QCloud\QCloudCos;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File\Filesystem;
 use kernel\Foundation\HTTP\URL;
-use kernel\Foundation\Storage\AbstractOSSStroage;
-use kernel\Foundation\Storage\StorageFileInfoData;
+use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
+use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;
 use kernel\Platform\QCloud\QCloudSTS;
 use kernel\Service\StorageService;
 use Qcloud\Cos\Client as QCloudCOSClient;
@@ -89,7 +89,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
     }
 
     $FileKeyPathInfo = pathinfo($fileKey);
-    $TempFileInfo = Filesystem::upload($file, "RemoteTemp", $FileKeyPathInfo['basename']);
+    $TempFileInfo = FileSystem::upload($file, "RemoteTemp", $FileKeyPathInfo['basename']);
 
     $FileInfo = [
       "key" => $fileKey,
@@ -177,7 +177,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
         return $this->break(403, "getFile:403001", "抱歉，您无权获取该文件信息");
       }
 
-      $fileInfo = Filesystem::getFileInfo($this->getFilePreviewURL($fileKey));
+      $fileInfo = FileSystem::getFileInfo($this->getFilePreviewURL($fileKey));
       $fileInfo['remote'] = false;
     }
     if (!$fileInfo) {

@@ -1,6 +1,7 @@
 <?php
 
 namespace kernel\Foundation\Data;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Output;
@@ -166,8 +167,10 @@ class Serializer
    * @param string $BasePath 基路径
    * @return void
    */
-  static function load($FileName, $ruleName = null, $BasePath = F_APP_ROOT)
+  static function load($FileName, $ruleName = null, $BasePath = null)
   {
+    $BasePath ??= FileSystem::root();
+
     $Rule = Import($FileName, [], $BasePath);
     if (is_null($ruleName)) {
       $ruleName = pathinfo($FileName, PATHINFO_BASENAME);
@@ -184,8 +187,10 @@ class Serializer
    * @param string $BasePath 基路径
    * @return array
    */
-  static function loadGet($FileName, $ruleName = null, $Names = null, $upperLevel = null, $BasePath = F_APP_ROOT)
+  static function loadGet($FileName, $ruleName = null, $Names = null, $upperLevel = null, $BasePath = null)
   {
+    $BasePath ??= FileSystem::root();
+
     if (is_null($ruleName)) {
       $ruleName = pathinfo($FileName, PATHINFO_BASENAME);
     }

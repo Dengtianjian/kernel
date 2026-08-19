@@ -4,6 +4,8 @@ namespace kernel\Foundation;
 
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\FileSystem;
 
 /**
  * 配置管理类
@@ -23,6 +25,31 @@ class Config
    * @var array<string, array>
    */
   private static $configs = [];
+
+  /**
+   * 初始化配置：加载应用 Configs 目录下的多层配置文件
+   *
+   * 由 App 构造时 `new Config;` 触发（App::initConfig() 已迁移至本构造方法）。
+   *
+   * 读取顺序（存在才读取）：
+   * default(Config.php) -> development(Config.development.php) -> local(Config.local.php)
+   * -> production(Config.production.php) -> release(Config.release.php)
+   * 后读取的文件覆盖先读取的文件（release 覆盖 production 覆盖 local 覆盖 development 覆盖 default）。
+   *
+   * @return void
+   */
+  function __construct()
+  {
+    $configFilesDir = FileHelper::combinedFilePath(FileSystem::root(), "Configs");
+    if (!is_dir($configFilesDir))
+      return;
+
+    $readConfigFiles = ["Config.php", "Config.development.php", "Config.local.php", "Config.production.php", "Config.release.php"];
+
+    foreach ($readConfigFiles as $configFileName) {
+      self::read(FileHelper::combinedFilePath($configFilesDir, $configFileName));
+    }
+  }
 
   /**
    * 解析键路径，将 . 统一转为 / 后拆分为层级数组
@@ -45,8 +72,9 @@ class Config
    * @param string $appId 应用标识，决定配置写入哪个应用的分组，默认为当前应用
    * @return bool 成功返回 true，失败返回 false
    */
-  static function read($filePath = null, $appId = F_APP_ID)
+  static function read($filePath = null, $appId = null)
   {
+    $appId ??= App::id();
     if (!$filePath || !\file_exists($filePath)) {
       return false;
     }
@@ -78,8 +106,9 @@ class Config
    * @param string $appId 应用标识
    * @return mixed 匹配的配置值，或全部配置数组（$key 为 null 时），或 $defaultValue
    */
-  static function get($key = null, $defaultValue = null, $appId = F_APP_ID)
+  static function get($key = null, $defaultValue = null, $appId = null)
   {
+    $appId ??= App::id();
     if (!isset(self::$configs[$appId])) {
       return $defaultValue;
     }
@@ -114,8 +143,9 @@ class Config
    * @param string       $appId       应用标识
    * @return void
    */
-  static function set($keyOrValue, $value = null, $appId = F_APP_ID)
+  static function set($keyOrValue, $value = null, $appId = null)
   {
+    $appId ??= App::id();
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
     }
@@ -150,8 +180,9 @@ class Config
    * @param string $appId 应用标识
    * @return bool 键存在返回 true，不存在或 appId 未加载返回 false
    */
-  static function has($key, $appId = F_APP_ID)
+  static function has($key, $appId = null)
   {
+    $appId ??= App::id();
     if (!isset(self::$configs[$appId])) {
       return false;
     }
@@ -178,8 +209,9 @@ class Config
    * @param string $appId 应用标识
    * @return void
    */
-  static function forget($key, $appId = F_APP_ID)
+  static function forget($key, $appId = null)
   {
+    $appId ??= App::id();
     if (!isset(self::$configs[$appId])) {
       return;
     }
@@ -208,8 +240,9 @@ class Config
    * @param string $appId  应用标识
    * @return void
    */
-  static function push($key, $value, $appId = F_APP_ID)
+  static function push($key, $value, $appId = null)
   {
+    $appId ??= App::id();
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
     }
@@ -240,8 +273,9 @@ class Config
    * @param string $appId 应用标识
    * @return void
    */
-  static function flush($appId = F_APP_ID)
+  static function flush($appId = null)
   {
+    $appId ??= App::id();
     unset(self::$configs[$appId]);
   }
   /**

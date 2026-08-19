@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use ZipArchive;
 
 class Zip

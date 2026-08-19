@@ -5,7 +5,7 @@ namespace kernel\Platform\DiscuzX\Foundation\Storage\QCloud;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\ReturnResult\ReturnResult;
-use kernel\Foundation\Storage\StorageSignature;
+use kernel\Foundation\FileSystem\Storage\StorageSignature;
 use kernel\Platform\DiscuzX\Foundation\Storage\QCloud\QCloudSTS\DiscuzXQCloudSTS;
 use kernel\Platform\QCloud\QCloud;
 use kernel\Platform\QCloud\QCloudCos\QCloudCosSignture;

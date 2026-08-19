@@ -2,9 +2,6 @@
 
 namespace kernel\App\Main\Extensions;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Request;

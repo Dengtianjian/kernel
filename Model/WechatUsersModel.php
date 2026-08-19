@@ -4,9 +4,6 @@ namespace kernel\Model;
 
 use kernel\Foundation\Database\PDO\Model;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class WechatUsersModel extends Model
 {

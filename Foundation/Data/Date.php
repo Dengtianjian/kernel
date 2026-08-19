@@ -2,9 +2,6 @@
 
 namespace kernel\Foundation\Data;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * 时间工具类

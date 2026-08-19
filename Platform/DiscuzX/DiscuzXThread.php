@@ -6,9 +6,6 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\BaseObject;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class DiscuzXThread extends BaseObject
 {

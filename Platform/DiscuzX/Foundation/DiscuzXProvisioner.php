@@ -1,18 +1,15 @@
 <?php
 
 namespace kernel\Platform\DiscuzX\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\Filesystem;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Provisioner;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXApp;
 
 if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
   exit('Access Denied');
 }
-
-define("F_KERNEL", 1);
 
 /** DiscuzX Provisioner: Install / Upgrade / Uninstall */
 class DiscuzXProvisioner extends Provisioner
@@ -39,20 +36,20 @@ class DiscuzXProvisioner extends Provisioner
   public function uninstall()
   {
     parent::uninstall();
-    Filesystem::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
+    FileSystem::deleteDirectory(F_DISCUZX_DATA_PLUGIN);
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner"));
   }
   public function cleanInstall()
   {
-    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Install"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner", "Install"));
   }
   public function cleanUpgrade()
   {
-    return Filesystem::deleteDirectory(FileHelper::combinedFilePath(F_APP_ROOT, "Provisioner", "Upgrade"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner", "Upgrade"));
   }
 }

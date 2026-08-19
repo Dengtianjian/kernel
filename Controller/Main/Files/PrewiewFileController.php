@@ -1,8 +1,9 @@
 <?php
 
 namespace kernel\Controller\Main\Files;
+use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Service\StorageService;
 
 class PrewiewFileController extends FileBaseController
@@ -38,7 +39,7 @@ class PrewiewFileController extends FileBaseController
 
       return $this->response->redirect($URL, 302);
     } else {
-      $FilePath = FileHelper::combinedFilePath(F_APP_STORAGE, $File->filePath);
+      $FilePath = FileHelper::combinedFilePath(FileSystem::storage(), $File->filePath);
       if (!file_exists($FilePath)) {
         return $this->response->error(404, 404, "文件不存在", "文件实体不存在");
       }

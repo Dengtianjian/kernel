@@ -1,15 +1,12 @@
 <?php
 
 namespace kernel\Platform\DiscuzX\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Log;
 use kernel\Foundation\Output;
 use kernel\Foundation\HTTP\Response;
@@ -71,8 +68,8 @@ class DiscuzXExceptionHandler
         $Response->json()->output();
         exit;
       } else {
-        $View = new ResponseView("error", [], "Views", "page", F_KERNEL_ROOT);
-        $View->render(FileHelper::combinedFilePath(F_KERNEL_ROOT, "Views", "error.php"), [
+        $View = new ResponseView("error", [], "Views", "page", FileSystem::kernelRoot());
+        $View->render(FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Views", "error.php"), [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails
         ]);

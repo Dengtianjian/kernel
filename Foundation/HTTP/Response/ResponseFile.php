@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Request;
 
 class ResponseFile extends ResponseDownload

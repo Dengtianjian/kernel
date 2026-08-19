@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\File;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Output;

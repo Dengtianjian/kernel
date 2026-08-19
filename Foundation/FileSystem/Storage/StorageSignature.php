@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation\Storage;
+namespace kernel\Foundation\FileSystem\Storage;
 
 use kernel\Foundation\Object\BaseObject;
 

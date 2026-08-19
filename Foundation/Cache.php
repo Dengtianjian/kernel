@@ -1,6 +1,8 @@
 <?php
 
 namespace kernel\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
+
 
 /**
  * 基于文件的缓存
@@ -27,11 +29,55 @@ namespace kernel\Foundation;
 class Cache
 {
   /**
-   * 缓存存储目录
+   * 当前（最近实例化）的 Cache 实例
+   *
+   * 实例化 Cache 时自动注册（构造即注册），Cache::key() 从该实例读取 key。
+   * 后实例化者覆盖前者，与 App::$currentApp 模式一致。
+   *
+   * @var Cache|null
+   */
+  protected static $currentCache = null;
+  /**
+   * 缓存动态 KEY，16 位随机字符串，主要用于静态文件
+   *
+   * 由构造方法生成，替代原 F_CACHE_KEY 常量。
    *
    * @var string
    */
-  static private $saveBasePath = F_APP_DATA . "/Cache";
+  private $key = "";
+  /**
+   * 构造 Cache
+   *
+   * 生成 16 位随机字符串 KEY 并注册当前实例（Cache::key() 读取）。
+   * App 构造时执行 `new Cache;` 自动触发。
+   *
+   * @return void
+   */
+  function __construct()
+  {
+    $this->key = bin2hex(random_bytes(8));
+    self::$currentCache = $this;
+  }
+  /**
+   * 获取缓存动态 KEY（16 位随机字符串）
+   *
+   * 替代原 F_CACHE_KEY 常量（time()），每次 App 实例化（new Cache）时重新生成。
+   *
+   * @return string 当前实例的 KEY；未实例化 Cache 时返回空字符串
+   */
+  static function key(): string
+  {
+    return self::$currentCache === null ? "" : self::$currentCache->key;
+  }
+  /**
+   * 获取缓存存储目录
+   *
+   * @return string
+   */
+  static private function saveBasePath(): string
+  {
+    return FileSystem::data() ? FileSystem::data() . "/Cache" : "";
+  }
   /**
    * 已经读取的缓存内容
    * 键是缓存 ID，值是缓存内容
@@ -370,7 +416,7 @@ class Cache
   static function flush()
   {
     $removed = 0;
-    foreach (glob(self::$saveBasePath . "/*.txt") ?: [] as $file) {
+    foreach (glob(self::saveBasePath() . "/*.txt") ?: [] as $file) {
       if (@unlink($file)) {
         $removed++;
       }
@@ -388,7 +434,7 @@ class Cache
   static function gc()
   {
     $removed = 0;
-    foreach (glob(self::$saveBasePath . "/*.txt") ?: [] as $file) {
+    foreach (glob(self::saveBasePath() . "/*.txt") ?: [] as $file) {
       $cache = @unserialize(@file_get_contents($file));
       if (!is_array($cache) || !isset($cache["meta"]) || !is_array($cache["meta"])) {
         @unlink($file);
@@ -411,8 +457,8 @@ class Cache
    */
   private static function ensureDir()
   {
-    if (!is_dir(self::$saveBasePath)) {
-      mkdir(self::$saveBasePath, 0777, true);
+    if (!is_dir(self::saveBasePath())) {
+      mkdir(self::saveBasePath(), 0777, true);
     }
   }
 
@@ -424,7 +470,7 @@ class Cache
    */
   private static function getFilePath($id)
   {
-    return self::$saveBasePath . "/" . self::sanitizeId($id) . ".txt";
+    return self::saveBasePath() . "/" . self::sanitizeId($id) . ".txt";
   }
 
   /**

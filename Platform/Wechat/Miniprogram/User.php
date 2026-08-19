@@ -6,9 +6,6 @@ use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Foundation\Data\Arr;
 use kernel\Model\WechatUsersModel;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class User extends WechatMiniProgram
 {

@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Foundation\Storage;
+namespace kernel\Foundation\FileSystem\Storage;
+use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\Filesystem;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\URL;
 
 class LocalStorage extends AbstractStorage
@@ -14,7 +14,7 @@ class LocalStorage extends AbstractStorage
     $FileInfo = $this->getFile($fileKey);
     if (!$FileInfo) return $this->return();
 
-    $DeletedResult = Filesystem::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $fileKey)));
+    $DeletedResult = FileSystem::deleteFile(FileHelper::optimizedPath(FileHelper::combinedFilePath(FileSystem::storage(), $fileKey)));
 
     if ($DeletedResult && $this->filesModel) {
       $this->filesModel->remove(true, $fileKey);
@@ -47,7 +47,7 @@ class LocalStorage extends AbstractStorage
       if ($this->authorizationEnabled && $this->verifyRequestAuth($fileKey) === FALSE) {
         return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
       }
-      $fileInfo = Filesystem::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(F_APP_STORAGE, $fileKey)));
+      $fileInfo = FileSystem::getFileInfo(FileHelper::optimizedPath(FileHelper::combinedFilePath(FileSystem::storage(), $fileKey)));
 
       $dirName = pathinfo($fileKey, PATHINFO_DIRNAME);
       $fileInfo['path'] = !$dirName || $dirName === '.' ? NULL : $dirName;

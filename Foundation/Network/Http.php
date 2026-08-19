@@ -2,9 +2,6 @@
 
 namespace kernel\Foundation\Network;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * HTTP

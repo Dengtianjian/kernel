@@ -4,15 +4,15 @@ namespace kernel\Foundation;
 
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\FileSystem;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /**
  * 路由注册与匹配
  *
- * 纯静态类，维护全局路由表，提供链式 DSL 风格的 API。
+ * 构造时按模式加载 Routes 文件：http 模式注册 URI 路由、command 模式注册 CLI 命令。
+ * 维护全局路由表，提供链式 DSL 风格的 API。
  *
  * ## 使用方式
  * ```
@@ -37,7 +37,7 @@ if (!defined("F_KERNEL")) {
  * ```
  *
  * ## 匹配优先级
- * 1. 静态路由 `$StaticRoutes['common'][$method][$uri]`
+ * 1. 静态路由 `$staticRoutes['common'][$method][$uri]`
  * 2. 静态 `async` 路由
  * 3. 静态 `any` 路由
  * 4. 动态路由逐条 `preg_match`
@@ -47,26 +47,26 @@ class Router
   /**
    * 静态路由表
    *
-   * 结构：`$StaticRoutes[$type][$method][$uri] = route`
+   * 结构：`$staticRoutes[$type][$method][$uri] = route`
    *
    * @var array{common: array, async: array, any: array}
    */
-  private static $StaticRoutes = [];
+  private static $staticRoutes = [];
 
   /**
    * 动态路由表（含正则参数的 URI）
    *
-   * 结构：`$ParamsRoutes[$type][$method][$pattern] = route`
+   * 结构：`$paramsRoutes[$type][$method][$pattern] = route`
    *
    * @var array{common: array, async: array, any: array}
    */
-  private static $ParamsRoutes = [];
+  private static $paramsRoutes = [];
 
   /** 是否处于 group() 回调中 */
-  private static $InGroup = false;
+  private static $inGroup = false;
 
   /** group() 上下文中的共享中间件 */
-  private static $GroupMiddlewares = [];
+  private static $groupMiddlewares = [];
 
   /**
    * 路由前缀栈
@@ -75,7 +75,7 @@ class Router
    *
    * @var string[]
    */
-  private static $Prefix = [];
+  private static $prefix = [];
 
   /**
    * same() 上下文中的共用 URI
@@ -84,402 +84,500 @@ class Router
    *
    * @var string|null
    */
-  private static $sameURI = null;
+  private static $sameUri = null;
+
+  /**
+   * 运行模式：http / command
+   *
+   * 构造时按模式加载路由：http 模式注册 URI 路由（Router::get 等），
+   * command 模式注册 CLI 命令（Router::command）。
+   *
+   * @var string|null
+   */
+  private static $mode = null;
+
+  /**
+   * CLI 命令表
+   *
+   * 结构：`$commands[$name] = ["controller" => .., "handleMethodName" => .., "description" => ..]`
+   *
+   * @var array
+   */
+  private static $commands = [];
+
+  /**
+   * 构造：设置运行模式并加载路由
+   *
+   * @param string|bool|null $mode 运行模式：http/command；true 视为 http、false 视为 command；
+   *                                null 自动判断（非 cli 环境为 http，否则 command）
+   */
+  public function __construct($mode = null)
+  {
+    if ($mode === null) {
+      if (self::$mode === null) {
+        self::$mode = PHP_SAPI !== "cli" ? "http" : "command";
+      }
+    } else {
+      self::$mode = ($mode === true || $mode === "http") ? "http" : "command";
+    }
+
+    $this->loadRoutes();
+  }
+
+  /**
+   * 设置运行模式
+   *
+   * 特殊场景（如 CLI 下模拟 HTTP 请求）可显式覆盖自动判断的模式。
+   *
+   * @param string|bool $mode http/command；true 视为 http、false 视为 command
+   * @return string 类名（供链式调用）
+   */
+  public static function setMode($mode)
+  {
+    self::$mode = ($mode === true || $mode === "http") ? "http" : "command";
+    return self::class;
+  }
+
+  /**
+   * 获取运行模式
+   *
+   * @return string|null
+   */
+  public static function mode()
+  {
+    return self::$mode;
+  }
+
+  /**
+   * 加载路由文件
+   *
+   * 扫描 kernel/Routes 与 App/Routes 下所有 PHP 文件并 include_once，
+   * 文件内通过 Router::get/command 等注册 URI 路由与 CLI 命令。
+   * 收集按运行模式：http 模式仅收集 URI 路由（register），command 模式仅收集 CLI 命令（command），
+   * 另一模式的数据不存入类。
+   *
+   * @return bool
+   */
+  protected function loadRoutes()
+  {
+    $localRouteFiles = [];
+    $kernelRoutesDir = FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Routes");
+    if (is_dir($kernelRoutesDir)) {
+      //* 载入kernel路由
+      $kernelRouteFiles = FileHelper::recursionScanDir($kernelRoutesDir, null, true);
+      if (count($kernelRouteFiles)) {
+        $localRouteFiles = array_merge($localRouteFiles, $kernelRouteFiles);
+      }
+    }
+
+    $appRoutesDir = FileHelper::combinedFilePath(FileSystem::root(), "Routes");
+    if (is_dir($appRoutesDir)) {
+      //* 载入App的路由
+      $appRouteFiles = FileHelper::recursionScanDir($appRoutesDir, null, true);
+      if (count($appRouteFiles)) {
+        $localRouteFiles = array_merge($localRouteFiles, $appRouteFiles);
+      }
+    }
+    foreach ($localRouteFiles as $fileItem) {
+      if (!is_dir($fileItem)) {
+        include_once($fileItem);
+        self::prefix(null);
+      }
+    }
+
+    return true;
+  }
+
   /**
    * 设置路由前缀
    *
-   * 后续注册的路由 URI 会自动拼接此前缀。
-   *
-   * @param string|string[]|null $prefix 前缀字符串或数组；传 null 清除前缀
-   * @param bool                 $append 是否追加到已有前缀（而非替换）
+   * @param string|array|null $prefix 前缀；null 清空
+   * @param bool $append 是否追加到现有前缀
+   * @return string 类名（供链式调用）
    */
-  static function prefix($prefix, $append = false)
+  public static function prefix($prefix, $append = false)
   {
-    if (is_null($prefix)) {
-      self::$Prefix = [];
-    } else {
-      $prefix = is_string($prefix) ? [$prefix] : $prefix;
-      if (self::$InGroup) {
-        foreach ($prefix as $value) {
-          array_push(self::$Prefix, $value);
-        }
-      } else {
-        if ($append) {
-          array_push(self::$Prefix, ...$prefix);
-        } else {
-          self::$Prefix = $prefix;
-        }
-      }
+    if ($prefix === null) {
+      self::$prefix = [];
+      return self::class;
     }
-
-    return new static;
+    $prefixes = is_array($prefix) ? $prefix : explode("/", trim($prefix, "/"));
+    if ($append) {
+      self::$prefix = array_merge(self::$prefix, $prefixes);
+    } else {
+      self::$prefix = $prefixes;
+    }
+    return self::class;
   }
 
   /**
-   * 路由组
+   * 路由组：共享前缀与中间件
    *
-   * 为回调内注册的路由统一添加前缀和中间件。支持嵌套 group。
-   *
-   * @param string|string[] $prefix      路由前缀
-   * @param \Closure        $callback    注册子路由的回调
-   * @param array           $middlewares 组内路由共享的中间件
+   * @param string|array $prefix 组前缀
+   * @param \Closure $callback 组内注册回调
+   * @param array $middlewares 组中间件
+   * @return string 类名（供链式调用）
    */
-  static function group($prefix, \Closure $callback, $middlewares = [])
+  public static function group($prefix, \Closure $callback, $middlewares = [])
   {
-    if (!is_array($middlewares)) {
-      $middlewares = empty($middlewares) ? [] : [$middlewares];
+    $previousPrefix = self::$prefix;
+    $previousGroupMiddlewares = self::$groupMiddlewares;
+    $previousInGroup = self::$inGroup;
+
+    self::$inGroup = true;
+    if ($prefix) {
+      self::$prefix = array_merge(self::$prefix, (array)$prefix);
     }
-
-    $OldInGroup = self::$InGroup;
-    $OldGroupMiddlewares = self::$GroupMiddlewares;
-    $OldPrefix = self::$Prefix;
-
-    self::$InGroup = true;
-    self::$GroupMiddlewares = $middlewares;
-    self::$Prefix = is_string($prefix) ? [$prefix] : $prefix;
+    if (count($middlewares)) {
+      self::$groupMiddlewares = array_merge(self::$groupMiddlewares, $middlewares);
+    }
 
     $callback();
 
-    self::$Prefix = $OldPrefix;
-    self::$GroupMiddlewares = $OldGroupMiddlewares;
-    self::$InGroup = $OldInGroup;
+    self::$inGroup = $previousInGroup;
+    self::$prefix = $previousPrefix;
+    self::$groupMiddlewares = $previousGroupMiddlewares;
+
+    return self::class;
   }
+
   /**
-   * 同一 URI 注册多个 HTTP 方法的路由
+   * 同一 URI 注册不同方法
    *
-   * 回调内调用 Router::get()/post() 等方法时，URI 参数自动取 self::$sameURI，
-   * 只需传入控制器类名即可。
+   * 回调内的 get/post 等方法不再传 URI，仅传控制器。
    *
-   * @param string   $URI      共用 URI
-   * @param \Closure $callback 注册不同方法路由的回调
+   * @param string $uri 共用 URI
+   * @param \Closure $callback 注册回调
+   * @return string 类名（供链式调用）
    */
-  static function same($URI, \Closure $callback)
+  public static function same($uri, \Closure $callback)
   {
-    self::$sameURI = $URI;
+    $previousSameUri = self::$sameUri;
+    self::$sameUri = $uri;
     $callback();
-    self::$sameURI = null;
-    return new static;
+    self::$sameUri = $previousSameUri;
+    return self::class;
   }
 
   /**
-   * 从控制器配置中解析 [类名, 方法名] 或纯类名
+   * 注册路由（核心）
    *
-   * @param string|array $target 控制器类名或 [类名, 方法名] 数组
-   * @return array{string, string} [类名, 方法名]
+   * @param string $type 类型：common / async / any
+   * @param string $method HTTP 方法（小写）
+   * @param string $uri 路由 URI（不含前导斜杠，根 "/" 除外）
+   * @param string|array|\Closure $controller 控制器类名、[类名, 方法名] 或闭包
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static private function resolveControllerTarget($target): array
+  public static function register($type, $method, $uri, $controller, $middlewares = [], $controllerInstantiateParams = [])
   {
-    if (is_array($target)) {
-      return [$target[0], isset($target[1]) ? $target[1] : "data"];
+    //* 按模式收集：command 模式下不注册 URI 路由（loadRoutes 按模式加载，避免冗余存储）
+    if (self::$mode === "command") {
+      return self::class;
     }
-    return [$target, "data"];
-  }
 
-  /**
-   * 注册路由（底层方法）
-   *
-   * 根据 URI 是否含参数自动分类为静态或动态路由。
-   * same() 上下文下自动从 self::$sameURI 取 URI；group() 上下文下自动合并中间件和前缀。
-   *
-   * @param string                    $type                       路由类型："common" | "async" | "any"
-   * @param string                    $method                     请求方法
-   * @param string|array|null         $URI                        URI；same() 上下文中传入控制器类名
-   * @param string|array|null         $controller                 控制器类名或 [类名, 方法名]
-   * @param array                     $middlewares                路由中间件
-   * @param array                     $ControllerInstantiateParams 控制器实例化额外参数
-   */
-  static function register($type, $method, $URI, $controller, $middlewares = [], $ControllerInstantiateParams = [])
-  {
-    // same() 上下文：$URI 位置传入控制器类名或 [类名, 方法名]，$controller 为 null
-    if (self::$sameURI !== null && is_null($controller)) {
-      [$controller, $handleMethodName] = self::resolveControllerTarget($URI);
-      $URI = self::$sameURI;
+    //* same() 上下文：URI 由 same() 提供
+    if (self::$sameUri !== null) {
+      $uri = self::$sameUri;
+    }
+    //* 前缀拼接
+    if (count(self::$prefix)) {
+      $uri = trim(implode("/", self::$prefix), "/") . "/" . trim($uri, "/");
+    }
+    //* 非根 URI 去掉前导斜杠（仅根 "/" 特判）
+    if ($uri !== "/") {
+      $uri = ltrim($uri, "/");
+    }
+
+    $target = self::resolveControllerTarget($controller);
+    $route = [
+      "params" => [],
+      "middlewares" => array_merge(self::$groupMiddlewares, $middlewares),
+      "controller" => $target["controller"],
+      "controllerInstantiateParams" => $controllerInstantiateParams,
+      "controllerHandleMethodName" => $target["handleMethodName"],
+    ];
+
+    //* 动态路由：URI 含正则参数
+    if (strpos($uri, "{") !== false) {
+      $pattern = self::buildParamsPattern($uri);
+      self::$paramsRoutes[$type][$method][$pattern] = $route;
     } else {
-      $handleMethodName = "data";
+      self::$staticRoutes[$type][$method][$uri] = $route;
     }
+    return self::class;
+  }
 
-    if (!is_array($middlewares)) {
-      if (empty($middlewares)) {
-        $middlewares = [];
-      } else {
-        $middlewares = [$middlewares];
-      }
-    }
-    if (self::$InGroup && is_array(self::$GroupMiddlewares)) {
-      foreach (self::$GroupMiddlewares as $middleware) {
-        array_unshift($middlewares, $middleware);
-      }
-    }
+  /**
+   * 构建动态路由正则
+   *
+   * `{paramName:regex}` → `(?P<paramName>regex)`；`{?paramName:regex}`（可选参数）→ `(?P<paramName>regex)?`
+   *
+   * @param string $uri 含参数的 URI
+   * @return string 正则
+   */
+  protected static function buildParamsPattern($uri)
+  {
+    $pattern = preg_replace_callback('/\{(\??)(\w+):([^}]+)\}/', function ($matches) {
+      $optional = $matches[1] === "?" ? "?" : "";
+      return "(?P<" . $matches[2] . ">" . $matches[3] . ")" . $optional;
+    }, $uri);
+    return "#^" . $pattern . "$#";
+  }
 
-    // $controller 位置传入 [类名, 方法名] 数组
+  /**
+   * 解析控制器目标
+   *
+   * - 字符串类名 → controller=类名，handleMethodName=null（默认 data()）
+   * - 数组 [类名, 方法名] → controller=类名，handleMethodName=方法名（默认 data）
+   * - 闭包 → controller=闭包，handleMethodName=null
+   *
+   * @param string|array|\Closure $controller
+   * @return array{controller: mixed, handleMethodName: string|null}
+   */
+  protected static function resolveControllerTarget($controller)
+  {
     if (is_array($controller)) {
-      [$controller, $handleMethodName] = self::resolveControllerTarget($controller);
-    }
-
-    if (!empty(self::$Prefix)) {
-      $prefix = self::$Prefix;
-      if (is_array($prefix)) {
-        $prefix = implode("/", $prefix);
-      }
-      if (substr($prefix, strlen($prefix) - 1) === "/") {
-        $prefix = substr($prefix, 0, strlen($prefix) - 1);
-      }
-      $URI = implode("/", array_filter([
-        $prefix,
-        $URI
-      ], function ($item) {
-        return $item;
-      }));
-    }
-    $HasParamsRoute = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URI, $MatchParams);
-    if ($HasParamsRoute) {
-      $URIParams = [];
-      foreach ($MatchParams as $item) {
-        array_push($URIParams, ...$item);
-      }
-
-      $replaceURI = $URI;
-      foreach ($URIParams as $index => $value) {
-        $replaceURI = str_replace($value, "{$index}", $replaceURI);
-      }
-
-      $URIParts = explode("/", $replaceURI);
-      $URIParts = array_filter($URIParts, function ($item) {
-        if (empty(trim($item)))
-          return false;
-        return true;
-      });
-
-      $patterns = [];
-      $params = [];
-      foreach ($URIParts as $URIPart) {
-        $HasParamPart = preg_match_all("/(?<=\\{)[^}]*(?=\\})/", $URIPart, $Param);
-        if ($HasParamPart) {
-          $Param = $Param[0][0];
-          $Param = $URIPart = $URIParams[$Param];
-          if (strpos($Param, ":") === false) {
-            $params[$Param] = null;
-            array_push($patterns, "/(\w+)");
-          } else {
-            $ParamSplits = explode(":", $Param);
-            $key = trim($ParamSplits[0]);
-            $pattern = trim($ParamSplits[1]);
-
-            $NotEssential = false; //* 该参数可有可无的
-            if (empty($key)) {
-              $key = count($params);
-            }
-
-            $NotEssential = strpos($key, "?") !== false; //* 该参数可有可无的
-            if ($NotEssential) {
-              if (substr($key, 0, 1) === "?") {
-                $key = substr($key, 1);
-              } else {
-                $key = substr($key, 0, strlen($key) - 1);
-              }
-            }
-            if (empty($key)) {
-              array_push($params, null);
-            } else {
-              $params[$key] = null;
-            }
-
-            $paramPattern = trim($pattern);
-            if ($paramPattern) {
-              if (!preg_match("/^\(.+\)$/", $paramPattern)) {
-                $paramPattern = "({$paramPattern})";
-              }
-              $paramPattern = $NotEssential ? "/?{$paramPattern}?" : "/{$paramPattern}";
-            } else {
-              $paramPattern = $NotEssential ? "/?(\w+)?" : "/(\w+)";
-            }
-            array_push($patterns, $paramPattern);
-          }
-        } else {
-          if (count($patterns) === 0) {
-            array_push($patterns, $URIPart);
-          } else {
-            array_push($patterns, "/$URIPart");
-          }
-        }
-      }
-
-      $pattern = implode("", $patterns);
-      $pattern = str_replace("/", "\/", $pattern);
-
-      self::$ParamsRoutes[$type][$method][$pattern] = [
-        "raw" => $URI,
-        "uri" => $pattern,
-        "type" => $type,
-        "method" => $method,
-        "controller" => $controller,
-        "middlewares" => $middlewares,
-        "params" => $params,
-        "controllerHandleMethodName" => $handleMethodName,
-        "controllerInstantiateParams" => $ControllerInstantiateParams
-      ];
-    } else {
-      self::$StaticRoutes[$type][$method][$URI] = [
-        "raw" => $URI,
-        "uri" => $URI,
-        "type" => $type,
-        "method" => $method,
-        "controller" => $controller,
-        "middlewares" => $middlewares,
-        "params" => [],
-        "controllerHandleMethodName" => $handleMethodName,
-        "controllerInstantiateParams" => $ControllerInstantiateParams
+      return [
+        "controller" => $controller[0],
+        "handleMethodName" => $controller[1] ?? "data",
       ];
     }
-
-    return new static;
+    return [
+      "controller" => $controller,
+      "handleMethodName" => null,
+    ];
   }
 
   /**
    * 注册 GET 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * same() 回调中只传控制器（URI 由 same() 提供）。
+   *
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function get($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function get($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "get", $URI, $controller, $middlewares, $ControllerInstantiateParams);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "get", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
+
   /**
    * 注册 POST 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function post($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function post($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "post", $URI, $controller, $middlewares, $ControllerInstantiateParams);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "post", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
+
   /**
    * 注册 PUT 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function put($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function put($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "put", $URI, $controller, $middlewares, $ControllerInstantiateParams);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "put", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
+
   /**
    * 注册 PATCH 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function patch($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function patch($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "patch", $URI, $controller, $middlewares, $ControllerInstantiateParams);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "patch", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
+
   /**
    * 注册 DELETE 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function delete($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function delete($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "delete", $URI, $controller, $middlewares, $ControllerInstantiateParams);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "delete", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
+
   /**
    * 注册 OPTIONS 路由
    *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static function options($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
+  public static function options($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    return self::register("common", "options", $URI, $controller, $middlewares, $ControllerInstantiateParams);
-  }
-  /**
-   * 注册异步路由（仅内部 dispatch / Curl 调用）
-   *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
-   */
-  static function async($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
-  {
-    return self::register("async", "async", $URI, $controller, $middlewares, $ControllerInstantiateParams);
-  }
-  /**
-   * 注册通配路由（匹配任意 HTTP 方法）
-   *
-   * @param string|array $URI                        URI；same() 上下文中直接传控制器类名
-   * @param string|array|null $controller            控制器类名或 [类名, 方法名]
-   * @param array              $middlewares           路由中间件
-   * @param array              $ControllerInstantiateParams 控制器实例化额外参数
-   */
-  static function any($URI, $controller = null, $middlewares = [], $ControllerInstantiateParams = [])
-  {
-    return self::register("any", "any", $URI, $controller, $middlewares, $ControllerInstantiateParams);
-  }
-
-  /**
-   * 异步调用内部路由
-   *
-   * 通过 Curl 向自身发起 POST 请求（带 X-Async 头），目标必须在 async 类型路由中注册。
-   *
-   * @param string $URI     目标路由 URI
-   * @param array  $data    发送的 POST 数据
-   * @param array  $headers 额外请求头
-   * @param int    $timeout 超时时间（秒）
-   * @return mixed Curl 响应数据或错误信息
-   */
-  static function dispatch($URI, $data = [], $headers = [], $timeout = 1)
-  {
-    $C = new Curl();
-    $URL = F_BASE_URL . $URI;
-
-    $headers = array_merge([
-      "X-Async" => 1,
-      "X-Ajax" => 1
-    ], $headers);
-    $C->url($URL)->headers($headers)->timeout($timeout)->https(false)->data($data)->post();
-    if ($C->errorNo()) {
-      return $C->error();
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
     }
-    return $C->getData();
+    return self::register("common", "options", $uri, $controller, $middlewares, $controllerInstantiateParams);
   }
 
   /**
-   * 逐条匹配动态路由
+   * 注册 HEAD 路由
    *
-   * @param string $URI    请求 URI
-   * @param array  $routes 动态路由表（pattern => route）
-   * @return array|null 匹配到的路由，未匹配返回 null
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
    */
-  static private function matchParamRoute($URI, $routes)
+  public static function head($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
   {
-    foreach ($routes as $pattern => $route) {
-      if (preg_match("/^$pattern$/u", $URI, $Params)) {
-        array_shift($Params);
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("common", "head", $uri, $controller, $middlewares, $controllerInstantiateParams);
+  }
 
-        foreach ($route['params'] as &$item) {
-          $item = array_shift($Params);
-          if ($item && is_array($item) && count($item)) {
-            $item = $item[0];
+  /**
+   * 注册任意方法路由
+   *
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
+   */
+  public static function any($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
+  {
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("any", "*", $uri, $controller, $middlewares, $controllerInstantiateParams);
+  }
+
+  /**
+   * 注册异步路由
+   *
+   * 仅能通过服务器内部 CURL 调用（需 X-Async 与 X-Ajax 请求头），
+   * 用于后台任务、内部接口等场景，由 dispatch() 触发。
+   *
+   * @param string $uri 路由 URI
+   * @param string|array|\Closure $controller 控制器
+   * @param array $middlewares 路由中间件
+   * @param array $controllerInstantiateParams 控制器实例化参数
+   * @return string 类名（供链式调用）
+   */
+  public static function async($uri = null, $controller = null, $middlewares = [], $controllerInstantiateParams = [])
+  {
+    if (self::$sameUri !== null) {
+      $controller = $uri;
+      $uri = self::$sameUri;
+    }
+    return self::register("async", "*", $uri, $controller, $middlewares, $controllerInstantiateParams);
+  }
+
+  /**
+   * 匹配路由
+   *
+   * 按优先级匹配：静态 common → 静态 async（async 请求）→ 静态 any → 动态 common → 动态 async → 动态 any。
+   *
+   * @param Request $request 请求实例
+   * @return array|null 匹配到的路由（含 params），未匹配返回 null
+   */
+  public static function match(Request $request)
+  {
+    //* command 模式：按命令名匹配（CLI 下 request->URI 即命中的命令名），不解析 URI
+    if (self::$mode === "command") {
+      return self::$commands[$request->URI] ?? null;
+    }
+
+    $uri = $request->URI;
+    if ($uri !== "/") {
+      $uri = ltrim($uri, "/");
+    }
+    $method = $request->method;
+    $isAsync = $request->async();
+
+    //* 1. 静态 common
+    if (isset(self::$staticRoutes["common"][$method][$uri])) {
+      return self::$staticRoutes["common"][$method][$uri];
+    }
+    //* 2. 静态 async（async 请求）
+    if ($isAsync && isset(self::$staticRoutes["async"][$method][$uri])) {
+      return self::$staticRoutes["async"][$method][$uri];
+    }
+    if ($isAsync && isset(self::$staticRoutes["async"]["*"][$uri])) {
+      return self::$staticRoutes["async"]["*"][$uri];
+    }
+    //* 3. 静态 any
+    if (isset(self::$staticRoutes["any"][$method][$uri])) {
+      return self::$staticRoutes["any"][$method][$uri];
+    }
+    if (isset(self::$staticRoutes["any"]["*"][$uri])) {
+      return self::$staticRoutes["any"]["*"][$uri];
+    }
+
+    //* 4. 动态路由逐条 preg_match
+    foreach (["common", "async", "any"] as $type) {
+      if ($type === "async" && !$isAsync) {
+        continue;
+      }
+      $methodRoutes = self::$paramsRoutes[$type][$method] ?? self::$paramsRoutes[$type]["*"] ?? [];
+      if (!count($methodRoutes)) {
+        continue;
+      }
+      foreach ($methodRoutes as $pattern => $route) {
+        if (preg_match($pattern, $uri, $matches)) {
+          $params = [];
+          foreach ($matches as $key => $value) {
+            if (is_string($key)) {
+              $params[$key] = $value;
+            }
           }
+          $route["params"] = $params;
+          return $route;
         }
-
-        return $route;
       }
     }
 
@@ -487,54 +585,77 @@ class Router
   }
 
   /**
-   * 匹配路由
+   * 通过内部 CURL 调用异步路由
    *
-   * 匹配优先级：静态 common → 静态 async → 静态 any → 动态 common → 动态 async → 动态 any
+   * 自动附加 X-Async 与 X-Ajax 请求头，使 async 路由可被 match() 命中。
    *
-   * @param Request $request 请求对象
-   * @return array|null 匹配到的路由信息，未匹配返回 null
+   * @param string $uri 目标 URI
+   * @param array $data 请求数据
+   * @param array $headers 附加请求头
+   * @param int $timeout 超时秒数
+   * @return mixed 响应数据
    */
-  static function match(Request $request)
+  public static function dispatch($uri, $data = [], $headers = [], $timeout = 1)
   {
-    $Method = $request->method;
-    $URI = $request->URI;
-    $matchRoute = null;
-    if (strlen($URI) > 1 && $URI[0] === "/") {
-      $URI = substr($URI, 1);
-    }
-
-    //* 优先匹配静态路由，如果没有的话就遍历动态路由，每一个去匹配
-    if (isset(self::$StaticRoutes['common'][$Method]) && isset(self::$StaticRoutes['common'][$Method][$URI])) {
-      $matchRoute = self::$StaticRoutes['common'][$Method][$URI];
-    } else {
-      if (isset(self::$StaticRoutes['async']["async"][$URI])) {
-        $matchRoute = self::$StaticRoutes['async']["async"][$URI];
-      }
-      if (isset(self::$StaticRoutes['any']["any"][$URI])) {
-        $matchRoute = self::$StaticRoutes['any']["any"][$URI];
-      }
-    }
-
-    if (!$matchRoute) {
-      //* 匹配参数路由
-      if (isset(self::$ParamsRoutes['common']) && isset(self::$ParamsRoutes['common'][$Method])) {
-        $matchRoute = self::matchParamRoute($URI, self::$ParamsRoutes['common'][$Method]);
-      }
-
-      if (!$matchRoute && isset(self::$ParamsRoutes['async']) && isset(self::$ParamsRoutes['async']['async'])) {
-        $matchRoute = self::matchParamRoute($URI, self::$ParamsRoutes['async']['async']);
-      }
-      if (!$matchRoute && isset(self::$ParamsRoutes['any']) && isset(self::$ParamsRoutes['any']['any'])) {
-        $matchRoute = self::matchParamRoute($URI, self::$ParamsRoutes['any']['any']);
-      }
-    }
-
-    if ($matchRoute && $matchRoute['type'] === "async") {
-      if ($Method === "get" || !$request->async() || !$request->ajax()) {
-        $matchRoute = null;
-      }
-    }
-
-    return $matchRoute;
+    $result = Curl::init()
+      ->url(F_BASE_URL . $uri)
+      ->headers(array_merge($headers, ["X-Async" => "true", "X-Ajax" => "true"]))
+      ->data($data)
+      ->timeout($timeout)
+      ->post()
+      ->getData();
+    return $result;
   }
+
+  /**
+   * 注册 CLI 命令
+   *
+   * 控制器支持：类名（默认调用 handle()）、[类名, 方法名] 或闭包。
+   *
+   * @param string $name 命令名
+   * @param string|array|\Closure $controller 命令控制器
+   * @param string $description 命令说明
+   * @return string 类名（供链式调用）
+   */
+  public static function command($name, $controller, $description = "")
+  {
+    //* 按模式收集：http 模式下不注册 CLI 命令（loadRoutes 按模式加载，避免冗余存储）
+    if (self::$mode === "http") {
+      return self::class;
+    }
+
+    if (is_array($controller)) {
+      $target = [
+        "controller" => $controller[0],
+        "handleMethodName" => $controller[1] ?? "handle",
+      ];
+    } elseif ($controller instanceof \Closure) {
+      $target = [
+        "controller" => $controller,
+        "handleMethodName" => null,
+      ];
+    } else {
+      $target = [
+        "controller" => $controller,
+        "handleMethodName" => "handle",
+      ];
+    }
+    self::$commands[$name] = [
+      "controller" => $target["controller"],
+      "handleMethodName" => $target["handleMethodName"],
+      "description" => $description,
+    ];
+    return self::class;
+  }
+
+  /**
+   * 获取 CLI 命令表
+   *
+   * @return array<string, array>
+   */
+  public static function commands()
+  {
+    return self::$commands;
+  }
+
 }

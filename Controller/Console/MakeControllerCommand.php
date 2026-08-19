@@ -1,9 +1,14 @@
 <?php
 
-namespace kernel\Commands;
+namespace kernel\Controller\Console;
+use kernel\Foundation\FileSystem\FileSystem;
+
+use kernel\Foundation\App;
 
 /**
  * 生成控制器命令
+ *
+ * 命令名 make:controller 在 kernel/Routes/index.php 中注册（Router::command）。
  *
  * 用法：
  *   php kernel/console make:controller User          // 生成 UserController
@@ -14,12 +19,6 @@ namespace kernel\Commands;
  */
 class MakeControllerCommand extends MakeCommand
 {
-  /** @var string 命令名 */
-  protected $name = "make:controller";
-
-  /** @var string 命令说明 */
-  protected $description = "Create a new controller class";
-
   /**
    * 命令处理器
    *
@@ -40,7 +39,7 @@ class MakeControllerCommand extends MakeCommand
     [$subDir, $shortName] = $this->split($name);
     $className = $shortName . "Controller";
     $classPath = $subDir !== "" ? $subDir . "/" . $className : $className;
-    $namespace = $this->joinNamespace(F_APP_ID . "\\Controller", $subDir);
+    $namespace = $this->joinNamespace(App::id() . "\\Controller", $subDir);
 
     $body = <<<PHP
 use kernel\\Foundation\\Controller\\Controller;
@@ -68,6 +67,6 @@ class {$className} extends Controller
 }
 PHP;
 
-    return $this->write(F_APP_ROOT . "/Controller", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(FileSystem::root() . "/Controller", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }

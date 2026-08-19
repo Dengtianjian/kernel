@@ -2,9 +2,6 @@
 
 namespace kernel\Foundation\Exception;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 class ErrorCode
 {

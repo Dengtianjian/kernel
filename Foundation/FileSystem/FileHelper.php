@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation\File;
+namespace kernel\Foundation\FileSystem;
 
 
 /**
@@ -9,7 +9,7 @@ namespace kernel\Foundation\File;
  * 提供文件类型判断、路径处理、目录扫描、格式化等底层工具方法。
  * 所有方法均为静态方法，无需实例化。
  *
- * @package kernel\Foundation\File
+ * @package kernel\Foundation\FileSystem
  */
 class FileHelper
 {
@@ -137,7 +137,7 @@ class FileHelper
   public static function combinedFilePath(...$paths)
   {
     $paths = array_filter($paths, function ($item) {
-      return !empty(trim($item));
+      return !($item === null || $item === "");
     });
     $path = implode(DIRECTORY_SEPARATOR, $paths);
     $path = str_replace([

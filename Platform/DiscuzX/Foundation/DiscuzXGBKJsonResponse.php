@@ -2,10 +2,6 @@
 
 namespace kernel\Platform\DiscuzX\Foundation;
 
-if (!defined("F_KERNEL")) {
-	exit('Access Denied');
-}
-
 //* 100%源自DiscuzX json.class.php。收录于框架中，便于开发调用，减少依赖。
 
 class DiscuzXGBKJsonResponse

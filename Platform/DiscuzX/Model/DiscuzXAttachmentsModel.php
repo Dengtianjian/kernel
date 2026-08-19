@@ -2,16 +2,18 @@
 
 namespace kernel\Platform\DiscuzX\Model;
 
+use kernel\Foundation\App;
 use kernel\Model\AttachmentsModel;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
 
 class DiscuzXAttachmentsModel extends AttachmentsModel
 {
-  protected $appId = F_APP_ID;
+  protected $appId = null;
   function __construct()
   {
     parent::__construct();
+    $this->appId = App::id();
     $this->tableName = $tableName = "{$this->appId}_attachments";
     $this->tableStructureSQL = <<<SQL
 -- ----------------------------

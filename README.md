@@ -52,12 +52,12 @@ kernel/
 | `Database/` | 数据库抽象层（PDO/MySQL、MongoDB、SQLite） |
 | `Exception/` | 异常体系及错误码 |
 | `Extension/` | 扩展管理机制 |
-| `File/` | 文件操作辅助及管理 |
+| `FileSystem/` | 文件系统总管理（路径计算与文件操作） |
+| `FileSystem/Storage/` | 存储抽象（本地、阿里云 OSS、腾讯云 COS） |
 | `HTTP/` | HTTP 客户端、请求/响应处理 |
 | `Network/` | 网络请求工具 |
 | `Object/` | 基础对象模型 |
 | `ReturnResult/` | 标准化返回结果 |
-| `Storage/` | 存储抽象（本地、阿里云 OSS、腾讯云 COS） |
 | `Validation/` | 数据验证框架 |
 
 ## 入口文件
@@ -76,19 +76,26 @@ $App->run();
 
 ## 关键常量
 
-| 常量 | 说明 |
+| 常量/属性 | 说明 |
 |------|------|
 | `F_KERNEL` | 内核加载标识，各文件通过此常量防止直接访问 |
-| `F_APP_ROOT` | App 根目录路径 |
-| `F_APP_DATA` | App 数据目录路径 |
-| `F_APP_STORAGE` | App 存储目录路径 |
-| `F_APP_ID` | 当前 App 标识 |
+| `App::id()` | 当前 App 标识（静态方法，从当前实例读取，未实例化返回 null） |
+| `App::kernelId()` | 内核标识（静态方法，从当前实例读取，未实例化返回 null） |
+| `FileSystem::projectRoot()` | 项目根目录路径（自动计算的静态 getter） |
+| `FileSystem::kernelRoot()` | 内核根目录路径（自动计算的静态 getter） |
+| `FileSystem::root()` | App 根目录路径（自动计算的静态 getter） |
+| `FileSystem::data()` | App 数据目录路径（自动计算的静态 getter） |
+| `FileSystem::storage()` | App 存储目录路径（自动计算的静态 getter） |
+| `FileSystem::kernelDir()` | 内核目录相对路径（自动计算的静态 getter） |
+| `FileSystem::dir()` | App 目录相对路径（自动计算的静态 getter） |
+
+> FileSystem 无任何静态属性，7 个路径 getter 在每次静态方法调用时自动计算：`kernelRoot` 为本类所在内核目录（永远正确）；`projectRoot` 在 DiscuzX 平台取 `DISCUZ_ROOT`（去尾斜杠）、普通项目为内核上级目录；`root`/`data`/`storage` 由内核同级目录与 `App::id()` 推导；`kernelDir`/`dir` 为对应绝对路径相对 `projectRoot` 的相对路径。`App` 构造在 `defineConstants()` 之后执行 `new FileSystem`（无参构造，构造时确保 `data`/`storage` 目录存在；未实例化 App 时跳过目录创建）。依赖 `App::id()` 的 getter（`root`/`data`/`storage`/`dir`）在未实例化 App 时返回 null；DiscuzX 平台无需任何额外配置。FileSystem 同时承担文件系统总管理：13 个文件操作方法（upload/createFile/deleteDirectory/clearFolder/copyFolder/getFileInfo/deleteFile/readFile/copyFile/moveFile/ensureDirectory/fileSize/cloneDirectory）已并入本类，原 FileManager 类已删除。
 
 ## 版本管理
 
 通过 [Provisioner](ruyi-docs/docs/php/framework/provisioner) 实现增量升级：
 
-- `.version` 文件存储完整版本号，位于 `{F_APP_DATA}/.version`
+- `.version` 文件存储完整版本号，位于 `{FileSystem::data()}/.version`
 - 升级脚本放在 `Upgrades/` 目录，按 `Upgrade_x_y_z.php` 命名
 - 升级/回滚后自动持久化版本号
 

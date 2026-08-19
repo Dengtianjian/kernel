@@ -1,14 +1,10 @@
 <?php
 
 namespace kernel\Foundation;
+use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\File\FileHelper;
-use kernel\Foundation\File\Filesystem;
-use kernel\Foundation\File\FileStorage;
+use kernel\Foundation\FileSystem\FileHelper;
 
-if (!defined("F_KERNEL")) {
-  exit('Access Denied');
-}
 
 /** Install Upgrade Uninstall */
 class Iuu
@@ -22,20 +18,20 @@ class Iuu
   }
   public function install()
   {
-    $installFile = F_APP_ROOT . "/Iuu/Install/Install.php";
+    $installFile = FileSystem::root() . "/Iuu/Install/Install.php";
     if (\file_exists($installFile)) {
       // include_once($installFile);
-      $className = "\\" . F_APP_ID . "\Iuu\Install\Install";
+      $className = "\\" . App::id() . "\Iuu\Install\Install";
       new $className();
     }
-    if (!is_dir(F_APP_DATA)) {
-      mkdir(F_APP_DATA, 0777, true);
+    if (!is_dir(FileSystem::data())) {
+      mkdir(FileSystem::data(), 0777, true);
     }
     return $this;
   }
   public function upgrade($TargetVersion = null, $UpgradeCallback = null, $UpgradeListFileName = null): bool|Iuu
   {
-    $UpgradeListFile = $UpgradeListFileName ? $UpgradeListFileName : FileHelper::combinedFilePath(F_APP_ROOT, "Iuu", "UpgradeList.php");
+    $UpgradeListFile = $UpgradeListFileName ? $UpgradeListFileName : FileHelper::combinedFilePath(FileSystem::root(), "Iuu", "UpgradeList.php");
     if (!file_exists($UpgradeListFile))
       return true;
     $UpgradeList = include_once($UpgradeListFile);
@@ -70,26 +66,26 @@ class Iuu
   }
   public function uninstall()
   {
-    $uninstallFile = F_APP_ROOT . "/Iuu/Uninstall/Uninstall.php";
+    $uninstallFile = FileSystem::root() . "/Iuu/Uninstall/Uninstall.php";
     if (\file_exists($uninstallFile)) {
       // include_once($installFile);
-      $className = "\\" . F_APP_ID . "\Iuu\Uninstall\Uninstall";
+      $className = "\\" . App::id() . "\Iuu\Uninstall\Uninstall";
       new $className();
     }
-    // FileStorage::deleteDirectory(F_APP_DATA);
+    // FileSystem::deleteDirectory(FileSystem::data());
   }
   public function clean()
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu");
+    return FileSystem::deleteDirectory(FileSystem::root() . "/Iuu");
   }
   public function cleanInstall()
   {
-    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu/Install");
+    return FileSystem::deleteDirectory(FileSystem::root() . "/Iuu/Install");
   }
   public function cleanUpgrade()
   {
-    return Filesystem::deleteDirectory(F_APP_ROOT . "/Iuu/Upgrade");
+    return FileSystem::deleteDirectory(FileSystem::root() . "/Iuu/Upgrade");
   }
 }

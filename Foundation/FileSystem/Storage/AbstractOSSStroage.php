@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation\Storage;
+namespace kernel\Foundation\FileSystem\Storage;
 
 abstract class AbstractOSSStroage extends AbstractStorage
 {

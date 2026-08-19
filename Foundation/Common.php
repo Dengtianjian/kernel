@@ -2,8 +2,9 @@
 
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\File\FileHelper;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Output;
+use kernel\Foundation\FileSystem\FileSystem;
 
 /**
  * 导入文件
@@ -13,8 +14,10 @@ use kernel\Foundation\Output;
  * @param string $BasePath 基路径
  * @return false|mixed 返回false意味为导入失败，可能文件不存在，不建议导入的文件return false，可能会在使用Import时误判断
  */
-function Import($fileName, $args = [], $BasePath = F_APP_ROOT)
+function Import($fileName, $args = [], $BasePath = null)
 {
+  $BasePath ??= FileSystem::root();
+
   $FileExt = pathinfo($fileName, PATHINFO_EXTENSION);
   if ($FileExt && $FileExt !== "php") {
     throw new Exception(500, 500, "导入文件错误");
@@ -48,11 +51,14 @@ function formatDebug(...$data)
 /**
  * 获取当前应用实例
  *
- * @return App
+ * 实例化 App（new App($AppId)）时自动注册为当前实例（后实例化者覆盖前者），
+ * 本函数返回该当前实例。
+ *
+ * @return App|null 尚未实例化任何 App 时返回 null
  */
 function getApp()
 {
-  return $GLOBALS['App'] ?: $GLOBALS['app'];
+  return App::getInstance();
 }
 
 if (!function_exists("debug")) {
