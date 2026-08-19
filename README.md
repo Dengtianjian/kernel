@@ -31,6 +31,7 @@ kernel/
 | 组件 | 文件 | 说明 |
 |------|------|------|
 | App | `App.php` | 应用主类，负责初始化、中间件注册、路由匹配和请求分发 |
+| [Lifecycle](ruyi-docs/docs/php/framework/lifecycle) | `Lifecycle.php` | 应用生命周期管理（bootUp/shutdown/error 钩子委托） |
 | Router | `Router.php` | 路由器，支持标准路由和 RESTful 风格 |
 | [Provisioner](ruyi-docs/docs/php/framework/provisioner) | `Provisioner.php` | 生命周期编排器，管理应用安装、升级、回滚和卸载 |
 | Config | `Config.php` | 配置管理 |
@@ -54,6 +55,7 @@ kernel/
 | `Extension/` | 扩展管理机制 |
 | `FileSystem/` | 文件系统总管理（路径计算与文件操作） |
 | `FileSystem/Storage/` | 存储抽象（本地、阿里云 OSS、腾讯云 COS） |
+| `FileSystem/Zip.php` | [Zip 压缩解压](ruyi-docs/docs/php/framework/zip)：目录打包与安全解压（zip slip / zip bomb 防护） |
 | `HTTP/` | HTTP 客户端、请求/响应处理 |
 | `Network/` | 网络请求工具 |
 | `Object/` | 基础对象模型 |
