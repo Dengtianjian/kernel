@@ -5,7 +5,7 @@ namespace kernel\Platform\DiscuzX\Middleware;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Middleware\GlobalAuthMiddleware;
 use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 use kernel\Platform\DiscuzX\Member\DiscuzXMember;
@@ -21,11 +21,11 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   /**
    * 验证视图控制器管理员权限
    *
-   * @return ReturnResult
+   * @return Result
    */
   public function verifyViewControllerAdmin()
   {
-    $RR = new ReturnResult(true);
+    $RR = new Result(true);
     $Member = getglobal("member");
     if (is_bool($this->controller->Admin)) {
       if ((int)$Member['uid'] === 0) {
@@ -52,11 +52,11 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   /**
    * 验证视图控制器权限
    *
-   * @return ReturnResult
+   * @return Result
    */
   public function verifyViewControllerAuth()
   {
-    $RR = new ReturnResult(true);
+    $RR = new Result(true);
     $Member = getglobal("member");
     if (is_bool($this->controller->Auth)) {
       if ((int)$Member['uid'] === 0) {

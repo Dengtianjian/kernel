@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Controller;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 
 /**
@@ -18,13 +18,13 @@ class AuthController extends Controller
   /** @var bool|int|string|array */
   public $Auth = false;
 
-  function verifyAdmin(): ReturnResult
+  function verifyAdmin(): Result
   {
-    return new ReturnResult(null);
+    return new Result(null);
   }
 
-  function verifyAuth(): ReturnResult
+  function verifyAuth(): Result
   {
-    return new ReturnResult(null);
+    return new Result(null);
   }
 }

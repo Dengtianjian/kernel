@@ -3,7 +3,7 @@
 namespace kernel\Platform\Wechat\WechatPay;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 class WechatPayV2 extends WechatPay
 {
@@ -76,7 +76,7 @@ class WechatPayV2 extends WechatPay
    * 返回的公钥是PKCS#1 格式
    * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_7&index=4
    *
-   * @return ReturnResult
+   * @return Result
    */
   public function getPublicKey()
   {
@@ -91,7 +91,7 @@ class WechatPayV2 extends WechatPay
     $response = $this->post("risk/getpublickey", Arr::toXML($Body), [], false);
     $this->ApiUrl = $oldURL;
 
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($response->errorNo()) {
       return $R->error(500, 500, "服务器错误", $response->error());
     }
@@ -130,7 +130,7 @@ class WechatPayV2 extends WechatPay
    * @param string $TrueName 收款方用户名（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的姓名信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权
    * @param int $Amount 付款金额：RMB分（支付总额，不含手续费）注：大于0的整数
    * @param string $Description 付款到银行卡付款说明,即订单备注（UTF8编码，允许100个字符以内）
-   * @return ReturnResult
+   * @return Result
    */
   public function payBank($TransactionId, $BankCode, $BankNo, $TrueName, $Amount, $Description)
   {
@@ -147,7 +147,7 @@ class WechatPayV2 extends WechatPay
     ];
     $Body['sign'] = $this->generateSign($Body);
     $response = $this->post("pay_bank", Arr::toXML($Body));
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($response->errorNo()) {
       return $R->error(500, 500, "服务器错误", $response->error());
     }
@@ -182,7 +182,7 @@ class WechatPayV2 extends WechatPay
    * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_3
    *
    * @param string $tradeNo 商户订单号，需保持唯一（只允许数字[0~9]或字母[A~Z]和[a~z]最短8位，最长32位）
-   * @return ReturnResult 返回结果是调用微信查询接口后返回的数据，键名改成了驼峰法
+   * @return Result 返回结果是调用微信查询接口后返回的数据，键名改成了驼峰法
    */
   public function queryBank($tradeNo)
   {
@@ -194,7 +194,7 @@ class WechatPayV2 extends WechatPay
     ];
     $Body['sign'] = $this->generateSign($Body);
     $response = $this->post("query_bank", Arr::toXML($Body));
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($response->errorNo()) {
       return $R->error(500, 500, "服务器错误", $response->error());
     }

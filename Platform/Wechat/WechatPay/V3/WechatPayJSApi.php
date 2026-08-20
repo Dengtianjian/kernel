@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Wechat\WechatPay\V3;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 /**
  * 微信支付 JSAPI 类
@@ -24,7 +24,7 @@ class WechatPayJSApi extends WechatPayV3
    * @param string $goodsTag 订单优惠标记
    * @param boolean $supportFapiao 电子发票入口开放标识 传入true时，支付成功消息和支付详情页将出现开票入口。需要在微信支付商户平台或微信公众平台开通电子发票功能，传此字段才可生效。true：是，false：否
    * @param boolean $profitSharing 是否为分账订单
-   * @return ReturnResult
+   * @return Result
    */
   public function order($OrderId, $openId, $total, $currency = "CNY", $description = "", $periodSeconds = null, $attach = "", $goodsTag = "", $supportFapiao = false, $profitSharing = false)
   {
@@ -83,7 +83,7 @@ class WechatPayJSApi extends WechatPayV3
       'User-Agent' => '*/*',
     ]);
     $response = $this->post("pay/transactions/jsapi", $Body, [], false);
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($response->errorNo()) {
       return $R->error(500, 500, "服务器错误", $response->error());
     }
@@ -109,7 +109,7 @@ class WechatPayJSApi extends WechatPayV3
    * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_3.shtml
    *
    * @param string $merchantTransactionId 商户交易ID
-   * @return ReturnResult
+   * @return Result
    */
   public function close($merchantTransactionId)
   {
@@ -124,7 +124,7 @@ class WechatPayJSApi extends WechatPayV3
     $this->addAuthorizationToHeader($Nonce, $Now, $Sign);
 
     $response = $this->post("pay/transactions/out-trade-no/$merchantTransactionId/close", $Body);
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     $ResponseData = $response->getData();
     if ($response->statusCode() > 299) {
       return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);

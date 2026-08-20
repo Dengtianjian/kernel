@@ -53,7 +53,7 @@ class ResponseView extends Response
     $this->templateId = $templateId;
     $this->viewFileBaseDir = $viewFileDirBaseProject;
 
-    $this->ResponseData = $viewData;
+    $this->responseData = $viewData;
 
     return $this;
   }
@@ -69,12 +69,12 @@ class ResponseView extends Response
   public function layout($layout = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
     $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] = $this->viewFilePath;
-    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->ResponseData;
+    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->responseData;
 
     $this->templateId = $templateId;
     $this->viewFilePath = FileHelper::combinedFilePath(Path::root(), $fileBaseDir, $layout . ".php");
     $this->viewFileBaseDir = $fileBaseDir;
-    $this->ResponseData = $viewData;
+    $this->responseData = $viewData;
 
     return $this;
   }
@@ -89,17 +89,17 @@ class ResponseView extends Response
       "filePath" => $this->viewFilePath,
       "baseDir" => $this->viewFileBaseDir,
       "templateId" => $this->templateId,
-      "data" => $this->ResponseData
+      "data" => $this->responseData
     ];
   }
   public function output()
   {
-    foreach ($this->ResponseHeaders as $Header) {
+    foreach ($this->responseHeaders as $Header) {
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
-    http_response_code($this->ResponseStatusCode);
+    http_response_code($this->responseStatusCode);
     $CallClass = get_called_class();
-    return $CallClass::render($this->viewFilePath, $this->ResponseData, $this->templateId);
+    return $CallClass::render($this->viewFilePath, $this->responseData, $this->templateId);
     // exit;
   }
   /**

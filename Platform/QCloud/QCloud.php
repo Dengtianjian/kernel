@@ -5,7 +5,7 @@ namespace kernel\Platform\QCloud;
 use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\Object\AbilityBaseObject;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 class QCloud extends AbilityBaseObject
 {
@@ -262,7 +262,7 @@ class QCloud extends AbilityBaseObject
    * @param string $action 操作的名称
    * @param string $version 服务版本
    * @param array $query 查询信息
-   * @return ReturnResult
+   * @return Result
    */
   public function get($action, $version, $query = [])
   {
@@ -279,7 +279,7 @@ class QCloud extends AbilityBaseObject
 
     $Response = $this->Curl->get($query);
 
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($Response->errorNo()) {
       return $R->error(false, 500, $Response->errorNo(), "服务器错误", $Response->error());
     }
@@ -300,7 +300,7 @@ class QCloud extends AbilityBaseObject
    * @param string $version 服务版本
    * @param array $body 请求体
    * @param array $query 查询信息
-   * @return ReturnResult
+   * @return Result
    */
   public function post($action, $version, $body = [], $query = [])
   {
@@ -316,7 +316,7 @@ class QCloud extends AbilityBaseObject
     ]);
 
     $Response = $this->Curl->post($body);
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($Response->errorNo()) {
       return $R->error(false, 500, $Response->errorNo(), "服务器错误", $Response->error());
     }

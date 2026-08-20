@@ -9,7 +9,7 @@ use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Middleware\MiddlewareBase;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Model\LoginsModel;
 use kernel\Service\AuthService;
 
@@ -58,11 +58,11 @@ class GlobalAuthMiddleware extends MiddlewareBase
    * 验证token
    *
    * @param boolean $strongCheck 严格校验
-   * @return ReturnResult
+   * @return Result
    */
   protected function verifyToken($strongCheck = true)
   {
-    $RR = new ReturnResult(true);
+    $RR = new Result(true);
     $token = $this->request->header->get("Authorization") ?: $this->request->query->get("authToken") ?: $this->request->body->get("authToken");
     if ($strongCheck && (empty($token) || is_null($token))) {
       $RR->error(401, "Auth:401001", "请登录后重试", [

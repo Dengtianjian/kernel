@@ -20,10 +20,10 @@ class ResponseError extends Response
   public function __construct($statusCode, $code = 500, $message = "error", $details = [], $data = [])
   {
     $this->error = true;
-    $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = $data;
-    $this->ResponseCode = $code;
-    $this->ResponseMessage = $message;
-    $this->ResponseDetails = $statusCode > 299 ? $details : null;
+    $this->responseStatusCode = $statusCode;
+    $this->responseData = $data;
+    $this->responseCode = $code;
+    $this->responseMessage = $message;
+    $this->responseDetails = $statusCode > 299 ? $details : null;
   }
 }

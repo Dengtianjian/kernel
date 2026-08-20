@@ -3,7 +3,6 @@
 namespace kernel\Foundation;
 
 use Exception as GlobalException;
-use kernel\Foundation\ReturnResult\ReturnList;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
@@ -14,7 +13,6 @@ use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Exception\RuyiException;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Foundation\HTTP\Response\ResponsePagination;
 use kernel\Foundation\Lifecycle;
 use kernel\Foundation\Middleware\Middleware;
 
@@ -240,10 +238,6 @@ class App
       if (is_callable($response)) {
         $controller->response->setData($response);
       } else {
-        if ($response instanceof ReturnList) {
-          $controller->response = new ResponsePagination($this->request, $response->total(), $response->getData());
-        }
-
         if (!($response instanceof \kernel\Foundation\HTTP\Response)) {
           $controller->response->setData($response);
         }

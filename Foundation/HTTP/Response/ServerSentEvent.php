@@ -15,7 +15,7 @@ class ServerSentEvent extends Response
    *
    * @var string
    */
-  protected $ResponseEventName = "message";
+  protected $responseEventName = "message";
   protected $closed = false;
   /**
    * 构建SSE响应
@@ -39,7 +39,7 @@ class ServerSentEvent extends Response
     $this->header("X-Accel-Buffering", "no", true);
     $this->header("Content-Type", "text/event-stream", true);
     $this->header("Cache-Control", "no-cache", true);
-    $this->OutputType = $outputType;
+    $this->outputType = $outputType;
 
     while (!$this->closed) {
       call_user_func($callback, $this);
@@ -67,7 +67,7 @@ class ServerSentEvent extends Response
   public function success($data, $event = "message", $statusCode = 200, $code = 200000, $message = "ok")
   {
     parent::success($data, $statusCode, $code, $message);
-    $this->ResponseEventName = $event;
+    $this->responseEventName = $event;
 
     $this->output();
 
@@ -86,7 +86,7 @@ class ServerSentEvent extends Response
   public function error($statusCode, $code = 500, $message = "error", $details = [], $data = [])
   {
     parent::error($statusCode, $code, $message, $details, $data);
-    $this->ResponseEventName = "error";
+    $this->responseEventName = "error";
 
     $this->output();
 
@@ -104,13 +104,13 @@ class ServerSentEvent extends Response
   }
   public function output()
   {
-    foreach ($this->ResponseHeaders as $Header) {
+    foreach ($this->responseHeaders as $Header) {
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
 
     $body = $this->getBody();
-    if ($this->ResponseResetBody) {
-      $body = $this->ResponseResetBody;
+    if ($this->responseResetBody) {
+      $body = $this->responseResetBody;
     }
     $data = $this->getData();
 
@@ -119,7 +119,7 @@ class ServerSentEvent extends Response
     }
 
     $content = null;
-    switch ($this->OutputType) {
+    switch ($this->outputType) {
       case "json":
         $content = json_encode($body, JSON_UNESCAPED_UNICODE);
         break;
@@ -132,7 +132,7 @@ class ServerSentEvent extends Response
     }
 
     echo "id: " . (uniqid()) . "\n";
-    echo "event: {$this->ResponseEventName}\n";
+    echo "event: {$this->responseEventName}\n";
     echo "data: {$content}\n\n";
   }
   public function close()

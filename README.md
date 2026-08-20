@@ -56,7 +56,7 @@ kernel/
 | `HTTP/` | HTTP 客户端、请求/响应处理 |
 | `Network/` | 网络请求工具 |
 | `Object/` | 基础对象模型 |
-| `ReturnResult/` | 标准化返回结果 |
+| `Result.php` | 标准化返回结果（Result，继承 Response） |
 | `Validation/` | 数据验证框架 |
 
 ## 入口文件

@@ -8,7 +8,7 @@ use forum_upload;
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\FileSystem\FileHelper;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Foundation\Router;
 use kernel\Foundation\Service;
 use kernel\Platform\DiscuzX\Controller\Attachment as AttachmentNamespace;
@@ -21,7 +21,7 @@ class DiscuzXAttachmentService extends Service
    *
    * @param array $files 上传的文件或者上传的文件列表
    * @param string $saveDir 保存的路径，基于data/plugindata/{插件ID}/attachments目录
-   * @return ReturnResult
+   * @return Result
    */
   public static function saveFile($files, $saveDir = "")
   {
@@ -32,18 +32,18 @@ class DiscuzXAttachmentService extends Service
         mkdir($savePath, 0777, true);
       }
     }
-    return new ReturnResult(FileSystem::upload($files, $savePath));
+    return new Result(FileSystem::upload($files, $savePath));
   }
   /**
    * 上传文件
    *
    * @param array $file 上传的文件
-   * @return ReturnResult
+   * @return Result
    */
   public static function uploadFile($file)
   {
     global $_G;
-    $R = new ReturnResult(null);
+    $R = new Result(null);
     $_GET['uid'] = $_G['uid'];
     $_GET['hash'] = md5(substr(md5($_G['config']['security']['authkey']), 8) . $_G['uid']);
 
@@ -73,20 +73,20 @@ class DiscuzXAttachmentService extends Service
    * 根据附件ID获取附件信息
    *
    * @param integer $AttachmentId 附件ID
-   * @return ReturnResult
+   * @return Result
    */
   public static function getAttachment($AttachmentId, $thumbWidth = null, $thumbHeight = null)
   {
     $AM = new DiscuzXModel("forum_attachment");
     $attachment = $AM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
-      return new ReturnResult(null, 404, 404001, "附件不存在");
+      return new Result(null, 404, 404001, "附件不存在");
     }
     $TableId = $attachment['tableid'];
     $SAM = new DiscuzXModel("forum_attachment_$TableId");
     $attachment = $SAM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
-      return new ReturnResult(null, 404, 404001, "附件不存在");
+      return new Result(null, 404, 404001, "附件不存在");
     }
     $attachment['downloadLink'] = "forum.php?mod=attachment&aid=" . aidencode($AttachmentId) . "&nothumb=yes";
     $attachment['thumbURL'] = null;
@@ -111,7 +111,7 @@ class DiscuzXAttachmentService extends Service
       "thumbURL" => $attachment['thumbURL']
     ];
 
-    return new ReturnResult($attachment);
+    return new Result($attachment);
   }
   /**
    * 删除附件

@@ -20,61 +20,61 @@ class Response
    *
    * @var array
    */
-  protected $ResponseHeaders = [];
+  protected $responseHeaders = [];
   /**
    * 响应数据
    *
    * @var mixed
    */
-  protected $ResponseData = [];
+  protected $responseData = [];
   /**
    * 响应状态码
    *
    * @var integer
    */
-  protected $ResponseStatusCode = 200;
+  protected $responseStatusCode = 200;
   /**
    * 响应码
    *
    * @var integer
    */
-  protected $ResponseCode = 200;
+  protected $responseCode = 200;
   /**
    * 响应信息
    *
    * @var string
    */
-  protected $ResponseMessage = "ok";
+  protected $responseMessage = "ok";
   /**
    * 响应错误详情，用于开发模式
    *
    * @var mixed
    */
-  protected $ResponseDetails = null;
+  protected $responseDetails = null;
   /**
    * 增加到响应主体的数据
    *
    * @var array
    */
-  protected $ResponseAddBody = [];
+  protected $responseAddBody = [];
   /**
    * 重置响应主体的数据
    *
    * @var mixed
    */
-  protected $ResponseResetBody = [];
+  protected $responseResetBody = [];
   /**
    * 响应输出的格式
    *
    * @var "json"|"text"|"xml"|"html"
    */
-  protected $OutputType = NULL;
+  protected $outputType = NULL;
   /**
    * 响应输出为text格式是，是否需要格式化
    *
    * @var boolean
    */
-  protected $FormatOutputTypeOfText = false;
+  protected $formatOutputTypeOfText = false;
 
   /**
    * 构建响应
@@ -87,14 +87,14 @@ class Response
    */
   public function __construct($data = null, $statusCode = 200, $code = 200, $message = "ok", $details = [])
   {
-    $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = $data;
-    $this->ResponseCode = $code;
-    $this->ResponseMessage = $message;
-    $this->ResponseDetails = $statusCode > 299 ? $details : null;
+    $this->responseStatusCode = $statusCode;
+    $this->responseData = $data;
+    $this->responseCode = $code;
+    $this->responseMessage = $message;
+    $this->responseDetails = $statusCode > 299 ? $details : null;
   }
 
-  protected static $Interactions = [
+  protected static $interactions = [
     "list" => [],
     "error" => [],
     "success" => [],
@@ -120,31 +120,31 @@ class Response
     $responseType = null
   ) {
     if ($statusCode && $errorCode) {
-      if (!self::$Interactions['mixCodes'][$statusCode]) {
-        self::$Interactions['mixCodes'][$statusCode] = [];
+      if (!self::$interactions['mixCodes'][$statusCode]) {
+        self::$interactions['mixCodes'][$statusCode] = [];
       }
-      if (!self::$Interactions['mixCodes'][$statusCode][$errorCode]) {
-        self::$Interactions['mixCodes'][$statusCode][$errorCode] = [];
+      if (!self::$interactions['mixCodes'][$statusCode][$errorCode]) {
+        self::$interactions['mixCodes'][$statusCode][$errorCode] = [];
       }
-      array_push(self::$Interactions['mixCodes'][$statusCode][$errorCode], $callback);
+      array_push(self::$interactions['mixCodes'][$statusCode][$errorCode], $callback);
     } else if ($statusCode) {
-      if (!self::$Interactions['statusCodes'][$statusCode]) {
-        self::$Interactions['statusCodes'][$statusCode] = [];
+      if (!self::$interactions['statusCodes'][$statusCode]) {
+        self::$interactions['statusCodes'][$statusCode] = [];
       }
-      array_push(self::$Interactions['statusCodes'][$statusCode], $callback);
+      array_push(self::$interactions['statusCodes'][$statusCode], $callback);
     } else if ($errorCode) {
-      if (!self::$Interactions['errorCodes'][$errorCode]) {
-        self::$Interactions['errorCodes'][$errorCode] = [];
+      if (!self::$interactions['errorCodes'][$errorCode]) {
+        self::$interactions['errorCodes'][$errorCode] = [];
       }
-      array_push(self::$Interactions['errorCodes'][$errorCode], $callback);
+      array_push(self::$interactions['errorCodes'][$errorCode], $callback);
     } else if (!is_null($responseType)) {
       if (is_numeric($responseType)) {
         $responseType = $responseType ? 'success' : 'error';
       }
 
-      array_push(self::$Interactions[$responseType], $callback);
+      array_push(self::$interactions[$responseType], $callback);
     } else {
-      array_push(self::$Interactions['list'], $callback);
+      array_push(self::$interactions['list'], $callback);
     }
 
     return self::class;
@@ -160,7 +160,7 @@ class Response
    */
   public function header($key, $value, $replace = true)
   {
-    array_push($this->ResponseHeaders, [
+    array_push($this->responseHeaders, [
       "key" => $key,
       "value" => $value,
       "replace" => $replace
@@ -176,11 +176,11 @@ class Response
    */
   public function null($statusCode = 200)
   {
-    $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = null;
-    $this->ResponseCode = $statusCode;
-    $this->ResponseMessage = $statusCode > 299 ? 'error' : 'ok';
-    $this->ResponseDetails = null;
+    $this->responseStatusCode = $statusCode;
+    $this->responseData = null;
+    $this->responseCode = $statusCode;
+    $this->responseMessage = $statusCode > 299 ? 'error' : 'ok';
+    $this->responseDetails = null;
 
     return $this;
   }
@@ -197,11 +197,11 @@ class Response
   public function error($statusCode, $code = 500, $message = "error", $details = [], $data = [])
   {
     $this->error = true;
-    $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = $data;
-    $this->ResponseCode = $code;
-    $this->ResponseMessage = $message;
-    $this->ResponseDetails = $statusCode > 299 ? $details : null;
+    $this->responseStatusCode = $statusCode;
+    $this->responseData = $data;
+    $this->responseCode = $code;
+    $this->responseMessage = $message;
+    $this->responseDetails = $statusCode > 299 ? $details : null;
 
     return $this;
   }
@@ -216,11 +216,11 @@ class Response
    */
   public function success($data, $statusCode = 200, $code = 200, $message = "ok")
   {
-    $this->ResponseStatusCode = $statusCode;
-    $this->ResponseData = $data;
-    $this->ResponseCode = $code;
-    $this->ResponseMessage = $message;
-    $this->ResponseDetails = null;
+    $this->responseStatusCode = $statusCode;
+    $this->responseData = $data;
+    $this->responseCode = $code;
+    $this->responseMessage = $message;
+    $this->responseDetails = null;
 
     return $this;
   }
@@ -233,9 +233,9 @@ class Response
   public function statusCode($statusCode = null)
   {
     if ($statusCode === null) {
-      return $this->ResponseStatusCode;
+      return $this->responseStatusCode;
     }
-    $this->ResponseStatusCode = $statusCode;
+    $this->responseStatusCode = $statusCode;
 
     return $this;
   }
@@ -247,7 +247,7 @@ class Response
    */
   public function setBody($body)
   {
-    $this->ResponseResetBody = $body;
+    $this->responseResetBody = $body;
 
     return $this;
   }
@@ -261,10 +261,10 @@ class Response
   public function addBody($responseBody, $cover = false)
   {
     if ($cover) {
-      $this->ResponseAddBody = $responseBody;
+      $this->responseAddBody = $responseBody;
     } else {
       unset($responseBody['data']);
-      $this->ResponseAddBody = array_merge($this->ResponseAddBody, $responseBody);
+      $this->responseAddBody = array_merge($this->responseAddBody, $responseBody);
     }
 
     return $this;
@@ -278,13 +278,13 @@ class Response
    */
   public function addData($data, $cover = false)
   {
-    if ($cover || is_null($this->ResponseData)) {
-      $this->ResponseData = $data;
+    if ($cover || is_null($this->responseData)) {
+      $this->responseData = $data;
     } else {
-      if (is_array($this->ResponseData) && is_array($data)) {
-        $this->ResponseData = array_merge($this->ResponseData, $data);
-      } else if (is_string($this->ResponseData) || is_numeric($this->ResponseData)) {
-        $this->ResponseData .= $data;
+      if (is_array($this->responseData) && is_array($data)) {
+        $this->responseData = array_merge($this->responseData, $data);
+      } else if (is_string($this->responseData) || is_numeric($this->responseData)) {
+        $this->responseData .= $data;
       }
     }
 
@@ -298,7 +298,7 @@ class Response
    */
   public function setData($data)
   {
-    $this->ResponseData = $data;
+    $this->responseData = $data;
 
     return $this;
   }
@@ -309,7 +309,7 @@ class Response
    */
   public function json()
   {
-    $this->OutputType = "json";
+    $this->outputType = "json";
     return $this;
   }
   /**
@@ -319,7 +319,7 @@ class Response
    */
   public function xml()
   {
-    $this->OutputType = "xml";
+    $this->outputType = "xml";
     return $this;
   }
   /**
@@ -330,8 +330,8 @@ class Response
    */
   public function text($format = false)
   {
-    $this->OutputType = "text";
-    $this->FormatOutputTypeOfText = $format;
+    $this->outputType = "text";
+    $this->formatOutputTypeOfText = $format;
     return $this;
   }
   /**
@@ -341,7 +341,7 @@ class Response
    */
   public function html()
   {
-    $this->OutputType = "html";
+    $this->outputType = "html";
     return $this;
   }
   /**
@@ -365,16 +365,16 @@ class Response
    */
   public function getBody()
   {
-    if (is_array($this->ResponseAddBody)) {
+    if (is_array($this->responseAddBody)) {
       return array_merge([
-        "statusCode" => $this->ResponseStatusCode,
-        "code" => $this->ResponseCode,
+        "statusCode" => $this->responseStatusCode,
+        "code" => $this->responseCode,
         "data" => $this->getData(),
-        "message" => $this->ResponseMessage,
-        "details" => $this->ResponseDetails,
-      ], $this->ResponseAddBody);
+        "message" => $this->responseMessage,
+        "details" => $this->responseDetails,
+      ], $this->responseAddBody);
     }
-    return $this->ResponseAddBody;
+    return $this->responseAddBody;
   }
   /**
    * 获取输出的主体数据
@@ -383,46 +383,46 @@ class Response
    */
   public function getData()
   {
-    return $this->ResponseData;
+    return $this->responseData;
   }
   protected function interactionOutput()
   {
     //* 无筛选的
-    foreach (self::$Interactions['list'] as $item) {
+    foreach (self::$interactions['list'] as $item) {
       call_user_func_array($item, [$this]);
     }
 
     //* 只匹配成功的
-    if ($this->ResponseStatusCode > 199 && $this->ResponseStatusCode < 300) {
-      foreach (self::$Interactions['success'] as $item) {
+    if ($this->responseStatusCode > 199 && $this->responseStatusCode < 300) {
+      foreach (self::$interactions['success'] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 只匹配错误的
-    if ($this->ResponseStatusCode > 399) {
-      foreach (self::$Interactions['error'] as $item) {
+    if ($this->responseStatusCode > 399) {
+      foreach (self::$interactions['error'] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 只匹配状态码
-    if (isset(self::$Interactions['statusCodes'][$this->ResponseStatusCode])) {
-      foreach (self::$Interactions['statusCodes'][$this->ResponseStatusCode] as $item) {
+    if (isset(self::$interactions['statusCodes'][$this->responseStatusCode])) {
+      foreach (self::$interactions['statusCodes'][$this->responseStatusCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 只匹配错误码
-    if (isset(self::$Interactions['errorCodes'][$this->ResponseStatusCode])) {
-      foreach (self::$Interactions['errorCodes'][$this->ResponseStatusCode] as $item) {
+    if (isset(self::$interactions['errorCodes'][$this->responseStatusCode])) {
+      foreach (self::$interactions['errorCodes'][$this->responseStatusCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
 
     //* 状态码错误码同时匹配
-    if (isset(self::$Interactions['mixCodes'][$this->ResponseStatusCode]) && isset(self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode])) {
-      foreach (self::$Interactions['mixCodes'][$this->ResponseStatusCode][$this->ResponseCode] as $item) {
+    if (isset(self::$interactions['mixCodes'][$this->responseStatusCode]) && isset(self::$interactions['mixCodes'][$this->responseStatusCode][$this->responseCode])) {
+      foreach (self::$interactions['mixCodes'][$this->responseStatusCode][$this->responseCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
@@ -436,21 +436,21 @@ class Response
   {
     $this->interactionOutput();
 
-    foreach ($this->ResponseHeaders as $Header) {
+    foreach ($this->responseHeaders as $Header) {
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
-    http_response_code($this->ResponseStatusCode);
+    http_response_code($this->responseStatusCode);
 
     $body = $this->getBody();
-    if ($this->ResponseResetBody) {
-      $body = $this->ResponseResetBody;
+    if ($this->responseResetBody) {
+      $body = $this->responseResetBody;
     }
     $data = $this->getData();
 
     if (getApp()->request()->ajax()) {
       $body['version'] = Config::get("version");
     }
-    $outputType = $this->OutputType;
+    $outputType = $this->outputType;
     $Accept = getApp()->request()->header->get("Accept");
     if (!$outputType && $Accept) {
       list($type, $format) = explode("/", $Accept);
@@ -473,13 +473,13 @@ class Response
         print_r($data);
         break;
       case "text":
-        if ($this->FormatOutputTypeOfText) {
+        if ($this->formatOutputTypeOfText) {
           Output::format($data);
         } else {
-          if ($this->ResponseStatusCode > 299) {
-            $detailsText = App::mode() === "development" ? Output::format($this->ResponseDetails) : "";
+          if ($this->responseStatusCode > 299) {
+            $detailsText = App::mode() === "development" ? Output::format($this->responseDetails) : "";
             $data = <<<EOT
-{$this->ResponseMessage}\n
+{$this->responseMessage}\n
 {$detailsText}
 EOT;
           }
@@ -493,6 +493,6 @@ EOT;
   }
   public function outputType()
   {
-    return $this->OutputType;
+    return $this->outputType;
   }
 }

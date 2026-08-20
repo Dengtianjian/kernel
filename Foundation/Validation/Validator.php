@@ -5,7 +5,7 @@ namespace kernel\Foundation\Validation;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 class Validator
 {
@@ -67,11 +67,11 @@ class Validator
   /**
    * 返回参数错误
    *
-   * @return ReturnResult
+   * @return Result
    */
   public function ReturnParamError()
   {
-    $validatedResult = new ReturnResult(true);
+    $validatedResult = new Result(true);
     $validatedResult->error(400, "400:ValidateFailed:ParamError", $this->getErrorMessage(null));
     return $validatedResult;
   }
@@ -134,7 +134,7 @@ class Validator
    * @param string $fieldName  含 * 的字段名（如 photos.*.url）
    * @param Rule   $fieldRule  该字段的校验规则
    * @param mixed  $parentData 父级数据（用于子校验器的 fullData）
-   * @return ReturnResult
+   * @return Result
    */
   protected function validateWildcardField($data, $fieldName, Rule $fieldRule, $parentData)
   {
@@ -148,7 +148,7 @@ class Validator
     }
 
     if ($wildcardIdx === null) {
-      return new ReturnResult(true);
+      return new Result(true);
     }
 
     // 到达通配符前的路径
@@ -160,16 +160,16 @@ class Validator
     $cursor = $data;
     foreach ($prefixSegments as $seg) {
       if (!is_array($cursor) || !array_key_exists($seg, $cursor)) {
-        return new ReturnResult(true); // 路径不存在，跳过
+        return new Result(true); // 路径不存在，跳过
       }
       $cursor = $cursor[$seg];
     }
 
     if (!is_array($cursor)) {
-      return new ReturnResult(true);
+      return new Result(true);
     }
 
-    $validatedResult = new ReturnResult(true);
+    $validatedResult = new Result(true);
     foreach ($cursor as $i => $element) {
       if ($suffixKey !== '') {
         $value = Arr::get($element, $suffixKey);
@@ -192,11 +192,11 @@ class Validator
    * @param mixed $target 校验的值
    * @param array $rule 校验规则
    * @param Rule $validateRule 校验规则实例
-   * @return ReturnResult 校验结果
+   * @return Result 校验结果
    */
   protected function check($target, $rule, $validateRule = null, $data = null)
   {
-    $validatedResult = new ReturnResult(true);
+    $validatedResult = new Result(true);
     if ($validateRule instanceof Rules) {
       if (!is_array($target)) {
         $validatedResult->error(400, "400:ValidateFailed:Array", "参数错误");
@@ -628,7 +628,7 @@ class Validator
     //* 自定义校验
     if (isset($rule['CustomValidate'])) {
       $validatedResult = $rule['CustomValidate']($target, $rule, $data);
-      if ($validatedResult instanceof ReturnResult && $validatedResult->error) {
+      if ($validatedResult instanceof Result && $validatedResult->error) {
         return $validatedResult;
       }
     }
@@ -680,7 +680,7 @@ class Validator
    *
    * 在校验开始前处理条件规则（sometimes），随后执行 check。
    *
-   * @return ReturnResult
+   * @return Result
    */
   public function validate()
   {

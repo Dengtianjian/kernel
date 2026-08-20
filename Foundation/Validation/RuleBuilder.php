@@ -235,9 +235,9 @@ class RuleBuilder implements RuleInterface
   /**
    * 自定义校验
    *
-   * @param \Closure|callable $callback 校验函数，签名 `function($value, $rules, $data): ReturnResult|void`
-   *                                    失败时返回 `ReturnResult::failed()`；
-   *                                    成功时返回 `ReturnResult::succeeded()`、或不返回/返回其他值皆视为通过
+   * @param \Closure|callable $callback 校验函数，签名 `function($value, $rules, $data): Result|void`
+   *                                    失败时返回 `Result::failed()`；
+   *                                    成功时返回 `Result::succeeded()`、或不返回/返回其他值皆视为通过
    * @return $this
    */
   public function custom($callback)

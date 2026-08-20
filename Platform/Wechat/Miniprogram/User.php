@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Wechat\Miniprogram;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Foundation\Data\Arr;
 use kernel\Model\WechatUsersModel;
 
@@ -13,7 +13,7 @@ class User extends WechatMiniProgram
    * JSCode换取AccessToken
    *
    * @param string $code 前端获取到的JSCode
-   * @return ReturnResult
+   * @return Result
    */
   public function JSCode2Session($code)
   {
@@ -28,29 +28,29 @@ class User extends WechatMiniProgram
     if ($responseData['errcode']) {
       switch ($responseData['errcode']) {
         case "40029":
-          return new ReturnResult(false, 400, "400:InvalidCode", "登录失败，请稍后重试", "无效的Code");
+          return new Result(false, 400, "400:InvalidCode", "登录失败，请稍后重试", "无效的Code");
           break;
         case "45011":
-          return new ReturnResult(false, 400, "400:RequestLimited", "登录失败，尝试次数过多，请稍后重试", "频率限制，每个用户每分钟100次");
+          return new Result(false, 400, "400:RequestLimited", "登录失败，尝试次数过多，请稍后重试", "频率限制，每个用户每分钟100次");
           break;
         case "40226":
-          return new ReturnResult(false, 400, "400:BadUser", "登录失败，您是高风险用户，请联系管理员", "高风险等级用户，小程序登录拦截");
+          return new Result(false, 400, "400:BadUser", "登录失败，您是高风险用户，请联系管理员", "高风险等级用户，小程序登录拦截");
           break;
         case "40163":
-          return new ReturnResult(false, 400, "400:CodeBeenUsed", "登录失败，请重新操作", "jscode已经使用过了");
+          return new Result(false, 400, "400:CodeBeenUsed", "登录失败，请重新操作", "jscode已经使用过了");
           break;
         default:
-          return new ReturnResult(false, 400, "400:" . $responseData['errcode'], "登录失败，请稍后重试", $responseData['errmsg']);
+          return new Result(false, 400, "400:" . $responseData['errcode'], "登录失败，请稍后重试", $responseData['errmsg']);
           break;
       }
     }
-    return new ReturnResult($responseData);
+    return new Result($responseData);
   }
   /**
    * 绑定
    *
    * @param string $code JSCode
-   * @return ReturnResult|bool
+   * @return Result|bool
    */
   public function bind($code)
   {
@@ -67,7 +67,7 @@ class User extends WechatMiniProgram
    * 注册
    *
    * @param string $code JSCode
-   * @return ReturnResult|bool
+   * @return Result|bool
    */
   public function register($code)
   {

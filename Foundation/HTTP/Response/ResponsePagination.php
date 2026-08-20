@@ -36,7 +36,7 @@ class ResponsePagination extends Response
   {
     $this->request = $R;
     $this->total = $total;
-    $this->ResponseData = $data;
+    $this->responseData = $data;
     if (!is_null($data) && is_array($data)) {
       $this->items = count($data);
     }
@@ -54,8 +54,8 @@ class ResponsePagination extends Response
   }
   public function output()
   {
-    $this->ResponseData = [
-      "list" => $this->ResponseData,
+    $this->responseData = [
+      "list" => $this->responseData,
       "pagination" => [
         "total" => $this->total,
         "limit" => $this->request->pagination->limit,

@@ -3,21 +3,21 @@
 namespace kernel\Foundation;
 
 use kernel\Foundation\Object\AbilityBaseObject;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 
 
 class Service extends AbilityBaseObject
 {
   /**
-   * ReturnResult实例
+   * Result实例
    *
-   * @var ReturnResult
+   * @var Result
    */
   protected $return = null;
   public function __construct()
   {
-    $this->return = new ReturnResult(true);
+    $this->return = new Result(true);
   }
 
   /**

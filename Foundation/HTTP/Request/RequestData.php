@@ -4,7 +4,7 @@
 namespace kernel\Foundation\HTTP\Request;
 
 use kernel\Foundation\Data\Mutator;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Foundation\Validation\Rules;
 use kernel\Foundation\Validation\Rule;
 use kernel\Foundation\Validation\Validator;
@@ -98,7 +98,7 @@ class RequestData
   /**
    * 校验器结果
    *
-   * @var ReturnResult
+   * @var Result
    */
   public $validatedResult = null;
   /**
@@ -110,12 +110,12 @@ class RequestData
    */
   public function handle()
   {
-    $this->validatedResult = new ReturnResult(true);
+    $this->validatedResult = new Result(true);
     if (!empty($this->validator)) {
       if (is_array($this->validator)) {
         foreach ($this->validator as $validatorItem) {
           if (!($validatorItem instanceof Validator || $validatorItem instanceof Rule)) {
-            $this->validatedResult = new ReturnResult(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者Rule实例");
+            $this->validatedResult = new Result(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者Rule实例");
             return;
           }
         }
@@ -123,7 +123,7 @@ class RequestData
         $this->validatedResult = $Validator->validate();
       } else {
         if (!($this->validator instanceof Validator || $this->validator instanceof Rule)) {
-          $this->validatedResult = new ReturnResult(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者Rule实例");
+          $this->validatedResult = new Result(null, 500, 500, "控制器的校验器字段必须传入Validator实例或者Rule实例");
           return;
         }
         if ($this->validator instanceof Validator) {

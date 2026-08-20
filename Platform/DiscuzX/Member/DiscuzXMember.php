@@ -7,7 +7,7 @@ use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
 
@@ -19,13 +19,13 @@ class DiscuzXMember
    * @param string $username 会员账号
    * @param string $password 会员密码
    * @param int $cookieTime cookie有效期
-   * @return ReturnResult 会员信息
+   * @return Result 会员信息
    */
   static function login($username, $password, $cookieTime = 1296000)
   {
     global $_G;
     include_once libfile("function/member");
-    $R = new ReturnResult(true);
+    $R = new Result(true);
 
     $login = \C::t('common_failedlogin')->fetch_ip($_G['clientip']);
     $loginPerm = (!$login || (TIMESTAMP - $login['lastupdate'] > 900)) ? 5 : max(0, 5 - $login['count']);
@@ -73,12 +73,12 @@ class DiscuzXMember
    * @param string $password 账号密码
    * @param string $email 注册邮箱地址
    * @param string $invationCode 邀请码
-   * @return ReturnResult
+   * @return Result
    */
   public static function register($username, $password, $email = null, $invationCode = null)
   {
     global $_G;
-    $R = new ReturnResult(true);
+    $R = new Result(true);
 
     //* 是否关闭注册
     if ($_G['setting']['regstatus'] == 0 || $_G['setting']['regstatus'] == 2) {

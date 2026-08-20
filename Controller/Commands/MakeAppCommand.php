@@ -220,7 +220,7 @@ class IndexController extends Controller
   /**
    * 业务处理入口
    *
-   * @return mixed 响应数据、Response 或 ReturnList 等
+   * @return mixed 响应数据、Response 或 Result 等
    */
   public function data()
   {

@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Object;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 
 /**
  * 能力基础对象  
@@ -54,7 +54,7 @@ class AbilityBaseObject extends BaseObject
    * @param integer $statusCode HTTP状态码
    * @param integer|string $code 响应码
    * @param string $message 响应信息
-   * @param boolean $return 直接返回ReturnResult
+   * @param boolean $return 直接返回Result
    * @param mixed $data 主体数据
    * @param mixed $details 错误详情
    * @return AbilityBaseObject
@@ -90,7 +90,7 @@ class AbilityBaseObject extends BaseObject
    *  return $this-interrupt(500,500,"服务错误"); // false
    * }
    *
-   * @param integer｜ReturnResult $statusCode HTTP状态码
+   * @param integer｜Result $statusCode HTTP状态码
    * @param integer|string $code 响应码
    * @param string $message 响应信息
    * @param mixed $data 主体数据
@@ -104,7 +104,7 @@ class AbilityBaseObject extends BaseObject
     $details = [],
     $data = []
   ) {
-    if ($statusCode instanceof ReturnResult) {
+    if ($statusCode instanceof Result) {
       $this->setError($statusCode->statusCode(), $statusCode->errorCode(), $statusCode->errorMessage(), false, $statusCode->errorDetails(), $statusCode->getData());
     } else {
       $this->setError($statusCode, $code, $message, FALSE, $details, $data);
@@ -169,10 +169,10 @@ class AbilityBaseObject extends BaseObject
   /**
    * 返回错误
    *
-   * @return ReturnResult
+   * @return Result
    */
   final public function return()
   {
-    return (new ReturnResult(FALSE))->error($this->errorStatusCode, $this->errorCode, $this->errorMessage, $this->errorDetails, $this->errorData);
+    return (new Result(FALSE))->error($this->errorStatusCode, $this->errorCode, $this->errorMessage, $this->errorDetails, $this->errorData);
   }
 }

@@ -48,13 +48,13 @@ class DiscuzXView extends ResponseView
     $this->templateId = $templateId;
     $this->viewFileBaseDir = "";
 
-    $this->ResponseData = $viewData;
+    $this->responseData = $viewData;
     return $this;
   }
   public function layout($layout = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
     $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] = $this->viewFilePath;
-    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->ResponseData;
+    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->responseData;
 
     $this->templateId = $templateId;
     $this->viewFilePath = template($layout, implode("_", [
@@ -63,7 +63,7 @@ class DiscuzXView extends ResponseView
     ]), FileHelper::combinedFilePath(Path::dir(), $fileBaseDir));
 
     $this->viewFileBaseDir = $fileBaseDir;
-    $this->ResponseData = $viewData;
+    $this->responseData = $viewData;
 
     return $this;
   }

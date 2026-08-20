@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Model\Thread;
 
-use gstudio_kernel\Foundation\ReturnResult\ReturnList;
+use kernel\Foundation\HTTP\Response\ResponsePagination;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
 
 class DiscuzXForumThreadModel extends DiscuzXModel
@@ -21,6 +21,6 @@ class DiscuzXForumThreadModel extends DiscuzXModel
     }
     $total = $this->reset(false)->count();
     $this->page($page, $perPage);
-    return new ReturnList($this->getAll(), $total, $page, $perPage);
+    return new ResponsePagination(getApp()->request(), $total, $this->getAll());
   }
 }

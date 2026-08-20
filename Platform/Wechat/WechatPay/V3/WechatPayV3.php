@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Wechat\WechatPay\V3;
 
-use kernel\Foundation\ReturnResult\ReturnResult;
+use kernel\Foundation\Result;
 use kernel\Platform\Wechat\WechatPay\WechatPay;
 
 class WechatPayV3 extends WechatPay
@@ -113,7 +113,7 @@ class WechatPayV3 extends WechatPay
    * @param string $outOrderNo 商户系统内部的分账单号，在商户系统内部唯一，同一分账单号多次请求等同一次。只能是数字、大小写字母_-|*@
    * @param arra $receivers 账接收方列表，可以设置出资商户作为分账接受方，最多可有50个分账接收方
    * @param boolean $unfreezeUnsplit 1、如果为true，该笔订单剩余未分账的金额会解冻回分账方商户；2、如果为false，该笔订单剩余未分账的金额不会解冻回分账方商户，可以对该笔订单再次进行分账。
-   * @return ReturnResult
+   * @return Result
    */
   public function profitsharing($transactionId, $outOrderNo, $receivers, $unfreezeUnsplit = false)
   {
@@ -155,7 +155,7 @@ class WechatPayV3 extends WechatPay
     ]);
     $response = $this->post("profitsharing/orders", $Body, [], false);
 
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     if ($response->errorNo()) {
       return $R->error(500, 500, "服务器错误", $response->error());
     }
@@ -201,7 +201,7 @@ class WechatPayV3 extends WechatPay
    * @link https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter3_1_3.shtml
    *
    * @param string $merchantTransactionId 商户交易ID
-   * @return ReturnResult
+   * @return Result
    */
   public function close($merchantTransactionId)
   {
@@ -216,7 +216,7 @@ class WechatPayV3 extends WechatPay
     $this->addAuthorizationToHeader($Nonce, $Now, $Sign);
 
     $response = $this->post("pay/transactions/out-trade-no/$merchantTransactionId/close", $Body);
-    $R = new ReturnResult(true);
+    $R = new Result(true);
     $ResponseData = $response->getData();
     if ($response->statusCode() > 299) {
       return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);

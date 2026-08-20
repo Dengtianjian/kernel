@@ -54,7 +54,7 @@ class {$className} extends MiddlewareBase
    * 中间件处理入口
    *
    * @param Request \$R 请求实例
-   * @return mixed 返回 null 表示放行，返回其他值（如 Response/ReturnList）表示中断
+   * @return mixed 返回 null 表示放行，返回其他值（如 Response/Result）表示中断
    */
   public function data(Request \$R)
   {

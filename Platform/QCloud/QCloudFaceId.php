@@ -13,7 +13,7 @@ class QCloudFaceId extends QCloud
    *
    * @param string $Name 姓名
    * @param string $BankCard 银行卡
-   * @return ReturnResult
+   * @return Result
    */
   public function BankCard2EVerification($Name, $BankCard)
   {
