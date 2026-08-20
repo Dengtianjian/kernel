@@ -5,7 +5,7 @@ namespace kernel\Foundation;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\FileSystem\FileHelper;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 /**
  * 配置管理类
@@ -29,7 +29,7 @@ class Config
   /**
    * 初始化配置：加载应用 Configs 目录下的多层配置文件
    *
-   * 由 App 构造时 `new Config;` 触发（App::initConfig() 已迁移至本构造方法）。
+   * 由 setup() 装配类手动触发（new Config），或 run()/handle() 前 ensureInstances() 兜底触发。
    *
    * 读取顺序（存在才读取）：
    * default(Config.php) -> development(Config.development.php) -> local(Config.local.php)
@@ -40,7 +40,7 @@ class Config
    */
   function __construct()
   {
-    $configFilesDir = FileHelper::combinedFilePath(FileSystem::root(), "Configs");
+    $configFilesDir = FileHelper::combinedFilePath(Path::root(), "Configs");
     if (!is_dir($configFilesDir))
       return;
 
@@ -195,6 +195,20 @@ class Config
       $configs = $configs[$part];
     }
     return true;
+  }
+  /**
+   * 判断当前应用（或指定应用）的配置是否已加载
+   *
+   * 框架在 run()/handle() 前用它做延迟实例化兜底：未 new Config（未加载）时自动加载。
+   * 应用没有 Configs/ 目录时不会产生配置缓存，本方法返回 false（重复加载无副作用）。
+   *
+   * @param string|null $appId 应用标识，默认当前应用
+   * @return bool 已加载（缓存中已有该应用配置）返回 true
+   */
+  static function loaded($appId = null): bool
+  {
+    $appId ??= App::id();
+    return isset(self::$configs[$appId]);
   }
   /**
    * 删除指定配置键

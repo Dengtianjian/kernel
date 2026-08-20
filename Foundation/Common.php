@@ -4,7 +4,7 @@ use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Output;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 /**
  * 导入文件
@@ -16,7 +16,7 @@ use kernel\Foundation\FileSystem\FileSystem;
  */
 function Import($fileName, $args = [], $BasePath = null)
 {
-  $BasePath ??= FileSystem::root();
+  $BasePath ??= Path::root();
 
   $FileExt = pathinfo($fileName, PATHINFO_EXTENSION);
   if ($FileExt && $FileExt !== "php") {

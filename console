@@ -28,11 +28,7 @@ $console = new Console("kernel");
 //* 注册额外命令（可选，补充 Routes 注册；实例级同名命令覆盖）
 // $console->register("my:cmd", function ($console, $args, $options) { return 0; });
 
-//* 由 App 提供的通用生命周期（onBootUp）可在此挂载，例如：
-// $console->onBootUp(function ($console) {});
-
-//* 加载应用引导装配类（默认取 kernel\Lifecycle\Bootup；无则自动跳过）
-$console->onBootUp();
+//* 生命周期钩子（onBootUp/onShutdown 等）请在 Setup 装配类中手动 new Lifecycle 注册后注入
 
 //* 执行命令分发，并以退出码结束（Console::run 内部调用 handle 后 exit）
 $console->run();

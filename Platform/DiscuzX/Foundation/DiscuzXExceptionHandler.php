@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Platform\DiscuzX\Foundation;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 
 use kernel\Foundation\Config;
@@ -68,8 +68,8 @@ class DiscuzXExceptionHandler
         $Response->json()->output();
         exit;
       } else {
-        $View = new ResponseView("error", [], "Views", "page", FileSystem::kernelRoot());
-        $View->render(FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Views", "error.php"), [
+        $View = new ResponseView("error", [], "Views", "page", Path::kernelRoot());
+        $View->render(FileHelper::combinedFilePath(Path::kernelRoot(), "Views", "error.php"), [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,
           "error" => $errorDetails
         ]);

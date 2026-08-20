@@ -6,9 +6,9 @@ namespace kernel\Middleware;
 use kernel\Foundation\Config;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Log;
-use kernel\Foundation\Middleware;
+use kernel\Foundation\Middleware\MiddlewareBase;
 
-class GlobalCorsMiddleware extends Middleware
+class GlobalCorsMiddleware extends MiddlewareBase
 {
   /**
    * 获取请求来源

@@ -2,6 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Foundation;
 use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Provisioner;
@@ -42,14 +43,14 @@ class DiscuzXProvisioner extends Provisioner
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner"));
   }
   public function cleanInstall()
   {
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner", "Install"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner", "Install"));
   }
   public function cleanUpgrade()
   {
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(FileSystem::root(), "Provisioner", "Upgrade"));
+    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner", "Upgrade"));
   }
 }

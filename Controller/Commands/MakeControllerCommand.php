@@ -1,7 +1,7 @@
 <?php
 
-namespace kernel\Controller\Console;
-use kernel\Foundation\FileSystem\FileSystem;
+namespace kernel\Controller\Commands;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\App;
 
@@ -67,6 +67,6 @@ class {$className} extends Controller
 }
 PHP;
 
-    return $this->write(FileSystem::root() . "/Controller", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(Path::root() . "/Controller", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }

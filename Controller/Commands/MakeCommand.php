@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Controller\Console;
+namespace kernel\Controller\Commands;
 
 /**
  * 生成类命令的抽象基类

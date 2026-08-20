@@ -2,11 +2,11 @@
 
 use kernel\Foundation\Router;
 use kernel\Foundation\Config;
-use kernel\Controller\Console\MakeAppCommand;
-use kernel\Controller\Console\MakeControllerCommand;
-use kernel\Controller\Console\MakeModelCommand;
-use kernel\Controller\Console\MakeMiddlewareCommand;
-use kernel\Controller\Console\ScheduleRunCommand;
+use kernel\Controller\Commands\MakeAppCommand;
+use kernel\Controller\Commands\MakeControllerCommand;
+use kernel\Controller\Commands\MakeModelCommand;
+use kernel\Controller\Commands\MakeMiddlewareCommand;
+use kernel\Controller\Commands\ScheduleRunCommand;
 
 //* 测试专用
 if (Config::get("mode") === "development") {

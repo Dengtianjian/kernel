@@ -1,7 +1,7 @@
 <?php
 
-namespace kernel\Controller\Console;
-use kernel\Foundation\FileSystem\FileSystem;
+namespace kernel\Controller\Commands;
+use kernel\Foundation\FileSystem\Path;
 
 /**
  * 定时任务执行命令
@@ -26,9 +26,9 @@ class ScheduleRunCommand
    */
   public function handle($console, $args, $options): int
   {
-    $cronsDirectory = FileSystem::root() . "/Crons";
+    $cronsDirectory = Path::root() . "/Crons";
     if (!is_dir($cronsDirectory)) {
-      $console->warning("No Crons/ directory found in " . FileSystem::root());
+      $console->warning("No Crons/ directory found in " . Path::root());
       return 0;
     }
 

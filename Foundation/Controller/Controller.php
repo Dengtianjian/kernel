@@ -213,7 +213,7 @@ class Controller
    */
   protected function onBootUp($callback)
   {
-    $this->app()->onBootUp($callback);
+    $this->app()->lifeCycle()->onBootUp($callback);
     return $this;
   }
 
@@ -236,7 +236,7 @@ class Controller
    */
   protected function onShutdown($callback)
   {
-    $this->app()->onShutdown($callback);
+    $this->app()->lifeCycle()->onShutdown($callback);
     return $this;
   }
 

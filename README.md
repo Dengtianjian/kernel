@@ -7,17 +7,15 @@
 ```
 kernel/
 ├── Foundation/         # 框架核心（App、路由、数据库、HTTP 等）
-├── Platform/           # 平台适配层（DiscuzX）
+├── Platform/           # 平台适配层（DiscuzX：DiscuzXLang 语言包管理等）
 ├── Controller/         # 控制器
-├── Middleware/         # 全局中间件
+├── Middleware/         # 全局中间件子类（基础类在 Foundation/Middleware）
 ├── Model/              # 模型层
 ├── Service/            # 服务层
 ├── Views/              # 视图模板
 ├── Configs/            # 配置文件
 ├── Routes/             # 路由定义
-├── Langs/              # 语言包
 ├── Traits/             # Trait 复用
-├── Iuu/                # 插件标识相关
 ├── Assets/             # 静态资源
 ├── vendor/             # Composer 第三方依赖
 ├── index.php           # Web 入口
@@ -31,7 +29,7 @@ kernel/
 | 组件 | 文件 | 说明 |
 |------|------|------|
 | App | `App.php` | 应用主类，负责初始化、中间件注册、路由匹配和请求分发 |
-| [Lifecycle](ruyi-docs/docs/php/framework/lifecycle) | `Lifecycle.php` | 应用生命周期管理（bootUp/shutdown/error 钩子委托） |
+| [Lifecycle](ruyi-docs/docs/php/framework/lifecycle) | `Lifecycle.php` | 应用生命周期管理（bootUp/shutdown/error 三钩子：引导、关闭、错误） |
 | Router | `Router.php` | 路由器，支持标准路由和 RESTful 风格 |
 | [Provisioner](ruyi-docs/docs/php/framework/provisioner) | `Provisioner.php` | 生命周期编排器，管理应用安装、升级、回滚和卸载 |
 | Config | `Config.php` | 配置管理 |
@@ -39,8 +37,6 @@ kernel/
 | Cache | `Cache.php` | 缓存处理 |
 | Log | `Log.php` | 日志处理 |
 | Command | `Command.php` | 命令行命令基类 |
-| Lang | `Lang.php` | 语言包管理 |
-| Middleware | `Middleware.php` | 中间件基类 |
 | Output | `Output.php` | 输出处理 |
 
 ### 子模块
@@ -49,6 +45,7 @@ kernel/
 |------|------|
 | `Console/` | 控制台命令支持 |
 | `Controller/` | 控制器基类及请求/响应抽象 |
+| `Middleware/` | 全局中间件子类（Middleware 管理器与 MiddlewareBase 基类在 Foundation/Middleware） |
 | `Data/` | 数据处理工具（数组、字符串、序列化等） |
 | `Database/` | 数据库抽象层（PDO/MySQL、MongoDB、SQLite） |
 | `Exception/` | 异常体系及错误码 |
@@ -68,9 +65,14 @@ kernel/
 
 ```php
 $App = new App("myapp");
-$App->setMiddlware(MyMiddleware::class);
+$App->setup(\myapp\Setup\Bootstrap::class);   // 装配：new Config/FileSystem/Cache、手动 new Middleware/Lifecycle 注册并注入
 $App->run();
 ```
+
+中间件与生命周期钩子统一在 `Setup/Bootstrap.php` 装配类中手动 `new Middleware` 后 `->set(...)`、
+手动 `new Lifecycle` 后 `->onBootUp(...)` 等注册，再通过 `$app->set([...])` 批量注入自定义组件
+（支持键：`router` / `request` / `lifeCycle` / `middleware`）。`Bootstrap` 构造接收当前 App 实例：
+`public function __construct($app)`，内部 `$app->set(["middleware" => $middleware, "lifeCycle" => $lifeCycle])`。
 
 ### CLI 入口 (`console`)
 
@@ -83,21 +85,21 @@ $App->run();
 | `F_KERNEL` | 内核加载标识，各文件通过此常量防止直接访问 |
 | `App::id()` | 当前 App 标识（静态方法，从当前实例读取，未实例化返回 null） |
 | `App::kernelId()` | 内核标识（静态方法，从当前实例读取，未实例化返回 null） |
-| `FileSystem::projectRoot()` | 项目根目录路径（自动计算的静态 getter） |
-| `FileSystem::kernelRoot()` | 内核根目录路径（自动计算的静态 getter） |
-| `FileSystem::root()` | App 根目录路径（自动计算的静态 getter） |
-| `FileSystem::data()` | App 数据目录路径（自动计算的静态 getter） |
-| `FileSystem::storage()` | App 存储目录路径（自动计算的静态 getter） |
-| `FileSystem::kernelDir()` | 内核目录相对路径（自动计算的静态 getter） |
-| `FileSystem::dir()` | App 目录相对路径（自动计算的静态 getter） |
+| `Path::projectRoot()` | 项目根目录路径（自动计算的静态 getter） |
+| `Path::kernelRoot()` | 内核根目录路径（自动计算的静态 getter） |
+| `Path::root()` | App 根目录路径（自动计算的静态 getter） |
+| `Path::data()` | App 数据目录路径（自动计算的静态 getter） |
+| `Path::storage()` | App 存储目录路径（自动计算的静态 getter） |
+| `Path::kernelDir()` | 内核目录相对路径（自动计算的静态 getter） |
+| `Path::dir()` | App 目录相对路径（自动计算的静态 getter） |
 
-> FileSystem 无任何静态属性，7 个路径 getter 在每次静态方法调用时自动计算：`kernelRoot` 为本类所在内核目录（永远正确）；`projectRoot` 在 DiscuzX 平台取 `DISCUZ_ROOT`（去尾斜杠）、普通项目为内核上级目录；`root`/`data`/`storage` 由内核同级目录与 `App::id()` 推导；`kernelDir`/`dir` 为对应绝对路径相对 `projectRoot` 的相对路径。`App` 构造在 `defineConstants()` 之后执行 `new FileSystem`（无参构造，构造时确保 `data`/`storage` 目录存在；未实例化 App 时跳过目录创建）。依赖 `App::id()` 的 getter（`root`/`data`/`storage`/`dir`）在未实例化 App 时返回 null；DiscuzX 平台无需任何额外配置。FileSystem 同时承担文件系统总管理：13 个文件操作方法（upload/createFile/deleteDirectory/clearFolder/copyFolder/getFileInfo/deleteFile/readFile/copyFile/moveFile/ensureDirectory/fileSize/cloneDirectory）已并入本类，原 FileManager 类已删除。
+> 路径体系已抽离到 `Path` 类（`kernel\Foundation\FileSystem\Path`，纯静态、无副作用），FileSystem 只保留文件操作。Path 无任何静态属性，7 个路径 getter 在每次静态方法调用时自动计算：`kernelRoot` 为本类所在内核目录（永远正确）；`projectRoot` 在 DiscuzX 平台取 `DISCUZ_ROOT`（去尾斜杠）、普通项目为内核上级目录；`root`/`data`/`storage` 由内核同级目录与 `App::id()` 推导；`kernelDir`/`dir` 为对应绝对路径相对 `projectRoot` 的相对路径。`App` 构造在 `defineConstants()` 之后执行 `new FileSystem`（无参构造，构造时通过 `Path::root()` 确保 `data`/`storage` 目录存在；未实例化 App 时跳过目录创建）。依赖 `App::id()` 的 getter（`root`/`data`/`storage`/`dir`）在未实例化 App 时返回 null；DiscuzX 平台无需任何额外配置。FileSystem 承担文件操作：13 个方法（upload/createFile/deleteDirectory/clearFolder/copyFolder/getFileInfo/deleteFile/readFile/copyFile/moveFile/ensureDirectory/fileSize/cloneDirectory）已并入本类，原 FileManager 类已删除。
 
 ## 版本管理
 
 通过 [Provisioner](ruyi-docs/docs/php/framework/provisioner) 实现增量升级：
 
-- `.version` 文件存储完整版本号，位于 `{FileSystem::data()}/.version`
+- `.version` 文件存储完整版本号，位于 `{Path::data()}/.version`
 - 升级脚本放在 `Upgrades/` 目录，按 `Upgrade_x_y_z.php` 命名
 - 升级/回滚后自动持久化版本号
 

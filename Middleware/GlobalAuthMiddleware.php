@@ -8,12 +8,12 @@ use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\Middleware;
+use kernel\Foundation\Middleware\MiddlewareBase;
 use kernel\Foundation\ReturnResult\ReturnResult;
 use kernel\Model\LoginsModel;
 use kernel\Service\AuthService;
 
-class GlobalAuthMiddleware extends Middleware
+class GlobalAuthMiddleware extends MiddlewareBase
 {
   protected $LoginsModel = null;
   public function __construct(Request $request, Controller $controller)

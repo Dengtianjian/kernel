@@ -4,11 +4,11 @@ namespace kernel\Platform\DiscuzX\Middleware;
 
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Middleware;
+use kernel\Foundation\Middleware\MiddlewareBase;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\View;
 
-class GlobalDiscuzXMultipleEncodeMiddleware extends Middleware
+class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 {
   public function handle($next)
   {

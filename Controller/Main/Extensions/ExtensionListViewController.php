@@ -6,7 +6,7 @@ namespace kernel\App\Main\Extensions;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Extension\Extensions;
-use kernel\Foundation\Lang;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\View;
@@ -54,7 +54,7 @@ class ExtensionListViewController extends AuthController
       $EM->insert($insertNewData);
     }
 
-    View::title(Lang::value("kernel/extension_list"));
+    View::title(DiscuzXLang::value("kernel/extension_list"));
     Response::success([
       "extensions" => $extensions,
       "extensionCount" => count($extensions)

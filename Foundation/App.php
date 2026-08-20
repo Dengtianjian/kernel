@@ -13,9 +13,10 @@ use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\Exception\Exception;
 use kernel\Foundation\Exception\RuyiException;
 use kernel\Foundation\FileSystem\FileHelper;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\Response\ResponsePagination;
 use kernel\Foundation\Lifecycle;
+use kernel\Foundation\Middleware\Middleware;
 
 class App
 {
@@ -31,7 +32,12 @@ class App
    * @var string|null
    */
   protected $kernelId = null;
-  protected $globalMiddlware = []; //*全局中间件
+  /**
+   * 中间件
+   *
+   * @var Middleware
+   */
+  protected $middleware = null;
   protected $router = null; //* 路由相关
   protected $request = null; //* 请求相关
   protected $startTime = null; //* 开始时间戳
@@ -44,14 +50,23 @@ class App
    * @var App|null
    */
   protected static $currentApp = null;
+  /**
+   * ensureInstances() 进行中标记（防止 Lifecycle 构造触发钩子回调时递归）
+   *
+   * @var bool
+   */
+  protected static $ensuringInstances = false;
   protected function __clone() {}
   /**
    * 构建 App
    * @param string $id 设定一个 APP 唯一 ID，跟项目目录同名
    * @param string $kernelId 修改内核默认id。内核也是一个 APP，所有也有ID，默认是 kernel
    *
-   * 构造时实例化 Router（构造内按模式加载路由：http 模式注册 URI 路由、command 模式注册 CLI 命令，
-   * 模式自动判断：非 cli 环境为 http，否则 command）并始终实例化 Request。
+   * 构造不实例化任何组件（延迟实例化）：Router / Request / Middleware / Lifecycle / Config
+   * 由 setup() 手动注入（自定义实例），或在 run()/handle() 时由 ensureInstances() 兜底实例化；
+   * 中间件注册、生命周期钩子请在 Setup 装配类中手动 new Middleware / new Lifecycle 后
+   * 调用实例方法设置（$middleware->set(...)、$lifeCycle->onBootUp(...) 等）再注入 App；
+   * Cache / FileSystem 等需要时也请在 Setup 装配类中手动实例化。
    * CLI 下 Request 的 URI 由 Console::handle() 置为命中的命令名；HTTP 下为请求 URI。
    */
   function __construct($id, $kernelId = "kernel")
@@ -67,30 +82,88 @@ class App
     //* 定义常量
     $this->defineConstants();
 
-    //* 实例化 FileSystem（无参构造，不计算路径；路径在每次静态方法调用时自动计算）
-    new FileSystem;
-
-    //* 初始化配置
-    new Config;
-
-    //* 实例化 Cache（构造时生成 16 位随机 KEY，Cache::key() 读取）
-    new Cache;
-
-    include_once(FileHelper::combinedFilePath(FileSystem::kernelRoot() . "/Foundation/Common.php"));
+    include_once(FileHelper::combinedFilePath(Path::kernelRoot() . "/Foundation/Common.php"));
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
-
-    //* 实例化 Router：构造内加载路由（http 模式注册 URI 路由；command 模式注册 CLI 命令）
-    $this->router = new Router();
-
-    //* 请求实例：HTTP 与 CLI 都实例化（CLI 下 URI 由 Console::handle() 置为命中的命令名）
-    $this->request = new Request();
-
-    //* 生命周期管理器：委托管理引导/结束/错误钩子（注入当前 Request，钩子与装配类触发时使用）
-    $this->lifeCycle = new Lifecycle(self::id(), $this->request);
+  }
+  /**
+   * 应用装配：手动实例化组件（配置、缓存、文件系统、自定义 Router/Request 等）
+   *
+   * 必须在 run() 之前调用，调用时立即执行传入的参数：
+   * - 传类名（字符串）：立即构建该类，构造参数为当前 App 实例（new $call($this)，构造即装配），
+   *   Bootstrap 构造签名 __construct($app)。Bootstrap 类内手动 new Config / new Cache / new FileSystem；
+   *   new Middleware 后 ->set(...) 注册中间件、new Lifecycle 后 ->onBootUp(...) / ->onShutdown(...)
+   *   注册钩子，再通过 $app->set([...]) 批量注入自定义实例：
+   *     $app->set(["router" => $router, "lifeCycle" => $lifeCycle, "middleware" => $middleware]);
+   * - 传闭包：立即执行，参数为当前 App 实例，同样可调用 $app->set([...]) 注入自定义实例。
+   *
+   * run() 时若 Router / Request / Middleware / Lifecycle / Config 仍未注入，框架自动兜底实例化。
+   *
+   * @param string|callable $call 装配类名（构造接收 $app）或装配闭包
+   * @return $this
+   */
+  public function setup($call)
+  {
+    if (is_string($call)) {
+      //* 类名：立即构建（构造即装配），传入当前 App 实例；无参构造（旧式 Bootstrap）兼容
+      if (class_exists($call)) {
+        $constructor = (new \ReflectionClass($call))->getConstructor();
+        if ($constructor === null || $constructor->getNumberOfParameters() === 0) {
+          new $call();
+        } else {
+          new $call($this);
+        }
+      }
+      return $this;
+    }
+    if (is_callable($call)) {
+      //* 闭包：立即执行，注入当前 App 实例
+      $call($this);
+    }
+    return $this;
+  }
+  /**
+   * 延迟实例化兜底：setup() 未注入时，run()/handle() 前由框架自动实例化
+   *
+   * Router / Request / Middleware / Lifecycle 未实例化则构造默认实例；
+   * Config 未加载（未 new Config）则加载当前应用配置。
+   * Cache / FileSystem 等不在此列：需要时请在 Setup 装配类中手动实例化。
+   *
+   * @return void
+   */
+  protected function ensureInstances()
+  {
+    if (self::$ensuringInstances) {
+      return;
+    }
+    self::$ensuringInstances = true;
+    try {
+      //* 初始化配置（未加载时加载 Configs/ 目录配置）
+      if (!Config::loaded()) {
+        new Config;
+      }
+      //* Router：构造内按模式加载路由（http 模式注册 URI 路由；command 模式注册 CLI 命令）
+      if ($this->router === null) {
+        $this->router = new Router();
+      }
+      //* Request：HTTP 与 CLI 都实例化（CLI 下 URI 由 Console::handle() 置为命中的命令名）
+      if ($this->request === null) {
+        $this->request = new Request();
+      }
+      //* 中间件管理器
+      if ($this->middleware === null) {
+        $this->middleware = new Middleware();
+      }
+      //* 生命周期管理器（先于 Request/Middleware 已就绪，Lifecycle 构造会触发 beforeCreate/afterCreate 钩子）
+      if ($this->lifeCycle === null) {
+        $this->lifeCycle = new Lifecycle();
+      }
+    } finally {
+      self::$ensuringInstances = false;
+    }
   }
   /**
    * 初始化以及定义常量
@@ -119,73 +192,29 @@ class App
     define("F_BASE_URL", $url);
   }
   /**
-   * 注册应用引导装配类（Lifecycle\Bootup），或注册启动钩子
+   * 批量注入自定义组件实例（setup() 装配中使用；未注入的组件 run() 时自动兜底实例化）
    *
-   * 双语义方法：
-   * - 传字符串（类名）或不传：注册启动装配类——由 run() 在请求到达后、路由匹配前
-   *   实例化（构造即装配，构造参数为当前请求 $request；CLI 下同样收到 Request 实例，其 URI 为命中的命令名），可立即执行
-   *   注册事件（new Event(...)）、按需引入 Lifecycle/ 下其它文件（events.php 等）、
-   *   初始化数据库连接等；只注册一次（幂等），类不存在时静默跳过。
-   * - 传回调（闭包/数组等）：注册启动钩子。
+   * 数组键为组件名，值为手动 new 出来的实例，用于替换 App 的对应组件：
+   *   $app->set([
+   *     "router" => new Router,
+   *     "request" => $request,
+   *     "lifeCycle" => $lifeCycle,
+   *     "middleware" => $middleware
+   *   ]);
+   * 支持键：router / request / lifeCycle / middleware（其余键忽略）。
    *
-   * 引导装配与关闭装配分离：关闭相关代码请放在 Lifecycle\Shutdown 中，通过 onShutdown() 注册。
-   * 不传类名时默认使用 App::id()\Lifecycle\Bootup（应用命名空间下的 Lifecycle 目录引导类）。
-   * HTTP 与 CLI（Console）入口都应在 run()/handle() 之前调用，例如入口文件中
-   * $app->onBootUp(\myapp\Lifecycle\Bootup::class)。
-   *
-   * @param string|\Closure|array|null $callback 应用引导装配类名（如 \myapp\Lifecycle\Bootup::class），
-   *                                             或启动钩子回调；不传时默认加载 App::id()\Lifecycle\Bootup
+   * @param array $instances 组件名 => 实例
    * @return $this
    */
-  public function onBootUp($callback = null)
+  public function set(array $instances)
   {
-    $this->lifeCycle->onBootUp($callback);
+    foreach (["router", "request", "lifeCycle", "middleware"] as $name) {
+      if (array_key_exists($name, $instances)) {
+        $this->{$name} = $instances[$name];
+      }
+    }
 
     return $this;
-  }
-  /**
-   * 设置中间件
-   *
-   * @param \Closure|object|string $classOrFun 中间件类或者函数
-   * @param array $executeParams 执行中间件时传入的参数
-   * @return void
-   */
-  function setMiddleware($classOrFun, $executeParams = null)
-  {
-    array_push($this->globalMiddlware, [
-      "target" => $classOrFun,
-      "params" => $executeParams
-    ]);
-  }
-  private function executeMiddleware($middlewares, Controller $controller, \Closure $callback)
-  {
-    if (count($middlewares) === 0)
-      return $callback();
-
-    $middleware = array_shift($middlewares);
-    $next = function () use ($middlewares, $controller, $callback) {
-      return $this->executeMiddleware($middlewares, $controller, $callback);
-    };
-
-    $params = $middleware['params'] ?: [];
-    array_push($params, $next);
-
-    if (is_string($middleware['target'])) {
-      $middlewareInstance = new $middleware['target']($this->request, $controller);
-      $executedResponse = $middlewareInstance->handle(...$params);
-    } else {
-      array_unshift($params, $this->request);
-      $executedResponse = $middleware['target'](...$params);
-    }
-
-    if ($executedResponse === null) {
-      throw new \RuntimeException(sprintf(
-        'Middleware [%s]::handle() 未返回 Response，可能缺少 return $next()',
-        is_string($middleware['target']) ? $middleware['target'] : 'Closure'
-      ));
-    }
-
-    return $executedResponse;
   }
   public function executeController($callTarget, $callParams, &$controller)
   {
@@ -222,48 +251,11 @@ class App
     }
   }
 
-  /**
-   * 注册应用关闭装配类（Lifecycle\Shutdown），或注册关闭钩子
-   *
-   * 双语义方法：
-   * - 传字符串（类名）：注册关闭装配类——由 run() 在请求结束（正常或异常）时实例化
-   *   （构造即装配，构造参数为 $controller->response；CLI 下传命令退出码），可立即执行
-   *   记录日志、释放资源等；只注册一次（幂等），类不存在时静默跳过。
-   * - 传回调（闭包/数组等）：注册关闭钩子。可在控制器或任意业务代码中动态注册
-   *   （Controller::onShutdown() 便捷方法），回调签名 function ($response, $context = null)：
-   *   - $response：当前响应对象（异常路径可能为 null；CLI 下为命令退出码）
-   *   - $context["exception"]：非空表示异常结束（可通过 App::exception() 读取）
-   *   - $context["error"]：是否异常结束
-   *   关闭钩子无论请求正常结束还是异常结束都会执行（异常必达）。
-   *
-   * @param callable|string $callback 回调函数，或关闭装配类名（如 \myapp\Lifecycle\Shutdown::class）
-   * @return $this
-   */
-  public function onShutdown($callback)
-  {
-    $this->lifeCycle->onShutdown($callback);
-
-    return $this;
-  }
-  /**
-   * 注册错误钩子（请求处理过程中捕获到异常时触发）
-   *
-   * 仿 Vue 3 的 onErrorCaptured：异常路径下，框架捕获异常后会先触发错误钩子（onError），
-   * 再触发结束钩子（onShutdown），最后交由全局异常处理器输出。可用于统一上报监控、
-   * 记录错误日志等，与结束钩子分工（onError 管错误处理，onShutdown 管资源释放/步骤记录）。
-   * 可叠加、可重复注册，按注册顺序依次执行；同一异常只触发一次。
-   *
-   * @param callable $callback 错误钩子回调，function (\Throwable $exception)
-   * @return $this
-   */
-  public function onError($callback)
-  {
-    $this->lifeCycle->onError($callback);
-
-    return $this;
-  }
   public function run()
   {
+    //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化
+    $this->ensureInstances();
+
     if ($this->request()->method === "options") {
       //* 预检请求也执行结束钩子，保证生命周期有始有终（记录日志、释放资源等）
       $this->lifeCycle->fireShutdown(null, [
@@ -291,16 +283,6 @@ class App
       $this->request->Route = $route;
       $this->request->params->set($route['params']);
 
-      $middlewares = $this->globalMiddlware ?: [];
-      if (is_array($route['middlewares']) && count($route['middlewares'])) {
-        foreach ($route['middlewares'] as $routeMiddleware) {
-          array_push($middlewares, [
-            "target" => $routeMiddleware,
-            "params" => []
-          ]);
-        }
-      }
-
       $callTarget = [];
       $callParams = $route['params'] ?: [];
       $routeInstantiateParams = $route['controllerInstantiateParams'];
@@ -322,19 +304,15 @@ class App
       }
 
       if (!$controller->response->error) {
-        //* 执行中间件
-        if (count($middlewares)) {
-          $app = $this;
-          $middlewareExecutedResult = $this->executeMiddleware($middlewares, $controller, function () use ($app, $callTarget, $callParams, &$controller) {
-            $app->executeController($callTarget, $callParams, $controller);
+        //* 执行中间件（全局中间件 + 路由级中间件）
+        $app = $this;
+        $middlewareExecutedResult = $this->middleware->execute($route['middlewares'], $controller, function () use ($app, $callTarget, $callParams, &$controller) {
+          $app->executeController($callTarget, $callParams, $controller);
 
-            return $controller->response;
-          });
-          if ($middlewareExecutedResult->error) {
-            $controller->response = $middlewareExecutedResult;
-          }
-        } else {
-          $this->executeController($callTarget, $callParams, $controller);
+          return $controller->response;
+        });
+        if ($middlewareExecutedResult->error) {
+          $controller->response = $middlewareExecutedResult;
         }
       }
 
@@ -371,26 +349,37 @@ class App
     }
   }
   /**
-   * 获取当前请求处理过程中捕获的异常
-   *
-   * 正常结束返回 null；控制器/中间件/引导等任意环节抛出并被框架捕获后，
-   * shutdown 回调可通过该方法判断是否异常结束、读取错误信息
-   * （例如外部 SDK 调用失败时记录已执行到的步骤）。
-   *
-   * @return \Throwable|null
-   */
-  public function exception()
-  {
-    return $this->lifeCycle->exception();
-  }
-  /**
    * 获取请求实例
    *
    * @return Request
    */
   public function request()
   {
+    if ($this->request === null) {
+      $this->request = new Request();
+    }
     return $this->request;
+  }
+  public function router()
+  {
+    if ($this->router === null) {
+      $this->router = new Router();
+    }
+    return $this->router;
+  }
+  public function lifeCycle()
+  {
+    if ($this->lifeCycle === null) {
+      $this->lifeCycle = new Lifecycle();
+    }
+    return $this->lifeCycle;
+  }
+  public function middleware()
+  {
+    if ($this->middleware === null) {
+      $this->middleware = new Middleware();
+    }
+    return $this->middleware;
   }
   /**
    * 获取当前（最近实例化）的 App 实例

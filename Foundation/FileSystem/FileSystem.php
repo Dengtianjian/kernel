@@ -2,28 +2,17 @@
 
 namespace kernel\Foundation\FileSystem;
 
-use kernel\Foundation\App;
 use kernel\Foundation\Exception\Exception;
 
 /**
  * 文件系统总管理
  *
- * 负责文件系统的全局操作：路径计算（调用时自动计算）与文件操作（上传、创建、
- * 复制、移动、删除、读取等）。所有路径操作均通过 FileHelper 进行规范化处理，
- * 确保跨平台兼容。
+ * 负责文件系统的文件操作：上传、创建、复制、移动、删除、读取等。
+ * 所有路径操作均通过 FileHelper 进行规范化处理，确保跨平台兼容。
+ * 目录路径推导已抽离到 Path 类，本类仅保留实际文件动作。
  *
  * 无参构造（构造时确保应用 data/storage 目录存在），无任何静态属性、无缓存；
  * App 在 defineConstants() 之后 `new FileSystem` 即可。
- * 7 个路径 getter 在每次静态方法调用时自动计算：
- *   kernelRoot  = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
- *   projectRoot = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernelRoot 的上级目录
- *   root        = kernelRoot 同级目录下的 {App::id()}
- *   data        = root/Data
- *   storage     = root/Storage
- *   kernelDir/dir = kernelRoot/root 相对 projectRoot 的路径
- *
- * 依赖 App::id() 的 getter（root/data/storage/dir）在未实例化 App（App::id() 为 null）时返回 null；
- * 此时构造也跳过目录创建。
  */
 final class FileSystem
 {
@@ -42,118 +31,12 @@ final class FileSystem
    */
   private static function ensureDirectories(): void
   {
-    $appRoot = self::root();
+    $appRoot = Path::root();
     if ($appRoot === null) {
       return;
     }
     self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Data"));
     self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Storage"));
-  }
-
-  /**
-   * 根目录（绝对路径）
-   *
-   * DiscuzX 平台返回 DISCUZ_ROOT（去尾斜杠）；普通项目返回内核目录的上级目录。
-   *
-   * @return string|null
-   */
-  public static function projectRoot(): ?string
-  {
-    if (defined("\\DISCUZ_ROOT")) {
-      return rtrim(\DISCUZ_ROOT, "/\\");
-    }
-    $kernelRoot = self::kernelRoot();
-    return $kernelRoot === null ? null : dirname($kernelRoot);
-  }
-
-  /**
-   * 内核根目录（绝对路径）
-   *
-   * 即本类所在目录，与 App::kernelId()、部署位置无关，永远正确。
-   *
-   * @return string
-   */
-  public static function kernelRoot(): ?string
-  {
-    return dirname(__DIR__, 2);
-  }
-
-  /**
-   * 当前应用根目录（绝对路径），默认 {kernelRoot 同级目录}/{App::id()}
-   *
-   * @return string|null
-   */
-  public static function root(): ?string
-  {
-    if (App::id() === null) {
-      return null;
-    }
-    return FileHelper::combinedFilePath(dirname(self::kernelRoot()), App::id());
-  }
-
-  /**
-   * 应用数据目录（绝对路径），默认 appRoot/Data
-   *
-   * @return string|null
-   */
-  public static function data(): ?string
-  {
-    $appRoot = self::root();
-    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Data");
-  }
-
-  /**
-   * 应用存储目录（绝对路径），默认 appRoot/Storage
-   *
-   * @return string|null
-   */
-  public static function storage(): ?string
-  {
-    $appRoot = self::root();
-    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Storage");
-  }
-
-  /**
-   * 内核目录（相对路径），即 kernelRoot 相对 root 的路径
-   *
-   * @return string|null
-   */
-  public static function kernelDir(): ?string
-  {
-    $root = self::root();
-    $kernelRoot = self::kernelRoot();
-    if ($root === null || $kernelRoot === null) {
-      return null;
-    }
-    return self::relativePath($kernelRoot, $root);
-  }
-
-  /**
-   * 应用目录（相对路径），即 appRoot 相对 root 的路径
-   *
-   * @return string|null
-   */
-  public static function dir(): ?string
-  {
-    $root = self::root();
-    $appRoot = self::root();
-    if ($root === null || $appRoot === null) {
-      return null;
-    }
-    return self::relativePath($appRoot, $root);
-  }
-
-  /**
-   * 求 $path 相对 $base（绝对路径前缀）的路径
-   *
-   * @param string $path 绝对路径
-   * @param string $base 绝对路径前缀
-   * @return string
-   */
-  private static function relativePath(string $path, string $base): string
-  {
-    $relative = substr($path, strlen($base));
-    return ltrim(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $relative), DIRECTORY_SEPARATOR);
   }
 
   /**
@@ -163,7 +46,7 @@ final class FileSystem
    * - 通过 $_FILES 数组上传（HTTP POST 文件上传）
    * - 通过本地文件路径上传（用于服务端已存在的文件）
    *
-   * 文件默认保存到 FileSystem::storage() 指定的存储根目录下，
+   * 文件默认保存到 Path::storage() 指定的存储根目录下，
    * 通过 $savePath 参数可指定相对子目录。
    *
    * 对于图片类型的文件，会自动获取宽高信息。
@@ -178,7 +61,7 @@ final class FileSystem
    * ```
    *
    * @param array|string $file 上传的文件。可为 $_FILES 数组中的某一项（包含 error/tmp_name/name/size 键），或本地文件的完整路径
-   * @param string $savePath 保存的路径，相对于 FileSystem::storage()。传入 "." 或空字符串表示直接保存在存储根目录
+   * @param string $savePath 保存的路径，相对于 Path::storage()。传入 "." 或空字符串表示直接保存在存储根目录
    * @param string|null $fileName 自定义存储文件名（不含扩展名）。未传入时自动使用 uniqid() 生成，扩展名从源文件名获取
    * @return array{name:string,sourceFileName:string,path:string|null,extension:string,size:int,filePath:string,width:int,height:int} 文件信息数组
    * @throws Exception 上传失败时抛出异常（错误码前缀 FileUpload 或 FileSave）
@@ -228,17 +111,17 @@ final class FileSystem
     $path = $saveFullFileName;
     if ($savePath) {
       $path = FileHelper::combinedFilePath($savePath, $saveFullFileName);
-      $folderPath = FileHelper::combinedFilePath(self::storage(), $savePath);
+      $folderPath = FileHelper::combinedFilePath(Path::storage(), $savePath);
       if (!is_dir($folderPath)) {
         mkdir($folderPath, 0700, true);
       }
     }
     // 确保存储根目录存在
-    if (!is_dir(self::storage())) {
-      mkdir(self::storage(), 0700, true);
+    if (!is_dir(Path::storage())) {
+      mkdir(Path::storage(), 0700, true);
     }
 
-    $saveFullPath = FileHelper::combinedFilePath(self::storage(), $path);
+    $saveFullPath = FileHelper::combinedFilePath(Path::storage(), $path);
     if (is_string($file)) {
       if (!file_exists($file)) {
         throw new Exception("文件保存失败", 500, "FileUpload:500002");

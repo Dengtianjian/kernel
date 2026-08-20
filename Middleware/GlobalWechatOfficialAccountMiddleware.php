@@ -4,11 +4,11 @@ namespace kernel\Middleware;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response\ResponseError;
-use kernel\Foundation\Middleware;
+use kernel\Foundation\Middleware\MiddlewareBase;
 use kernel\Model\AccessTokenModel;
 use kernel\Platform\Wechat\AccessToken;
 
-class GlobalWechatOfficialAccountMiddleware extends Middleware
+class GlobalWechatOfficialAccountMiddleware extends MiddlewareBase
 {
   protected $accessTokenModel = null;
   public function __construct($request, $controller)

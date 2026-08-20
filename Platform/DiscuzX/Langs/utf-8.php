@@ -1,6 +1,6 @@
 <?php
 
-use kernel\Foundation\Lang;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
 
 
 $langs = [
@@ -142,4 +142,4 @@ $langs = [
   ]
 ];
 
-Lang::add($langs);
+DiscuzXLang::add($langs);

@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Foundation\HTTP\Response;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
@@ -21,7 +21,7 @@ class ResponseView extends Response
    * @param array $viewData 渲染的数据
    * @param string|array $viewFileBaseDir 视图文件所在的目录，相对于根目录
    * @param string $templateId 模板ID，用于缓存模板
-   * @param string|array $viewFileDir 视图文件根目录，默认是基于FileSystem::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
+   * @param string|array $viewFileDir 视图文件根目录，默认是基于Path::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    */
   public function __construct($viewFile, $viewData = [], $viewFileBaseDir = "Views", $templateId = "page", $viewFileDir = null)
   {
@@ -34,13 +34,13 @@ class ResponseView extends Response
    * @param array $viewData 渲染的数据
    * @param string $viewFileBaseDir 视图文件所在的目录，相对于当前项目的根目录
    * @param string $templateId 模板ID，用于缓存模板
-   * @param string $viewFileDir 视图文件根目录，默认是基于FileSystem::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
+   * @param string $viewFileDir 视图文件根目录，默认是基于Path::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    * @return ResponseView
    */
   public function page($viewFile, $viewData, $viewFileDirBaseProject = "Views", $templateId = "page", $viewFileDir = null)
   {
     if (!$viewFileDir) {
-      $viewFileDir = FileSystem::root();
+      $viewFileDir = Path::root();
     }
     $extension = ".php";
     if (pathinfo($viewFile, PATHINFO_EXTENSION)) {
@@ -72,7 +72,7 @@ class ResponseView extends Response
     $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->ResponseData;
 
     $this->templateId = $templateId;
-    $this->viewFilePath = FileHelper::combinedFilePath(FileSystem::root(), $fileBaseDir, $layout . ".php");
+    $this->viewFilePath = FileHelper::combinedFilePath(Path::root(), $fileBaseDir, $layout . ".php");
     $this->viewFileBaseDir = $fileBaseDir;
     $this->ResponseData = $viewData;
 
@@ -164,10 +164,10 @@ PHP;
   {
     if (is_array($viewFiles)) {
       foreach ($viewFiles as &$fileItem) {
-        $fileItem = FileHelper::combinedFilePath(FileSystem::root(), $viewFileBaseDir, "$fileItem.php");
+        $fileItem = FileHelper::combinedFilePath(Path::root(), $viewFileBaseDir, "$fileItem.php");
       }
     } else {
-      $viewFiles = FileHelper::combinedFilePath(FileSystem::root(), $viewFileBaseDir, "$viewFiles.php");
+      $viewFiles = FileHelper::combinedFilePath(Path::root(), $viewFileBaseDir, "$viewFiles.php");
     }
     return static::render($viewFiles, $viewData, $templateId);
   }

@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Foundation\Exception;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 
 use kernel\Foundation\Config;
@@ -69,12 +69,12 @@ class ExceptionHandler
         $Response->output();
         exit;
       } else {
-        $errorPagePath = FileHelper::combinedFilePath(FileSystem::root(), "Views", "error.php");
+        $errorPagePath = FileHelper::combinedFilePath(Path::root(), "Views", "error.php");
         if (file_exists($errorPagePath)) {
           $View = new ResponseView("error");
         } else {
-          $View = new ResponseView("error", [], "Views", "kernel_page", FileSystem::kernelRoot());
-          $errorPagePath = FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Views", "error.php");
+          $View = new ResponseView("error", [], "Views", "kernel_page", Path::kernelRoot());
+          $errorPagePath = FileHelper::combinedFilePath(Path::kernelRoot(), "Views", "error.php");
         }
         $View->render($errorPagePath, [
           "code" => $code, "message" => $message, "file" => $file, "line" => $line, "trace" => $trace, "traceString" => $traceString, "previous" => $previous,

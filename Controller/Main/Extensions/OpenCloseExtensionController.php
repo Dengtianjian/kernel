@@ -5,7 +5,7 @@ namespace kernel\App\Main\Extensions;
 
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Request;
-use kernel\Foundation\Lang;
+use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
 use kernel\Foundation\Response;
 use kernel\Model\ExtensionsModel;
 
@@ -22,19 +22,19 @@ class OpenCloseExtensionController extends AuthController
     $EM = new ExtensionsModel();
     $extension = $EM->getByExtensionId($extensionId);
     if (empty($extension)) {
-      Response::error(404, 404001, Lang::value("kernel/extensionNotExists"));
+      Response::error(404, 404001, DiscuzXLang::value("kernel/extensionNotExists"));
     }
     $extension = $extension[0];
     $extensionRootPath = \DISCUZ_ROOT . $extension['path'];
     $mainFilePath = $extensionRootPath . "/Main.php";
     if (!is_dir($extensionRootPath) || !\file_exists($mainFilePath)) {
-      Response::error(500, 500001, Lang::value("kernel/extensionFileCorrupted"));
+      Response::error(500, 500001, DiscuzXLang::value("kernel/extensionFileCorrupted"));
     }
     if ($enabled == 1 && $extension['enabled'] == 1) {
-      Response::error(400, 400001, Lang::value("kernel/extensionAlreadyOn"));
+      Response::error(400, 400001, DiscuzXLang::value("kernel/extensionAlreadyOn"));
     }
     if ($enabled == 0 && $extension['enabled'] == 0) {
-      Response::error(400, 400001, Lang::value("kernel/extensionClosed"));
+      Response::error(400, 400001, DiscuzXLang::value("kernel/extensionClosed"));
     }
     $EM->where("extension_id", $extensionId)->update([
       "enabled" => $enabled

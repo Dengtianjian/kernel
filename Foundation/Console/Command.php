@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Foundation\Console;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Exception;
@@ -31,7 +31,7 @@ class Command
   private $env = [];
   /** @var array proc_open 的 options 参数（bypass_shell、suppress_errors 等） */
   private $options = [];
-  /** @var string 当前工作目录，默认应用根目录 FileSystem::root() */
+  /** @var string 当前工作目录，默认应用根目录 Path::root() */
   private string $cwd = "";
   /** @var string 初始化命令（shell 路径），exec() 执行的命令基于它运行 */
   private $initCommand = "";
@@ -364,7 +364,7 @@ class Command
       $env = null;
     }
 
-    $this->process = $process = @proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd ?: FileSystem::root(), $env, $this->options);
+    $this->process = $process = @proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd ?: Path::root(), $env, $this->options);
     if ($process === false) {
       $this->process = null;
       throw new Exception("服务器错误", 500, "500:CommandError", "proc_open执行失败: {$this->initCommand}");
@@ -642,7 +642,7 @@ class Command
     $marker = $this->sessionMarker;
     $this->status["command"] = $command;
     $this->asyncCommand = $command;
-    $cmd = "cd " . escapeshellarg($this->cwd ?: FileSystem::root()) . " && " . escapeshellcmd($command) . "; echo \"\n{$marker}=\$?\"";
+    $cmd = "cd " . escapeshellarg($this->cwd ?: Path::root()) . " && " . escapeshellcmd($command) . "; echo \"\n{$marker}=\$?\"";
     $this->writeStream(0, $cmd . "\n");
     [$stdout, $stderr] = $this->readToEnd($marker);
     return $this->finalize([$stdout, $stderr], true);

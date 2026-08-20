@@ -13,22 +13,12 @@ namespace kernel\Foundation;
  * - 启动已触发后（bootupFired）再注册的启动回调会立即执行，避免注册后永不执行。
  * - fireError() 会记录当前异常，可通过 exception() 读取（App::exception() 委托本方法）。
  *
- * 应用侧只需使用 App / Controller 上的便捷方法（$app->onBootUp()、$this->onShutdown() 等）。
+ * 应用侧在 Setup 装配类中手动 new Lifecycle 后调用实例方法注册钩子，再通过
+ * $app->set(["lifeCycle" => $lifeCycle]) 注入（$lifeCycle->onBootUp(...); $app->set(["lifeCycle" => $lifeCycle]);）。
+ * 控制器内可用 $this->onBootUp() / $this->onShutdown() 动态注册（委托当前 App 的 Lifecycle 实例）。
  */
 class Lifecycle
 {
-  /**
-   * 当前应用 ID（用于 onBootUp() 不传参时构造默认装配类名 {App}\Lifecycle\Bootup）
-   *
-   * @var string|null
-   */
-  protected $appId = null;
-  /**
-   * 当前请求实例（启动钩子回调与装配类的构造参数；CLI 下 URI 为命中的命令名）
-   *
-   * @var \kernel\Foundation\HTTP\Request|null
-   */
-  protected $request = null;
   /**
    * 引导钩子/装配类注册表
    *
@@ -81,17 +71,13 @@ class Lifecycle
   /**
    * 构建生命周期管理器
    *
-   * @param string|null $appId 应用 ID（用于 onBootUp() 不传参时的默认装配类名 {App}\Lifecycle\Bootup）
-   * @param \kernel\Foundation\HTTP\Request|null $request 当前请求实例（HTTP 与 CLI 均实例化）
    */
-  public function __construct($appId = null, $request = null)
+  public function __construct()
   {
-    $this->appId = $appId;
-    $this->request = $request;
   }
 
   /**
-   * 注册应用引导装配类（Lifecycle\Bootup），或注册启动钩子
+   * 注册应用引导装配类（Setup\Bootup），或注册启动钩子
    *
    * 双语义方法：
    * - 传字符串（类名）或不传：注册启动装配类——由 run() 在请求到达后、路由匹配前
@@ -100,15 +86,15 @@ class Lifecycle
    *   只注册一次（幂等），类不存在时静默跳过。
    * - 传回调（闭包/数组等）：注册启动钩子。
    *
-   * 不传类名时默认使用 {App}\Lifecycle\Bootup（应用命名空间下的 Lifecycle 目录引导类）。
+   * 不传类名时默认使用 {App}\Setup\Bootup（应用命名空间下的 Setup 目录引导类）。
    *
-   * @param string|\Closure|array|null $callback 应用引导装配类名，或启动钩子回调；不传时默认 {App}\Lifecycle\Bootup
+   * @param string|\Closure|array|null $callback 应用引导装配类名，或启动钩子回调；不传时默认 {App}\Setup\Bootup
    * @return $this
    */
   public function onBootUp($callback = null)
   {
     if ($callback === null) {
-      $callback = $this->appId . "\\Lifecycle\\Bootup";
+      $callback = getApp()->id() . "\\Setup\\Bootup";
     }
 
     if (is_string($callback)) {
@@ -126,7 +112,7 @@ class Lifecycle
 
     //* 启动阶段已触发后（run() 已进入业务阶段）注册的启动回调：立即执行，避免注册后永不执行
     if ($this->bootupFired) {
-      $callback($this->request);
+      $callback(getApp()->request());
       return $this;
     }
 
@@ -136,7 +122,7 @@ class Lifecycle
   }
 
   /**
-   * 注册应用关闭装配类（Lifecycle\Shutdown），或注册关闭钩子
+   * 注册应用关闭装配类（Setup\Shutdown），或注册关闭钩子
    *
    * 双语义方法：
    * - 传字符串（类名）：注册关闭装配类——由 run() 在请求结束（正常或异常）时实例化
@@ -148,7 +134,7 @@ class Lifecycle
    *   - $context["error"]：是否异常结束
    *   关闭钩子无论请求正常结束还是异常结束都会执行（异常必达）。
    *
-   * @param callable|string $callback 回调函数，或关闭装配类名（如 \myapp\Lifecycle\Shutdown::class）
+   * @param callable|string $callback 回调函数，或关闭装配类名（如 \myapp\Setup\Shutdown::class）
    * @return $this
    */
   public function onShutdown($callback)
@@ -201,9 +187,9 @@ class Lifecycle
       $this->bootupFired = true;
       foreach ($this->bootUp as $item) {
         if (is_callable($item)) {
-          $item($this->request);
+          $item(getApp()->request());
         } else {
-          new $item($this->request);
+          new $item(getApp()->request());
         }
       }
     }
@@ -226,14 +212,12 @@ class Lifecycle
     if ($this->shutdownFired) {
       return;
     }
-    if ($this->shutdown) {
-      $this->shutdownFired = true;
-      foreach ($this->shutdown as $item) {
-        if (is_callable($item)) {
-          $item($arg, $context);
-        } else {
-          new $item($arg);
-        }
+    $this->shutdownFired = true;
+    foreach ($this->shutdown as $item) {
+      if (is_callable($item)) {
+        $item($arg, $context);
+      } else {
+        new $item($arg);
       }
     }
   }

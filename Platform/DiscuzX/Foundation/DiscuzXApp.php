@@ -14,6 +14,10 @@ class DiscuzXApp extends App
     }
 
     parent::__construct($appId, "gstudio_kernel");
+
+    //* 延迟实例化兜底：setup() 未注入时自动实例化（Request 等，下方直接写入 URI）
+    $this->ensureInstances();
+
     if (isset($_GET['uri'])) {
       $this->request->URI = addslashes(trim($_GET['uri']));
     } else {
@@ -27,6 +31,9 @@ class DiscuzXApp extends App
   }
   public function hook($uri)
   {
+    //* 延迟实例化兜底：setup() 未注入时自动实例化（Request 等）
+    $this->ensureInstances();
+
     $this->request->URI = $uri;
   }
   /**

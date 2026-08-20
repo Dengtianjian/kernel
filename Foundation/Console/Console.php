@@ -18,7 +18,7 @@ use kernel\Foundation\Config;
  *
  * 命令处理器支持三种形式：
  * 1. 命令控制器类：实现 handle(Console $console, array $args, array $options): int 方法，
- *    类放 Controller/ 目录（如 "kernel\\Controller\\Console\\MakeAppCommand"），由本类实例化并调用
+ *    类放 Controller/ 目录（如 "kernel\\Controller\\Commands\\MakeAppCommand"），由本类实例化并调用
  * 2. [类名, 方法名]：指定命令控制器中的处理方法（Router::command 第二参传数组）
  * 3. 闭包：function (Console $console, array $args, array $options): int
  *
@@ -212,6 +212,9 @@ class Console extends App
    */
   public function handle(?array $argv = null): int
   {
+    //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化（Router/Request/Middleware/Lifecycle/Config）
+    $this->ensureInstances();
+
     if ($argv === null) {
       $argv = $this->argv;
     }

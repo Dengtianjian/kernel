@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Foundation;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 
 /**
@@ -76,7 +76,7 @@ class Cache
    */
   static private function saveBasePath(): string
   {
-    return FileSystem::data() ? FileSystem::data() . "/Cache" : "";
+    return Path::data() ? Path::data() . "/Cache" : "";
   }
   /**
    * 已经读取的缓存内容

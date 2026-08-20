@@ -5,7 +5,7 @@ namespace kernel\Foundation;
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\FileSystem\FileHelper;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 
 /**
@@ -161,7 +161,7 @@ class Router
   protected function loadRoutes()
   {
     $localRouteFiles = [];
-    $kernelRoutesDir = FileHelper::combinedFilePath(FileSystem::kernelRoot(), "Routes");
+    $kernelRoutesDir = FileHelper::combinedFilePath(Path::kernelRoot(), "Routes");
     if (is_dir($kernelRoutesDir)) {
       //* 载入kernel路由
       $kernelRouteFiles = FileHelper::recursionScanDir($kernelRoutesDir, null, true);
@@ -170,7 +170,7 @@ class Router
       }
     }
 
-    $appRoutesDir = FileHelper::combinedFilePath(FileSystem::root(), "Routes");
+    $appRoutesDir = FileHelper::combinedFilePath(Path::root(), "Routes");
     if (is_dir($appRoutesDir)) {
       //* 载入App的路由
       $appRouteFiles = FileHelper::recursionScanDir($appRoutesDir, null, true);

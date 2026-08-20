@@ -1,7 +1,7 @@
 <?php
 
 namespace kernel\Foundation;
-use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\FileSystem\FileHelper;
 
@@ -22,6 +22,19 @@ class Log
   static private $levels = ["debug" => 0, "info" => 1, "warning" => 2, "error" => 3];
 
   /**
+   * 构造方法：检查并创建日志存储根目录
+   *
+   * 仅当日志存储根目录（Data/Logs）可确定时创建；不可确定时静默跳过。
+   */
+  function __construct()
+  {
+    $base = self::basePath();
+    if ($base !== "" && !is_dir($base)) {
+      @mkdir($base, 0755, true);
+    }
+  }
+
+  /**
    * 生成日志文件路径
    *
    * @param string[] ...$paths 日志文件路径
@@ -38,7 +51,7 @@ class Log
    */
   static private function basePath()
   {
-    return FileSystem::data() ? FileSystem::data() . "/Logs" : "";
+    return Path::data() ? Path::data() . "/Logs" : "";
   }
   /**
    * 设置或读取最小记录级别

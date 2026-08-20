@@ -1,7 +1,7 @@
 <?php
 
-namespace kernel\Controller\Console;
-use kernel\Foundation\FileSystem\FileSystem;
+namespace kernel\Controller\Commands;
+use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\App;
 
@@ -15,7 +15,7 @@ use kernel\Foundation\App;
  *   php kernel/console make:middleware Admin/Auth       // 生成 Admin/AuthMiddleware（子命名空间）
  *   php kernel/console make:middleware Auth --force     // 覆盖已存在文件
  *
- * 骨架参照 kernel\Foundation\Middleware\Middleware 基类约定。
+ * 骨架参照 kernel\Foundation\Middleware\MiddlewareBase 基类约定。
  */
 class MakeMiddlewareCommand extends MakeCommand
 {
@@ -42,13 +42,13 @@ class MakeMiddlewareCommand extends MakeCommand
     $namespace = $this->joinNamespace(App::id() . "\\Middleware", $subDir);
 
     $body = <<<PHP
-use kernel\\Foundation\\Middleware\\Middleware;
+use kernel\\Foundation\\Middleware\\MiddlewareBase;
 use kernel\\Foundation\\HTTP\\Request;
 
 /**
  * {$shortName} 中间件
  */
-class {$className} extends Middleware
+class {$className} extends MiddlewareBase
 {
   /**
    * 中间件处理入口
@@ -63,6 +63,6 @@ class {$className} extends Middleware
 }
 PHP;
 
-    return $this->write(FileSystem::root() . "/Middleware", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(Path::root() . "/Middleware", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }
