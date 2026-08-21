@@ -37,8 +37,8 @@ class WechatPayV2 extends WechatPay
     $this->CURL->json(false)->headers([
       "Content-Type" => " text/xml"
     ]);
-    $this->CURL->SSLCert($SSLCertFilePath);
-    $this->CURL->SSLKey($SSLKeyFilePath);
+    $this->CURL->sslCert($SSLCertFilePath);
+    $this->CURL->sslKey($SSLKeyFilePath);
   }
   /**
    * 生成签名

@@ -54,7 +54,6 @@ kernel/
 | `FileSystem/Storage/` | 存储抽象（本地、阿里云 OSS、腾讯云 COS） |
 | `FileSystem/Zip.php` | [Zip 压缩解压](ruyi-docs/docs/php/framework/zip)：目录打包与安全解压（zip slip / zip bomb 防护） |
 | `HTTP/` | HTTP 客户端、请求/响应处理 |
-| `Network/` | 网络请求工具 |
 | `Object/` | 基础对象模型 |
 | `Result.php` | 标准化返回结果（Result，继承 Response） |
 | `Validation/` | 数据验证框架 |

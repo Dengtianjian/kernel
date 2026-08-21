@@ -2,8 +2,6 @@
 
 namespace kernel\Platform\Wechat\Miniprogram;
 
-use kernel\Foundation\Network\Curl;
-
 
 class SecretCheck extends WechatMiniProgram
 {
