@@ -171,7 +171,7 @@ class Serializer
   {
     $BasePath ??= Path::root();
 
-    $Rule = Import($FileName, [], $BasePath);
+    $Rule = import($FileName, [], $BasePath);
     if (is_null($ruleName)) {
       $ruleName = pathinfo($FileName, PATHINFO_BASENAME);
     }
