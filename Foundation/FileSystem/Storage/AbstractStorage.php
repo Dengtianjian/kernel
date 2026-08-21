@@ -3,7 +3,7 @@
 namespace kernel\Foundation\FileSystem\Storage;
 use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Model\FilesModel;

@@ -4,7 +4,7 @@ namespace kernel\Foundation\Console;
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 
 /**
  * 系统命令执行器

@@ -3,7 +3,7 @@
 namespace kernel\Platform\QCloud\QCloudCos;
 use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
 use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;

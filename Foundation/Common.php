@@ -3,7 +3,7 @@
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Output;

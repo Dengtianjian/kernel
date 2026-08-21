@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Object;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use stdClass;
 
 /**
@@ -53,7 +53,7 @@ class DataObject extends stdClass
    *
    * @param string $k
    * @param mixed  $v
-   * @throws \kernel\Foundation\Error
+   * @throws \kernel\Foundation\Exception\Error
    */
   public function __set($k, $v)
   {

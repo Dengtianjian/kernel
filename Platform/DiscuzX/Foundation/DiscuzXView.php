@@ -7,7 +7,7 @@ use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\App;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Response;

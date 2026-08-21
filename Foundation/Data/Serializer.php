@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Data;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Output;
 
 class Serializer

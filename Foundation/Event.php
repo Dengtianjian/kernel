@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Log;
 
 class Event

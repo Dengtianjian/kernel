@@ -4,7 +4,7 @@ namespace kernel\Foundation\Validation;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Result;
 
 class Validator

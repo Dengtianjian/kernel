@@ -7,7 +7,7 @@ use AlibabaCloud\SDK\Sts\V20150401\Models\AssumeRoleRequest;
 use AlibabaCloud\SDK\Sts\V20150401\Sts;
 use AlibabaCloud\Tea\Utils\Utils\RuntimeOptions;
 use Darabonba\OpenApi\Models\Config;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
 use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;
 use kernel\Service\StorageService;

@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use PDO;
 
 /**

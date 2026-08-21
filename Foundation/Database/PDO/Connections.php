@@ -2,7 +2,7 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Database\PDO\Driver;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -77,7 +77,7 @@ class Connections extends AbilityBaseObject
   /**
    * 使用数据库驱动
    * @param string $name 驱动列表键名
-   * @throws \kernel\Foundation\Error
+   * @throws \kernel\Foundation\Exception\Error
    * @return bool
    */
   static function useDriver($name)
@@ -111,7 +111,7 @@ class Connections extends AbilityBaseObject
   /**
    * 设置默认数据库驱动
    * @param mixed $name 驱动在数据库驱动列表中的键名
-   * @throws \kernel\Foundation\Error
+   * @throws \kernel\Foundation\Exception\Error
    */
   static function setDefaultDriver($name = "default")
   {
@@ -130,7 +130,7 @@ class Connections extends AbilityBaseObject
   }
   /**
    * 切换回默认数据库驱动
-   * @throws \kernel\Foundation\Error
+   * @throws \kernel\Foundation\Exception\Error
    */
   static function switchToDefaultDriver()
   {

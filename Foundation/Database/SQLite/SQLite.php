@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Database\SQLite;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use SQLite3;
 

@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 
 class DiscuzXController extends AuthController
 {

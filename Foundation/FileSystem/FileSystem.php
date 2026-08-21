@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\FileSystem;
 
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 
 /**
  * 文件系统总管理

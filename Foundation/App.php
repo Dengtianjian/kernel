@@ -8,7 +8,7 @@ use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Date;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Exception\ErrorCode;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;

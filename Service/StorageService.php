@@ -5,7 +5,7 @@ namespace kernel\Service;
 use kernel\Foundation\Service;
 use kernel\Foundation\FileSystem\Storage\AbstractStorage;
 use kernel\Foundation\FileSystem\Storage\LocalStorage;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\Router;
 use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;

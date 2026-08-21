@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Error;
+use kernel\Foundation\Exception\Error;
 
 
 class DiscuzXLang
