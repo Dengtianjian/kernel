@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Database\SQLite;
 use kernel\Foundation\FileSystem\Path;
 
-use Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use SQLite3;
 
@@ -24,11 +24,11 @@ class SQLite extends SQLite3
   {
     $tableFileName = FileHelper::combinedFilePath(Path::root(), $tableFileName);
     if (!file_exists($tableFileName)) {
-      throw new Exception("SQLite数据库文件不存在", 500);
+      throw new Error("SQLite数据库文件不存在", 500);
     }
     $this->open($tableFileName, $flags, $encryptionKey);
     if ($this->lastErrorCode()) {
-      throw new Exception("SQLite数据库连接失败", 500);
+      throw new Error("SQLite数据库连接失败", 500);
     }
   }
   public function fetchAll($sql, $mode = SQLITE3_ASSOC)

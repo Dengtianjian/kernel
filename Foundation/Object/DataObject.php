@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Object;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use stdClass;
 
 /**
@@ -53,11 +53,11 @@ class DataObject extends stdClass
    *
    * @param string $k
    * @param mixed  $v
-   * @throws \kernel\Foundation\Exception\Exception
+   * @throws \kernel\Foundation\Error
    */
   public function __set($k, $v)
   {
-    throw new Exception("数据对象只允许实例化时设置数据，不能写入未声明属性「{$k}」");
+    throw new Error("数据对象只允许实例化时设置数据，不能写入未声明属性「{$k}」");
   }
 
   /**

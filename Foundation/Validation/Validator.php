@@ -4,7 +4,7 @@ namespace kernel\Foundation\Validation;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\Result;
 
 class Validator
@@ -55,7 +55,7 @@ class Validator
   public function __construct(Rule $validateRule, $data = null, $fullData = null)
   {
     if (!($validateRule instanceof Rule)) {
-      throw new Exception("实例化校验器第一个参数必须是校验规则类");
+      throw new Error("实例化校验器第一个参数必须是校验规则类");
     }
     $this->validateRule = $validateRule;
     $this->rule = $validateRule->rule;

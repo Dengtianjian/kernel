@@ -3,7 +3,7 @@
 namespace kernel\Platform\QCloud\QCloudCos;
 use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
 use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;
@@ -133,7 +133,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
 
       return new StorageFileInfoData($FileInfo);
     } catch (\Exception $e) {
-      throw new Exception($e->getMessage(), 500, 500, $e->getMessage());
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
   function deleteFile($fileKey)
@@ -146,7 +146,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
         'Key' => $fileKey
       ]);
     } catch (\Exception $e) {
-      throw new Exception($e->getMessage(), 500, 500, $e->getMessage());
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
 
     if ($this->filesModel) {
@@ -267,7 +267,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
         $fileKey
       );
     } catch (\Exception $e) {
-      throw new Exception($e->getMessage(), 500, 500, $e->getMessage());
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
 }

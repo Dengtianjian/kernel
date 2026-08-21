@@ -7,7 +7,7 @@ use AlibabaCloud\SDK\Sts\V20150401\Models\AssumeRoleRequest;
 use AlibabaCloud\SDK\Sts\V20150401\Sts;
 use AlibabaCloud\Tea\Utils\Utils\RuntimeOptions;
 use Darabonba\OpenApi\Models\Config;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
 use kernel\Foundation\FileSystem\Storage\StorageFileInfoData;
 use kernel\Service\StorageService;
@@ -126,7 +126,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
 
       return new StorageFileInfoData($FileInfo);
     } catch (OssException $e) {
-      throw new Exception($e->getMessage(), 500, 500, $e->getMessage());
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
   function deleteFile($fileKey)
@@ -137,7 +137,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     try {
       $DeletedResult = $this->SDKClient->deleteObject($this->bucket, $fileKey);
     } catch (OssException $e) {
-      throw new Exception("服务器错误", 500, 500, $e);
+      throw new Error("服务器错误", 500, 500, $e);
     }
 
     if ($DeletedResult && $this->filesModel) {

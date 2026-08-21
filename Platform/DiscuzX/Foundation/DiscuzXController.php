@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\Controller\AuthController;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 
 class DiscuzXController extends AuthController
 {
@@ -15,7 +15,7 @@ class DiscuzXController extends AuthController
         define("FORMHASH", 1);
       }
       if (!$this->request->query->get("formhash") || $this->request->body->get("formhash") != \FORMHASH) {
-        throw new Exception("非法访问", 403, 403, "formhash");
+        throw new Error("非法访问", 403, 403, "formhash");
       }
     }
   }

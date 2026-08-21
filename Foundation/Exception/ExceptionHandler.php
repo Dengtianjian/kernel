@@ -5,6 +5,7 @@ use kernel\Foundation\FileSystem\Path;
 
 
 use kernel\Foundation\Config;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Log;
 use kernel\Foundation\HTTP\Response;
@@ -106,7 +107,7 @@ class ExceptionHandler
     $statusCode = 500;
     $errorCode = 500;
     $errorDetails = null;
-    if ($exception instanceof RuyiException) {
+    if ($exception instanceof Error) {
       $statusCode = $exception->statusCode;
       $errorCode = $exception->errorCode;
       $errorDetails = $exception->errorDetails;

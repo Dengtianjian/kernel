@@ -7,7 +7,7 @@ use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\App;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Response;
@@ -75,7 +75,7 @@ class DiscuzXView extends ResponseView
 
     foreach ($viewFiles as $file) {
       if (!\file_exists($file)) {
-        throw new Exception("模板文件不存在（" . $file . "）", 500);
+        throw new Error("模板文件不存在（" . $file . "）", 500);
       }
     }
 

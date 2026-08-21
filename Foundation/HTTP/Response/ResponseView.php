@@ -4,7 +4,7 @@ namespace kernel\Foundation\HTTP\Response;
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Output;
@@ -48,7 +48,7 @@ class ResponseView extends Response
     }
     $this->viewFilePath = FileHelper::combinedFilePath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
     if (!file_exists($this->viewFilePath)) {
-      throw new Exception("模板文件不存在 - " . $this->viewFilePath, 500, 500, $this->viewFilePath);
+      throw new Error("模板文件不存在 - " . $this->viewFilePath, 500, 500, $this->viewFilePath);
     }
     $this->templateId = $templateId;
     $this->viewFileBaseDir = $viewFileDirBaseProject;
@@ -117,7 +117,7 @@ class ResponseView extends Response
 
     foreach ($viewFiles as $file) {
       if (!\file_exists($file)) {
-        throw new Exception("模板文件不存在（" . $file . "）", 500);
+        throw new Error("模板文件不存在（" . $file . "）", 500);
       }
     }
 

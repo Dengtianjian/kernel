@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\Log;
 
 class Event
@@ -120,7 +120,7 @@ class Event
   static function dispatch($name, ...$params)
   {
     if (!isset(self::$events[$name])) {
-      throw new Exception("事件不存在或者未注册");
+      throw new Error("事件不存在或者未注册");
     }
     self::$events[$name]->send($params);
 

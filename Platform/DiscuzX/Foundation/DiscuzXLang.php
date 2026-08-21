@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 
 
 class DiscuzXLang
@@ -19,7 +19,7 @@ class DiscuzXLang
     if (\file_exists($filePath)) {
       include_once($filePath);
     } else {
-      throw new Exception("编码文件不存在", 500, "DiscuzXLang:500001", $filePath);
+      throw new Error("编码文件不存在", 500, "DiscuzXLang:500001", $filePath);
     }
     $GLOBALS['_STORE']['__App'] = Arr::merge($GLOBALS['_STORE']['__App'] ?? [], [
       "langs" => self::all()

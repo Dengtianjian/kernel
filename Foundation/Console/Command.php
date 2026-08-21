@@ -4,7 +4,7 @@ namespace kernel\Foundation\Console;
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 
 /**
  * 系统命令执行器
@@ -348,7 +348,7 @@ class Command
    * - Windows 下环境变量为空时传 null，否则 proc_open 失败
    * - 注册 shutdown 回调，保证脚本结束（含异常/致命错误）时进程资源被回收
    *
-   * @throws Exception proc_open 失败时抛出
+   * @throws Error proc_open 失败时抛出
    */
   private function initProcess(): void
   {
@@ -367,7 +367,7 @@ class Command
     $this->process = $process = @proc_open($this->initCommand, $descriptorspec, $pipes, $this->cwd ?: Path::root(), $env, $this->options);
     if ($process === false) {
       $this->process = null;
-      throw new Exception("服务器错误", 500, "500:CommandError", "proc_open执行失败: {$this->initCommand}");
+      throw new Error("服务器错误", 500, "500:CommandError", "proc_open执行失败: {$this->initCommand}");
     }
 
     stream_set_blocking($pipes[0], FALSE);

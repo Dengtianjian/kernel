@@ -8,9 +8,8 @@ use kernel\Foundation\Router;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Date;
+use kernel\Foundation\Error;
 use kernel\Foundation\Exception\ErrorCode;
-use kernel\Foundation\Exception\Exception;
-use kernel\Foundation\Exception\RuyiException;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Lifecycle;
@@ -219,10 +218,10 @@ class App
     try {
       $response = call_user_func_array($callTarget, array_values($callParams));
     } catch (GlobalException $e) {
-      if ($e instanceof RuyiException) {
-        throw new RuyiException($e->getMessage(), $e->statusCode, $e->errorCode, $e->errorDetails ?: $e->getTrace());
+      if ($e instanceof Error) {
+        throw new Error($e->getMessage(), $e->statusCode, $e->errorCode, $e->errorDetails ?: $e->getTrace());
       } else {
-        throw new RuyiException($e->getMessage(), 500, "500:ServerError", $e->getTrace());
+        throw new Error($e->getMessage(), 500, "500:ServerError", $e->getTrace());
       }
     }
 
@@ -269,7 +268,7 @@ class App
       $route = Router::match($this->request);
 
       if (!$route) {
-        throw new Exception("路由不存在", 404, 404, [
+        throw new Error("路由不存在", 404, 404, [
           "uri" => $this->request()->URI,
           'method' => $this->request()->method
         ]);
@@ -289,7 +288,7 @@ class App
         $controller->before();
         $controllerHandleMethodName = is_null($route['controllerHandleMethodName']) ? 'data' : $route['controllerHandleMethodName'];
         if (!method_exists($controller, $controllerHandleMethodName)) {
-          throw new Exception("控制器缺少 $controllerHandleMethodName 方法");
+          throw new Error("控制器缺少 $controllerHandleMethodName 方法");
         }
         $callTarget = [
           $controller,

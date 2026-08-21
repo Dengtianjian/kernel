@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Data;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\Output;
 
 class Serializer
@@ -87,7 +87,7 @@ class Serializer
       return $Data;
     $Rule = is_array($RuleOrName) ? $RuleOrName : self::get($RuleOrName);
     if (is_null($Rule)) {
-      throw new Exception("序列化规则不存在");
+      throw new Error("序列化规则不存在");
     }
     if (!Arr::isAssoc($Data)) {
       foreach ($Data as &$dataItem) {

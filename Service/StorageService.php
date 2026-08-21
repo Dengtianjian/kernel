@@ -5,7 +5,7 @@ namespace kernel\Service;
 use kernel\Foundation\Service;
 use kernel\Foundation\FileSystem\Storage\AbstractStorage;
 use kernel\Foundation\FileSystem\Storage\LocalStorage;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\Router;
 use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;
@@ -93,10 +93,10 @@ class StorageService extends Service
 
     if ($IsFileRequest) {
       if (count($Matchs) < 2 || !in_array($Matchs[1], array_keys($usePlatforms))) {
-        throw new Exception("文件访问失败", 400, 400, "请求 URI 缺少参数");
+        throw new Error("文件访问失败", 400, 400, "请求 URI 缺少参数");
       }
       if (!array_key_exists($Matchs[1], $usePlatforms)) {
-        throw new Exception("文件不存在", 404, 404, " 不可用的文件类");
+        throw new Error("文件不存在", 404, 404, " 不可用的文件类");
       }
       $usePlatformName = $Matchs[1];
     }
@@ -128,7 +128,7 @@ class StorageService extends Service
   static function switchPlatform($name)
   {
     if (!array_key_exists($name, self::$platformInstances)) {
-      throw new Exception("服务器错误：文件存储实例不存在", 500, 500, [
+      throw new Error("服务器错误：文件存储实例不存在", 500, 500, [
         $name,
         array_keys(self::$platformInstances),
         "实例化的文件存储列表中不存在要使用的文件实例"

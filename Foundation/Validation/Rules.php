@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Validation;
 
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 
 /**
  * 关联数组校验规则
@@ -80,14 +80,14 @@ class Rules extends Rule
   {
     if (!is_null($fieldRules)) {
       if (!is_array($fieldRules)) {
-        throw new Exception("校验数组规则实例化传入的第一个参数必须是数组，且需要时关联数组");
+        throw new Error("校验数组规则实例化传入的第一个参数必须是数组，且需要时关联数组");
       }
       if (!Arr::isAssoc($fieldRules)) {
-        throw new Exception("校验数组规则实例化传入的第一个参数仅允许传入关联数组");
+        throw new Error("校验数组规则实例化传入的第一个参数仅允许传入关联数组");
       }
       foreach ($fieldRules as $rule) {
         if (!$rule instanceof Rule) {
-          throw new Exception("校验数组规则的传入的规则必须是校验规则类实例");
+          throw new Error("校验数组规则的传入的规则必须是校验规则类实例");
         }
       }
       $this->FieldRules = $fieldRules;

@@ -2,7 +2,7 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Database\PDO\Driver;
-use kernel\Foundation\Exception\RuyiException;
+use kernel\Foundation\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -77,13 +77,13 @@ class Connections extends AbilityBaseObject
   /**
    * 使用数据库驱动
    * @param string $name 驱动列表键名
-   * @throws \kernel\Foundation\Exception\RuyiException
+   * @throws \kernel\Foundation\Error
    * @return bool
    */
   static function useDriver($name)
   {
     if (!array_key_exists($name, self::$drivers)) {
-      throw new RuyiException("使用的数据库驱动不存在", 500, "databaseStaticDriverNotExist:500");
+      throw new Error("使用的数据库驱动不存在", 500, "databaseStaticDriverNotExist:500");
     }
     self::$useDriver = self::$drivers[$name];
 
@@ -111,12 +111,12 @@ class Connections extends AbilityBaseObject
   /**
    * 设置默认数据库驱动
    * @param mixed $name 驱动在数据库驱动列表中的键名
-   * @throws \kernel\Foundation\Exception\RuyiException
+   * @throws \kernel\Foundation\Error
    */
   static function setDefaultDriver($name = "default")
   {
     if (!array_key_exists($name, self::$drivers)) {
-      throw new RuyiException("设置的数据库驱动不存在", 500, "setDefaultDatabaseDriverError:500");
+      throw new Error("设置的数据库驱动不存在", 500, "setDefaultDatabaseDriverError:500");
     }
     self::$defaultDriver = self::$drivers[$name];
   }
@@ -130,13 +130,13 @@ class Connections extends AbilityBaseObject
   }
   /**
    * 切换回默认数据库驱动
-   * @throws \kernel\Foundation\Exception\RuyiException
+   * @throws \kernel\Foundation\Error
    */
   static function switchToDefaultDriver()
   {
     $defaultDriver = self::$defaultDriver;
     if (count(self::$drivers) === 0) {
-      throw new RuyiException("切换回默认数据库失败", 500, "switchToDefaultDatabaseDriverError:500");
+      throw new Error("切换回默认数据库失败", 500, "switchToDefaultDatabaseDriverError:500");
     }
     if (!$defaultDriver && array_key_exists("default", self::$drivers)) {
       $defaultDriver = self::$drivers['default'];

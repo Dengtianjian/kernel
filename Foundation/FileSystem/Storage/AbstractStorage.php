@@ -3,7 +3,7 @@
 namespace kernel\Foundation\FileSystem\Storage;
 use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Model\FilesModel;
@@ -219,7 +219,7 @@ abstract class AbstractStorage extends AbilityBaseObject
     $HTTPMethod = "get"
   ) {
     if (!$FileKey) {
-      throw new Exception("文件名不可为空", 400, 400);
+      throw new Error("文件名不可为空", 400, 400);
     }
     return $this->signature->createAuthorization($FileKey, $URLParams, $Headers, $Expires, $HTTPMethod);
   }

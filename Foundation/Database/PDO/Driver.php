@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
-use kernel\Foundation\Exception\RuyiException;
+use kernel\Foundation\Error;
 use PDO;
 
 /**
@@ -49,14 +49,14 @@ class Driver
    * @param string     $database 数据库名
    * @param int        $port     端口，默认 3306
    * @param array|null $options  PDO 连接选项
-   * @throws RuyiException
+   * @throws Error
    */
   public function __construct($hostname = null, $username = null, $password = null, $database = null, $port = 3306, $options = null)
   {
     try {
       $this->PDOInstance = new PDO("mysql:dbname=$database;host=$hostname;port=$port", $username, $password, $options);
     } catch (\PDOException $e) {
-      throw new RuyiException(
+      throw new Error(
         "数据连接失败：" . $e->getMessage(),
         500,
         join(":", ['PDO', 500000, $e->getCode()]),
@@ -149,7 +149,7 @@ class Driver
    * 查询类语句返回 PDOStatement，写操作返回受影响行数
    *
    * @param string $querySQL SQL 语句
-   * @throws RuyiException
+   * @throws Error
    * @return \PDOStatement|int
    */
   public function query($querySQL)
@@ -157,7 +157,7 @@ class Driver
     if ($this->isSelectStatement($querySQL)) {
       $statement = $this->PDOInstance->query($querySQL);
       if ($statement === false) {
-        throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
+        throw new Error("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
           'error' => $this->error(),
           'sql' => $querySQL,
         ]);
@@ -167,7 +167,7 @@ class Driver
 
     $result = $this->PDOInstance->exec($querySQL);
     if ($result === false) {
-      throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
+      throw new Error("数据库错误", 500, "DatabaseError:500:" . $this->errno(), [
         'error' => $this->error(),
         'sql' => $querySQL,
       ]);
@@ -179,42 +179,42 @@ class Driver
    * 适用于不需要结果集的 DDL/DML 操作，比 query() 更高效
    *
    * @param string $statement SQL 语句
-   * @throws RuyiException
+   * @throws Error
    * @return int 受影响行数
    */
   public function exec($statement)
   {
     $result = $this->PDOInstance->exec($statement);
     if ($result === false) {
-      throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), $this->error());
+      throw new Error("数据库错误", 500, "DatabaseError:500:" . $this->errno(), $this->error());
     }
     return $result;
   }
   /**
    * 开始事务
    *
-   * @throws RuyiException
+   * @throws Error
    * @return true
    */
   public function beginTransaction()
   {
     $result = $this->PDOInstance->beginTransaction();
     if (!$result) {
-      throw new RuyiException("数据库错误", 500, "BeginTransactionError:500:" . $this->errno(), $this->error());
+      throw new Error("数据库错误", 500, "BeginTransactionError:500:" . $this->errno(), $this->error());
     }
     return true;
   }
   /**
    * 提交事务
    *
-   * @throws RuyiException
+   * @throws Error
    * @return true
    */
   public function commit()
   {
     $result = $this->PDOInstance->commit();
     if (!$result) {
-      throw new RuyiException("数据库错误", 500, "CommitTransactionError:500:" . $this->errno(), $this->error());
+      throw new Error("数据库错误", 500, "CommitTransactionError:500:" . $this->errno(), $this->error());
     }
     return true;
   }
@@ -230,14 +230,14 @@ class Driver
   /**
    * 回滚事务
    *
-   * @throws RuyiException
+   * @throws Error
    * @return true
    */
   public function rollBack()
   {
     $result = $this->PDOInstance->rollBack();
     if (!$result) {
-      throw new RuyiException("数据库错误", 500, "RollbackTransactionError:500:" . $this->errno(), $this->error());
+      throw new Error("数据库错误", 500, "RollbackTransactionError:500:" . $this->errno(), $this->error());
     }
     return true;
   }
@@ -247,14 +247,14 @@ class Driver
    *
    * @param string $query   SQL 语句模板
    * @param array  $options PDOStatement 属性设置
-   * @throws RuyiException
+   * @throws Error
    * @return \PDOStatement
    */
   public function prepare($query, $options = [])
   {
     $statement = $this->PDOInstance->prepare($query, $options);
     if ($statement === false) {
-      throw new RuyiException("预处理语句失败", 500, "PrepareError:500:" . $this->errno(), $this->error());
+      throw new Error("预处理语句失败", 500, "PrepareError:500:" . $this->errno(), $this->error());
     }
     return $statement;
   }
@@ -295,7 +295,7 @@ class Driver
    *
    * @param string $query  SQL 语句模板
    * @param array  $params 绑定参数
-   * @throws RuyiException
+   * @throws Error
    * @return \PDOStatement|int SELECT 返回 PDOStatement，其余返回受影响行数
    */
   public function execute($query, $params = [])
@@ -308,7 +308,7 @@ class Driver
 
     $result = $statement->execute();
     if ($result === false) {
-      throw new RuyiException("数据库错误", 500, "DatabaseError:500:" . $this->errno(), $this->error());
+      throw new Error("数据库错误", 500, "DatabaseError:500:" . $this->errno(), $this->error());
     }
 
     if ($this->isSelectStatement($query)) {

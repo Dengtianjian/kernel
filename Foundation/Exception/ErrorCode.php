@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Exception;
 
+use kernel\Foundation\Error;
+
 
 class ErrorCode
 {
@@ -20,7 +22,7 @@ class ErrorCode
         self::add($CodeObject);
       }
     } else {
-      throw new Exception("错误码文件不存在", 500, "500:ErrorCodeFileNotExist");
+      throw new Error("错误码文件不存在", 500, "500:ErrorCodeFileNotExist");
     }
   }
   /**

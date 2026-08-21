@@ -345,7 +345,7 @@ class FileHelper
    * ```php
    * $maxSize = FileHelper::maxUploadSize();
    * if ($fileSize > $maxSize) {
-   *     throw new Exception('文件大小超出限制: ' . FileHelper::humanReadableSize($maxSize));
+   *     throw new \kernel\Foundation\Error('文件大小超出限制: ' . FileHelper::humanReadableSize($maxSize));
    * }
    * ```
    *

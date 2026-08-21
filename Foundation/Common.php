@@ -3,7 +3,7 @@
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Output;
@@ -26,7 +26,7 @@ function import($fileName, $args = [], $basePath = null)
   $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
   if ($fileExt && $fileExt !== "php") {
     // Exception 构造参数顺序：($message, $statusCode, $errorCode)
-    throw new Exception("导入文件错误", 500, 500);
+    throw new Error("导入文件错误", 500, 500);
   }
   if (!$fileExt) {
     $fileName = "{$fileName}.php";
@@ -165,7 +165,7 @@ if (!function_exists("path")) {
   {
     $getters = ["projectRoot", "kernelRoot", "root", "data", "storage", "kernelDir", "dir"];
     if (!in_array($name, $getters, true)) {
-      throw new Exception("未知路径名称「{$name}」", 500, 500);
+      throw new Error("未知路径名称「{$name}」", 500, 500);
     }
     return Path::{$name}();
   }
@@ -186,7 +186,7 @@ if (!function_exists("abort")) {
    */
   function abort($message = "Server error", $statusCode = 500, $errorCode = 500, $errorDetails = null)
   {
-    throw new Exception($message, $statusCode, $errorCode, $errorDetails);
+    throw new Error($message, $statusCode, $errorCode, $errorDetails);
   }
 }
 

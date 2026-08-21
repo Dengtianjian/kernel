@@ -4,7 +4,7 @@ namespace kernel\Foundation;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 use kernel\Foundation\HTTP\Response;
 
 /**
@@ -202,7 +202,7 @@ class Result extends Response
   }
 
   /**
-   * 抛出错误。会抛出 kernel\Foundation\Exception\Exception 并终止程序
+   * 抛出错误。会抛出 kernel\Foundation\Error 并终止程序
    * 若当前不是错误态，则直接返回实例本身，避免误抛假异常
    *
    * @return Result|void
@@ -210,7 +210,7 @@ class Result extends Response
   public function throwError()
   {
     if (!$this->error) return $this;
-    throw new Exception($this->responseMessage, $this->responseStatusCode, $this->responseCode, $this->responseDetails);
+    throw new Error($this->responseMessage, $this->responseStatusCode, $this->responseCode, $this->responseDetails);
   }
 
   /**

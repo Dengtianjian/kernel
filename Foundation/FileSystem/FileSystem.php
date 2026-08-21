@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\FileSystem;
 
-use kernel\Foundation\Exception\Exception;
+use kernel\Foundation\Error;
 
 /**
  * 文件系统总管理
@@ -69,7 +69,7 @@ final class FileSystem
   public static function upload($file, $savePath, $fileName = null)
   {
     if (!$file) {
-      throw new Exception("请上传文件", 400, "FileUpload:400001");
+      throw new Error("请上传文件", 400, "FileUpload:400001");
     }
     $filePath = "";
     $fileSize = 0;
@@ -83,15 +83,15 @@ final class FileSystem
       $filePath = $file;
       $fileSize = filesize($filePath);
       if ($fileSize === false) {
-        throw new Exception("文件保存失败", 500, "FileUpload:500001");
+        throw new Error("文件保存失败", 500, "FileUpload:500001");
       }
       $fileSourceName = basename($filePath);
     } else {
       if (!isset($file['error']) || $file['error'] > 0) {
-        throw new Exception("文件保存失败", 400, "FileUpload:400002:", $file['error'] ?? null);
+        throw new Error("文件保存失败", 400, "FileUpload:400002:", $file['error'] ?? null);
       }
       if (!isset($file['tmp_name']) || !isset($file['name'])) {
-        throw new Exception("文件保存失败", 400, "FileUpload:400003");
+        throw new Error("文件保存失败", 400, "FileUpload:400003");
       }
       $fileSourceName = basename($file['name']);
       $fileSize = $file['size'];
@@ -124,7 +124,7 @@ final class FileSystem
     $saveFullPath = FileHelper::combinedFilePath(Path::storage(), $path);
     if (is_string($file)) {
       if (!file_exists($file)) {
-        throw new Exception("文件保存失败", 500, "FileUpload:500002");
+        throw new Error("文件保存失败", 500, "FileUpload:500002");
       }
       $saveResult = copy($filePath, $saveFullPath);
       unlink($filePath);
@@ -133,7 +133,7 @@ final class FileSystem
     }
 
     if (!$saveResult) {
-      throw new Exception("文件保存失败", 500, "FileSave:500003", [
+      throw new Error("文件保存失败", 500, "FileSave:500003", [
         "saveFullPath" => $saveFullPath,
         "filePath" => $filePath,
       ]);
