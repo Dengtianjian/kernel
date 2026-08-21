@@ -477,7 +477,7 @@ class Response
           Output::format($data);
         } else {
           if ($this->responseStatusCode > 299) {
-            $detailsText = App::mode() === "development" ? Output::format($this->responseDetails) : "";
+            $detailsText = App::mode() === "development" ? Output::string($this->responseDetails) : "";
             $data = <<<EOT
 {$this->responseMessage}\n
 {$detailsText}
