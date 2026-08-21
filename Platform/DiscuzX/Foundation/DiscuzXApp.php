@@ -4,6 +4,7 @@ namespace kernel\Platform\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
 use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\URL;
 
 class DiscuzXApp extends App
 {
@@ -77,10 +78,8 @@ class DiscuzXApp extends App
 
     global $_G;
     /**
-     * APP的URL地址
+     * APP的URL地址：注入到 URL 门面（保留 F_BASE_URL 常量作向后兼容）
      */
-    if (!defined("F_BASE_URL")) {
-      define("F_BASE_URL", substr($_G['siteurl'], 0, strlen($_G['siteurl']) - 1));
-    }
+    URL::setBaseUrl(substr($_G['siteurl'], 0, strlen($_G['siteurl']) - 1));
   }
 }

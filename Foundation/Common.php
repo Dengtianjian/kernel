@@ -7,6 +7,7 @@ use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Output;
+use kernel\Foundation\URL;
 
 /**
  * 导入文件
@@ -168,6 +169,19 @@ if (!function_exists("path")) {
       throw new Error("未知路径名称「{$name}」", 500, 500);
     }
     return Path::{$name}();
+  }
+
+  /**
+   * 拼接基础 URL
+   *
+   * 空参返回仅 baseUrl；传入子路径追加单斜杠；传入绝对 URL 直接返回。
+   *
+   * @param string|null $path 子路径
+   * @return string
+   */
+  function url($path = "")
+  {
+    return URL::url($path);
   }
 }
 

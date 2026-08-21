@@ -39,6 +39,28 @@ class URL
     $this->origin = $ParsedURL['origin'];
     $this->queryParams = $ParsedURL['queryParams'];
   }
+
+  static function baseURL()
+  {
+    $url = "";
+
+    if (array_key_exists("REQUEST_SCHEME", $_SERVER)) {
+      if (array_key_exists("HTTPS", $_SERVER) && $_SERVER['HTTPS'] === 'on') {
+        $url .= "https://";
+      } else {
+        $url .= "http://";
+      }
+
+      // HTTP_HOST 缺失时返回已带 scheme 前缀的空 host，交由调用方判断
+      if (array_key_exists("HTTP_HOST", $_SERVER) && $_SERVER['HTTP_HOST']) {
+        $url .= $_SERVER['HTTP_HOST'];
+      } else {
+        $url = "";
+      }
+    }
+
+    return $url;
+  }
   /**
    * 解析URL
    *
@@ -47,24 +69,33 @@ class URL
    */
   static function parseURL($URL)
   {
-    $ParsedURL = parse_url($URL);
+    $ParsedURL = parse_url((string)$URL) ?: [];
 
-    $origin = explode("?", explode("&", $URL)[0])[0];
-    if (substr($origin,  strlen($origin) - 1)) {
-      $origin = substr($origin, 0, strlen($origin) - 1);
+    // 各组成部分缺失时取 null，避免直接下标访问触发 Undefined array key 警告
+    $protocol = $ParsedURL['scheme'] ?? null;
+    $host = $ParsedURL['host'] ?? null;
+    $port = $ParsedURL['port'] ?? null;
+
+    // origin 按标准语义计算为 scheme://host(:port)
+    $origin = null;
+    if ($protocol && $host) {
+      $origin = "{$protocol}://{$host}";
+      if ($port) {
+        $origin .= ":{$port}";
+      }
     }
 
     return [
-      "protocol" => $ParsedURL['scheme'],
-      "host" => $ParsedURL['host'],
-      "port" => $ParsedURL['port'],
-      "user" => $ParsedURL['user'],
-      "password" => $ParsedURL['pass'],
-      "pathName" => $ParsedURL['path'],
-      "queryString" => $ParsedURL['query'],
-      "fragment" => $ParsedURL['fragment'],
+      "protocol" => $protocol,
+      "host" => $host,
+      "port" => $port,
+      "user" => $ParsedURL['user'] ?? null,
+      "password" => $ParsedURL['pass'] ?? null,
+      "pathName" => $ParsedURL['path'] ?? null,
+      "queryString" => $ParsedURL['query'] ?? null,
+      "fragment" => $ParsedURL['fragment'] ?? null,
       "origin" => $origin,
-      "queryParams" => self::parseQueryString($ParsedURL['query'])
+      "queryParams" => self::parseQueryString($ParsedURL['query'] ?? null)
     ];
   }
   /**
@@ -82,7 +113,8 @@ class URL
 
     $QueryParams = [];
     foreach ($StringList as $item) {
-      list($key, $value) = explode("=", $item);
+      // 无 "=" 时（如 "?a&b"）value 缺省为空串，避免 list 解构 Undefined array key
+      list($key, $value) = array_pad(explode("=", $item), 2, "");
       $QueryParams[rawurldecode(urldecode($key))] = rawurldecode(urldecode($value));
     }
 
@@ -144,14 +176,9 @@ class URL
     $port = $port ? ":{$port}" : "";
     $fragment = $fragment ? "#{$fragment}" : "";
     $auth = "";
-    if ($user || $password) {
-      if ($user && $password) {
-        $auth = "{$user}:{$password}@";
-      } else if ($user) {
-        $auth = "{$user}@";
-      } else {
-        $auth = "{$password}@";
-      }
+    // 仅用户名存在时才拼 auth 段；密码仅作为用户名的补充（user:pass@）
+    if ($user) {
+      $auth = $password ? "{$user}:{$password}@" : "{$user}@";
     }
     $queryString = "";
     if ($queryParams) {
@@ -179,24 +206,15 @@ class URL
    */
   static function combinedPathName(...$paths)
   {
-    $path = implode(DIRECTORY_SEPARATOR, array_map(function ($item) {
-      // $lastText = $item[strlen($item) - 1];
-      // if ($lastText === "/" || $lastText === "\\") {
-      //   $item = substr($item, 0, strlen($item) - 1);
-      // }
-      // if ($item[0] === "/" || $item[0] === "\\") {
-      //   $item = substr($item, 1, strlen($item));
-      // }
-      return $item;
+    // 过滤空段，并去掉每段首尾的斜杠/反斜杠，再以单斜杠拼接，天然避免段间重复斜杠
+    $path = implode("/", array_map(function ($item) {
+      return trim((string)$item, "/\\");
     }, array_filter($paths, function ($item) {
       return !empty(trim((string)$item));
     })));
-    $path = str_replace([
-      "//",
-      "\\",
-      "/",
-      "\\\\"
-    ], "/", $path);
+
+    // 仅合并非协议后的连续斜杠，避免误伤 "https://host" 中的合法双斜杠
+    $path = preg_replace('#(?<!:)//+#', '/', $path);
 
     return $path;
   }
@@ -207,11 +225,101 @@ class URL
    */
   public function toString()
   {
-    return self::buildURL($this->host, $this->pathName, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
+    // pathName 规范化：去掉首尾斜杠，避免与 buildURL 自动加的前导 "/" 重复（解析出的 pathName 通常带 "/"）
+    $pathName = trim((string)$this->pathName, "/\\");
+    return self::buildURL($this->host, $pathName, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
   }
   public function __toString()
   {
     return $this->toString();
+  }
+  /**
+   * 设置协议
+   *
+   * @param string $protocol 协议
+   * @return this
+   */
+  public function setProtocol($protocol)
+  {
+    $this->protocol = $protocol;
+    return $this;
+  }
+  /**
+   * 设置主机
+   *
+   * @param string $host 主机
+   * @return this
+   */
+  public function setHost($host)
+  {
+    $this->host = $host;
+    return $this;
+  }
+  /**
+   * 设置路径（保留已有 query/fragment）
+   *
+   * @param string $pathName 路径
+   * @return this
+   */
+  public function setPath($pathName)
+  {
+    $this->pathName = $pathName;
+    return $this;
+  }
+  /**
+   * 设置端口
+   *
+   * @param int|null $port 端口
+   * @return this
+   */
+  public function setPort($port)
+  {
+    $this->port = $port;
+    return $this;
+  }
+  /**
+   * 设置hash片段
+   *
+   * @param string|null $fragment hash片段
+   * @return this
+   */
+  public function setFragment($fragment)
+  {
+    $this->fragment = $fragment;
+    return $this;
+  }
+  /**
+   * 是否 HTTPS 协议
+   *
+   * @return boolean
+   */
+  public function isHttps()
+  {
+    return $this->protocol === "https";
+  }
+  /**
+   * 获取去掉 www. 前缀的域名
+   *
+   * @return string|null
+   */
+  public function getDomain()
+  {
+    if (!$this->host) return null;
+    return preg_replace('/^www\./i', '', $this->host);
+  }
+  /**
+   * 获取站点根地址（protocol://host，不含路径）
+   *
+   * @return string|null
+   */
+  public function getBase()
+  {
+    if (!$this->protocol || !$this->host) return null;
+    $base = "{$this->protocol}://{$this->host}";
+    if ($this->port) {
+      $base .= ":{$this->port}";
+    }
+    return $base;
   }
   /**
    * 设置请求参数
@@ -223,16 +331,17 @@ class URL
   public function queryParam($value, $key = null)
   {
     if (is_array($value)) {
-      foreach ($value as $key => $item) {
-        if (is_numeric($key)) {
-          // $key = rawurldecode($item);
-          $key = $item;
-          $item = "";
+      // 批量：以传入数组的键值对为参数逐一写入；数值键退化为裸参数
+      foreach ($value as $paramKey => $paramValue) {
+        if (is_int($paramKey)) {
+          $this->queryParams[$paramValue] = "";
+        } else {
+          $this->queryParam($paramValue, $paramKey);
         }
-        $this->queryParam($item, $key);
       }
     } else if ($value || (!$value && $key)) {
       if (!$key) {
+        // 仅传值：把值当作裸参数键（解码后）写入
         $key = rawurldecode($value);
         $value = "";
       }
@@ -240,5 +349,77 @@ class URL
     }
 
     return $this;
+  }
+  /**
+   * 获取请求参数
+   *
+   * @param string $key 参数名
+   * @param mixed $default 缺省默认值
+   * @return mixed
+   */
+  public function getQueryParam($key, $default = null)
+  {
+    return array_key_exists($key, $this->queryParams) ? $this->queryParams[$key] : $default;
+  }
+  /**
+   * 是否存在请求参数
+   *
+   * @param string $key 参数名
+   * @return boolean
+   */
+  public function hasQueryParam($key)
+  {
+    return array_key_exists($key, $this->queryParams);
+  }
+  /**
+   * 移除请求参数
+   *
+   * @param string $key 参数名
+   * @return this
+   */
+  public function removeQueryParam($key)
+  {
+    if (array_key_exists($key, $this->queryParams)) {
+      unset($this->queryParams[$key]);
+    }
+    return $this;
+  }
+  /**
+   * 清空请求参数
+   *
+   * @return this
+   */
+  public function clearQueryParams()
+  {
+    $this->queryParams = [];
+    return $this;
+  }
+  /**
+   * 获取当前请求完整 URL
+   *
+   * 读取 $_SERVER 推导当前请求的完整地址（含 query 与 fragment）
+   *
+   * @return string 当前请求完整 URL
+   */
+  static function current()
+  {
+    $base = self::baseURL();
+    if (!$base) return "";
+
+    $pathName = "";
+    if (array_key_exists("REQUEST_URI", $_SERVER) && $_SERVER['REQUEST_URI']) {
+      $pathName = $_SERVER['REQUEST_URI'];
+    }
+
+    return $base . $pathName;
+  }
+  /**
+   * 从当前请求构造 URL 实例
+   *
+   * @return URL 已解析当前请求的实例
+   */
+  static function fromCurrent()
+  {
+    return new self(self::current());
   }
 }

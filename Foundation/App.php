@@ -14,6 +14,7 @@ use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Lifecycle;
 use kernel\Foundation\Middleware\Middleware;
+use kernel\Foundation\URL;
 
 class App
 {
@@ -35,10 +36,40 @@ class App
    * @var Middleware
    */
   protected $middleware = null;
-  protected $router = null; //* 路由相关
-  protected $request = null; //* 请求相关
-  protected $startTime = null; //* 开始时间戳
-  protected $lifeCycle = null; //* 生命周期管理器（Lifecycle），委托管理引导/结束/错误钩子
+  /**
+   * 路由管理器（Router），匹配 URI 到控制器/命令
+   *
+   * 延迟实例化：setup() 未注入时由 ensureInstances() / router() 自动 new 默认实例。
+   *
+   * @var Router|null
+   */
+  protected $router = null;
+  /**
+   * 请求实例（Request），承载当前请求的 URI / 方法 / 参数 / Route 等
+   *
+   * 延迟实例化：setup() 未注入时由 ensureInstances() / request() 自动 new 默认实例。
+   * CLI 下 URI 由 Console::handle() 置为命中的命令名；HTTP 下为请求 URI。
+   *
+   * @var Request|null
+   */
+  protected $request = null;
+  /**
+   * 应用开始时间戳（毫秒）
+   *
+   * 构造时取 Date::milliseconds()，用于计算请求耗时（如 AJAX 响应的 requiredTime）。
+   *
+   * @var int|null
+   */
+  protected $startTime = null;
+  /**
+   * 生命周期管理器（Lifecycle），委托管理引导/结束/错误钩子
+   *
+   * 延迟实例化：setup() 未注入时由 ensureInstances() / lifeCycle() 自动 new 默认实例。
+   * 装配时手动 new Lifecycle 后调用实例方法 onBootUp/onShutdown/onError 注册钩子。
+   *
+   * @var Lifecycle|null
+   */
+  protected $lifeCycle = null;
   /**
    * 当前（最近实例化）的 App 实例
    *
@@ -75,9 +106,6 @@ class App
     $this->kernelId = $kernelId;
 
     $this->startTime = Date::milliseconds();
-
-    //* 定义常量
-    $this->defineConstants();
 
     include_once(FileHelper::combinedFilePath(Path::kernelRoot() . "/Foundation/Common.php"));
 
@@ -163,32 +191,6 @@ class App
     }
   }
   /**
-   * 初始化以及定义常量
-   *
-   * @return void
-   */
-  protected function defineConstants()
-  {
-    //* 获取URL地址
-    $url = "";
-
-    if (array_key_exists("REQUEST_SCHEME", $_SERVER)) {
-      if (array_key_exists("HTTPS", $_SERVER) && $_SERVER['HTTPS'] === 'on') {
-        $url .= "https://";
-      } else {
-        $url .= "http://";
-      }
-
-      if (array_key_exists("HTTP_HOST", $_SERVER)) {
-        $url .= $_SERVER['HTTP_HOST'];
-      }
-    }
-    /**
-     * APP的URL地址
-     */
-    define("F_BASE_URL", $url);
-  }
-  /**
    * 批量注入自定义组件实例（setup() 装配中使用；未注入的组件 run() 时自动兜底实例化）
    *
    * 数组键为组件名，值为手动 new 出来的实例，用于替换 App 的对应组件：
@@ -213,6 +215,19 @@ class App
 
     return $this;
   }
+  /**
+   * 执行控制器/闭包路由，并将返回值写入控制器响应
+   *
+   * 由 run() 中的中间件链回调调用。核心逻辑：
+   * - 以 call_user_func_array 调用路由目标（闭包或控制器方法），捕获异常并包装为 Error；
+   * - $controller 为 null 或可调用时（闭包路由），补建默认 Controller 以承载响应；
+   * - 将返回的响应写入 $controller->response：Response 实例直接赋值，否则 setData()。
+   *
+   * @param callable|array $callTarget 路由目标（闭包，或 [控制器, 方法名]）
+   * @param array $callParams 传给路由目标的参数
+   * @param object|null $controller 控制器实例（按引用传入；闭包路由时为 null，此处补建）
+   * @return void
+   */
   public function executeController($callTarget, $callParams, &$controller)
   {
     try {
@@ -244,6 +259,23 @@ class App
     }
   }
 
+  /**
+   * 启动应用：兜底实例化组件 → 生命周期启动 → 路由匹配 → 中间件执行 → 响应输出
+   *
+   * 处理流程：
+   * 1. ensureInstances() 兜底实例化未注入的组件；
+   * 2. OPTIONS 预检请求：直接 fireShutdown 结束（preflight 标记），保证生命周期有始有终；
+   * 3. fireBootUp() 触发启动钩子；
+   * 4. Router::match() 匹配当前请求，未命中抛 404 Error；
+   * 5. 命中后写 $request->Route 与 $request->params，构建控制器（含 before()）或闭包路由；
+   * 6. 通过 middleware->execute() 执行中间件链，回调内 executeController() 执行业务；
+   * 7. controller->after() 后处理；AJAX 未指定输出类型时输出 JSON 并附加 requiredTime；
+   * 8. fireShutdown() 触发结束钩子，输出响应并 exit。
+   *
+   * 异常路径：fireError() 触发错误钩子 → fireShutdown() 触发结束钩子 → 交由全局异常处理器输出。
+   *
+   * @return void 正常结束时输出并 exit，不会返回
+   */
   public function run()
   {
     //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化
@@ -353,6 +385,11 @@ class App
     }
     return $this->request;
   }
+  /**
+   * 获取路由管理器（未实例化则延迟实例化默认实例）
+   *
+   * @return Router 路由管理器实例
+   */
   public function router()
   {
     if ($this->router === null) {
@@ -360,6 +397,11 @@ class App
     }
     return $this->router;
   }
+  /**
+   * 获取生命周期管理器（未实例化则延迟实例化默认实例）
+   *
+   * @return Lifecycle 生命周期管理器实例
+   */
   public function lifeCycle()
   {
     if ($this->lifeCycle === null) {
@@ -367,6 +409,11 @@ class App
     }
     return $this->lifeCycle;
   }
+  /**
+   * 获取中间件管理器（未实例化则延迟实例化默认实例）
+   *
+   * @return Middleware 中间件管理器实例
+   */
   public function middleware()
   {
     if ($this->middleware === null) {

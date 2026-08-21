@@ -59,6 +59,7 @@ class DiscuzXURL extends URL
   }
   public function toString()
   {
-    return self::buildURL($this->host, $this->pathName, $this->uri, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
+    $pathName = trim((string)$this->pathName, "/\\");
+    return self::buildURL($this->host, $pathName, $this->uri, $this->queryParams, $this->fragment, $this->protocol, $this->port, $this->user, $this->password);
   }
 }
