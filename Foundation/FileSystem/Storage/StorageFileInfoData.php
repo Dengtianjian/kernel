@@ -28,28 +28,33 @@ use kernel\Foundation\Object\DataObject;
  */
 class StorageFileInfoData extends DataObject
 {
-  protected $key = NULL;
-  protected $name = NULL;
-  protected $sourceFileName = NULL;
-  protected $path = NULL;
-  protected $extension = NULL;
-  protected $size = NULL;
-  protected $filePath = NULL;
-  protected $width = NULL;
-  protected $height = NULL;
-  protected $remote = FALSE;
+  protected $key = null;
+  protected $name = null;
+  protected $sourceFileName = null;
+  protected $path = null;
+  protected $extension = null;
+  protected $size = null;
+  protected $filePath = null;
+  protected $width = null;
+  protected $height = null;
+  protected $remote = false;
   protected $platform = "local";
   protected $url = null;
   protected $previewURL = null;
   protected $downloadURL = null;
   protected $transferPreviewURL = null;
   protected $transferDownloadURL = null;
-  protected $accessControl = FALSE;
-  protected $ownerId = FALSE;
+  protected $accessControl = false;
+  protected $ownerId = false;
 
   public function __construct($data)
   {
-    if (!array_key_exists("filePath", $data) || $data['filePath']) {
+    // 仅在 path 与 name 都提供、且未显式指定 filePath 时才自动拼接
+    if (
+      !(array_key_exists("filePath", $data) && $data['filePath'])
+      && array_key_exists("path", $data)
+      && array_key_exists("name", $data)
+    ) {
       $data['filePath'] = FileHelper::combinedFilePath($data['path'], $data['name']);
     }
 

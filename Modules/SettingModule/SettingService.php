@@ -15,7 +15,7 @@ class SettingService extends Service
    * @var SettingModuleBase
    */
   protected static $SettingModuleBaseInstance = NULL;
-  static function useService(SettingModuleBase $SMB = NULL)
+  static function bootstrap(?SettingModuleBase $SMB = NULL)
   {
     get_called_class()::$SettingModuleBaseInstance = $SMB;
   }

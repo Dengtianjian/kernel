@@ -71,7 +71,7 @@ class StorageService extends Service
     return $fileKey;
   }
 
-  static function useService($usePlatforms = null, $routePrefix = "files")
+  static function bootstrap($usePlatforms = null, $routePrefix = "files")
   {
     $FileNamePattern = self::$fileNameMatchPattern;
     self::$routePrefix = $routePrefix;

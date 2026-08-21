@@ -9,14 +9,14 @@ use kernel\Platform\DiscuzX\Controller\Settings as SettingsNamespace;
 class DiscuzXSettingService extends SettingService
 {
   /**
-   * 使用通用设置存储服务
+   * 装配通用设置存储服务
    * 会注册获取设置项、保存设置项的路由
    *
    * @param DiscuzXSettingModuleBase $settingBase 设置功能模块实例
    * @param boolean $RegisterRouter 是否注册路由
    * @return void
    */
-  static function useService(
+  static function bootstrap(
     $settingBase = NULL,
     $RegisterRouter = TRUE
   ) {
@@ -33,9 +33,9 @@ class DiscuzXSettingService extends SettingService
       ]);
     }
 
-    parent::useService($settingBase);
+    parent::bootstrap($settingBase);
   }
-  static function init()
+  static function bootUp()
   {
     return (new DiscuzXSettingsModel())->createTable();
   }
