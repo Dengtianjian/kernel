@@ -114,7 +114,7 @@ class ServerSentEvent extends Response
     }
     $data = $this->getData();
 
-    if (getApp()->request()->ajax()) {
+    if ($this->outputType === "json") {
       $body['version'] = Config::get("version");
     }
 

@@ -51,7 +51,7 @@ class DiscuzXExceptionHandler
         "trace" => $trace,
         "error" => $errorDetails
       ]);
-      if (getApp() && getApp()->request()->ajax()) {
+      if (getApp() && getApp()->request()->preferredOutputType() === "json") {
         $Response = new Response();
         if (Config::get("mode") === "production") {
           $Response->error($statusCode, $errorCode, "SERVER_ERROR");

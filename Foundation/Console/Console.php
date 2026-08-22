@@ -227,7 +227,7 @@ class Console extends App
     $this->options = $options;
 
     //* CLI 下 Request 的 URI 即命中的命令名（HTTP 下为请求 URI）
-    $this->request->URI = $name;
+    $this->request->uri($name);
 
     //* 调用生命周期"启动"钩子
     $this->lifeCycle->fireBootUp();

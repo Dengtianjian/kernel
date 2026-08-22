@@ -133,7 +133,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
-    if ($this->request->ajax() && !$SameOrigin) {
+    if ($this->request->preferredOutputType() === "json" && !$SameOrigin) {
       $this->login();
     } else {
       $memberInfo = DiscuzXMember::get(getglobal("uid"));

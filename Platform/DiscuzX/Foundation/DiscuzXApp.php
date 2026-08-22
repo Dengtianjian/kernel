@@ -20,9 +20,9 @@ class DiscuzXApp extends App
     $this->ensureInstances();
 
     if (isset($_GET['uri'])) {
-      $this->request->URI = addslashes(trim($_GET['uri']));
+      $this->request->uri(addslashes(trim($_GET['uri'])));
     } else {
-      $this->request->URI = "/";
+      $this->request->uri("/");
     }
 
     //* 异常处理
@@ -35,7 +35,7 @@ class DiscuzXApp extends App
     //* 延迟实例化兜底：setup() 未注入时自动实例化（Request 等）
     $this->ensureInstances();
 
-    $this->request->URI = $uri;
+    $this->request->uri($uri);
   }
   /**
    * 初始化以及定义常量

@@ -77,7 +77,7 @@ class StorageService extends Service
     self::$routePrefix = $routePrefix;
 
     $App = getApp();
-    $URI = $App->request()->URI;
+    $URI = $App->request()->uri();
     $usePlatformName = array_key_first($usePlatforms);
 
     if (is_null($usePlatforms)) {

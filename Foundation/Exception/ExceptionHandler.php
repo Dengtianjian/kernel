@@ -20,7 +20,7 @@ use Throwable;
  *
  * 设计要点：
  *   - 静态门面以兼容 PHP SAPI 直接注册；不存储任何实例状态
- *   - 主流程分两步：判级 → 分派（写日志 + AJAX 输出 JSON 或渲染错误页 → exit）
+ *   - 主流程分两步：判级 → 分派（写日志 + 期望 JSON 则输出 JSON 或渲染错误页 → exit）
  *   - 所有内部副作用都包在 try/catch 中，防止 handler 自身抛错被 PHP 钩子再次回调形成死循环
  */
 class ExceptionHandler
@@ -102,8 +102,18 @@ class ExceptionHandler
         return;
       }
 
-      // 4. 致命分支：AJAX 输出 JSON；非 AJAX 渲染错误视图；最后 exit
-      if (self::isAjax()) {
+      // 4. 致命分支：客户端期望 JSON 则输出 JSON；否则渲染错误视图；最后 exit
+      $app = App::getInstance();
+      $expectsJson = false;
+      if ($app) {
+        try {
+          $request = $app->request();
+          $expectsJson = $request && $request->preferredOutputType() === "json";
+        } catch (\Throwable $e) {
+          $expectsJson = false;
+        }
+      }
+      if ($expectsJson) {
         self::respondJson($statusCode, $errorCode, $message, $errorDetails, $code, $file, $line, $trace, $traceString, $previous);
       } else {
         self::renderView($statusCode, $errorCode, $message, $errorDetails);
@@ -167,27 +177,6 @@ class ExceptionHandler
   }
 
   /**
-   * 检测请求是否为 AJAX / JSON 期望
-   */
-  private static function isAjax(): bool
-  {
-    try {
-      $app = App::getInstance();
-    } catch (\Throwable $e) {
-      $app = null;
-    }
-    if (!$app || !method_exists($app, "request")) {
-      return false;
-    }
-    try {
-      $request = $app->request();
-    } catch (\Throwable $e) {
-      return false;
-    }
-    return $request ? $request->ajax() : false;
-  }
-
-  /**
    * 写日志
    */
   private static function writeLog(
@@ -212,7 +201,7 @@ class ExceptionHandler
   }
 
   /**
-   * AJAX 输出 JSON 错误响应
+   * 输出 JSON 错误响应（客户端期望 JSON 时）
    */
   private static function respondJson(
     int $statusCode,
@@ -249,7 +238,7 @@ class ExceptionHandler
   }
 
   /**
-   * 非 AJAX 渲染错误视图
+   * 渲染错误视图
    *
    * 渲染逻辑：
    *   1. 优先用应用层 `{$root}/Views/error.php`

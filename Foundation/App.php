@@ -56,7 +56,7 @@ class App
   /**
    * 应用开始时间戳（毫秒）
    *
-   * 构造时取 Date::milliseconds()，用于计算请求耗时（如 AJAX 响应的 requiredTime）。
+   * 构造时取 Date::milliseconds()，用于计算请求耗时
    *
    * @var int|null
    */
@@ -267,9 +267,9 @@ class App
    * 2. OPTIONS 预检请求：直接 fireShutdown 结束（preflight 标记），保证生命周期有始有终；
    * 3. fireBootUp() 触发启动钩子；
    * 4. Router::match() 匹配当前请求，未命中抛 404 Error；
-   * 5. 命中后写 $request->Route 与 $request->params，构建控制器（含 before()）或闭包路由；
+   * 5. 命中后写 $request->route 与 $request->params，构建控制器（含 before()）或闭包路由；
    * 6. 通过 middleware->execute() 执行中间件链，回调内 executeController() 执行业务；
-   * 7. controller->after() 后处理；AJAX 未指定输出类型时输出 JSON 并附加 requiredTime；
+   * 7. controller->after() 后处理
    * 8. fireShutdown() 触发结束钩子，输出响应并 exit。
    *
    * 异常路径：fireError() 触发错误钩子 → fireShutdown() 触发结束钩子 → 交由全局异常处理器输出。
@@ -281,7 +281,7 @@ class App
     //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化
     $this->ensureInstances();
 
-    if ($this->request()->method === "options") {
+    if ($this->request()->method() === "options") {
       //* 预检请求也执行结束钩子，保证生命周期有始有终（记录日志、释放资源等）
       $this->lifeCycle->fireShutdown(null, [
         "exception" => null,
@@ -301,11 +301,11 @@ class App
 
       if (!$route) {
         throw new Error("路由不存在", 404, 404, [
-          "uri" => $this->request()->URI,
-          'method' => $this->request()->method
+          "uri" => $this->request()->uri(),
+          'method' => $this->request()->method()
         ]);
       }
-      $this->request->Route = $route;
+      $this->request->route = $route;
       $this->request->params->set($route['params']);
 
       $callTarget = [];
@@ -344,7 +344,8 @@ class App
       $controller->after();
 
       $endTime = Date::milliseconds();
-      if ($this->request->ajax() && !$controller->response->OutputType()) {
+      // 控制器未显式设置输出类型，且请求头（Content-Type/Accept）期望 JSON 时，兜底按 JSON 输出并附带耗时
+      if ($this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
         $controller->response->json();
         $controller->response->addBody([
           "requiredTime" => $endTime - $this->startTime . "ms"

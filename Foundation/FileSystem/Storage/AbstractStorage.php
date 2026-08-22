@@ -322,7 +322,7 @@ abstract class AbstractStorage extends AbilityBaseObject
 
     $RequestHeaders = $Request->header->some();
 
-    return $this->verifyAuth($FileKey, $URLParams, $RequestHeaders, $Request->method);
+    return $this->verifyAuth($FileKey, $URLParams, $RequestHeaders, $Request->method());
   }
 
   public function uploadFile($File, $fileKey = null)

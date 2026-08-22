@@ -54,13 +54,20 @@ class ResponsePagination extends Response
   }
   public function output()
   {
+    $limit = (int)$this->request->query->get("limit");
+    if (!$limit) $limit = (int)$this->request->query->get("perPage");
+    if (!$limit) $limit = 10;
+    $page = (int)$this->request->query->get("page");
+    if (!$page) $page = 1;
+    $skip = $this->request->query->has("skip") ? (int)$this->request->query->get("skip") : null;
+
     $this->responseData = [
       "list" => $this->responseData,
       "pagination" => [
         "total" => $this->total,
-        "limit" => $this->request->pagination->limit,
-        "page" => $this->request->pagination->page,
-        "skip" => $this->request->pagination->skip,
+        "limit" => $limit,
+        "page" => $page,
+        "skip" => $skip,
         "items" => $this->items
       ]
     ];

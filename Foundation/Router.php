@@ -6,7 +6,7 @@ use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
-
+use kernel\Foundation\HTTP\URL;
 
 /**
  * 路由注册与匹配
@@ -499,7 +499,7 @@ class Router
   /**
    * 注册异步路由
    *
-   * 仅能通过服务器内部 CURL 调用（需 X-Async 与 X-Ajax 请求头），
+   * 仅能通过服务器内部 CURL 调用（需 X-Async ），
    * 用于后台任务、内部接口等场景，由 dispatch() 触发。
    *
    * @param string $uri 路由 URI
@@ -527,16 +527,16 @@ class Router
    */
   public static function match(Request $request)
   {
-    //* command 模式：按命令名匹配（CLI 下 request->URI 即命中的命令名），不解析 URI
+    //* command 模式：按命令名匹配（CLI 下 request->uri() 即命中的命令名），不解析 URI
     if (self::$mode === "command") {
-      return self::$commands[$request->URI] ?? null;
+      return self::$commands[$request->uri()] ?? null;
     }
 
-    $uri = $request->URI;
+    $uri = $request->uri();
     if ($uri !== "/") {
       $uri = ltrim($uri, "/");
     }
-    $method = $request->method;
+    $method = $request->method();
     $isAsync = $request->async();
 
     //* 1. 静态 common
@@ -587,7 +587,7 @@ class Router
   /**
    * 通过内部 CURL 调用异步路由
    *
-   * 自动附加 X-Async 与 X-Ajax 请求头，使 async 路由可被 match() 命中。
+   * 自动附加 X-Async 请求头，使 async 路由可被 match() 命中。
    *
    * @param string $uri 目标 URI
    * @param array $data 请求数据
@@ -598,7 +598,7 @@ class Router
   public static function dispatch($uri, $data = [], $headers = [], $timeout = 1)
   {
     $result = Curl::init()
-      ->url(F_BASE_URL . $uri)
+      ->url(URL::baseURL() . $uri)
       ->headers(array_merge($headers, ["X-Async" => "true", "X-Ajax" => "true"]))
       ->data($data)
       ->timeout($timeout)
@@ -657,5 +657,4 @@ class Router
   {
     return self::$commands;
   }
-
 }

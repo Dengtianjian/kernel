@@ -447,16 +447,15 @@ class Response
     }
     $data = $this->getData();
 
-    if (getApp()->request()->ajax()) {
-      $body['version'] = Config::get("version");
-    }
+    // 输出内容格式优先级：控制器显式调用（json/text/view/xml/html）优先；
+    // 控制器未显式设置时，依据请求头 Content-Type / Accept 推断
     $outputType = $this->outputType;
-    $Accept = getApp()->request()->header->get("Accept");
-    if (!$outputType && $Accept) {
-      list($type, $format) = explode("/", $Accept);
-      if ($format !== "*") {
-        $outputType = $format;
-      }
+    if (!$outputType) {
+      $outputType = getApp()->request()->preferredOutputType();
+    }
+
+    if ($outputType === "json") {
+      $body['version'] = Config::get("version");
     }
 
     switch ($outputType) {
