@@ -366,4 +366,53 @@ class Arr
       }
     }
   }
+  /**
+   * 通过点号语法移除多维数组中的键
+   *
+   * 支持点号分隔的路径（如 user.profile.name）。键不存在时静默忽略。
+   * 若 `$array` 为引用传递的对象（\ArrayAccess），直接对对象删除。
+   *
+   * @param array|\ArrayAccess $array 目标数组（对象传引用，数组需手动接收返回值）
+   * @param string|null        $key   键名，支持点号语法
+   * @return array 移除后的数组（数组入参时可作为返回值使用）
+   */
+  static function forget(&$array, $key)
+  {
+    if (is_null($key) || $key === "") {
+      return $array;
+    }
+
+    // 不含点号 → 直接删除
+    if (!str_contains($key, '.')) {
+      if (is_array($array)) {
+        unset($array[$key]);
+      } elseif ($array instanceof \ArrayAccess) {
+        $array->offsetUnset($key);
+      }
+      return $array;
+    }
+
+    $segments = explode('.', $key);
+    $last = array_pop($segments);
+    $node = &$array;
+
+    foreach ($segments as $segment) {
+      if (is_array($node) && array_key_exists($segment, $node)) {
+        $node = &$node[$segment];
+      } elseif ($node instanceof \ArrayAccess && $node->offsetExists($segment)) {
+        $item = $node[$segment];
+        $node = &$item;
+      } else {
+        return $array; // 路径不存在，直接返回
+      }
+    }
+
+    if (is_array($node)) {
+      unset($node[$last]);
+    } elseif ($node instanceof \ArrayAccess) {
+      $node->offsetUnset($last);
+    }
+
+    return $array;
+  }
 }

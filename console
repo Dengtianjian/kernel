@@ -21,14 +21,13 @@ if (file_exists($kernelVendor)) {
 }
 
 use kernel\Foundation\Console\Console;
+use kernel\Setup\Console\Bootstrap;
 
-//* 命令统一在 Routes/index.php 中注册（Router::command），CLI 按命令名分发，不解析 URI（Request 的 URI 即命令名）
+//* 命令由 Console 统一注册（不再经 Router），CLI 按命令名分发，不解析 URI（Request 的 URI 即命令名）
 $console = new Console("kernel");
 
-//* 注册额外命令（可选，补充 Routes 注册；实例级同名命令覆盖）
-// $console->register("my:cmd", function ($console, $args, $options) { return 0; });
-
-//* 生命周期钩子（onBootUp/onShutdown 等）请在 Setup 装配类中手动 new Lifecycle 注册后注入
+//* 应用装配：注册内核命令（setup() 必须在 run() 之前调用）
+$console->setup(Bootstrap::class);
 
 //* 执行命令分发，并以退出码结束（Console::run 内部调用 handle 后 exit）
 $console->run();

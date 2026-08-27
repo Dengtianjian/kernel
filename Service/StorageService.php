@@ -7,7 +7,7 @@ use kernel\Foundation\FileSystem\Storage\AbstractStorage;
 use kernel\Foundation\FileSystem\Storage\LocalStorage;
 use kernel\Foundation\Exception\Error;
 use kernel\Controller\Main\Files as FilesNamespace;
-use kernel\Foundation\Router;
+use kernel\Foundation\Router\Route;
 use kernel\Platform\Aliyun\AliyunOSS\AliyunOSSStorage;
 
 class StorageService extends Service
@@ -176,7 +176,7 @@ class StorageService extends Service
     if ($WithFileKey) $RouteURIs[] = $matchParttern;
     if ($URI) $RouteURIs[] = $URI;
 
-    Router::register("common", $Method, join("/", $RouteURIs), $Controller);
+    Route::{$Method}(join("/", $RouteURIs), $Controller);
 
     return self::class;
   }

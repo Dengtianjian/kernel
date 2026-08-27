@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Controller\Commands;
+namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Config;
@@ -8,7 +8,7 @@ use kernel\Foundation\Config;
 /**
  * 创建新应用命令
  *
- * 命令名 make:app 在 kernel/Routes/index.php 中注册（Router::command）。
+ * 命令名 make:app 在 kernel/console 中注册（Console::register）。
  *
  * 用法：
  *   php kernel/console make:app <AppId>
@@ -66,7 +66,6 @@ use kernel\\Foundation\\Config;
 use kernel\\Foundation\\FileSystem\\FileSystem;
 use kernel\\Foundation\\Lifecycle;
 use kernel\\Foundation\\Middleware\\Middleware;
-use kernel\\Foundation\\Router;
 
 /**
  * 应用装配类：手动实例化组件（App 构造不再自动实例化任何组件，均为延迟实例化）
@@ -80,13 +79,13 @@ use kernel\\Foundation\\Router;
  * - new Lifecycle 后 ->onBootUp() / ->onShutdown() 等：注册生命周期钩子，
  *   再 \$app->set(["lifeCycle" => \$lifeCycle]) 注入
  *
- * 如需自定义组件实例（如 Router 后续增加构造参数，可自行实例化并传参）：
- *   \$router = new Router("http");
- *   \$app->set(["router" => \$router]);
+ * 路由由 Request 构造内实例化（new Router），App 不再存储 Router、也无需在 App 注入；
+ * 如需自定义 Request（或其内部路由实例），可在 setup() 中手动实例化并注入：
+ *   \$app->set(["request" => new \\kernel\\Foundation\\HTTP\\Request]);
  *
  * 也可以在 setup() 中传闭包（推荐，可获得 App 实例）：
  *   \$app->setup(function (\$app) {
- *     \$app->set(["router" => new Router("http")]);
+ *     \$app->set(["request" => new \\kernel\\Foundation\\HTTP\\Request]);
  *   });
  */
 class Bootstrap
@@ -131,15 +130,12 @@ use kernel\\Foundation\\App;
 PHP
     );
 
-    //* 路由文件（HTTP 路由 + 命令注册）
+    //* 路由文件（HTTP 路由）
     file_put_contents($targetDirectory . "/Routes/index.php", <<<PHP
 <?php
-use kernel\\Foundation\\Router;
+use kernel\\Foundation\\Router\\Route;
 
-Router::get("/", {$AppId}\\Controller\\IndexController::class);
-
-//* 命令在 Routes 中注册（与 HTTP 路由统一）：CLI 按命令名分发，不解析 URI
-//* 例：Router::command("app:hello", {$AppId}\\Controller\\Commands\\HelloCommand::class, "Say hello");
+Route::get("/", {$AppId}\\Controller\\IndexController::class);
 PHP
     );
 
@@ -190,8 +186,8 @@ include_once("{$kernelRoot}/vendor/autoload.php");
 
 use kernel\\Foundation\\Console\\Console;
 
-//* 命令统一在 Routes/index.php 中注册（Router::command），无需在此重复注册
-//* 如需补充实例级命令，可在此 \$console->register("name", fn) 注册
+//* 命令由 Console 统一注册（不再经 Router）
+//* 如需注册命令，可在此 \$console->register("name", fn) 注册
 \$console = new Console("{$AppId}");
 //* 应用装配（setup() 必须在 run() 之前调用）
 \$console->setup(\\{$AppId}\\Setup\\Bootstrap::class);

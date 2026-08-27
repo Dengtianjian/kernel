@@ -51,12 +51,6 @@ class Request
    */
   private $uri = null;
   /**
-   * 当前匹配到的路由（内部存储，业务经 route() 读取；App::run() 匹配后直接赋值）
-   *
-   * @var array|null
-   */
-  public $route = null;
-  /**
    * 归一化后的请求头缓存（小写键名），首次访问时构建
    *
    * @var array|null
@@ -117,17 +111,6 @@ class Request
       }
     }
     return $this->uri;
-  }
-  /**
-   * 获取当前匹配到的路由
-   *
-   * App::run() 路由匹配后直接写入 $route；业务代码统一从 route() 读取。
-   *
-   * @return array|null
-   */
-  public function route()
-  {
-    return $this->route;
   }
   /**
    * 统一读取输入参数
@@ -357,32 +340,34 @@ class Request
   /**
    * 判断请求路径是否匹配给定模式
    *
-   * 模式支持 {param} 与 {param:regex} 占位符；匹配时把提取出的参数合并进 params。
+   * 模式支持 {param} 与 {param:regex} 占位符。纯判断、无副作用：
+   * 匹配提取到的参数不写入 $this->params，如需使用可经第三参引用接收。
    *
    * @param string $pattern 路径模式，如 "links/{id}"
+   * @param array|null &$params 匹配成功后以引用方式返回提取到的参数映射
    * @return bool
    */
-  public function isPath($pattern)
+  public function isPath($pattern, &$params = null)
   {
     $segments = $this->segments();
     $expected = explode("/", trim($pattern, "/"));
 
     if (count($segments) !== count($expected)) return false;
 
-    $params = [];
+    $matched = [];
     foreach ($expected as $i => $part) {
       if (preg_match('/^\{(\w+)(?::([^}]+))?\}$/', $part, $m)) {
         $name = $m[1];
         $regex = isset($m[2]) && $m[2] !== "" ? $m[2] : "[^/]+";
         //* 用 # 作为定界符，避免正则中的 / 与定界符冲突
         if (!preg_match("#^" . $regex . "$#", $segments[$i])) return false;
-        $params[$name] = $segments[$i];
+        $matched[$name] = $segments[$i];
       } else if ($part !== $segments[$i]) {
         return false;
       }
     }
 
-    if ($params) $this->params->set(array_merge($this->params->some() ?? [], $params));
+    if ($matched) $params = $matched;
     return true;
   }
   /**
@@ -575,7 +560,7 @@ class Request
     $subtype = end($parts);
     foreach ($map[$family] as $needle) {
       // subtype 精确等于，或形如 application/json-patch+json（含 +json 后缀）
-      if ($subtype === $needle || substr($subtype, -(strlen($needle) + 1)) === "+" . $needle) {
+      if ($subtype === $needle || substr($subtype, - (strlen($needle) + 1)) === "+" . $needle) {
         return true;
       }
     }

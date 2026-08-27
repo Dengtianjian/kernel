@@ -1,7 +1,6 @@
 <?php
 
 namespace kernel\Foundation\Console;
-use kernel\Foundation\Router;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
@@ -9,18 +8,17 @@ use kernel\Foundation\Config;
 /**
  * 控制台应用
  *
- * 继承 App：Router 构造按模式加载 Routes（command 模式下注册命令、http 模式下注册 URI 路由），
- * Request 始终实例化（CLI 下其 URI 即命中的命令名），提供命令分发、参数解析、彩色输出与交互输入能力。
+ * 继承 App：提供命令注册（register/discover）、分发、参数解析、彩色输出与交互输入能力。
+ * 命令完全由本类实例管理，不再依赖 Router（Router 只负责 HTTP 路由）。
  *
  * 命令注册方式：
- * 1. Routes 中 Router::command("name", ControllerClass::class, "说明") 注册（推荐，与 HTTP 路由统一）
- * 2. 本实例 register()/discover() 补充注册（可选，存入实例级命令表，同名覆盖 Router 命令）
+ * 1. 业务方在自己入口（如 kernel/console、App 的 CLI 入口）手动 Console::register() 注册
+ * 2. discover() 自动扫描命令类目录注册（命令类自带 $name 属性）
  *
  * 命令处理器支持三种形式：
  * 1. 命令控制器类：实现 handle(Console $console, array $args, array $options): int 方法，
  *    类放 Controller/ 目录（如 "kernel\\Controller\\Commands\\MakeAppCommand"），由本类实例化并调用
- * 2. [类名, 方法名]：指定命令控制器中的处理方法（Router::command 第二参传数组）
- * 3. 闭包：function (Console $console, array $args, array $options): int
+ * 2. 闭包：function (Console $console, array $args, array $options): int
  *
  * 命令名支持冒号命名空间（如 make:controller）；输入空参数、help、-h 或 --help
  * 时自动列出全部已注册命令。CLI 环境下异常/错误输出到 stderr 并以非 0 退出。
@@ -67,7 +65,7 @@ class Console extends App
    */
   function __construct($AppId = "kernel", $KernelId = "kernel")
   {
-    //* App 构造按模式实例化 Router（CLI 自动 command 模式，加载命令注册）并始终创建 Request
+    //* Router 由 App 持有（ensureInstances()/router() 实例化，只负责 HTTP 路由；命令由本类管理）
     parent::__construct($AppId, $KernelId);
 
     $this->argv = isset($GLOBALS['argv']) ? array_slice($GLOBALS['argv'], 1) : [];
@@ -159,14 +157,13 @@ class Console extends App
   /**
    * 获取已注册的全部命令
    *
-   * 命令统一在 Routes 文件中通过 Router::command() 注册，本方法合并 Router 命令表
-   * 与本实例 register()/discover() 补充注册的命令，实例级同名命令覆盖 Router 命令。
+   * 命令由本实例 register()/discover() 统一管理，不再依赖 Router。
    *
    * @return array<string, array> 命令名 => 命令定义
    */
   public function commands(): array
   {
-    return array_merge(Router::commands(), $this->commands);
+    return $this->commands;
   }
   /**
    * 当前命令名
@@ -212,7 +209,7 @@ class Console extends App
    */
   public function handle(?array $argv = null): int
   {
-    //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化（Router/Request/Middleware/Lifecycle/Config）
+    //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化（Request/Middleware/Lifecycle/Config）
     $this->ensureInstances();
 
     if ($argv === null) {
@@ -237,13 +234,13 @@ class Console extends App
       //* 帮助
       if ($name === "" || $name === "help" || $name === "-h" || $name === "--help") {
         $exitCode = $this->listCommands();
-      } elseif (!isset($this->commands[$name]) && Router::match($this->request) === null) {
+      } elseif (!isset($this->commands[$name])) {
         $this->error("Command \"{$name}\" is not defined.");
         $this->line("");
         $exitCode = $this->listCommands(1);
       } else {
-        //* CLI 按命令名匹配（Router::match() 内部分发到命令表；Router::command 或本实例 register），不解析 URI
-        $exitCode = $this->execute($this->commands[$name] ?? Router::match($this->request));
+        //* CLI 按命令名匹配（仅查本实例 register()/discover() 注册的命令）
+        $exitCode = $this->execute($this->commands[$name]);
       }
 
       //* 调用生命周期"结束"钩子
@@ -331,47 +328,28 @@ class Console extends App
   /**
    * 执行命令处理器
    *
-   * 兼容两种命令定义：
-   * - Router::command() 注册（Routes 中）：命令控制器类、[类名, 方法名] 或闭包（键 controller/handleMethodName）
-   * - 本实例 register()/discover() 注册：闭包或命令类名（键 handler，默认调用 handle()）
+   * 命令由本实例 register()/discover() 注册，定义结构为：
+   * - 闭包：function (Console $console, array $args, array $options): int
+   * - 命令类名（默认调用 handle() 方法）
    *
    * @param array $command 命令定义
    * @return integer 退出码
    */
   protected function execute(array $command): int
   {
-    if (isset($command["controller"])) {
-      //* Router 命令（命令控制器）
-      $handler = $command["controller"];
-      $handleMethodName = $command["handleMethodName"];
+    $handler = $command["handler"];
 
-      if (is_callable($handler)) {
-        //* 闭包命令
-        $result = $handler($this, $this->arguments, $this->options);
-      } else {
-        $instance = new $handler();
-        if (!method_exists($instance, $handleMethodName)) {
-          $this->error("Command class {$handler} must define a {$handleMethodName}() method.");
-          return 1;
-        }
-        $result = $instance->{$handleMethodName}($this, $this->arguments, $this->options);
+    if (is_string($handler) && class_exists($handler)) {
+      //* 类名处理器：实例化后调用 handle 方法
+      $instance = new $handler();
+      if (!method_exists($instance, "handle")) {
+        $this->error("Command class {$handler} must define a handle() method.");
+        return 1;
       }
+      $result = $instance->handle($this, $this->arguments, $this->options);
     } else {
-      //* 本实例 register()/discover() 注册的命令
-      $handler = $command["handler"];
-
-      if (is_string($handler) && class_exists($handler)) {
-        //* 类名处理器：实例化后调用 handle 方法
-        $instance = new $handler();
-        if (!method_exists($instance, "handle")) {
-          $this->error("Command class {$handler} must define a handle() method.");
-          return 1;
-        }
-        $result = $instance->handle($this, $this->arguments, $this->options);
-      } else {
-        //* 闭包处理器
-        $result = call_user_func($handler, $this, $this->arguments, $this->options);
-      }
+      //* 闭包处理器
+      $result = call_user_func($handler, $this, $this->arguments, $this->options);
     }
 
     return is_int($result) ? $result : 0;

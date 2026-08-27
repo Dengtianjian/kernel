@@ -2,8 +2,6 @@
 
 namespace kernel\Foundation\HTTP\Request;
 
-use kernel\Foundation\Output;
-
 class RequestQuery extends RequestData
 {
   public function __construct($mutator = null, $validator = null)
@@ -12,7 +10,8 @@ class RequestQuery extends RequestData
     $this->validator = $validator;
 
     foreach ($_GET as $key => $value) {
-      if (is_string($value)) {
+      // 保留字符串与数组型参数（如 ?tag[]=a&tag[]=b），其他类型忽略
+      if (is_string($value) || is_array($value)) {
         $this->data[$key] = $value;
       }
     }

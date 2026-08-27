@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Controller\Commands;
+namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\App;
@@ -8,7 +8,7 @@ use kernel\Foundation\App;
 /**
  * 生成模型命令
  *
- * 命令名 make:model 在 kernel/Routes/index.php 中注册（Router::command）。
+ * 命令名 make:model 在 kernel/console 中注册（Console::register）。
  *
  * 用法：
  *   php kernel/console make:model User              // 生成 UserModel

@@ -9,7 +9,8 @@ use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\Result;
-use kernel\Foundation\Router;
+use kernel\Foundation\Router\Route;
+use kernel\Foundation\Router\RouteSame;
 use kernel\Foundation\Service;
 use kernel\Platform\DiscuzX\Controller\Attachment as AttachmentNamespace;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXModel;
@@ -146,10 +147,10 @@ class DiscuzXAttachmentService extends Service
    */
   public static function registerRoute()
   {
-    Router::post("attachment", AttachmentNamespace\UploadAttachmentController::class);
-    Router::same("attachment/{attach:\w+}", function () {
-      Router::get(AttachmentNamespace\GetAttachmentController::class);
-      Router::delete(AttachmentNamespace\DeleteAttachmentController::class);
+    Route::post("attachment", AttachmentNamespace\UploadAttachmentController::class);
+    new RouteSame("attachment/{attach:\w+}", function (RouteSame $same) {
+      $same->get(AttachmentNamespace\GetAttachmentController::class);
+      $same->delete(AttachmentNamespace\DeleteAttachmentController::class);
     });
   }
 }

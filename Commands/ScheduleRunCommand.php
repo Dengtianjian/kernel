@@ -1,12 +1,12 @@
 <?php
 
-namespace kernel\Controller\Commands;
+namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
 /**
  * 定时任务执行命令
  *
- * 命令名 schedule:run 在 kernel/Routes/index.php 中注册（Router::command）。
+ * 命令名 schedule:run 在 kernel/console 中注册（Console::register）。
  *
  * 用法：
  *   php kernel/console schedule:run

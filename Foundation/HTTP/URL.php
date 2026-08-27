@@ -422,4 +422,31 @@ class URL
   {
     return new self(self::current());
   }
+
+  /**
+   * 归一化域名（小写 + 剥端口 + 去 IPv6 方括号）
+   *
+   * Host 头按 RFC 不区分大小写，且可能携带端口（api.example.com:8080）或
+   * IPv6 方括号形式（[::1]:8080）。域名路由在注册与匹配两侧都经此法归一，
+   * 保证域名组注册的小写无端口形式能命中任意大小写/带端口的请求 Host。
+   *
+   * @param string $domain 原始域名
+   * @return string 归一化后的域名
+   */
+  static function normalizeDomain($domain)
+  {
+    $domain = strtolower(trim($domain));
+    if (strpos($domain, "[") === 0) {
+      $close = strpos($domain, "]");
+      if ($close !== false) {
+        $domain = substr($domain, 1, $close - 1);
+      }
+    } elseif (substr_count($domain, ":") === 1) {
+      $colon = strpos($domain, ":");
+      if (ctype_digit(substr($domain, $colon + 1))) {
+        $domain = substr($domain, 0, $colon);
+      }
+    }
+    return $domain;
+  }
 }

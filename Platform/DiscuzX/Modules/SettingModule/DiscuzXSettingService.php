@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\DiscuzX\Modules\SettingModule;
 
-use kernel\Foundation\Router;
+use kernel\Foundation\Router\Route;
 use kernel\Modules\SettingModule\SettingService;
 use kernel\Platform\DiscuzX\Controller\Settings as SettingsNamespace;
 
@@ -25,12 +25,10 @@ class DiscuzXSettingService extends SettingService
     }
 
     if ($RegisterRouter) {
-      Router::get("settings", SettingsNamespace\DiscuzXGetSettingsController::class, [], [
-        $settingBase
-      ]);
-      Router::patch("settings", SettingsNamespace\DiscuzXSaveSettingsController::class, [], [
-        $settingBase
-      ]);
+      Route::get("settings", SettingsNamespace\DiscuzXGetSettingsController::class)
+        ->parameters([$settingBase]);
+      Route::patch("settings", SettingsNamespace\DiscuzXSaveSettingsController::class)
+        ->parameters([$settingBase]);
     }
 
     parent::bootstrap($settingBase);

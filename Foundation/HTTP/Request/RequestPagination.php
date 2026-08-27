@@ -6,7 +6,6 @@ use kernel\Foundation\HTTP\Request;
 
 /**
  * 请求分页类
- * @deprecated version
  */
 class RequestPagination
 {
