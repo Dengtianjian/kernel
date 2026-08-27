@@ -8,6 +8,8 @@
 kernel/
 ├── Foundation/         # 框架核心（App、路由、数据库、HTTP 等）
 ├── Platform/           # 平台适配层（DiscuzX：DiscuzXLang 语言包管理等）
+├── Commands/           # 内核命令（make:app/make:model/make:controller/make:middleware/schedule:run）
+├── Setup/              # 装配类（Console/Bootstrap 封装内核命令注册）
 ├── Controller/         # 控制器
 ├── Middleware/         # 全局中间件子类（基础类在 Foundation/Middleware）
 ├── Model/              # 模型层
