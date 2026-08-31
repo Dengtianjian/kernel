@@ -15,6 +15,8 @@ namespace kernel\Foundation\Database\PDO;
  * new Schema('email')->varchar(128)->index()->comment('邮箱（普通索引）');
  * new Schema('code')->varchar(32)->unique()->comment('编码（唯一索引）');
  * new Schema('status')->tinyint()->index('idx_status')->comment('状态（自定义索引名）');
+ * new Schema('paid_at')->unixtime()->default(0)->comment('支付时间（秒级时间戳）');
+ * new Schema('expire_at')->unixtime_ms()->default(0)->comment('过期时间（毫秒级时间戳）');
  *
  * // 配合 Table::$schema 使用，由 Table::create() 组装建表
  * class User extends Table {
@@ -128,122 +130,256 @@ class Schema
    * @param int $length 显示宽度，默认 20
    * @return $this
    */
-  function bigint($length = 20)   { $this->type = 'BIGINT';   $this->length = $length; return $this; }
+  function bigint($length = 20)
+  {
+    $this->type = 'BIGINT';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * INT 整数
    * @param int $length 显示宽度，默认 11
    * @return $this
    */
-  function int($length = 11)      { $this->type = 'INT';      $this->length = $length; return $this; }
+  function int($length = 11)
+  {
+    $this->type = 'INT';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * TINYINT 小整数
    * @param int $length 显示宽度，默认 4
    * @return $this
    */
-  function tinyint($length = 4)   { $this->type = 'TINYINT';  $this->length = $length; return $this; }
+  function tinyint($length = 4)
+  {
+    $this->type = 'TINYINT';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * SMALLINT 短整数
    * @param int $length 显示宽度，默认 6
    * @return $this
    */
-  function smallint($length = 6)  { $this->type = 'SMALLINT'; $this->length = $length; return $this; }
+  function smallint($length = 6)
+  {
+    $this->type = 'SMALLINT';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * MEDIUMINT 中等整数
    * @param int $length 显示宽度，默认 9
    * @return $this
    */
-  function mediumint($length = 9) { $this->type = 'MEDIUMINT'; $this->length = $length; return $this; }
+  function mediumint($length = 9)
+  {
+    $this->type = 'MEDIUMINT';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * VARCHAR 变长字符串
    * @param int $length 最大长度，默认 255
    * @return $this
    */
-  function varchar($length = 255) { $this->type = 'VARCHAR';  $this->length = $length; return $this; }
+  function varchar($length = 255)
+  {
+    $this->type = 'VARCHAR';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * CHAR 定长字符串
    * @param int $length 长度，默认 1
    * @return $this
    */
-  function char($length = 1)      { $this->type = 'CHAR';     $this->length = $length; return $this; }
+  function char($length = 1)
+  {
+    $this->type = 'CHAR';
+    $this->length = $length;
+    return $this;
+  }
   /**
    * TEXT 长文本（最大 64KB）
    * @return $this
    */
-  function text()                 { $this->type = 'TEXT';                       return $this; }
+  function text()
+  {
+    $this->type = 'TEXT';
+    return $this;
+  }
   /**
    * MEDIUMTEXT 中等文本（最大 16MB）
    * @return $this
    */
-  function mediumtext()           { $this->type = 'MEDIUMTEXT';                 return $this; }
+  function mediumtext()
+  {
+    $this->type = 'MEDIUMTEXT';
+    return $this;
+  }
   /**
    * LONGTEXT 超大文本（最大 4GB）
    * @return $this
    */
-  function longtext()             { $this->type = 'LONGTEXT';                   return $this; }
+  function longtext()
+  {
+    $this->type = 'LONGTEXT';
+    return $this;
+  }
   /**
    * DATETIME 日期时间
    * @return $this
    */
-  function datetime()             { $this->type = 'DATETIME';                   return $this; }
+  function datetime()
+  {
+    $this->type = 'DATETIME';
+    return $this;
+  }
   /**
    * TIMESTAMP 时间戳
    * @return $this
    */
-  function timestamp()            { $this->type = 'TIMESTAMP';                  return $this; }
+  function timestamp()
+  {
+    $this->type = 'TIMESTAMP';
+    return $this;
+  }
   /**
    * DATE 日期
    * @return $this
    */
-  function date()                 { $this->type = 'DATE';                       return $this; }
+  function date()
+  {
+    $this->type = 'DATE';
+    return $this;
+  }
   /**
    * TIME 时间
    * @return $this
    */
-  function time()                 { $this->type = 'TIME';                       return $this; }
+  function time()
+  {
+    $this->type = 'TIME';
+    return $this;
+  }
   /**
    * DECIMAL 定点数
    * @param int $precision 精度（总位数），默认 10
    * @param int $scale 小数位数，默认 2
    * @return $this
    */
-  function decimal($precision = 10, $scale = 2) { $this->type = 'DECIMAL'; $this->precision = $precision; $this->scale = $scale; return $this; }
+  function decimal($precision = 10, $scale = 2)
+  {
+    $this->type = 'DECIMAL';
+    $this->precision = $precision;
+    $this->scale = $scale;
+    return $this;
+  }
   /**
    * FLOAT 单精度浮点数
    * @return $this
    */
-  function float()                { $this->type = 'FLOAT';                      return $this; }
+  function float()
+  {
+    $this->type = 'FLOAT';
+    return $this;
+  }
   /**
    * DOUBLE 双精度浮点数
    * @return $this
    */
-  function double()               { $this->type = 'DOUBLE';                     return $this; }
+  function double()
+  {
+    $this->type = 'DOUBLE';
+    return $this;
+  }
   /**
    * JSON 类型
    * @return $this
    */
-  function json()                 { $this->type = 'JSON';                       return $this; }
+  function json()
+  {
+    $this->type = 'JSON';
+    return $this;
+  }
   /**
    * 布尔类型（映射为 TINYINT(1)）
    * @return $this
    */
-  function bool()                 { $this->type = 'TINYINT'; $this->length = 1; return $this; }
+  function bool()
+  {
+    $this->type = 'TINYINT';
+    $this->length = 1;
+    return $this;
+  }
   /**
    * TIMESTAMP_MS 毫秒级时间戳（存储为 VARCHAR）
    * @param int $length 长度，默认 26（兼容 Y-m-d H:i:s.u）
    * @return $this
    */
-  function timestamp_ms($length = 26) { $this->type = 'TIMESTAMP_MS'; $this->length = $length; return $this; }
+  function timestamp_ms($length = 26)
+  {
+    $this->type = 'TIMESTAMP_MS';
+    $this->length = $length;
+    return $this;
+  }
+  /**
+   * UNIXTIME 秒级 Unix 时间戳（存储为 INT UNSIGNED，库中即整数）
+   *
+   * 与 timestamp() 的区别：timestamp() 库中存 'Y-m-d H:i:s' 格式化字符串，
+   * 本方法库中直接存整数秒值，PHP 侧读写的都是 int。
+   *
+   * 自动无符号（时间戳非负），上限 2106-02-07（INT UNSIGNED）。
+   *
+   * @return $this
+   */
+  function unixtime()
+  {
+    $this->type = 'UNIXTIME';
+    $this->length = null;
+    $this->unsigned = true;
+    return $this;
+  }
+  /**
+   * UNIXTIME_MS 毫秒级 Unix 时间戳（存储为 BIGINT UNSIGNED，库中即整数）
+   *
+   * 与 timestamp_ms() 的区别：timestamp_ms() 库中存 'Y-m-d H:i:s.v' 格式化字符串，
+   * 本方法库中直接存整数毫秒值，PHP 侧读写的都是 int。
+   *
+   * 自动无符号（时间戳非负），13 位需 BIGINT 承载。
+   *
+   * @return $this
+   */
+  function unixtime_ms()
+  {
+    $this->type = 'UNIXTIME_MS';
+    $this->length = null;
+    $this->unsigned = true;
+    return $this;
+  }
   /**
    * BLOB 二进制大对象
    * @return $this
    */
-  function blob()                 { $this->type = 'BLOB';                       return $this; }
+  function blob()
+  {
+    $this->type = 'BLOB';
+    return $this;
+  }
   /**
    * ENUM 枚举类型
    * @param array $values 可选值列表
    * @return $this
    */
-  function enum(array $values)    { $this->type = 'ENUM'; $this->values = $values; return $this; }
+  function enum(array $values)
+  {
+    $this->type = 'ENUM';
+    $this->values = $values;
+    return $this;
+  }
 
   // ─── 修饰符 ────────────────────────────────────
 
@@ -251,46 +387,81 @@ class Schema
    * 自增（自动设置 unsigned）
    * @return $this
    */
-  function autoIncrement() { $this->autoIncrement = true; $this->unsigned = true; return $this; }
+  function autoIncrement()
+  {
+    $this->autoIncrement = true;
+    $this->unsigned = true;
+    return $this;
+  }
   /**
    * 是否允许 NULL
    * @param bool $val true=允许（默认），false=NOT NULL
    * @return $this
    */
-  function nullable($val = true)  { $this->nullable = $val; return $this; }
+  function nullable($val = true)
+  {
+    $this->nullable = $val;
+    return $this;
+  }
   /**
    * 默认值
    * @param mixed $value 支持字符串、数字、CURRENT_TIMESTAMP 等
    * @return $this
    */
-  function default($value)  { $this->default = $value; $this->hasDefault = true; return $this; }
+  function default($value)
+  {
+    $this->default = $value;
+    $this->hasDefault = true;
+    return $this;
+  }
   /**
    * 字段注释
    * @param string $text
    * @return $this
    */
-  function comment($text)   { $this->comment = $text; return $this; }
+  function comment($text)
+  {
+    $this->comment = $text;
+    return $this;
+  }
   /**
    * 无符号（仅整数/浮点类型有效）
    * @return $this
    */
-  function unsigned()       { $this->unsigned = true; return $this; }
+  function unsigned()
+  {
+    $this->unsigned = true;
+    return $this;
+  }
   /**
    * 唯一索引
    * @return $this
    */
-  function unique()         { $this->unique = true; return $this; }
+  function unique()
+  {
+    $this->unique = true;
+    return $this;
+  }
   /**
    * 主键
    * @return $this
    */
-  function primary()        { $this->primary = true; return $this; }
+  function primary()
+  {
+    $this->primary = true;
+    return $this;
+  }
   /**
    * 普通索引
    * @param string|null $name 索引名称，默认自动生成 idx_{字段名}
    * @return $this
    */
-  function index($name = null) { $this->index = true; $this->indexName = $name; return $this; }
+  function index($name = null)
+  {
+    $this->index = true;
+    $this->indexName = $name;
+    return $this;
+  }
 
   // ─── 查询 ──────────────────────────────────────
 
@@ -298,32 +469,50 @@ class Schema
    * 获取字段名
    * @return string
    */
-  function getName()        { return $this->name; }
+  function getName()
+  {
+    return $this->name;
+  }
   /**
    * 是否自增
    * @return bool
    */
-  function isAutoIncrement(){ return $this->autoIncrement; }
+  function isAutoIncrement()
+  {
+    return $this->autoIncrement;
+  }
   /**
    * 是否主键
    * @return bool
    */
-  function isPrimary()      { return $this->primary; }
+  function isPrimary()
+  {
+    return $this->primary;
+  }
   /**
    * 是否唯一索引
    * @return bool
    */
-  function isUnique()       { return $this->unique; }
+  function isUnique()
+  {
+    return $this->unique;
+  }
   /**
    * 是否普通索引
    * @return bool
    */
-  function isIndex()        { return $this->index; }
+  function isIndex()
+  {
+    return $this->index;
+  }
   /**
    * 获取索引名称（未自定义时自动生成 idx_{字段名}）
    * @return string
    */
-  function getIndexName()   { return $this->indexName ?: "idx_{$this->name}"; }
+  function getIndexName()
+  {
+    return $this->indexName ?: "idx_{$this->name}";
+  }
   /**
    * 获取字段对应的 PHP 类型
    *
@@ -332,16 +521,20 @@ class Schema
    * - TINYINT(1)        → 'bool'
    * - INT/BIGINT 等     → 'int'
    * - FLOAT/DOUBLE      → 'float'
+   * - UNIXTIME          → 'unixtime'      （库中整数秒，PHP int）
+   * - UNIXTIME_MS       → 'unixtime_ms'   （库中整数毫秒，PHP int）
    * - DATETIME/TIMESTAMP(带毫秒精度) → 'timestamp_ms'
    * - DATETIME/TIMESTAMP             → 'timestamp'
    * - DATE              → 'date'
    * - 其余               → 'string'
    *
-   * @return string 'int' | 'float' | 'bool' | 'string' | 'array' | 'timestamp' | 'timestamp_ms' | 'date'
+   * @return string 'int' | 'float' | 'bool' | 'string' | 'array' | 'timestamp' | 'timestamp_ms' | 'unixtime' | 'unixtime_ms' | 'date'
    */
   function getPhpType()
   {
     if ($this->type === 'JSON') return 'array';
+    if ($this->type === 'UNIXTIME') return 'unixtime';
+    if ($this->type === 'UNIXTIME_MS') return 'unixtime_ms';
     if ($this->type === 'TIMESTAMP_MS') return 'timestamp_ms';
     if ($this->type === 'TINYINT' && $this->length === 1) return 'bool';
     if (in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT'])) return 'int';
@@ -369,15 +562,23 @@ class Schema
     if ($this->type === 'TIMESTAMP_MS') {
       $typeSQL = 'VARCHAR';
     }
+    if ($this->type === 'UNIXTIME') {
+      $typeSQL = 'INT';
+    }
+    if ($this->type === 'UNIXTIME_MS') {
+      $typeSQL = 'BIGINT';
+    }
     if ($this->type === 'DECIMAL') {
       $typeSQL .= "({$this->precision},{$this->scale})";
     } elseif ($this->type === 'ENUM' && isset($this->values)) {
-      $escaped = array_map(function ($v) { return "'{$v}'"; }, $this->values);
+      $escaped = array_map(function ($v) {
+        return "'{$v}'";
+      }, $this->values);
       $typeSQL .= "(" . implode(",", $escaped) . ")";
     } elseif ($this->length && in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'VARCHAR', 'CHAR', 'TIMESTAMP_MS'])) {
       $typeSQL .= "({$this->length})";
     }
-    if ($this->unsigned && in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'FLOAT', 'DOUBLE', 'DECIMAL'])) {
+    if ($this->unsigned && in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'UNIXTIME', 'UNIXTIME_MS'])) {
       $typeSQL .= ' UNSIGNED';
     }
     $parts[] = $typeSQL;
@@ -440,7 +641,9 @@ class Schema
 
     // PRIMARY KEY
     if ($primaryKeys) {
-      $colSQLs[] = 'PRIMARY KEY (' . implode(', ', array_map(function ($k) { return "`{$k}`"; }, $primaryKeys)) . ')';
+      $colSQLs[] = 'PRIMARY KEY (' . implode(', ', array_map(function ($k) {
+        return "`{$k}`";
+      }, $primaryKeys)) . ')';
     }
     // UNIQUE KEY
     foreach ($uniqueKeys as $uk) {

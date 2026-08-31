@@ -135,7 +135,8 @@ class Model extends Table
    *
    * 支持的类型：
    *   int, float, bool, string, array              — 基础类型
-   *   timestamp, timestamp_ms                      — 时间戳
+   *   timestamp, timestamp_ms                      — 时间戳（库中存格式化字符串）
+   *   unixtime, unixtime_ms                        — 时间戳（库中存整数，秒级/毫秒级）
    *   date                                          — 日期（输出格式默认取 $dateFormat）
    *   date|Y-m-d, date|d/m/Y, ...                  — 日期 + 自定义输出格式
    *
@@ -256,6 +257,8 @@ class Model extends Table
 
     // 5. 开启软删除过滤：后续查询自动追加 WHERE deleted_at IS NULL
     $this->applySoftDeleteScope();
+
+    parent::__construct();
   }
 
   /**
@@ -282,8 +285,10 @@ class Model extends Table
     if (!$this->softDelete) {
       return;
     }
-    if (array_key_exists($this->deleteTime, $this->casts)
-        || array_key_exists($this->deleteTime, $this->schemaCasts)) {
+    if (
+      array_key_exists($this->deleteTime, $this->casts)
+      || array_key_exists($this->deleteTime, $this->schemaCasts)
+    ) {
       return;
     }
     if (empty($this->schema) && empty($this->casts)) {
@@ -301,9 +306,9 @@ class Model extends Table
       return;
     }
     $hasCreate = array_key_exists($this->createTime, $this->casts)
-        || array_key_exists($this->createTime, $this->schemaCasts);
+      || array_key_exists($this->createTime, $this->schemaCasts);
     $hasUpdate = array_key_exists($this->updateTime, $this->casts)
-        || array_key_exists($this->updateTime, $this->schemaCasts);
+      || array_key_exists($this->updateTime, $this->schemaCasts);
     if ($hasCreate && $hasUpdate) {
       return;
     }
@@ -333,6 +338,8 @@ class Model extends Table
    *   array                 → JSON 编码
    *   timestamp             → $dateFormat 格式化字符串（如 'Y-m-d H:i:s'）
    *   timestamp_ms          → 'Y-m-d H:i:s.v' 格式化字符串（含毫秒）
+   *   unixtime              → 秒级时间戳 int（不格式化，库中即整数）
+   *   unixtime_ms           → 毫秒级时间戳 int（不格式化，库中即整数）
    *   date                  → 'Y-m-d' 格式化字符串（MySQL DATE 标准格式）
    *
    * @param string $type  类型标签
@@ -350,8 +357,10 @@ class Model extends Table
       'array'         => json_encode($value, JSON_UNESCAPED_UNICODE),
       'timestamp'     => $this->formatTimestamp($this->dateFormat, $this->parseTimestamp($value)),
       'timestamp_ms'  => ($tsMs = $this->parseTimestamp($value, 'ms')) === null
-                         ? null
-                         : $this->formatTimestamp('Y-m-d H:i:s.v', (int) ($tsMs / 1000), ($tsMs % 1000) / 1000),
+        ? null
+        : $this->formatTimestamp('Y-m-d H:i:s.v', (int) ($tsMs / 1000), ($tsMs % 1000) / 1000),
+      'unixtime'      => $this->parseTimestamp($value, 's'),
+      'unixtime_ms'   => $this->parseTimestamp($value, 'ms'),
       'date'          => $this->formatTimestamp('Y-m-d', $this->parseTimestamp($value)),
       default         => $value,
     };
@@ -365,6 +374,8 @@ class Model extends Table
    *   array                 → JSON 解码为数组
    *   timestamp             → Unix 秒级时间戳 int
    *   timestamp_ms          → Unix 毫秒级时间戳 int
+   *   unixtime              → 秒级时间戳 int（库中已是整数，不做日期解析）
+   *   unixtime_ms           → 毫秒级时间戳 int（库中已是整数，不做日期解析）
    *   date                  → 格式化日期字符串（'date|格式' 自定义 > $dateFormat 默认）
    *
    * @param string $type  类型标签（支持 'date|Y-m-d' 指定自定义输出格式）
@@ -382,6 +393,8 @@ class Model extends Table
       'array'         => is_array($value) ? $value : json_decode($value, true) ?? [],
       'timestamp'     => $this->parseTimestamp($value, 's'),
       'timestamp_ms'  => $this->parseTimestamp($value, 'ms'),
+      'unixtime'      => ($value === null || $value === '') ? null : (int) $value,
+      'unixtime_ms'   => ($value === null || $value === '') ? null : (int) $value,
       'date'          => $this->formatTimestamp($customFormat ?? $this->dateFormat, $this->parseTimestamp($value)),
       default         => $value,
     };
@@ -406,13 +419,18 @@ class Model extends Table
   /**
    * 类型默认值（用于 $data 字段初始化）
    *
-   *   int/float → 0; bool → false; array → []; timestamp/date → null; 其他 → ''
+   *   int/float/unixtime/unixtime_ms → 0; bool → false; array → []; timestamp/date → null; 其他 → ''
+   *
+   * unixtime/unixtime_ms 取 0（与整数列语义一致，时间戳非负）；
+   * 若字段可空且希望「未设置」为 null，请显式赋值 null 或改用 timestamp 系列。
    */
   private function castDefault(string $type): mixed
   {
     $baseType = $this->parseCastType($type)['base'];
     return match ($baseType) {
-      'int'           => 0,
+      'int',
+      'unixtime',
+      'unixtime_ms'   => 0,
       'float'         => 0.0,
       'bool'          => false,
       'array'         => [],
