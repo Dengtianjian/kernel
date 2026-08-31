@@ -37,7 +37,7 @@ class InstallExtensionController extends AuthController
       "install_time" => time(),
       "installed" => 1,
       "local_version" => $extensionConfig['version']
-    ])->save();
+    ]);
 
     return true;
   }

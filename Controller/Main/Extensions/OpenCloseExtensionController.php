@@ -38,7 +38,7 @@ class OpenCloseExtensionController extends AuthController
     }
     $EM->where("extension_id", $extensionId)->update([
       "enabled" => $enabled
-    ])->save();
+    ]);
     return true;
   }
 }

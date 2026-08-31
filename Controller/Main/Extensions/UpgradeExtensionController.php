@@ -36,7 +36,7 @@ class UpgradeExtensionController extends AuthController
     $EM->where("extension_id", $extension['extension_id'])->where("plugin_id", $extension['plugin_id'])->update([
       "upgrade_time" => time(),
       "local_version" => $extensionConfig['version']
-    ])->save();
+    ]);
 
     return true;
   }
