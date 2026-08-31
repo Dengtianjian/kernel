@@ -141,7 +141,7 @@ class Serializer
           } else {
             $Data[$FieldName] = [];
           }
-        } else if (is_callable($RuleItem)) {
+        } else if (isSafeCallable($RuleItem)) {
           $Data[$FieldName] = $RuleItem($Data[$FieldName], $Data);
         } else if (is_array($RuleItem)) {
           $Data[$FieldName] = self::serialization($RuleItem, $Data[$FieldName]);

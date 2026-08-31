@@ -6,8 +6,8 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Output;
-use kernel\Foundation\URL;
 
 /**
  * 导入文件
@@ -170,19 +170,6 @@ if (!function_exists("path")) {
     }
     return Path::{$name}();
   }
-
-  /**
-   * 拼接基础 URL
-   *
-   * 空参返回仅 baseUrl；传入子路径追加单斜杠；传入绝对 URL 直接返回。
-   *
-   * @param string|null $path 子路径
-   * @return string
-   */
-  function url($path = "")
-  {
-    return URL::url($path);
-  }
 }
 
 if (!function_exists("abort")) {
@@ -241,5 +228,19 @@ if (!function_exists("today")) {
   function today()
   {
     return date("Y-m-d");
+  }
+}
+
+
+if (!function_exists("isSafeCallable")) {
+  function isSafeCallable($value, array $whitelist = []): bool
+  {
+    // 字符串类型：必须在白名单中才算安全
+    if (is_string($value)) {
+      return !empty($whitelist) && in_array($value, $whitelist, true) && is_callable($value);
+    }
+
+    // 非字符串（闭包、[$obj, 'method']、可调用对象）：直接判断
+    return is_callable($value);
   }
 }

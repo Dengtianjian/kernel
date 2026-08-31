@@ -217,7 +217,7 @@ class Table extends AbilityBaseObject
    *
    * @return bool
    */
-  public function exists()
+  public function tableExists()
   {
     $result = $this->query("SHOW TABLES LIKE '{$this->tableName}'");
     return !empty($result);

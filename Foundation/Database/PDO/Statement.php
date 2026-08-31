@@ -171,7 +171,7 @@ class Statement
       } else {
         $from = Statement::format($from);
       }
-    } else if (is_callable($from)) {
+    } else if (isSafeCallable($from)) {
       $subQuery = new Query();
       $from($subQuery);
       $from = "({$subQuery->getSQL()})";
@@ -225,7 +225,6 @@ class Statement
    */
   static function where($conditions)
   {
-    // debug($conditions);
     $conditionSQLs = [];
     $prevConditionItem = null;
 
@@ -264,8 +263,8 @@ class Statement
 
             $value = $ConditionItem['value'];
 
-            if (is_callable($value) || $value instanceof Query) {
-              if (is_callable($value)) {
+            if (isSafeCallable($value) || $value instanceof Query) {
+              if (isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
                 $value = $subQuery->getSQL();
@@ -297,7 +296,7 @@ class Statement
           //* 子查询
           case "sub":
             $value = $ConditionItem['value'];
-            if (is_callable($value)) {
+            if (isSafeCallable($value)) {
               $subQuery = new Query();
               $value($subQuery);
               $value = $subQuery->getSQL();
@@ -334,7 +333,7 @@ class Statement
                 $value = $ConditionItem['value'];
                 if (is_array($value)) {
                   $value = join(", ", self::batchFormat($ConditionItem['value'], "'"));
-                } else if (is_callable($value)) {
+                } else if (isSafeCallable($value)) {
                   $subQuery = new Query();
                   $value($subQuery);
                   $value = $subQuery->getSQL();
@@ -370,7 +369,7 @@ class Statement
               $statement = join(" ", [$ConditionItem['column'], $ConditionItem['operator'], self::format($ConditionItem['value'])]);
             } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"])) {
               $value = $ConditionItem['value'];
-              if (is_callable($value)) {
+              if (isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
                 $value = $subQuery->getSQL();
@@ -608,7 +607,7 @@ class Statement
           } else if ($item['type'] === "sub") {
             if ($item['value'] instanceof Query) {
               $item['value'] = $item['value']->getSQL();
-            } else if (is_callable($item['value'])) {
+            } else if (isSafeCallable($item['value'])) {
               $query = new Query();
               $item['value']($query);
               $item['value'] = $query->getSQL();

@@ -635,7 +635,7 @@ class Mutator
             return;
         }
 
-        if (is_callable($type)) {
+        if (isSafeCallable($type)) {
             $result[$keyStr] = $type($this->data[$keyStr]);
             return;
         }
@@ -1697,7 +1697,7 @@ class Mutator
             return $this->createChild($type)->data($value)->convert();
         }
 
-        if (is_callable($type)) {
+        if (isSafeCallable($type)) {
             return $type($value);
         }
 

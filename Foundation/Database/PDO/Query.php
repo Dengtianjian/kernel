@@ -44,13 +44,13 @@ class Query extends AbilityBaseObject
    * - 'conditions'  => array  // where 条件列表
    * - 'orders'      => array  // order by 排序列表
    * - 'pagination'  => ['limit' => int|null, 'offset' => int|null]
- * - 'joins'       => array  // JOIN 定义列表，每项: ['type'=>'INNER','table'=>'profiles','alias'=>'p','first'=>'users.id','operator'=>'=','second'=>'p.user_id']
- * - 'groupBy'     => array|null
- * - 'having'      => mixed|null
- * - 'data'        => mixed|null  // insert/update 数据
- * - 'insertData'  => array  // insert 专用数据
- * - 'updateData'  => array  // update 专用数据
- * - 'insertIsIgnore' => bool  // INSERT IGNORE 标记
+   * - 'joins'       => array  // JOIN 定义列表，每项: ['type'=>'INNER','table'=>'profiles','alias'=>'p','first'=>'users.id','operator'=>'=','second'=>'p.user_id']
+   * - 'groupBy'     => array|null
+   * - 'having'      => mixed|null
+   * - 'data'        => mixed|null  // insert/update 数据
+   * - 'insertData'  => array  // insert 专用数据
+   * - 'updateData'  => array  // update 专用数据
+   * - 'insertIsIgnore' => bool  // INSERT IGNORE 标记
    * 
    * @var array
    */
@@ -1099,7 +1099,7 @@ class Query extends AbilityBaseObject
       ];
     }
 
-    if ($column instanceof Query || is_callable($column)) {
+    if ($column instanceof Query || isSafeCallable($column)) {
       $type = "sub";
       $value = $column;
       $column = null;
@@ -1127,7 +1127,7 @@ class Query extends AbilityBaseObject
     }
 
     // IN / NOT IN 数组值 → 占位符绑定，防止 SQL 注入
-    if (is_array($value) && !is_callable($value) && !($value instanceof Query)) {
+    if (is_array($value) && !isSafeCallable($value) && !($value instanceof Query)) {
       if ($type === 'comparsion') {
         // comparsion 类型 + 数组值 → 自动转为 IN
         $operator = 'IN';
@@ -2028,7 +2028,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere(null, null, $queryOrCallable, "OR", "NOT EXISTS", "func");
   }
-  
+
   /**
    * 从数组中批量添加过滤条件，自动跳过空值
    *
