@@ -300,7 +300,7 @@ class AbilityBaseObject extends BaseObject
    *
    * @return AbilityBaseObject 返回 $this 以便链式调用
    */
-  final public function reset()
+  final public function resetError()
   {
     $this->error = false;
     $this->errorCode = null;
