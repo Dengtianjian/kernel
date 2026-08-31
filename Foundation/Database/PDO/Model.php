@@ -8,11 +8,20 @@ use kernel\Foundation\Database\PDO\Relation\BelongsTo;
 use kernel\Foundation\Database\PDO\Relation\Relation;
 
 /**
- * Model — AR（Active Record）+ Query 代理 ORM 基类
+ * Model — AR（Active Record）+ 查询代理 ORM 基类
  *
  * 提供两种使用模式：
- * 1. Query 代理：所有未定义方法通过 __call / __callStatic 自动转发给底层 Query 对象，支持完整链式调用
+ * 1. 查询代理：所有未定义方法通过 __call / __callStatic 转发给 ModelBuilder，支持完整链式调用
  * 2. Active Record：直接操作单行数据，$model->field = value → save() / find() / delete()
+ *
+ * ## 查询状态隔离（重要）
+ *
+ * 每次查询都由 `scopedBuilder()` 创建**全新的 ModelBuilder**（内部持有全新 Query），
+ * 链式方法由 Builder 承接并返回自身，链结束后 Builder 即丢弃。
+ * 因此两次查询之间绝不共享 where/orderBy/select/limit 等任何状态。
+ *
+ * 早期实现把方法转发给 Model 持有的同一个 Query 实例，而 Query 只在写操作后 reset，
+ * 导致条件跨调用累积（见 ModelBuilder 类注释）。
  *
  * 类型转换架构：
  *   PHP 赋值/DB 取值 ──→ castToDb()  ──→  存入 $data（DB 兼容格式）
@@ -20,6 +29,12 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  *
  * 时间戳自动维护：save() 时自动填充 created_at / updated_at，精度由字段的 cast 类型决定
  * 软删除：delete() 写入 deleted_at 而非真删，查询默认过滤 deleted_at IS NULL
+ *
+ * ## 代码组织（自上而下）
+ *
+ *   常量（作用域模式）→ 属性 → 构造与初始化 → 访问器
+ *   → 类型转换引擎 → 查询入口 → 结果转换与预加载 → 属性读写
+ *   → Active Record（写入 / 删除与恢复）→ 软删除查询范围 → 关联关系 → 数据导出
  *
  * ------------------------------------------------------------------
  * === Active Record 方法 ===
@@ -91,7 +106,6 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  * @method $this bind(string $key, mixed $value)
  * @method $this addBindings(array $bindings)
  * @method $this fill(string $executeType, array $options)
- * @method $this notReset()
  * @method $this reset()
  * @method $this setDatabaseDriver($driver)
  * ------------------------------------------------------------------
@@ -124,11 +138,62 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  */
 class Model extends Table
 {
+
+  // ===================================================================
+  // 常量：软删除作用域模式
+  // ===================================================================
+
+  /**
+   * 软删除作用域：排除已软删除的记录（默认）
+   *
+   * 查询自动追加 WHERE deleted_at IS NULL。
+   */
+  const TRASHED_EXCLUDE = 0;
+
+  /**
+   * 软删除作用域：包含已软删除的记录
+   */
+  const TRASHED_INCLUDE = 1;
+
+  /**
+   * 软删除作用域：仅查已软删除的记录
+   *
+   * 查询自动追加 WHERE deleted_at IS NOT NULL。
+   */
+  const TRASHED_ONLY = 2;
+
+  // ===================================================================
+  // 属性：表信息
+  // ===================================================================
+
   /** @var string 数据库表名（构造时可由入参覆盖，未指定则从类名自动推断） */
   public $tableName = "";
 
-  /** @var Query 底层查询构建器实例 */
-  protected $query;
+  // ===================================================================
+  // 属性：表结构配置（主键 / 时间戳 / 软删除）
+  // ===================================================================
+
+  /** @var string 主键字段名。若未显式覆盖，构造时从 $schema 自动检测 */
+  protected $primaryKey = 'id';
+
+  /** @var bool save() 时是否自动注入 created_at / updated_at */
+  protected $timestamps = true;
+
+  /** @var string 创建时间字段名 */
+  protected $createTime = 'created_at';
+
+  /** @var string 更新时间字段名 */
+  protected $updateTime = 'updated_at';
+
+  /** @var bool 是否启用软删除（delete() 写 deleted_at 而非真删） */
+  protected $softDelete = false;
+
+  /** @var string 软删除标记字段名 */
+  protected $deleteTime = 'deleted_at';
+
+  // ===================================================================
+  // 属性：类型转换
+  // ===================================================================
 
   /**
    * 手动指定的字段类型映射（字段名 → 类型标签）
@@ -156,24 +221,6 @@ class Model extends Table
    */
   private $schemaCasts = [];
 
-  /** @var string 主键字段名。若未显式覆盖，构造时从 $schema 自动检测 */
-  protected $primaryKey = 'id';
-
-  /** @var bool save() 时是否自动注入 created_at / updated_at */
-  protected $timestamps = true;
-
-  /** @var string 创建时间字段名 */
-  protected $createTime = 'created_at';
-
-  /** @var string 更新时间字段名 */
-  protected $updateTime = 'updated_at';
-
-  /** @var bool 是否启用软删除（delete() 写 deleted_at 而非真删） */
-  protected $softDelete = true;
-
-  /** @var string 软删除标记字段名 */
-  protected $deleteTime = 'deleted_at';
-
   /**
    * timestamp / date 类型默认输出格式
    *
@@ -183,25 +230,44 @@ class Model extends Table
    */
   protected $dateFormat = 'Y-m-d H:i:s';
 
-  /**
-   * 软删除过滤是否生效
-   *
-   * 默认 true（查询自动加 WHERE deleted_at IS NULL）。
-   * 调用 withTrashed() / onlyTrashed() 后置为 false。
-   *
-   * @var bool
-   */
-  private $softDeleteActive = true;
+  // ===================================================================
+  // 属性：查询
+  // ===================================================================
 
   /**
-   * 当前行数据（键值对，存储的是 DB 兼容格式）
+   * 软删除作用域模式
    *
-   * 构造时按 $casts 填充各字段默认值。
-   * 写入通过 __set → castToDb 转换后存入；读取通过 __get → castFromDb 转换后返回。
+   * 取 TRASHED_* 常量之一。由 withTrashed() / onlyTrashed() / withoutTrashed() 修改，
+   * 并在 ModelBuilder 执行 SQL 前应用为实际的查询条件。
    *
-   * @var array<string, mixed>
+   * @var int
    */
-  private $data = [];
+  protected int $trashedScope = self::TRASHED_EXCLUDE;
+
+  /**
+   * 子类自定义的 Query 原型（可选）
+   *
+   * 仅供需要替换 Query 实现的子类在构造中赋值（如 DiscuzX 平台的 DiscuzXQuery）。
+   * **不要直接复用此实例做查询**——它只用于让 query() 得知该用哪个类；
+   * 每次查询都会用当前的 $tableName 新建一个该类的实例，从而避免状态累积。
+   *
+   * @var Query|null
+   */
+  protected $query = null;
+
+  // ===================================================================
+  // 属性：关联与数据
+  // ===================================================================
+
+  /**
+   * 待预加载的关联关系名列表
+   *
+   * 通过 with() 静态方法设置，由 scopedBuilder() 传给 ModelBuilder，
+   * 在 get/first/find 等终端方法执行时触发批量 eager loading。
+   *
+   * @var array<string>
+   */
+  private $eagerLoads = [];
 
   /**
    * 已加载的关联数据缓存
@@ -214,14 +280,14 @@ class Model extends Table
   private $relations = [];
 
   /**
-   * 待预加载的关联关系名列表
+   * 当前行数据（键值对，存储的是 DB 兼容格式）
    *
-   * 通过 with() 静态方法设置，在 get/first/find 等终端方法执行时
-   * 触发批量 eager loading。
+   * 构造时按 $casts 填充各字段默认值。
+   * 写入通过 __set → castToDb 转换后存入；读取通过 __get → castFromDb 转换后返回。
    *
-   * @var array<string>
+   * @var array<string, mixed>
    */
-  private $eagerLoads = [];
+  private $data = [];
 
   // ===================================================================
   // 构造 & 初始化
@@ -236,7 +302,6 @@ class Model extends Table
       $this->tableName = static::getDefaultTableName();
     }
     $this->tableName = $this->prefix($this->tableName);
-    $this->query     = new Query($this->tableName);
 
     // 1. 从 $schema 列定义推导字段类型 → $schemaCasts
     if (!empty($this->schema)) {
@@ -245,6 +310,11 @@ class Model extends Table
 
     // 2. 为 $casts 中声明的字段填充默认值
     foreach ($this->casts as $field => $type) {
+      // 软删除标记列不填默认值：它必须保持「无值」才能被 WHERE deleted_at IS NULL 命中。
+      // 若填充 0（unixtime/int 等类型的默认值），记录会被软删除作用域误判为已删除。
+      if ($field === $this->deleteTime) {
+        continue;
+      }
       $this->data[$field] = $this->castDefault($type);
     }
 
@@ -255,10 +325,24 @@ class Model extends Table
     $this->detectTimestamps();
     $this->detectSoftDelete();
 
-    // 5. 开启软删除过滤：后续查询自动追加 WHERE deleted_at IS NULL
-    $this->applySoftDeleteScope();
-
     parent::__construct();
+  }
+
+  /**
+   * 从类名自动推断数据库表名
+   *
+   * 规则：去 Model 后缀 → 驼峰转下划线 → 全小写
+   *
+   *   UserModel        → user
+   *   UserProfileModel → user_profile
+   *   PostCategory     → post_category
+   */
+  protected static function getDefaultTableName(): string
+  {
+    $class = (new \ReflectionClass(static::class))->getShortName();
+    $name  = preg_replace('/Model$/', '', $class);
+    $name  = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $name));
+    return $name;
   }
 
   /**
@@ -275,26 +359,6 @@ class Model extends Table
         return;
       }
     }
-  }
-
-  /**
-   * 如果 $casts 和 $schemaCasts 中都不存在 $deleteTime 字段，则关闭软删除
-   */
-  private function detectSoftDelete(): void
-  {
-    if (!$this->softDelete) {
-      return;
-    }
-    if (
-      array_key_exists($this->deleteTime, $this->casts)
-      || array_key_exists($this->deleteTime, $this->schemaCasts)
-    ) {
-      return;
-    }
-    if (empty($this->schema) && empty($this->casts)) {
-      return;
-    }
-    $this->softDelete = false;
   }
 
   /**
@@ -318,17 +382,101 @@ class Model extends Table
     $this->timestamps = false;
   }
 
+  /**
+   * 如果 $casts 和 $schemaCasts 中都不存在 $deleteTime 字段，则关闭软删除
+   */
+  private function detectSoftDelete(): void
+  {
+    if (!$this->softDelete) {
+      return;
+    }
+    if (
+      array_key_exists($this->deleteTime, $this->casts)
+      || array_key_exists($this->deleteTime, $this->schemaCasts)
+    ) {
+      return;
+    }
+    if (empty($this->schema) && empty($this->casts)) {
+      return;
+    }
+    $this->softDelete = false;
+  }
+
+  // ===================================================================
+  // 访问器（Getter）
+  // ===================================================================
+
+  /** 获取主键字段名 */
+  public function getPrimaryKey(): string
+  {
+    return $this->primaryKey;
+  }
+
+  /**
+   * 获取去前缀后的表名
+   *
+   * 用于自动推断关联外键时生成 `{表名}_{主键}` 格式的字段名。
+   * 例如 prefix='ruyi_', tableName='ruyi_users' → 返回 'users'
+   *
+   * @return string
+   */
+  public function getTableBaseName(): string
+  {
+    $prefix = Table::getPrefix();
+    if ($prefix && str_starts_with($this->tableName, $prefix)) {
+      return substr($this->tableName, strlen($prefix));
+    }
+    return $this->tableName;
+  }
+
+  /**
+   * 获取手动声明的字段类型映射
+   *
+   * @return array<string, string>
+   */
+  public function getCasts(): array
+  {
+    return $this->casts;
+  }
+
+  /**
+   * 获取当前软删除作用域模式
+   *
+   * @return int Model::TRASHED_*
+   */
+  public function getTrashedScope(): int
+  {
+    return $this->trashedScope;
+  }
+
+  /**
+   * 获取软删除标记字段名
+   *
+   * @return string
+   */
+  public function getDeleteTime(): string
+  {
+    return $this->deleteTime;
+  }
+
+  /**
+   * 获取当前声明的预加载关系
+   *
+   * @return array<string>
+   */
+  public function getEagerLoads(): array
+  {
+    return $this->eagerLoads;
+  }
+
   // ===================================================================
   // 类型转换引擎
-  //
+  // ===================================================================
   // 两条单向管道：
   //   castToDb()   ：PHP 值 → DB 兼容格式（写入时调用）
   //   castFromDb() ：DB 兼容格式 → PHP 期望类型（读取/输出时调用）
   //
-  // 辅助工具：
-  //   parseTimestamp() ：任意时间输入 → Unix 时间戳 int
-  //   formatTimestamp()：Unix 时间戳 + 格式 → 日期字符串
-  // ===================================================================
+  //   优先级：$casts > $schemaCasts；均未声明则不转换。
 
   /**
    * PHP → DB：将任意 PHP 值转为可直接写入数据库的格式
@@ -523,47 +671,97 @@ class Model extends Table
     return $result;
   }
 
-  /**
-   * 获取手动声明的字段类型映射
-   *
-   * @return array<string, string>
-   */
-  public function getCasts(): array
-  {
-    return $this->casts;
-  }
-
-  /**
-   * 从类名自动推断数据库表名
-   *
-   * 规则：去 Model 后缀 → 驼峰转下划线 → 全小写
-   *
-   *   UserModel        → user
-   *   UserProfileModel → user_profile
-   *   PostCategory     → post_category
-   */
-  protected static function getDefaultTableName(): string
-  {
-    $class = (new \ReflectionClass(static::class))->getShortName();
-    $name  = preg_replace('/Model$/', '', $class);
-    $name  = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $name));
-    return $name;
-  }
-
-  public function __clone()
-  {
-    $this->query = clone $this->query;
-  }
-
   // ===================================================================
-  // 方法转发：__callStatic / __call
+  // 查询入口
   // ===================================================================
+  // 四个入口构成 2×2 矩阵（是否返回构建器 × 是否应用作用域）：
+  //   scopedBuilder() / builder()  → ModelBuilder
+  //   query()        / scopedQuery() → Query
+  //
+  //   每次调用都返回全新实例，不共享任何查询状态。
 
   /**
-   * 静态调用代理：自动实例化后转发到实例方法
+   * 创建一次性的查询构建器（含全局作用域）
    *
-   *   UserModel::where('status', 1)->first()  → new UserModel → __call('where') → __call('first')
-   *   UserModel::count()                       → new UserModel → __call('count')
+   * 每次调用返回全新的 ModelBuilder，内部持有全新的 Query 实例，
+   * 因此两次查询之间不会共享任何条件、排序、绑定参数。
+   *
+   * 这是所有查询的统一入口，替代早期「共享 $this->query」的写法。
+   *
+   * 需要不包含作用域的构建器请用 builder()，仅取 Query 请用 query() / scopedQuery()。
+   *
+   * @return ModelBuilder
+   *
+   * @example
+   * UserModel::scopedBuilder()->where('status', 1)->get();
+   *
+   * @see ModelBuilder
+   */
+  public function scopedBuilder(): ModelBuilder
+  {
+    return new ModelBuilder($this, $this->eagerLoads, $this->trashedScope);
+  }
+
+  /**
+   * 创建不带全局作用域的查询构建器
+   *
+   * 用于 Active Record 内部操作（save / delete / restore），
+   * 避免软删除条件干扰对已删除记录的写入。
+   *
+   * 与 scopedBuilder() 的唯一区别是不应用软删除作用域。
+   *
+   * @return ModelBuilder
+   */
+  public function builder(): ModelBuilder
+  {
+    return new ModelBuilder($this, $this->eagerLoads, self::TRASHED_INCLUDE);
+  }
+
+  /**
+   * 创建全新的裸 Query 实例（不含任何作用域）
+   *
+   * 每次调用都是独立实例。供 ModelBuilder 构造、内部写操作、
+   * 以及需要绕过软删除的作用域的组件使用。
+   *
+   * 子类若在构造中为 $query 赋了自定义 Query 实例（如 DiscuzXQuery），
+   * 这里会沿用同一个类，但用**当前**的 $tableName 新建，
+   * 既保留了自定义实现，又不会复用任何查询状态。
+   *
+   * 需要带作用域时请用 scopedQuery()。
+   *
+   * @return Query
+   */
+  public function query(): Query
+  {
+    if ($this->query instanceof Query) {
+      $class = get_class($this->query);
+
+      return new $class($this->tableName);
+    }
+
+    return new Query($this->tableName);
+  }
+
+  /**
+   * 获取带全局作用域的 Query 实例
+   *
+   * 返回全新的 Query，且已应用软删除等全局作用域。
+   * 供 Relation 等需要脱离 ModelBuilder、但又要遵守作用域的组件使用。
+   *
+   * 与 query() 的区别：后者不含任何作用域。
+   *
+   * @return Query
+   */
+  public function scopedQuery(): Query
+  {
+    return $this->scopedBuilder()->toQuery();
+  }
+
+  /**
+   * 静态调用代理：自动实例化后转发到查询构建器
+   *
+   *   UserModel::where('status', 1)->get()  → new UserModel → scopedBuilder() → where() → get()
+   *   UserModel::count()                     → new UserModel → scopedBuilder() → count()
    */
   public static function __callStatic($method, $parameters)
   {
@@ -571,19 +769,20 @@ class Model extends Table
   }
 
   /**
-   * 实例方法代理：未定义方法自动转发给底层 Query 对象
+   * 实例方法代理：未定义方法转发给新的查询构建器
    *
-   * 若 Query 方法返回 Query 自身（链式方法如 where / orderBy），
-   * 替换为 $this 以保证 Model 链不间断。
+   * 每次调用都开启一条全新的查询链，链式方法由 ModelBuilder 承接并返回自身，
+   * 因此后续链式调用不再经过本方法，也就不会重复创建构建器。
    *
-   * 对于 get/first 等终端方法，自动检测并执行 eager loading。
+   * find() 是唯一例外：需要把结果填充进**当前**实例而非返回新实例。
    */
   public function __call($method, $parameters)
   {
-    // find(id) 按主键查询，数据填充到当前实例（与 first 类似，但无需额外 query 链）
+    // find(id)：按主键查询，数据填充到当前实例
     if ($method === 'find') {
-      $id = $parameters[0] ?? null;
-      $row = $this->query->where($this->primaryKey, $id)->first();
+      $id  = $parameters[0] ?? null;
+      $row = $this->scopedBuilder()->where($this->primaryKey, $id)->first();
+
       if ($row) {
         foreach ($row as $key => $value) {
           $this->$key = $value;  // __set → castToDb，数据存入 $data
@@ -595,62 +794,37 @@ class Model extends Table
       return $this;
     }
 
-    $result = $this->query->$method(...$parameters);
+    return $this->scopedBuilder()->$method(...$parameters);
+  }
 
-    if ($result === $this->query) {
-      return $this;
+  // ===================================================================
+  // 结果转换 & 预加载
+  // ===================================================================
+
+  /**
+   * 将数据库行数据转为 Model 实例
+   *
+   * @param array  $row   数据库行数据
+   * @param string $class Model 类名（默认当前类）
+   * @return static
+   */
+  public function rowToModel(array $row, string $class = ''): Model
+  {
+    $class = $class ?: static::class;
+    /** @var Model $instance */
+    $instance = new $class();
+    foreach ($row as $key => $value) {
+      $instance->$key = $value;
     }
-
-    // 终端方法：检测 eager loading
-    $terminalMethods = ['get', 'all', 'first', 'value', 'pluck', 'paginate'];
-    if (in_array($method, $terminalMethods) && !empty($this->eagerLoads)) {
-      return $this->handleEagerLoads($method, $result);
-    }
-
-    return $result;
+    return $instance;
   }
 
   /**
-   * 处理 eager loading
-   *
-   * 将查询结果转为 Model 实例，然后批量预加载关联数据。
-   *
-   * @param string $method 终端方法名
-   * @param mixed  $result Query 查询结果
-   * @return mixed
+   * 设置关联数据缓存（用于 eager loading 分发）
    */
-  private function handleEagerLoads(string $method, mixed $result): mixed
+  public function setRelation(string $name, mixed $value): void
   {
-    if ($result === null || $result === false || (is_array($result) && empty($result))) {
-      return $result;
-    }
-
-    switch ($method) {
-      case 'first':
-        $model = $this->rowToModel($result);
-        if ($model) {
-          $this->eagerLoadRelations([$model]);
-        }
-        return $model;
-
-      case 'get':
-      case 'all':
-        $models = array_map(fn($row) => $this->rowToModel($row), $result);
-        $this->eagerLoadRelations($models);
-        return $models;
-
-      case 'paginate':
-        if ($result instanceof \kernel\Foundation\Database\PDO\Paginator) {
-          $items = $result->getItems();
-          $models = array_map(fn($row) => $this->rowToModel($row), $items);
-          $this->eagerLoadRelations($models);
-          $result->setItems($models);
-        }
-        return $result;
-
-      default:
-        return $result;
-    }
+    $this->relations[$name] = $value;
   }
 
   /**
@@ -660,7 +834,7 @@ class Model extends Table
    *
    * @param array<static> $models Model 实例数组
    */
-  private function eagerLoadRelations(array $models): void
+  public function eagerLoadRelations(array $models): void
   {
     if (empty($models) || empty($this->eagerLoads)) {
       return;
@@ -746,34 +920,8 @@ class Model extends Table
     $this->eagerLoads = [];
   }
 
-  /**
-   * 将数据库行数据转为 Model 实例
-   *
-   * @param array  $row   数据库行数据
-   * @param string $class Model 类名（默认当前类）
-   * @return static
-   */
-  private function rowToModel(array $row, string $class = ''): Model
-  {
-    $class = $class ?: static::class;
-    /** @var Model $instance */
-    $instance = new $class();
-    foreach ($row as $key => $value) {
-      $instance->$key = $value;
-    }
-    return $instance;
-  }
-
-  /**
-   * 设置关联数据缓存（用于 eager loading 分发）
-   */
-  public function setRelation(string $name, mixed $value): void
-  {
-    $this->relations[$name] = $value;
-  }
-
   // ===================================================================
-  // 属性读写：__get / __set
+  // 属性读写：__get / __isset / __set
   // ===================================================================
 
   /**
@@ -809,6 +957,36 @@ class Model extends Table
   }
 
   /**
+   * 判断属性是否存在（isset() / ?? 运算符会走这里）
+   *
+   * 必须与 __get() 的解析优先级保持一致，否则 `$model->field ?? '默认值'`
+   * 会因为 __isset() 返回 false 而永远拿不到 $data 与关联里的真实值。
+   *
+   * 判定顺序：类 property → 已缓存的关联 → $data 字段 → 可懒加载的关联方法
+   *
+   * 注意遵循 isset() 语义：值为 null 时一律返回 false。
+   */
+  public function __isset($name): bool
+  {
+    if (property_exists($this, $name)) {
+      return isset($this->$name);
+    }
+
+    // 已缓存的关联数据（含 eager loading 写入的结果）
+    if (array_key_exists($name, $this->relations)) {
+      return $this->relations[$name] !== null;
+    }
+
+    // $data 中的字段
+    if (array_key_exists($name, $this->data)) {
+      return $this->data[$name] !== null;
+    }
+
+    // 可懒加载的关联关系
+    return method_exists($this, $name);
+  }
+
+  /**
    * 写入属性
    *
    * 自动通过 castToDb 转为 DB 兼容格式后存入 $data。
@@ -821,7 +999,7 @@ class Model extends Table
   }
 
   // ===================================================================
-  // Active Record：CRUD
+  // Active Record：写入
   // ===================================================================
 
   /**
@@ -844,37 +1022,26 @@ class Model extends Table
     if ($pkValue !== $default) {
       // UPDATE
       $this->touchTimestamps();
-      $this->query->where($pk, $pkValue)->update($this->data);
+      $this->query()->where($pk, $pkValue)->update($this->data);
       return $this;
     }
 
     // INSERT
     $this->touchTimestamps(true);
-    $id = $this->query->insertGetId($this->data);
+
+    // 剔除主键：其值仍是默认值（0 / ''），必须让数据库自行生成自增 ID。
+    // 若连同 `id` = 0 一起写入，MySQL/SQLite 会真的存入 0，lastInsertId() 返回 0，
+    // 导致回填失败且后续 save() 永远走 INSERT。
+    $insertData = $this->data;
+    if (!array_key_exists($pk, $insertData) || $insertData[$pk] === $default) {
+      unset($insertData[$pk]);
+    }
+
+    $id = $this->query()->insertGetId($insertData);
     if ($id) {
       $this->data[$pk] = $id;
     }
     return $this;
-  }
-
-  /**
-   * 获取当前时间戳（毫秒精度）
-   *
-   * 返回毫秒级 Unix 时间戳 int，由 castToDb 根据字段类型决定最终的 DB 存储格式。
-   * 子类可覆盖以自定义时间来源。
-   */
-  protected function freshTimestamp(): int
-  {
-    $now = time();
-    return (int) ($now * 1000 + (int) date('v'));
-  }
-
-  /**
-   * 时间戳自动维护是否启用
-   */
-  protected function usesTimestamps(): bool
-  {
-    return $this->timestamps;
   }
 
   /**
@@ -899,8 +1066,28 @@ class Model extends Table
     }
   }
 
+  /**
+   * 获取当前时间戳（毫秒精度）
+   *
+   * 返回毫秒级 Unix 时间戳 int，由 castToDb 根据字段类型决定最终的 DB 存储格式。
+   * 子类可覆盖以自定义时间来源。
+   */
+  protected function freshTimestamp(): int
+  {
+    $now = time();
+    return (int) ($now * 1000 + (int) date('v'));
+  }
+
+  /**
+   * 时间戳自动维护是否启用
+   */
+  protected function usesTimestamps(): bool
+  {
+    return $this->timestamps;
+  }
+
   // ===================================================================
-  // 删除（含软删除）
+  // Active Record：删除与恢复
   // ===================================================================
 
   /**
@@ -926,18 +1113,18 @@ class Model extends Table
       $dbValue = $this->castToDb($deleteType, $nowMs);
       $this->data[$this->deleteTime] = $dbValue;
       if ($pkValue !== $default) {
-        return (bool) $this->query->where($pk, $pkValue)->update([
+        return (bool) $this->query()->where($pk, $pkValue)->update([
           $this->deleteTime => $dbValue,
         ]);
       }
-      return (bool) $this->query->update([$this->deleteTime => $dbValue]);
+      return (bool) $this->query()->update([$this->deleteTime => $dbValue]);
     }
 
     // 真删除
     if ($pkValue !== $default) {
-      return $this->query->where($pk, $pkValue)->delete($params);
+      return $this->query()->where($pk, $pkValue)->delete($params);
     }
-    return $this->query->delete($params);
+    return $this->query()->delete($params);
   }
 
   /**
@@ -952,9 +1139,9 @@ class Model extends Table
     $default  = $this->castDefault($this->schemaCasts[$pk] ?? $this->casts[$pk] ?? 'int');
 
     if ($pkValue !== $default) {
-      return $this->query->where($pk, $pkValue)->delete($params);
+      return $this->query()->where($pk, $pkValue)->delete($params);
     }
-    return $this->query->delete($params);
+    return $this->query()->delete($params);
   }
 
   /**
@@ -969,7 +1156,7 @@ class Model extends Table
     $default  = $this->castDefault($this->schemaCasts[$pk] ?? $this->casts[$pk] ?? 'int');
 
     if ($pkValue !== $default) {
-      $this->withTrashed()->query->where($pk, $pkValue)->update([
+      $this->builder()->where($pk, $pkValue)->update([
         $this->deleteTime => null,
       ]);
       $this->data[$this->deleteTime] = null;
@@ -984,7 +1171,7 @@ class Model extends Table
   }
 
   /** 软删除功能是否启用 */
-  protected function usesSoftDelete(): bool
+  public function usesSoftDelete(): bool
   {
     return $this->softDelete;
   }
@@ -996,78 +1183,42 @@ class Model extends Table
   /**
    * 查询范围：包含已软删除的记录
    *
-   * 去掉自动追加的 WHERE deleted_at IS NULL，数据包含软删和未删。
-   * 注意：会重置当前已构建的查询条件。
+   * 返回不含软删除过滤的查询构建器，数据包含软删和未删。
    *
-   * @return $this
+   * @return ModelBuilder
+   *
+   * @example
+   * UserModel::withTrashed()->where('id', 1)->first();
    */
-  public function withTrashed(): static
+  public function withTrashed(): ModelBuilder
   {
-    $this->query->reset();
-    $this->softDeleteActive = false;
-    return $this;
+    $this->trashedScope = self::TRASHED_INCLUDE;
+
+    return $this->scopedBuilder();
   }
 
   /**
    * 查询范围：仅查询已软删除的记录（WHERE deleted_at IS NOT NULL）
    *
-   * 注意：会重置当前已构建的查询条件。
-   *
-   * @return $this
+   * @return ModelBuilder
    */
-  public function onlyTrashed(): static
+  public function onlyTrashed(): ModelBuilder
   {
-    $this->query->reset();
-    $this->softDeleteActive = false;
-    $this->query->whereNotNull($this->tableName . '.' . $this->deleteTime);
-    return $this;
+    $this->trashedScope = self::TRASHED_ONLY;
+
+    return $this->scopedBuilder();
   }
 
   /**
-   * 在 Query 上全局应用软删除过滤（WHERE deleted_at IS NULL）
+   * 查询范围：仅查询未软删除的记录（WHERE deleted_at IS NULL，默认行为）
    *
-   * 构造时自动调用一次；后续需手动调用 withTrashed / onlyTrashed 覆盖。
+   * @return ModelBuilder
    */
-  private function applySoftDeleteScope(): void
+  public function withoutTrashed(): ModelBuilder
   {
-    if ($this->usesSoftDelete() && $this->softDeleteActive) {
-      $this->query->whereNull($this->tableName . '.' . $this->deleteTime);
-    }
-  }
+    $this->trashedScope = self::TRASHED_EXCLUDE;
 
-  /** 获取主键字段名 */
-  public function getPrimaryKey(): string
-  {
-    return $this->primaryKey;
-  }
-
-  /**
-   * 获取底层 Query 构建器实例
-   *
-   * 用于 Relation 等组件获取 Query 来构建关联查询。
-   *
-   * @return Query
-   */
-  public function getQuery(): Query
-  {
-    return $this->query;
-  }
-
-  /**
-   * 获取去前缀后的表名
-   *
-   * 用于自动推断关联外键时生成 `{表名}_{主键}` 格式的字段名。
-   * 例如 prefix='ruyi_', tableName='ruyi_users' → 返回 'users'
-   *
-   * @return string
-   */
-  public function getTableBaseName(): string
-  {
-    $prefix = Table::getPrefix();
-    if ($prefix && str_starts_with($this->tableName, $prefix)) {
-      return substr($this->tableName, strlen($prefix));
-    }
-    return $this->tableName;
+    return $this->scopedBuilder();
   }
 
   // ===================================================================
@@ -1253,4 +1404,6 @@ class Model extends Table
   {
     return json_encode($this->toArray(), $flags);
   }
+
 }
+

@@ -20,12 +20,48 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * (new Query('users'))->where('id', 1)->first();
  * ```
  *
+ * ## 实例状态（重要）
+ *
+ * 本实例会保留已构建的查询状态。**仅在执行写操作后自动 reset()**，
+ * 读操作（get / first / count 等）执行后不会重置，连续查询会导致条件累积：
+ *
+ * ```php
+ * $query = Query::table('users');
+ * $query->where('status', 1)->get();
+ * $query->where('age', 18)->get();   // 实为 WHERE status = 1 AND age = 18
+ * ```
+ *
+ * 需要复用时请手动 reset() 或每次新建实例；
+ * 涉及 Model 的查询建议走 ModelBuilder，它每次都创建全新的 Query。
+ *
+ * ## 代码组织（自上而下）
+ *
+ *   属性（驱动与执行状态 / 查询构建状态 / 参数绑定 / SQL 输出）
+ *   → 构造与驱动 → 查询状态 → 参数绑定 → SQL 生成 → SQL 片段与表达式
+ *   → FROM 与 JOIN → SELECT 字段 → ORDER BY → GROUP BY → LIMIT/OFFSET/分页
+ *   → WHERE 条件 → OR WHERE 条件 → 条件过滤
+ *   → 结果获取 → 聚合函数 → 存在性判断 → 写操作
+ *
  * @method static Query table(string|null $tableName = null, Driver|null $databaseDriver = null) 创建 Query 实例并指定表名
+ *
+ * @see Model        在 Query 之上提供 ActiveRecord 与类型转换
+ * @see ModelBuilder 每次查询创建全新 Query，无状态残留
  */
-
-
 class Query extends AbilityBaseObject
 {
+  // ===================================================================
+  // 属性：驱动与执行状态
+  // ===================================================================
+
+  /**
+   * 数据库驱动实例
+   * 
+   * 负责实际执行 SQL 查询、参数绑定、结果获取等底层操作
+   * 
+   * @var Driver
+   */
+  protected $databaseDriver = null;
+
   /**
    * 当前 SQL 操作类型
    * 
@@ -35,6 +71,22 @@ class Query extends AbilityBaseObject
    * @var string
    */
   private $executeType = "";
+
+  /**
+   * 执行后是否自动重置查询参数
+   * 
+   * 默认为 true。执行写操作（INSERT/UPDATE/DELETE）后会自动重置查询状态，
+   * 仅清空 conditions/orders/select 等构建选项，保留 from（表名）与 databaseDriver。
+   * 适用于需要在多次执行中复用同一查询参数的场景（如 chunk 分块、paginate 分页）
+   * 
+   * @var boolean
+   */
+  protected $executeReset = true;
+
+  // ===================================================================
+  // 属性：查询构建状态
+  // ===================================================================
+
   /**
    * 查询选项数组
    * 
@@ -55,6 +107,7 @@ class Query extends AbilityBaseObject
    * @var array
    */
   private $options = [];
+
   /**
    * 可空过滤条件集合
    * 
@@ -64,31 +117,7 @@ class Query extends AbilityBaseObject
    * @var array
    */
   private $filterNullConditions = [];
-  /**
-   * 当前构建的 SQL 语句
-   * 
-   * 由 generateSQL() 生成并缓存，供执行方法使用
-   * 
-   * @var string
-   */
-  protected $sql = "";
-  /**
-   * 执行后是否自动重置查询参数
-   * 
-   * 默认为 true。设置为 false（通过 notReset()）后可保持查询状态，
-   * 适用于需要在多次执行中复用同一查询参数的场景（如 chunk 分块、paginate 分页）
-   * 
-   * @var boolean
-   */
-  protected $executeReset = true;
-  /**
-   * 数据库驱动实例
-   * 
-   * 负责实际执行 SQL 查询、参数绑定、结果获取等底层操作
-   * 
-   * @var Driver
-   */
-  protected $databaseDriver = null;
+
   /**
    * 标识当前查询是否为子查询子句
    * 
@@ -98,6 +127,11 @@ class Query extends AbilityBaseObject
    * @var boolean
    */
   protected $clause = false;
+
+  // ===================================================================
+  // 属性：参数绑定
+  // ===================================================================
+
   /**
    * 参数绑定数组
    * 
@@ -108,6 +142,7 @@ class Query extends AbilityBaseObject
    * @var array
    */
   protected $bindings = [];
+
   /**
    * 自增绑定计数器
    * 
@@ -117,6 +152,24 @@ class Query extends AbilityBaseObject
    * @var int
    */
   private $bindingCounter = 0;
+
+  // ===================================================================
+  // 属性：SQL 输出
+  // ===================================================================
+
+  /**
+   * 当前构建的 SQL 语句
+   * 
+   * 由 generateSQL() 生成并缓存，供执行方法使用
+   * 
+   * @var string
+   */
+  protected $sql = "";
+
+  // ===================================================================
+  // 构造与驱动
+  // ===================================================================
+
   /**
    * 构造查询构建器实例
    *
@@ -137,6 +190,18 @@ class Query extends AbilityBaseObject
     ];
     $this->databaseDriver = $databaseDriver ?: Connections::getUseDriver();
   }
+
+  /**
+   * 允许克隆查询实例
+   *
+   * 父级 BaseObject 将 __clone 私有化以保证单例唯一性，但 Query 是
+   * 有状态的可变构建器，paginate()/chunk() 等方法需要基于当前实例克隆
+   * 出独立副本来执行 COUNT 等辅助查询，因此此处显式开放克隆。
+   */
+  public function __clone()
+  {
+  }
+
   /**
    * 设置执行 SQL 时使用的数据库驱动
    * 
@@ -156,6 +221,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 获取当前使用的数据库驱动
    * 
@@ -171,6 +237,7 @@ class Query extends AbilityBaseObject
   {
     return $this->databaseDriver;
   }
+
   /**
    * 获取当前查询绑定的表名
    * @return string|null
@@ -179,6 +246,7 @@ class Query extends AbilityBaseObject
   {
     return $this->options['from']['tableName'] ?? null;
   }
+
   /**
    * 静态工厂：创建 Query 实例并指定表名
    *
@@ -196,6 +264,13 @@ class Query extends AbilityBaseObject
   {
     return new Query($tableName, $databaseDriver);
   }
+
+  // ===================================================================
+  // 查询状态
+  // ===================================================================
+  // reset() 清空所有查询状态；默认在执行**写操作**后自动调用，
+  // 读操作（get/first/count 等）执行后不会自动重置，需手动 reset() 或每次新建实例。
+
   /**
    * 填充执行类型与选项
    *
@@ -212,6 +287,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 重置查询参数
    * 
@@ -227,14 +303,15 @@ class Query extends AbilityBaseObject
    * 
    * @return $this 返回当前实例以支持链式调用
    * 
-   * @see notReset() 禁止自动重置
    * @see executeWrite() 内部调用的重置触发点
    */
   function reset()
   {
     if ($this->executeReset) {
+      $from = $this->options['from'] ?? null;
       $this->executeType = null;
       $this->options = [
+        "from" => $from,
         "orders" => [],
         "select" => [
           "fields" => [],
@@ -257,6 +334,13 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
+  // ===================================================================
+  // 参数绑定
+  // ===================================================================
+  // bindings 存储预处理占位符与值的映射；执行时由 mergeBindings() 与调用参数合并，
+  // 内部绑定（如 WHERE IN 自动生成的占位符）优先于外部传入的同名参数。
+
   /**
    * 添加绑定参数
    *
@@ -279,6 +363,7 @@ class Query extends AbilityBaseObject
     $this->bindings[$key] = $value;
     return $this;
   }
+
   /**
    * 批量添加绑定参数
    *
@@ -298,6 +383,7 @@ class Query extends AbilityBaseObject
     }
     return $this;
   }
+
   /**
    * 获取所有累积的绑定参数
    *
@@ -307,6 +393,7 @@ class Query extends AbilityBaseObject
   {
     return $this->bindings;
   }
+
   /**
    * 生成唯一的内部占位符名称
    *
@@ -316,6 +403,7 @@ class Query extends AbilityBaseObject
   {
     return ':__in_' . ($this->bindingCounter++);
   }
+
   /**
    * 合并累积的绑定参数与传入参数
    *
@@ -331,32 +419,13 @@ class Query extends AbilityBaseObject
     }
     return $this->bindings + $params;
   }
-  /**
-   * 禁止执行后自动重置查询参数
-   * 
-   * 设置后 INSERT/UPDATE/DELETE 执行完毕不会清空 options，
-   * 适用于需要在多次执行中保持查询状态的场景。
-   * 
-   * @return $this 返回当前实例以支持链式调用
-   * 
-   * @example
-   * // 分块处理时不希望每次重置导致丢失条件
-   * $query->from('logs')->where('status', 'pending')->notReset();
-   * do {
-   *     $items = $query->page($page, 100)->get();
-   *     // 处理数据...
-   *     $page++;
-   * } while (!empty($items));
-   * 
-   * @see reset() 重置查询参数的核心方法
-   * @see chunk() 内部使用 notReset 保持查询条件
-   */
-  function notReset()
-  {
-    $this->executeReset = false;
 
-    return $this;
-  }
+  // ===================================================================
+  // SQL 生成
+  // ===================================================================
+  // generateSQL() 根据 executeType 与 options 拼装完整 SQL；
+  // getSQL() 取其结果用于调试；writeSql() 供外部设置写操作状态后取 SQL 自行执行。
+
   /**
    * 获取当前查询对应的 SQL 语句（调试用）
    * 
@@ -375,6 +444,7 @@ class Query extends AbilityBaseObject
   {
     return $this->generateSQL();
   }
+
   /**
    * 根据当前选项生成完整 SQL 语句
    * 
@@ -404,6 +474,7 @@ class Query extends AbilityBaseObject
       "groupBy" => null
     ];
 
+    $from = null;
     if ($this->options['from']) {
       $from = $this->options['from']['tableName'];
       $asName = $this->options['from']['asName'];
@@ -470,6 +541,31 @@ class Query extends AbilityBaseObject
 
     return join(" ", $SQLs);
   }
+
+  /**
+   * 设置写操作状态并返回 SQL（不执行，供外层获取 SQL 后自行执行）
+   *
+   * @param  string      $type    操作类型: insert, replace, update, delete
+   * @param  mixed       $data    数据（insert/replace/update 需要）
+   * @param  array       $options 额外选项，如 ['insertIsIgnore' => true]
+   * @return string
+   */
+  public function writeSql($type, $data = null, $options = [])
+  {
+    $this->executeType = $type;
+    if (in_array($type, ['insert', 'replace'])) {
+      $this->options['insertData'] = $data;
+      $this->options['insertIsIgnore'] = $options['insertIsIgnore'] ?? false;
+    } elseif ($type === 'update') {
+      $this->options['updateData'] = $data;
+    }
+    return $this->generateSQL();
+  }
+
+  // ===================================================================
+  // SQL 片段与表达式
+  // ===================================================================
+
   /**
    * 创建原始 SQL 表达式包装器
    * 
@@ -495,6 +591,11 @@ class Query extends AbilityBaseObject
   {
     return new Statement($sql);
   }
+
+  // ===================================================================
+  // FROM 与 JOIN
+  // ===================================================================
+
   /**
    * 设置查询的主表
    * 
@@ -517,6 +618,7 @@ class Query extends AbilityBaseObject
     $this->options['from']['asName'] = $ASName;
     return $this;
   }
+
   /**
    * 设置子查询作为数据源
    * 
@@ -539,6 +641,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 添加 JOIN 子句
    *
@@ -574,6 +677,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 添加 LEFT JOIN 子句
    * @param string $table 关联表名
@@ -586,6 +690,7 @@ class Query extends AbilityBaseObject
   {
     return $this->join($table, $first, $operator, $second, 'LEFT');
   }
+
   /**
    * 添加 RIGHT JOIN 子句
    * @param string $table 关联表名
@@ -598,6 +703,7 @@ class Query extends AbilityBaseObject
   {
     return $this->join($table, $first, $operator, $second, 'RIGHT');
   }
+
   /**
    * 添加 INNER JOIN 子句
    * @param string $table 关联表名
@@ -610,6 +716,11 @@ class Query extends AbilityBaseObject
   {
     return $this->join($table, $first, $operator, $second, 'INNER');
   }
+
+  // ===================================================================
+  // SELECT 字段
+  // ===================================================================
+
   /**
    * 设置查询字段
    *
@@ -633,6 +744,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置原始SQL查询字段
    * 
@@ -659,6 +771,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 添加查询字段
    * 
@@ -703,6 +816,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置子查询作为查询字段
    * 
@@ -730,6 +844,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置去重查询
    * 
@@ -761,6 +876,11 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
+  // ===================================================================
+  // ORDER BY 排序
+  // ===================================================================
+
   /**
    * 设置排序条件
    * 
@@ -791,6 +911,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置原始SQL排序条件
    * 
@@ -816,6 +937,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置随机排序
    * 
@@ -841,6 +963,11 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
+  // ===================================================================
+  // GROUP BY 分组
+  // ===================================================================
+
   /**
    * 设置分组条件
    * 
@@ -865,6 +992,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 原始 SQL GROUP BY 子句
    * 
@@ -892,6 +1020,11 @@ class Query extends AbilityBaseObject
   {
     return $this->groupBy(new Statement($rawSQL));
   }
+
+  // ===================================================================
+  // LIMIT / OFFSET / 分页
+  // ===================================================================
+
   /**
    * 设置查询结果数量限制（LIMIT）
    * 
@@ -914,6 +1047,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置查询结果数量限制（LIMIT 的别名）
    * 
@@ -931,6 +1065,7 @@ class Query extends AbilityBaseObject
   {
     return $this->limit($value);
   }
+
   /**
    * 设置查询结果的偏移量（OFFSET）
    * 
@@ -954,6 +1089,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 设置查询结果的偏移量（OFFSET 的别名）
    * 
@@ -972,6 +1108,7 @@ class Query extends AbilityBaseObject
   {
     return $this->offset($value);
   }
+
   /**
    * 基于页码的便捷分页
    * 
@@ -999,6 +1136,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 分页查询（含总数统计）
    * 
@@ -1038,6 +1176,13 @@ class Query extends AbilityBaseObject
 
     return new Paginator($Items, $page, $perPage, $Total);
   }
+
+  // ===================================================================
+  // WHERE 条件
+  // ===================================================================
+  // where* 系列默认以 AND 连接；对应的 orWhere* 系列见下一分区。
+  // addWhere() 是所有 where 方法的统一入口，resolveWhereArgs() 负责参数重载解析。
+
   /**
    * 核心条件添加方法
    * 
@@ -1155,6 +1300,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * 基础 WHERE 条件
    *
@@ -1204,6 +1350,7 @@ class Query extends AbilityBaseObject
     }
     return [null, $op];
   }
+
   /**
    * 原始 SQL WHERE 条件
    * 
@@ -1219,6 +1366,7 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
   /**
    * BETWEEN 范围条件
    * 
@@ -1243,6 +1391,7 @@ class Query extends AbilityBaseObject
       $max
     ]);
   }
+
   /**
    * NOT BETWEEN 范围条件
    * 
@@ -1267,6 +1416,7 @@ class Query extends AbilityBaseObject
       $max
     ]);
   }
+
   /**
    * IN 列表条件
    * 
@@ -1293,6 +1443,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "IN", $valueOrQuery);
   }
+
   /**
    * NOT IN 列表条件
    * 
@@ -1317,6 +1468,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "NOT IN", $valueOrQuery);
   }
+
   /**
    * IS NULL 条件
    * 
@@ -1336,6 +1488,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "IS NULL", null);
   }
+
   /**
    * IS NOT NULL 条件
    * 
@@ -1355,6 +1508,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "IS NOT NULL", null);
   }
+
   /**
    * LIKE 模糊匹配条件
    * 
@@ -1379,6 +1533,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "LIKE", $value);
   }
+
   /**
    * NOT LIKE 不匹配条件
    * 
@@ -1399,6 +1554,7 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere($column, "NOT LIKE", $value);
   }
+
   /**
    * 列与列比较条件
    * 
@@ -1429,6 +1585,7 @@ class Query extends AbilityBaseObject
 
     return $this->addWhere($column1, $operator, $column2, "AND", null, "columnComparsion");
   }
+
   /**
    * 日期/时间函数条件通用方法
    * 
@@ -1626,6 +1783,12 @@ class Query extends AbilityBaseObject
   {
     return $this->addWhere(null, null, $queryOrCallable, "AND", "NOT EXISTS", "func");
   }
+
+  // ===================================================================
+  // OR WHERE 条件
+  // ===================================================================
+  // 与上一分区一一对应，仅连接符为 OR。
+
   /**
    * OR WHERE 条件
    *
@@ -2029,6 +2192,10 @@ class Query extends AbilityBaseObject
     return $this->addWhere(null, null, $queryOrCallable, "OR", "NOT EXISTS", "func");
   }
 
+  // ===================================================================
+  // 条件过滤（批量构建）
+  // ===================================================================
+
   /**
    * 从数组中批量添加过滤条件，自动跳过空值
    *
@@ -2063,6 +2230,12 @@ class Query extends AbilityBaseObject
 
     return $this;
   }
+
+  // ===================================================================
+  // 结果获取
+  // ===================================================================
+  // first/value/get/pluck 为一次性取结果；cursor/chunk 系列用于大结果集的流式处理。
+
   /**
    * 获取查询结果的第一条记录
    * 
@@ -2087,11 +2260,24 @@ class Query extends AbilityBaseObject
   function first($params = [])
   {
     $this->executeType = "select";
-    $this->limit(1);
+
+    // 仅在调用方未显式设置 LIMIT 时才加 LIMIT 1，并在执行后恢复，
+    // 避免污染本实例后续的查询（first() 后直接 get() 会只剩 1 条）
+    $originLimit = $this->options['pagination']['limit'] ?? null;
+    if ($originLimit === null) {
+      $this->limit(1);
+    }
+
     $this->sql = $this->generateSQL();
-    $data = $this->databaseDriver->first($this->sql, $this->mergeBindings($params));
+    $data = $this->databaseDriver->fetch($this->sql, $this->mergeBindings($params));
+
+    if ($originLimit === null) {
+      $this->options['pagination']['limit'] = null;
+    }
+
     return $data ?: false;
   }
+
   /**
    * 获取第一条记录的指定列值
    * 
@@ -2122,6 +2308,7 @@ class Query extends AbilityBaseObject
 
     return $data[$column];
   }
+
   /**
    * 获取所有查询结果
    * 
@@ -2146,10 +2333,11 @@ class Query extends AbilityBaseObject
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->all($this->sql, $this->mergeBindings($params));
+    $data = $this->databaseDriver->fetchAll($this->sql, $this->mergeBindings($params));
 
     return $data;
   }
+
   /**
    * 提取指定列的值作为数组
    * 
@@ -2182,10 +2370,11 @@ class Query extends AbilityBaseObject
     $this->executeType = "select";
     $this->sql = $this->generateSQL();
 
-    $data = $this->databaseDriver->all($this->sql, $this->mergeBindings($params));
+    $data = $this->databaseDriver->fetchAll($this->sql, $this->mergeBindings($params));
 
     return array_column($data, $column, $indexKey);
   }
+
   /**
    * 使用游标（Generator）逐行遍历查询结果
    * 
@@ -2229,6 +2418,7 @@ class Query extends AbilityBaseObject
       yield $record;
     }
   }
+
   /**
    * 分块处理查询结果
    * 
@@ -2252,7 +2442,7 @@ class Query extends AbilityBaseObject
    *     if ($page >= 10) return false; // 最多处理 10 页
    * });
    * 
-   * @note 使用 notReset() 避免每次分页重置查询条件
+   * @note 内部通过克隆查询实例执行分页，不会影响原查询条件
    * @note 大偏移量场景下 OFFSET 性能较差，考虑使用 chunkById()
    * @see chunkById() 基于 ID 的高效分块处理
    * @see chunkStream() 基于生成器的逐条流式处理
@@ -2266,7 +2456,7 @@ class Query extends AbilityBaseObject
       /**
        * @var Paginator
        */
-      $result = $this->notReset()->page($page, $size)->paginate();
+      $result = (clone $this)->page($page, $size)->paginate();
       $pageItems = $result->getPageSize();
       if ($pageItems === 0) {
         break;
@@ -2281,6 +2471,7 @@ class Query extends AbilityBaseObject
 
     return true;
   }
+
   /**
    * 基于 ID 的分块处理（高性能）
    * 
@@ -2338,6 +2529,7 @@ class Query extends AbilityBaseObject
 
     return true;
   }
+
   /**
    * 基于 ID 的分块流式处理（生成器）
    * 
@@ -2389,6 +2581,11 @@ class Query extends AbilityBaseObject
 
     return true;
   }
+
+  // ===================================================================
+  // 聚合函数
+  // ===================================================================
+
   /**
    * 聚合查询通用方法
    * 
@@ -2404,8 +2601,9 @@ class Query extends AbilityBaseObject
    */
   private function aggregate($func, $column, $params = [])
   {
-    $this->addSelect($this->raw("{$func}({$column})"));
-    $data = $this->first($params);
+    $query = clone $this;
+    $query->addSelect($query->raw("{$func}({$column})"));
+    $data = $query->first($params);
     return $data === false ? false : $data[array_key_first($data)];
   }
 
@@ -2537,6 +2735,11 @@ class Query extends AbilityBaseObject
   {
     return $this->aggregate("SUM", $column, $params);
   }
+
+  // ===================================================================
+  // 存在性判断
+  // ===================================================================
+
   /**
    * EXISTS / NOT EXISTS 查询通用方法
    * 
@@ -2555,7 +2758,7 @@ class Query extends AbilityBaseObject
     $this->sql = $this->generateSQL();
     $prefix = $not ? "NOT EXISTS" : "EXISTS";
     $this->sql = "SELECT {$prefix}({$this->sql}) as exist";
-    $data = $this->databaseDriver->first($this->sql, $this->mergeBindings($params));
+    $data = $this->databaseDriver->fetch($this->sql, $this->mergeBindings($params));
     return boolval($data[array_key_first($data)]);
   }
 
@@ -2597,25 +2800,12 @@ class Query extends AbilityBaseObject
   {
     return $this->checkExists(true, $params);
   }
-  /**
-   * 设置写操作状态并返回 SQL（不执行，供外层获取 SQL 后自行执行）
-   *
-   * @param  string      $type    操作类型: insert, replace, update, delete
-   * @param  mixed       $data    数据（insert/replace/update 需要）
-   * @param  array       $options 额外选项，如 ['insertIsIgnore' => true]
-   * @return string
-   */
-  public function writeSql($type, $data = null, $options = [])
-  {
-    $this->executeType = $type;
-    if (in_array($type, ['insert', 'replace'])) {
-      $this->options['insertData'] = $data;
-      $this->options['insertIsIgnore'] = $options['insertIsIgnore'] ?? false;
-    } elseif ($type === 'update') {
-      $this->options['updateData'] = $data;
-    }
-    return $this->generateSQL();
-  }
+
+  // ===================================================================
+  // 写操作（INSERT / UPDATE / DELETE）
+  // ===================================================================
+  // executeWrite() 是统一入口：生成 SQL → 合并绑定 → 执行 → 自动 reset()。
+  // 执行后返回受影响行数，且会清空查询状态（保留 from 与 databaseDriver）。
 
   /**
    * 执行写操作（INSERT/UPDATE/DELETE）的通用方法
@@ -2688,6 +2878,7 @@ class Query extends AbilityBaseObject
     $result = $this->executeWrite($params);
     return $returnId ? $this->databaseDriver->insertId() : $result;
   }
+
   /**
    * 执行插入操作并返回自增 ID
    * 
@@ -2712,6 +2903,7 @@ class Query extends AbilityBaseObject
   {
     return $this->insert($data, $isReplaceInto, $isIgnore, true, $params);
   }
+
   /**
    * 执行更新操作
    * 
@@ -2742,6 +2934,7 @@ class Query extends AbilityBaseObject
     $this->options['updateData'] = $data;
     return $this->executeWrite($params);
   }
+
   /**
    * 执行删除操作
    * 
@@ -2765,4 +2958,5 @@ class Query extends AbilityBaseObject
     $this->executeType = "delete";
     return $this->executeWrite($params);
   }
+
 }

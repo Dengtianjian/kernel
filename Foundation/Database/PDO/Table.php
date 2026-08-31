@@ -13,10 +13,26 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * ## 职责范围
  *
- * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`
- * - **信息查询**：`exists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
+ * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`（统一返回 bool）
+ * - **信息查询**：`tableExists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
  * - **表名管理**：`prefix()` 自动添加配置前缀，`prefixReplaces` 支持前缀占位替换
  * - **Schema 映射**：`getPhpSchema()` 将 `$schema` 中的 Schema 定义转换为字段→PHP类型映射
+ * - **SQL 执行**：`exec()` / `execQuery()` 底层执行；`select()` / `selectOne()` / `scalar()` 便捷查询
+ *
+ * ## 代码组织（自上而下）
+ *
+ *   属性（表基本信息 / 表前缀配置 / 表结构定义）
+ *   → 构造与表名 → DDL → 信息查询 → Schema 类型映射 → SQL 执行 → 内部方法
+ *
+ * ## exec 与 select 的分工
+ *
+ * | 方法 | 底层 | 结果集 | 适用 |
+ * |------|------|--------|------|
+ * | `exec($sql)` | `PDO::exec` | 否，返回行数 | INSERT/UPDATE/DELETE/DDL |
+ * | `execQuery($sql)` | `PDO::query` | 是，PDOStatement | 需自行控制取数 |
+ * | `select($sql, $bindings)` | `PDO::query` + fetchAll | 是，array | 读多行（推荐） |
+ *
+ * `SHOW` / `OPTIMIZE TABLE` 返回的是结果集，故信息查询方法一律走 `select()`。
  *
  * ## 表前缀机制
  *
@@ -35,8 +51,14 @@ use kernel\Foundation\Object\AbilityBaseObject;
  */
 class Table extends AbilityBaseObject
 {
+  // ===================================================================
+  // 属性：表基本信息
+  // ===================================================================
+
   /**
    * 数据表名称（含前缀）
+   *
+   * 构造时自动经 prefix() 补上配置前缀，后续所有 DDL / 信息查询都基于该值。
    *
    * @var string
    */
@@ -45,9 +67,16 @@ class Table extends AbilityBaseObject
   /**
    * DB 类名（子类可覆盖实现多态切换）
    *
+   * 所有 SQL 执行都通过 `$this->DB::xxx()` 转发，覆盖此属性即可整体切换
+   * 到另一个 DB 门面类（如读写分离场景切到从库门面）。
+   *
    * @var string
    */
   protected $DB = null;
+
+  // ===================================================================
+  // 属性：表前缀配置
+  // ===================================================================
 
   /**
    * 表前缀占位替换
@@ -57,6 +86,19 @@ class Table extends AbilityBaseObject
    * @var array<string, string>
    */
   protected $prefixReplaces = [];
+
+  /**
+   * 配置前缀缓存
+   *
+   * 首次调用 getPrefix() 时从配置读取并缓存，避免重复读取配置。
+   *
+   * @var string|null
+   */
+  private static $prefixCache = null;
+
+  // ===================================================================
+  // 属性：表结构定义
+  // ===================================================================
 
   /**
    * 表结构定义（DDL 用）
@@ -75,15 +117,8 @@ class Table extends AbilityBaseObject
    */
   public $schema = [];
 
-  /**
-   * 配置前缀缓存
-   *
-   * @var string|null
-   */
-  private static $prefixCache = null;
-
   // ===================================================================
-  // 构造
+  // 构造与表名
   // ===================================================================
 
   /**
@@ -98,10 +133,6 @@ class Table extends AbilityBaseObject
 
     $this->DB = DB::class;
   }
-
-  // ===================================================================
-  // 表名
-  // ===================================================================
 
   /**
    * 表名添加前缀
@@ -138,8 +169,14 @@ class Table extends AbilityBaseObject
   }
 
   // ===================================================================
-  // DDL
+  // DDL（表结构操作）
   // ===================================================================
+  //
+  // 全部统一返回 bool。
+  //
+  // 注意：PDO::exec 对 DDL 成功时返回 0，而 PHP 中 0 为 falsy，
+  // 因此内部统一用 `!== false` 判定，调用方可直接 if ($table->drop())。
+  //
 
   /**
    * 创建表
@@ -155,7 +192,9 @@ class Table extends AbilityBaseObject
     }
 
     $sql = Schema::createTableSQL($this->tableName, $this->schema);
-    return $this->query($sql);
+
+    // 见本分区说明：DDL 成功返回 0，需与 false 严格比较
+    return $this->exec($sql) !== false;
   }
 
   /**
@@ -165,7 +204,7 @@ class Table extends AbilityBaseObject
    */
   public function drop()
   {
-    return $this->query("DROP TABLE IF EXISTS `{$this->tableName}`");
+    return $this->exec("DROP TABLE IF EXISTS `{$this->tableName}`") !== false;
   }
 
   /**
@@ -175,7 +214,7 @@ class Table extends AbilityBaseObject
    */
   public function truncate()
   {
-    return $this->query("TRUNCATE TABLE `{$this->tableName}`");
+    return $this->exec("TRUNCATE TABLE `{$this->tableName}`") !== false;
   }
 
   /**
@@ -187,7 +226,8 @@ class Table extends AbilityBaseObject
   public function rename($newName)
   {
     $newName = $this->prefix($newName);
-    return $this->query("RENAME TABLE `{$this->tableName}` TO `{$newName}`");
+
+    return $this->exec("RENAME TABLE `{$this->tableName}` TO `{$newName}`") !== false;
   }
 
   /**
@@ -200,17 +240,27 @@ class Table extends AbilityBaseObject
   public function copy($newName, $withData = false)
   {
     $newName = $this->prefix($newName);
-    $this->query("CREATE TABLE `{$newName}` LIKE `{$this->tableName}`");
+
+    // 建表失败时直接返回 false，不必再尝试复制数据
+    if ($this->exec("CREATE TABLE `{$newName}` LIKE `{$this->tableName}`") === false) {
+      return false;
+    }
 
     if ($withData) {
-      return $this->query("INSERT INTO `{$newName}` SELECT * FROM `{$this->tableName}`");
+      // INSERT 是写操作，PDO::exec 返回受影响行数（0 表示无数据可复制，仍属成功）
+      return $this->exec("INSERT INTO `{$newName}` SELECT * FROM `{$this->tableName}`") !== false;
     }
+
     return true;
   }
 
   // ===================================================================
-  // 信息查询
+  // 信息查询（表元数据）
   // ===================================================================
+  //
+  // 这些语句（SHOW / OPTIMIZE TABLE）返回的都是**结果集**，
+  // 因此内部统一走 select()，不能用 exec()（PDO::exec 不产生结果集）。
+  //
 
   /**
    * 表是否存在
@@ -219,7 +269,7 @@ class Table extends AbilityBaseObject
    */
   public function tableExists()
   {
-    $result = $this->query("SHOW TABLES LIKE '{$this->tableName}'");
+    $result = $this->select("SHOW TABLES LIKE '{$this->tableName}'");
     return !empty($result);
   }
 
@@ -230,7 +280,7 @@ class Table extends AbilityBaseObject
    */
   public function getCreateSQL()
   {
-    $result = $this->query("SHOW CREATE TABLE `{$this->tableName}`");
+    $result = $this->select("SHOW CREATE TABLE `{$this->tableName}`");
     return $result[0]['Create Table'] ?? '';
   }
 
@@ -241,7 +291,7 @@ class Table extends AbilityBaseObject
    */
   public function getColumns()
   {
-    return $this->query("SHOW FULL COLUMNS FROM `{$this->tableName}`");
+    return $this->select("SHOW FULL COLUMNS FROM `{$this->tableName}`");
   }
 
   /**
@@ -251,7 +301,7 @@ class Table extends AbilityBaseObject
    */
   public function getIndexes()
   {
-    return $this->all("SHOW INDEX FROM `{$this->tableName}`");
+    return $this->select("SHOW INDEX FROM `{$this->tableName}`");
   }
 
   /**
@@ -261,23 +311,44 @@ class Table extends AbilityBaseObject
    */
   public function getStatus()
   {
-    $result = $this->all("SHOW TABLE STATUS LIKE '{$this->tableName}'");
+    $result = $this->select("SHOW TABLE STATUS LIKE '{$this->tableName}'");
     return $result[0] ?? null;
   }
 
   /**
    * 优化表（整理碎片，回收空间）
    *
-   * @return bool
+   * MySQL 的 OPTIMIZE TABLE 会**返回结果集**（含 Table / Op / Msg_type / Msg_text 四列），
+   * 而不是受影响行数，因此这里用 select() 取回结果，并逐行检查 Msg_type 是否出错。
+   *
+   * @return bool 全部表均报告 status/ok/note 时返回 true；任一报 error/warning 返回 false
    */
   public function optimize()
   {
-    return $this->query("OPTIMIZE TABLE `{$this->tableName}`");
+    $result = $this->select("OPTIMIZE TABLE `{$this->tableName}`");
+
+    // 结果集为空说明语句本身没跑起来
+    if (empty($result)) {
+      return false;
+    }
+
+    foreach ($result as $row) {
+      $msgType = strtolower($row['Msg_type'] ?? '');
+      if ($msgType === 'error' || $msgType === 'warning') {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   // ===================================================================
   // Schema 类型映射
   // ===================================================================
+  //
+  // 将 $schema 中的 Schema 对象映射为「字段名 → PHP 类型」，
+  // 供 Model 推导出 $schemaCasts（CRUD 读写的类型转换依据）。
+  //
 
   /**
    * 将 $schema 中的 Schema 对象转换为字段 → PHP 类型映射
@@ -305,31 +376,95 @@ class Table extends AbilityBaseObject
   // ===================================================================
   // SQL 执行
   // ===================================================================
+  //
+  // 两个底层方法：
+  //   exec($sql)      —— 走 PDO::exec，**不产生结果集**，返回受影响行数。
+  //                      注意：DDL 成功时返回 0（PHP 中为 falsy），
+  //                      故 create/drop/truncate/rename/copy 均用 !== false 转为 bool。
+  //   execQuery($sql) —— 走 PDO::query，**返回结果集**（PDOStatement），需自行 fetch。
+  //
+  // 四个便捷方法（推荐日常使用，支持参数绑定）：
+  //   select($sql, $bindings)     读多行 → array
+  //   selectOne($sql, $bindings)  读单行 → array|null
+  //   scalar($sql, $bindings)     读标量 → mixed
+  //   insertId()                  取最后插入的自增 ID
+  //
 
   /**
-   * 执行 SQL（写操作）
+   * 执行原生 SQL（写操作 / DDL）
    *
-   * @param  string $sql
-   * @return mixed
+   * 底层走 PDO::exec，不返回结果集。适用于 INSERT / UPDATE / DELETE / DDL。
+   *
+   * @param  string $sql 原生 SQL（不支持参数绑定，需自行转义）
+   * @return int|false 受影响行数；DDL 成功通常返回 0，失败返回 false
+   *
+   * @see select() 读操作请用这个
    */
-  public function query($sql)
+  public function exec($sql)
+  {
+    return $this->DB::exec($sql);
+  }
+
+  /**
+   * 执行原生 SQL（通用，返回结果集对象）
+   *
+   * 底层走 PDO::query，返回 PDOStatement，调用方需自行 fetch。
+   * 仅当需要自行控制取数方式时使用；绝大多数场景请用 select() / selectOne()。
+   *
+   * @param  string $sql 原生 SQL
+   * @return \PDOStatement|false 失败返回 false
+   */
+  public function execQuery($sql)
   {
     return $this->DB::query($sql);
   }
 
   /**
-   * 执行 SQL（读操作，返回全部结果）
+   * 执行原生 SQL 并取回全部结果行
    *
-   * @param  string $sql
-   * @return array
+   * @param  string $sql      原生 SQL，可用 `?` 或 `:name` 占位符
+   * @param  array  $bindings 绑定参数（预处理，防 SQL 注入）
+   * @return array 二维数组，每行一个关联数组；无结果返回 []
+   *
+   * @example
+   * $table->select('SELECT * FROM users WHERE uid = ?', [1]);
    */
-  public function all($sql)
+  public function select($sql, $bindings = [])
   {
-    return $this->DB::all($sql);
+    return $this->DB::select($sql, $bindings);
   }
 
   /**
-   * 最后插入的自增 ID
+   * 执行原生 SQL 并取回第一行
+   *
+   * @param  string $sql      原生 SQL
+   * @param  array  $bindings 绑定参数
+   * @return array|null 单行关联数组；无结果返回 null
+   */
+  public function selectOne($sql, $bindings = [])
+  {
+    return $this->DB::selectOne($sql, $bindings);
+  }
+
+  /**
+   * 执行原生 SQL 并取回单个标量值
+   *
+   * 适用于 COUNT / MAX / SUM 等单值查询。
+   *
+   * @param  string $sql      原生 SQL
+   * @param  array  $bindings 绑定参数
+   * @return mixed 首行首列的值；无结果返回 null
+   *
+   * @example
+   * $total = $table->scalar('SELECT COUNT(*) FROM users WHERE uid = ?', [1]);
+   */
+  public function scalar($sql, $bindings = [])
+  {
+    return $this->DB::scalar($sql, $bindings);
+  }
+
+  /**
+   * 获取最后插入的自增 ID
    *
    * @return int
    */

@@ -8,9 +8,43 @@ namespace kernel\Foundation\Database\PDO;
  * 提供两套 API：
  *   1. Query Builder: DB::table('users')->where('id', 1)->first()
  *   2. 原生 SQL（带参数绑定）: DB::select('SELECT * FROM users WHERE id = ?', [1])
+ *
+ * ------------------------------------------------------------------
+ * 原生 SQL API 分三层
+ * ------------------------------------------------------------------
+ *
+ * | 层级 | 方法 | 参数绑定 | 查询日志 | 返回结果 |
+ * |------|------|---------|---------|---------|
+ * | 便捷层（推荐） | `select` `selectOne` `scalar` `insert` `update` `delete` | 支持 | 否 | 数组 / 标量 / 行数 |
+ * | 通用语句层 | `statement` `affectingStatement` `unprepared` | 支持 | 否 | bool / 行数 |
+ * | 底层直查层 | `query` `exec` `prepare` `execute` | 视方法而定 | **是** | PDOStatement / 行数 |
+ *
+ * 底层直查层不做绑定判断，直接转发 PDO，因此自由度最高但也最危险；
+ * 日常请用便捷层。
+ *
+ * ------------------------------------------------------------------
+ * 代码组织（自上而下）
+ * ------------------------------------------------------------------
+ *
+ *   属性 → 连接管理 → Query Builder 入口
+ *   → 原生 SQL（读 / 写 / 通用语句）→ 原始表达式
+ *   → 底层直查 → 连接信息 → 事务 → 查询日志
  */
 class DB
 {
+  // ===================================================================
+  // 属性：查询日志状态
+  // ===================================================================
+
+  /** @var array 已执行的 SQL 日志，每项 ['query' => string, 'bindings' => array, 'time' => float] */
+  private static $queryLog = [];
+
+  /** @var bool 是否记录日志（由 enableQueryLog() / disableQueryLog() 控制） */
+  private static $loggingQueries = false;
+
+  /** @var array<callable> 查询监听器，由 listen() 注册，每次记录日志时触发 */
+  private static $listeners = [];
+
   // ===================================================================
   // 连接管理
   // ===================================================================
@@ -24,7 +58,7 @@ class DB
    * DB::connection('slave');
    * DB::table('users')->get();
    */
-  static function connection($name = null)
+  public static function connection($name = null)
   {
     if ($name !== null) {
       Connections::useDriver($name);
@@ -36,7 +70,7 @@ class DB
    *
    * @return \PDO
    */
-  static function getPdo()
+  public static function getPdo()
   {
     return Connections::getUseDriver()->getPDO();
   }
@@ -55,13 +89,13 @@ class DB
    * @example
    * DB::table('users')->where('status', 1)->get();
    */
-  static function table($tableName = null, $databaseDriver = null)
+  public static function table($tableName = null, $databaseDriver = null)
   {
     return new Query($tableName, $databaseDriver);
   }
 
   // ===================================================================
-  // 原生 SELECT（带参数绑定） — 对标 Laravel
+  // 原生 SQL：读操作（带参数绑定）
   // ===================================================================
 
   /**
@@ -74,9 +108,9 @@ class DB
    * @example
    * DB::select('SELECT * FROM users WHERE status = ?', [1]);
    */
-  static function select($query, $bindings = [])
+  public static function select($query, $bindings = [])
   {
-    return Connections::getUseDriver()->all($query, $bindings);
+    return Connections::getUseDriver()->fetchAll($query, $bindings);
   }
 
   /**
@@ -89,9 +123,9 @@ class DB
    * @example
    * DB::selectOne('SELECT * FROM users WHERE id = ?', [1]);
    */
-  static function selectOne($query, $bindings = [])
+  public static function selectOne($query, $bindings = [])
   {
-    $row = Connections::getUseDriver()->first($query, $bindings);
+    $row = Connections::getUseDriver()->fetch($query, $bindings);
     return $row ?: null;
   }
 
@@ -105,13 +139,13 @@ class DB
    * @example
    * DB::scalar('SELECT COUNT(*) FROM users WHERE status = ?', [1]);
    */
-  static function scalar($query, $bindings = [])
+  public static function scalar($query, $bindings = [])
   {
-    return Connections::getUseDriver()->value($query, $bindings);
+    return Connections::getUseDriver()->fetchColumn($query, $bindings);
   }
 
   // ===================================================================
-  // 原生 DML（带参数绑定） — 对标 Laravel
+  // 原生 SQL：写操作（带参数绑定）
   // ===================================================================
 
   /**
@@ -124,7 +158,7 @@ class DB
    * @example
    * DB::insert('INSERT INTO users (name, email) VALUES (?, ?)', ['Tom', 'tom@example.com']);
    */
-  static function insert($query, $bindings = [])
+  public static function insert($query, $bindings = [])
   {
     return Connections::getUseDriver()->execute($query, $bindings) !== false;
   }
@@ -139,7 +173,7 @@ class DB
    * @example
    * $id = DB::insertGetId('INSERT INTO users (name) VALUES (?)', ['Tom']);
    */
-  static function insertGetId($query, $bindings = [])
+  public static function insertGetId($query, $bindings = [])
   {
     $result = Connections::getUseDriver()->execute($query, $bindings);
     if ($result !== false) {
@@ -158,7 +192,7 @@ class DB
    * @example
    * DB::update('UPDATE users SET status = ? WHERE id = ?', [1, 5]);
    */
-  static function update($query, $bindings = [])
+  public static function update($query, $bindings = [])
   {
     $result = Connections::getUseDriver()->execute($query, $bindings);
     return is_int($result) ? $result : 0;
@@ -174,14 +208,14 @@ class DB
    * @example
    * DB::delete('DELETE FROM users WHERE id = ?', [5]);
    */
-  static function delete($query, $bindings = [])
+  public static function delete($query, $bindings = [])
   {
     $result = Connections::getUseDriver()->execute($query, $bindings);
     return is_int($result) ? $result : 0;
   }
 
   // ===================================================================
-  // 通用语句 — 对标 Laravel
+  // 原生 SQL：通用语句
   // ===================================================================
 
   /**
@@ -194,7 +228,7 @@ class DB
    * @example
    * DB::statement('DROP TABLE IF EXISTS tmp_logs');
    */
-  static function statement($query, $bindings = [])
+  public static function statement($query, $bindings = [])
   {
     return Connections::getUseDriver()->execute($query, $bindings) !== false;
   }
@@ -206,7 +240,7 @@ class DB
    * @param array  $bindings 参数绑定
    * @return int 受影响行数
    */
-  static function affectingStatement($query, $bindings = [])
+  public static function affectingStatement($query, $bindings = [])
   {
     $result = Connections::getUseDriver()->execute($query, $bindings);
     return is_int($result) ? $result : 0;
@@ -218,7 +252,7 @@ class DB
    * @param string $query 原始 SQL
    * @return bool
    */
-  static function unprepared($query)
+  public static function unprepared($query)
   {
     return Connections::getUseDriver()->exec($query) !== false;
   }
@@ -234,16 +268,21 @@ class DB
    * @return Statement
    *
    * @example
-   * DB::table('users')->field(DB::raw('COUNT(*) as total'))->first();
+   * DB::table('users')->select(DB::raw('COUNT(*) AS total'))->first();
+   * DB::table('users')->orderByRaw(DB::raw('id DESC'))->get();
    */
-  static function raw($value)
+  public static function raw($value)
   {
     return new Statement($value);
   }
 
   // ===================================================================
-  // 底层直查（不做绑定判断，直接执行）
+  // 底层直查（不做绑定判断，直接转发 PDO）
   // ===================================================================
+  //
+  // 这一层会写入查询日志（query / exec / execute），自由度最高也最危险。
+  // 日常请用上层的 select / insert 等便捷方法。
+  //
 
   /**
    * 执行 SQL 查询。SELECT 返回 PDOStatement，写操作返回受影响行数
@@ -251,7 +290,7 @@ class DB
    * @param string $sql SQL 语句
    * @return \PDOStatement|int
    */
-  static function query($sql)
+  public static function query($sql)
   {
     self::logQuery($sql, []);
     return Connections::getUseDriver()->query($sql);
@@ -263,7 +302,7 @@ class DB
    * @param string $sql SQL 语句
    * @return int
    */
-  static function exec($sql)
+  public static function exec($sql)
   {
     self::logQuery($sql, []);
     return Connections::getUseDriver()->exec($sql);
@@ -276,7 +315,7 @@ class DB
    * @param array  $options PDOStatement 选项
    * @return \PDOStatement
    */
-  static function prepare($query, $options = [])
+  public static function prepare($query, $options = [])
   {
     return Connections::getUseDriver()->prepare($query, $options);
   }
@@ -289,7 +328,7 @@ class DB
    * @param array  $params 绑定参数
    * @return \PDOStatement|int
    */
-  static function execute($query, $params = [])
+  public static function execute($query, $params = [])
   {
     self::logQuery($query, $params);
     return Connections::getUseDriver()->execute($query, $params);
@@ -302,75 +341,31 @@ class DB
    * @param int    $type   PDO::PARAM_*
    * @return string|false
    */
-  static function quote($string, $type = \PDO::PARAM_STR)
+  public static function quote($string, $type = \PDO::PARAM_STR)
   {
     return Connections::getUseDriver()->quote($string, $type);
   }
+
+  // ===================================================================
+  // 连接信息
+  // ===================================================================
 
   /**
    * 最后插入的自增 ID
    *
    * @return string
    */
-  static function insertId()
+  public static function insertId()
   {
     return Connections::getUseDriver()->insertId();
   }
-
-  // ===================================================================
-  // 便捷方法（直接用 SQL，不带 Query 构建器）
-  // ===================================================================
-
-  /**
-   * 查询单行
-   *
-   * @param string $sql    SQL 语句
-   * @param array  $params 绑定参数
-   * @return array|false
-   */
-  static function first($sql, $params = [])
-  {
-    self::logQuery($sql, $params);
-    return Connections::getUseDriver()->first($sql, $params);
-  }
-
-  /**
-   * 查询全部
-   *
-   * @param string $sql    SQL 语句
-   * @param array  $params 绑定参数
-   * @return array
-   */
-  static function all($sql, $params = [])
-  {
-    self::logQuery($sql, $params);
-    return Connections::getUseDriver()->all($sql, $params);
-  }
-
-  /**
-   * 查询单个值
-   *
-   * @param string $sql    SQL 语句
-   * @param array  $params 绑定参数
-   * @param int    $column 列索引，默认 0
-   * @return mixed
-   */
-  static function value($sql, $params = [], $column = 0)
-  {
-    self::logQuery($sql, $params);
-    return Connections::getUseDriver()->value($sql, $params, $column);
-  }
-
-  // ===================================================================
-  // 错误信息
-  // ===================================================================
 
   /**
    * 最近一次操作错误信息
    *
    * @return array
    */
-  static function error()
+  public static function error()
   {
     return Connections::getUseDriver()->error();
   }
@@ -380,7 +375,7 @@ class DB
    *
    * @return string
    */
-  static function errno()
+  public static function errno()
   {
     return Connections::getUseDriver()->errno();
   }
@@ -388,13 +383,17 @@ class DB
   // ===================================================================
   // 事务
   // ===================================================================
+  //
+  // 推荐用 transaction() 闭包：异常自动回滚，并支持死锁重试（$attempts）。
+  // 手动控制时用 begin() / commit() / rollback() 三件套。
+  //
 
   /**
    * 开始事务
    *
    * @return bool
    */
-  static function begin()
+  public static function begin()
   {
     return Connections::getUseDriver()->beginTransaction();
   }
@@ -404,7 +403,7 @@ class DB
    *
    * @return bool
    */
-  static function commit()
+  public static function commit()
   {
     return Connections::getUseDriver()->commit();
   }
@@ -414,7 +413,7 @@ class DB
    *
    * @return bool
    */
-  static function rollback()
+  public static function rollback()
   {
     return Connections::getUseDriver()->rollBack();
   }
@@ -433,7 +432,7 @@ class DB
    *     DB::table('logs')->insert([...]);
    * });
    */
-  static function transaction(callable $callback, $attempts = 1)
+  public static function transaction(callable $callback, $attempts = 1)
   {
     $driver = Connections::getUseDriver();
 
@@ -461,28 +460,42 @@ class DB
    *
    * @return bool
    */
-  static function inTransaction()
+  public static function inTransaction()
   {
     return Connections::getUseDriver()->inTransaction();
+  }
+
+  /**
+   * 判断异常是否由死锁导致（供 transaction() 重试判定使用）
+   *
+   * 同时匹配 MySQL(1213) 与 SQLSTATE(40001) 的死锁错误码。
+   *
+   * @param \Exception $e
+   * @return bool
+   */
+  private static function causedByDeadlock($e)
+  {
+    $message = $e->getMessage();
+    return strpos($message, 'Deadlock') !== false
+      || strpos($message, '1213') !== false
+      || strpos($message, '40001') !== false;
   }
 
   // ===================================================================
   // 查询日志
   // ===================================================================
-
-  /** @var array 已执行的 SQL 日志 */
-  private static $queryLog = [];
-
-  /** @var bool 是否记录日志 */
-  private static $loggingQueries = false;
-
-  /** @var array<callable> 查询监听器 */
-  private static $listeners = [];
+  //
+  // 需先 enableQueryLog() 才会往 $queryLog 里记录；
+  // listen() 注册的监听器则无论开关都会触发。
+  //
+  // 注意：只有底层直查层（query / exec / execute）会调用 logQuery()，
+  // 便捷层（select / insert 等）不会写入日志。
+  //
 
   /**
    * 开启查询日志
    */
-  static function enableQueryLog()
+  public static function enableQueryLog()
   {
     self::$loggingQueries = true;
   }
@@ -490,7 +503,7 @@ class DB
   /**
    * 关闭查询日志
    */
-  static function disableQueryLog()
+  public static function disableQueryLog()
   {
     self::$loggingQueries = false;
   }
@@ -500,7 +513,7 @@ class DB
    *
    * @return array 每项 ['query' => string, 'bindings' => array, 'time' => float]
    */
-  static function getQueryLog()
+  public static function getQueryLog()
   {
     return self::$queryLog;
   }
@@ -508,7 +521,7 @@ class DB
   /**
    * 清空查询日志
    */
-  static function flushQueryLog()
+  public static function flushQueryLog()
   {
     self::$queryLog = [];
   }
@@ -523,7 +536,7 @@ class DB
    *     Log::info($query, ['bindings' => $bindings, 'time' => $time]);
    * });
    */
-  static function listen(callable $callback)
+  public static function listen(callable $callback)
   {
     self::$listeners[] = $callback;
   }
@@ -546,20 +559,4 @@ class DB
       $listener($query, $bindings, $time);
     }
   }
-
-  /**
-   * 判断异常是否由死锁导致
-   *
-   * @param \Exception $e
-   * @return bool
-   */
-  private static function causedByDeadlock($e)
-  {
-    $message = $e->getMessage();
-    return strpos($message, 'Deadlock') !== false
-      || strpos($message, '1213') !== false
-      || strpos($message, '40001') !== false;
-  }
 }
-
-

@@ -29,7 +29,7 @@ use PDO;
  *
  * ```php
  * $driver = new Driver('127.0.0.1', 'root', 'pass', 'my_db', 3306);
- * $rows  = $driver->all('SELECT * FROM users WHERE status = ?', [1]);
+ * $rows  = $driver->fetchAll('SELECT * FROM users WHERE status = ?', [1]);
  * $count = $driver->value('SELECT COUNT(*) FROM users');
  * ```
  *
@@ -327,7 +327,7 @@ class Driver
    * @param int $cursorOffset 游标偏移
    * @return array|false
    */
-  public function first($querySQL, $params = [], $mode = PDO::FETCH_ASSOC, $cursorOrientation = PDO::FETCH_ORI_NEXT, $cursorOffset = 0)
+  public function fetch($querySQL, $params = [], $mode = PDO::FETCH_ASSOC, $cursorOrientation = PDO::FETCH_ORI_NEXT, $cursorOffset = 0)
   {
     $PDOStatement = empty($params) ? $this->query($querySQL) : $this->execute($querySQL, $params);
     return $PDOStatement->fetch($mode, $cursorOrientation, $cursorOffset);
@@ -341,7 +341,7 @@ class Driver
    * @param int $mode 获取模式，默认 PDO::FETCH_ASSOC
    * @return array
    */
-  public function all($querySQL, $params = [], $mode = PDO::FETCH_ASSOC)
+  public function fetchAll($querySQL, $params = [], $mode = PDO::FETCH_ASSOC)
   {
     $PDOStatement = empty($params) ? $this->query($querySQL) : $this->execute($querySQL, $params);
     return $PDOStatement->fetchAll($mode);
@@ -355,7 +355,7 @@ class Driver
    * @param int $column 列索引，默认 0
    * @return mixed
    */
-  public function value($querySQL, $params = [], $column = 0)
+  public function fetchColumn($querySQL, $params = [], $column = 0)
   {
     $PDOStatement = empty($params) ? $this->query($querySQL) : $this->execute($querySQL, $params);
     return $PDOStatement->fetchColumn($column);
@@ -370,7 +370,7 @@ class Driver
    * @param array $constructorArgs 构造函数参数
    * @return object|false
    */
-  public function object($querySQL, $params = [], $class = "stdClass", $constructorArgs = [])
+  public function fetchObject($querySQL, $params = [], $class = "stdClass", $constructorArgs = [])
   {
     $PDOStatement = empty($params) ? $this->query($querySQL) : $this->execute($querySQL, $params);
     return $PDOStatement->fetchObject($class, $constructorArgs);
@@ -383,7 +383,7 @@ class Driver
    * @param array $params 参数绑定数组，为空时直查
    * @return array
    */
-  public function map($querySQL, $callback, $params = [])
+  public function fetchFunc($querySQL, $callback, $params = [])
   {
     $PDOStatement = empty($params) ? $this->query($querySQL) : $this->execute($querySQL, $params);
     return $PDOStatement->fetchAll(PDO::FETCH_FUNC, $callback);

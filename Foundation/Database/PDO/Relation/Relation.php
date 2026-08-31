@@ -101,8 +101,9 @@ abstract class Relation extends AbilityBaseObject
       $this->localKey = $localKey;
     }
 
-    // 创建关联 Model 的 Query 实例
-    $this->query = $relatedInstance->getQuery();
+    // 创建关联 Model 的 Query 实例（带软删除等全局作用域）
+    // 必须用 scopedQuery()：每次都是全新实例，避免多个 Relation 之间串条件
+    $this->query = $relatedInstance->scopedQuery();
 
     // 子类实现具体的 JOIN 配置
     $this->addConstraints();
