@@ -421,6 +421,28 @@ final class FileSystem
     return $file;
   }
   /**
+   * 判断文件是否存在
+   *
+   * 对传入路径做规范化后，调用 PHP 内置 file_exists 判断文件是否存在。
+   * 与 {@see getFileInfo()}/{@see readFile()}/{@see fileSize()} 不同，本方法只关心存在性，
+   * 不读取内容、不获取元信息，失败原因单一（不存在即返回 false）。
+   *
+   * 使用示例：
+   * ```php
+   * if (FileSystem::exists('/storage/avatars/user_123.jpg')) {
+   *     // 文件存在，执行后续逻辑
+   * }
+   * ```
+   *
+   * @param string $filePath 文件完整路径
+   * @return boolean 文件存在返回 true，不存在（或路径非法）返回 false
+   */
+  public static function exists($filePath)
+  {
+    $filePath = FileHelper::optimizedPath($filePath);
+    return file_exists($filePath);
+  }
+  /**
    * 删除单个文件
    *
    * @param string $filePath 文件完整路径

@@ -3,39 +3,84 @@
 namespace kernel\Model;
 
 use kernel\Foundation\Database\PDO\Model;
-use kernel\Traits\Model\FilesModelTrait;
+use kernel\Foundation\Database\PDO\Schema;
 
+/**
+ * 文件模型
+ *
+ * @property int $id id
+ * @property string $key 名称
+ * @property string $disk 存储磁盘名称
+ * @property string|null $ref 引用的ID
+ * @property string|null $type 引用的业务
+ * @property string|null $mime_type mime 类型
+ * @property string|null $owner_id 所属 ID
+ * @property string $source_file_name 原文件名称
+ * @property string $name 保存后文件名称
+ * @property float $size 文件尺寸
+ * @property string|null $path 保存的文件路径
+ * @property float|null $width 宽度（媒体文件才有该值）
+ * @property float|null $height 高度（媒体文件才有该值）
+ * @property string $extension 文件扩展名
+ * @property string $access_control 访问控制权限
+ * @property string $created_at 创建时间
+ * @property string $updated_at 最后更新时间
+ */
 class FilesModel extends Model
 {
-  use FilesModelTrait;
+  public $tableName = "files";
 
-  public function __construct($tableName = "files")
+  /**
+   * 字段类型映射（字段名 → PHP 类型）
+   *
+   * 与 $schema 列定义保持一致，用于：
+   * - 构造时填充各字段默认值
+   * - 读写时自动类型转换（__get / __set）
+   *
+   * @var array<string, string>
+   */
+  protected $casts = [
+    "id" => "int",
+    "key" => "string",
+    "disk" => "string",
+    "ref" => "string",
+    "type" => "string",
+    "mime_type" => "string",
+    "owner_id" => "string",
+    "source_file_name" => "string",
+    "name" => "string",
+    "size" => "float",
+    "path" => "string",
+    "width" => "float",
+    "height" => "float",
+    "extension" => "string",
+    "access_control" => "string",
+    "created_at" => "int",
+    "updated_at" => "int",
+  ];
+
+  public function __construct()
   {
-    parent::__construct($tableName);
+    $this->schema = [
+      (new Schema("id"))->bigint()->unsigned()->nullable(false)->autoIncrement()->comment("id"),
+      (new Schema("key"))->varchar(280)->nullable(false)->index("key")->unique()->comment("名称"),
+      (new Schema("disk"))->varchar(32)->nullable(false)->default("local")->comment("存储磁盘名称"),
+      (new Schema("ref"))->varchar(48)->comment("引用的ID"),
+      (new Schema("type"))->varchar(128)->comment("引用的业务"),
+      (new Schema("mime_type"))->varchar(64)->comment("mime类型"),
+      (new Schema("owner_id"))->varchar(32)->comment("所属 ID"),
+      (new Schema("source_file_name"))->varchar(250)->nullable(false)->comment("原文件名称"),
+      (new Schema("name"))->varchar(250)->nullable(false)->comment("保存后文件名称"),
+      (new Schema("size"))->double()->nullable(false)->comment("文件尺寸"),
+      (new Schema("path"))->text()->comment("保存的文件路径"),
+      (new Schema("width"))->double()->comment("宽度（媒体文件才有该值）"),
+      (new Schema("height"))->double()->comment("高度（媒体文件才有该值）"),
+      (new Schema("extension"))->varchar(30)->nullable(false)->comment("文件扩展名"),
+      (new Schema("access_control"))->varchar(60)->default("private")->nullable(false)->comment("访问控制权限"),
+      (new Schema("created_at"))->unixtime_ms()->nullable(false)->comment("创建时间"),
+      (new Schema("updated_at"))->unixtime_ms()->nullable(false)->comment("最后更新时间"),
+    ];
 
-    $this->tableStructureSQL = <<<SQL
-DROP TABLE IF EXISTS `{$tableName}`;
-CREATE TABLE `{$tableName}`  (
-  `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '附件数字ID',
-  `key` varchar(280) NOT NULL COMMENT '文件名',
-  `remote` tinyint(4) NOT NULL DEFAULT 0 COMMENT '远程附件',
-  `platform` varchar(32) NOT NULL DEFAULT 'local' COMMENT '存储平台',
-  `belongsId` varchar(34) NULL DEFAULT NULL COMMENT '所属ID',
-  `belongsType` varchar(128) NULL DEFAULT NULL COMMENT '所属ID类型',
-  `ownerId` varchar(32) NULL DEFAULT NULL COMMENT '文件所有者ID',
-  `sourceFileName` varchar(255) NOT NULL COMMENT '原本的文件名称',
-  `name` varchar(255) NOT NULL COMMENT '保存后的文件名称',
-  `size` double NOT NULL COMMENT '文件尺寸',
-  `path` text NOT NULL COMMENT '保存的文件路径',
-  `width` double NULL DEFAULT 0 COMMENT '宽度（媒体文件才有该值）',
-  `height` double NULL DEFAULT 0 COMMENT '高度（媒体文件才有该值）',
-  `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
-  `accessControl` varchar(64) NOT NULL DEFAULT 'private' COMMENT '访问权限控制',
-  `createdAt` varchar(12) NOT NULL COMMENT '创建时间',
-  `updatedAt` varchar(12) NOT NULL COMMENT '最后更新时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `key`(`key`) USING BTREE COMMENT '文件名'
-) COMMENT = '文件';
-SQL;
+    parent::__construct();
   }
 }

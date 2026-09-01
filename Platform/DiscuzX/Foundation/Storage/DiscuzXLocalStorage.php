@@ -66,7 +66,7 @@ class DiscuzXLocalStorage extends LocalStorage
 
     return $AccessURL->toString();
   }
-  public function verifyAuth($FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
+  public function verifySignature($FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     $DiscuzXPluginParamKeys = ["id", "uri"];

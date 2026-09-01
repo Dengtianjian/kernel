@@ -108,7 +108,7 @@ class DiscuzXQCloudCOSStorage extends QCloudCOSStorage
 
     return $AccessURL->toString();
   }
-  public function verifyAuth($FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
+  public function verifySignature($FileKey, $RawURLParams, $RawHeaders = [], $HTTPMethod = "get")
   {
     $URLParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     $DiscuzXPluginParamKeys = ["id", "uri"];
@@ -187,13 +187,13 @@ class DiscuzXQCloudCOSStorage extends QCloudCOSStorage
   }
   public function fileExist($fileKey)
   {
-    // if (!$this->verifyOperationAuthorization($fileKey, "write")) return $this->forwardBreak();
+    // if (!$this->authorizeOperation($fileKey, "write")) return $this->forwardBreak();
 
     return $this->SDKClient->doesObjectExist($fileKey);
   }
   public function deleteFile($fileKey)
   {
-    if (!$this->verifyOperationAuthorization($fileKey, "write")) return $this->forwardBreak();
+    if (!$this->authorizeOperation($fileKey, "write")) return $this->forwardBreak();
 
     $result = $this->SDKClient->deleteObject($fileKey);
     if (!$result) return $this->SDKClient->return();

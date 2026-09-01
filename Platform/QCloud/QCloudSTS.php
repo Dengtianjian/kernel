@@ -9,6 +9,7 @@ use QCloud\COSSTS\Sts;
  * 腾讯云STS安全凭证服务  
  * 基于腾讯云的STS类扩展
  * @inheritDoc STS实例文档 https://github.com/tencentyun/qcloud-cos-sts-sdk/tree/master/php
+ * @see 依赖 qcloud_sts/qcloud-sts-sdk 包
  */
 class QCloudSTS extends AbilityBaseObject
 {
