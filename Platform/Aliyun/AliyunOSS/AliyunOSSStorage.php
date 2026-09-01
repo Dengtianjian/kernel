@@ -79,11 +79,12 @@ class AliyunOSSStorage extends AbstractOSSStroage
     $roleArn = null,
     $policy = null
   ) {
-    $this->name = "oss";
     $this->roleArn = $roleArn;
     $this->policy = $policy;
 
     parent::__construct($accessKeyId, $accessKeySecret, $region, $bucket);
+
+    $this->name = "oss";
   }
 
   /**
@@ -196,7 +197,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo =  pathinfo($saveFileName);
     $tempFileName = join("", [uniqid("temp_"), ".", $pathInfo['extension']]);
-    $tempFileInfo = FileSystem::upload($file, "cos_temp", $tempFileName);
+    $tempFileInfo = FileSystem::upload($file, "oss_temp", $tempFileName);
     if (!$tempFileInfo || !FileSystem::exists($tempFileInfo['filePath'])) {
       return $this->break(500, 500, "上传文件失败", "临时文件存储失败");
     }
@@ -209,18 +210,20 @@ class AliyunOSSStorage extends AbstractOSSStroage
       $height = $imageInfo[1];
     }
 
-    $filePath = FileHelper::combinedFilePath(Path::storage(), "env.d.ts");
     $uploader = $this->sdkClient->newUploader();
 
     try {
       $uploader->uploadFile(
         request: new Oss\Models\PutObjectRequest($this->bucket(), key: $saveFileName), // 创建PutObjectRequest对象，指定Bucket和对象名称
-        filepath: $filePath, // 指定要上传的本地文件路径
+        filepath: $tempFileInfo['filePath'], // 指定要上传的本地文件路径
         args: [ // 可选参数，用于自定义分片上传行为
           'part_size' => 1024 * 1024, // 自定义分片大小
           'parallel_num' => 1, // 并发上传的分片数量
         ]
       );
+      if (FileSystem::exists($tempFileInfo['filePath'])) {
+        FileSystem::deleteFile($tempFileInfo['filePath']);
+      }
 
       $fileInfo = $this->get($saveFileName);
       if (!$fileInfo) return $this->break(500, 500, "获取上传的文件信息失败");

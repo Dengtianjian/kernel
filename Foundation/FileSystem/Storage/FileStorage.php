@@ -419,7 +419,7 @@ class FileStorage extends AbilityBaseObject
     $this->model->source_file_name = $fileInfo->source_file_name;
     $this->model->disk = $fileInfo->disk;
     $this->model->name = $fileInfo->name;
-    $this->model->path = $fileInfo->path;
+    $this->model->path = !$fileInfo->path || $fileInfo->path === "." ? null : $fileInfo->path;
     $this->model->size = $fileInfo->size;
     $this->model->extension = $fileInfo->extension;
     $this->model->owner_id = $ownerId;
@@ -471,7 +471,7 @@ class FileStorage extends AbilityBaseObject
     $this->model->source_file_name = $sourceFileName;
     $this->model->disk = $disk;
     $this->model->name = $saveFileName;
-    $this->model->path = $path;
+    $this->model->path = !$path || $path === "." ? null : $path;
     $this->model->size = $size;
     $this->model->extension = $extension;
     $this->model->owner_id = $ownerId;
