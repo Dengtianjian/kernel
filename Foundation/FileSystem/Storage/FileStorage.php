@@ -286,6 +286,15 @@ class FileStorage extends AbilityBaseObject
     return $this->accessControlAuthId;
   }
 
+  /**
+   * 获取文件信息
+   *
+   * 委托当前使用磁盘（{@see disk()}）获取文件元信息。获取失败时透传磁盘的错误态，
+   * 或统一返回 500「获取文件信息失败」（当磁盘未报错但结果为空时）。
+   *
+   * @param string $fileKey 文件键
+   * @return array|false 成功返回文件信息数组，失败返回 break 错误态
+   */
   public function get($fileKey)
   {
     $result = $this->useDisk->get($fileKey);
@@ -295,11 +304,6 @@ class FileStorage extends AbilityBaseObject
     return $result;
   }
 
-  /**
-   * 获取文件（保留方法，由具体磁盘实现覆盖）
-   *
-   * 在此基类中为空实现，实际逻辑由 {@see AbstractStorage} 的具体子类（本地 / 云端）提供。
-   */
   /**
    * 上传文件到当前磁盘
    *
@@ -483,6 +487,43 @@ class FileStorage extends AbilityBaseObject
     $this->model->mime_type = $mimeType;
 
     return $this->model->save()->insertId();
+  }
+
+  /**
+   * 更新文件元信息
+   *
+   * 需先启用数据存储。仅更新数据库中该文件键对应的记录（不改动磁盘上的实际文件）。
+   * 文件不存在时返回 403 错误态。
+   *
+   * @param string $key 文件键
+   * @param array $data 要更新的字段键值对（对应 FilesModel 字段）
+   * @return mixed 模型 update 的返回结果；记录不存在时返回 break 错误态
+   */
+  public function update($key, $data)
+  {
+    if (!$this->model) {
+      throw new Error("未启用文件数据存储功能，无法调用 update 方法", 500, 500);
+    }
+    if (!$this->model->where("key", $key)->exists()) {
+      return $this->break(403, 403, "文件不存在或已被删除");
+    }
+
+    return $this->model->where("key", $key)->update($data);
+  }
+  /**
+   * 更新文件的 ACL 访问标签
+   *
+   * 便捷方法，等价于 {@see update()} 仅传入 `access_control` 字段。
+   *
+   * @param string $key 文件键
+   * @param string $val ACL 标签（类常量之一，如 PRIVATE / PUBLIC_READ …）
+   * @return mixed update 的返回结果
+   */
+  public function updateAccessControl($key, $val)
+  {
+    return $this->update($key, [
+      "access_control" => $val
+    ]);
   }
   /**
    * 删除文件
