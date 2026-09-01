@@ -62,14 +62,15 @@ class LocalStorage extends AbstractStorage
    */
   public function put($file, $saveFileName = null)
   {
-    $pathInfo = pathinfo($saveFileName ?: $file['name']);
+    $saveFileName = $saveFileName ?: $file['name'];
+    $pathInfo = pathinfo($saveFileName);
 
     $fileInfo = FileSystem::upload($file, $pathInfo['dirname'], $pathInfo['basename']);
     if (!$fileInfo) {
       return $this->break(500, 500, "文件上传失败", TRUE);
     }
 
-    return $this->get($fileInfo['filePath']);
+    return $this->get($saveFileName);
   }
 
   /**
