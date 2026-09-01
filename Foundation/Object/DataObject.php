@@ -6,13 +6,19 @@ use kernel\Foundation\Exception\Error;
 use stdClass;
 
 /**
- * 数据对象基类
+ * 数据对象（Data Object）
  *
- * 一种「实例化时一次性赋值、之后只读」的数据容器，继承自 stdClass。
- * 子类通过声明 protected 属性来定义数据结构，构造时从传入数组/对象中
- * 取对应键填充；缺失的键保留属性默认值，不覆盖。
+ * 一种数据容器，继承自 stdClass。实例化时通过构造参数一次性填充已声明
+ * 属性，之后仍允许通过 {@see set()} 或 `->prop = $v` 继续写入数据
+ * （含未声明的动态属性），适合需要在生命周期内多次更新字段的场景。
  *
- * 典型子类：{@see \kernel\Foundation\FileSystem\Storage\StorageFileInfoData}
+ * 若希望「实例化后完全只读」，请继承 {@see ReadonlyDataObject}（而非本类），
+ * 它仅在 __set 上叠加写入拦截，其余读写能力由本类提供。
+ *
+ * 适用场景：
+ * - 把结构化数据（如配置、查询结果行、外部 API 响应）封装成对象
+ * - 在多个组件间传递，且允许任意一方更新字段
+ * - 需要 `toArray()` / `toJson()` / `get()` / `has()` / `keys()` 等便捷访问
  */
 class DataObject extends stdClass
 {
@@ -46,22 +52,44 @@ class DataObject extends stdClass
   }
 
   /**
-   * 禁止在实例化后写入数据
+   * 允许在实例化后写入数据
    *
-   * 仅拦截写入「未声明的动态属性」；构造期对已声明属性的赋值
-   * 不会进入此方法，故实例化过程不受影响。
+   * 支持写入「已声明的 protected 属性」以及「未声明的动态属性」。
+   * 在类作用域内直接赋值，不会递归触发本方法。
    *
    * @param string $k
    * @param mixed  $v
-   * @throws \kernel\Foundation\Exception\Error
    */
   public function __set($k, $v)
   {
-    throw new Error("数据对象只允许实例化时设置数据，不能写入未声明属性「{$k}」");
+    $this->$k = $v;
   }
 
   /**
-   * 获取全部属性名（含父类继承的实例属性，排除静态属性）
+   * 设置单个或多个属性
+   *
+   * - `set('name', $value)`：设置单个属性
+   * - `set(['name' => $a, 'age' => $b])`：批量设置
+   *
+   * @param string|array $key   属性名或键值对数组
+   * @param mixed        $value 单个属性的值（数组模式忽略）
+   * @return $this 返回当前实例以支持链式调用
+   */
+  public function set($key, $value = null)
+  {
+    if (is_array($key)) {
+      foreach ($key as $k => $v) {
+        $this->$k = $v;
+      }
+    } else {
+      $this->$key = $value;
+    }
+
+    return $this;
+  }
+
+  /**
+   * 获取全部属性名（已声明属性 + 已写入的动态属性）
    *
    * @return string[]
    */
@@ -75,7 +103,10 @@ class DataObject extends stdClass
       }
       $names[] = $prop->getName();
     }
-    return array_values(array_unique($names));
+    return array_values(array_unique(array_merge(
+      $names,
+      array_keys(get_object_vars($this))
+    )));
   }
 
   /**
