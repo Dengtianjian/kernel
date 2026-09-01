@@ -94,23 +94,27 @@ class ResponseDownload extends Response
   {
     $range = $this->request->header->get("Range") ?: false;
 
-    $remainingLength = 0;
     header('Accept-Ranges: bytes');
-    header('Content-Length: ' . $this->fileSize);
-    if ($range) {
-      $remainingLength = $this->fileSize - $range;
-      header("Content-Range: bytes $range-$remainingLength/$this->fileSize");
-      header('Content-Length: ' . $remainingLength);
-    }
-
     header('Content-type: application/x-' . $this->fileExtension, true);
     header('Content-Disposition: attachment; filename=' . urlencode($this->fileName));
 
-    if ($range) {
-      header("HTTP/1.1 206 Partial Content");
-      $content = file_get_contents($this->filePath, false, null, $range, $this->fileSize);
+    if ($range && preg_match('/bytes=(\d*)-(\d*)/i', $range, $matches)) {
+      $start = $matches[1] === '' ? 0 : (int)$matches[1];
+      $end = $matches[2] === '' ? $this->fileSize - 1 : (int)$matches[2];
+      $end = min($end, $this->fileSize - 1);
+      if ($start > $end) {
+        header('HTTP/1.1 416 Range Not Satisfiable');
+        header('Content-Range: bytes */' . $this->fileSize);
+        return;
+      }
+      $length = $end - $start + 1;
+      header('HTTP/1.1 206 Partial Content');
+      header("Content-Range: bytes $start-$end/$this->fileSize");
+      header('Content-Length: ' . $length);
+      $content = file_get_contents($this->filePath, false, null, $start, $length);
       echo $content;
     } else {
+      header('Content-Length: ' . $this->fileSize);
       if (file_exists($this->filePath)) {
         $this->printContent(true);
       } else {

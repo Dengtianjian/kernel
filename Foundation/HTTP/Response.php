@@ -428,7 +428,7 @@ class Response
     }
   }
   /**
-   * 输出内容，调用该方法会直接exit退出程序
+   * 输出内容，向客户端发送响应头与主体。
    *
    * @return void
    */
@@ -461,15 +461,15 @@ class Response
     switch ($outputType) {
       case "json":
         header("Content-type:application/json", true);
-        print_r(json_encode($body, JSON_UNESCAPED_UNICODE));
+        echo json_encode($body, JSON_UNESCAPED_UNICODE);
         break;
       case "xml":
         header("Content-type:text/xml", true);
-        print_r(Arr::toXML($data));
+        echo Arr::toXML($data);
         break;
       case "html":
         header("Content-type:text/html", true);
-        print_r($data);
+        echo $data;
         break;
       case "text":
         if ($this->formatOutputTypeOfText) {

@@ -4,24 +4,47 @@ namespace kernel\Foundation\HTTP;
 
 /**
  * URL 统一资源定位器类
+ *
+ * 提供 URL 的解析、构建、读写与规范化能力：
+ * - 通过 `parseURL()` 将字符串解析为各组成部分，并在构造时填充到实例属性；
+ * - 通过 `buildURL()` / `buildQuery()` 反向拼装 URL 与查询字符串；
+ * - 实例支持链式修改协议、主机、路径、端口、参数等，再由 `toString()` 还原为完整 URL；
+ * - 提供 `current()` / `fromCurrent()` 读取并解析当前请求 URL；
+ * - 提供 `normalizeDomain()` 对域名做路由级归一化（小写、去端口、去 IPv6 方括号）。
+ *
+ * 所有组成部分在解析缺失时统一置为 `null`（而非空字符串），避免下标访问警告。
  */
 class URL
 {
+  /** @var string|null 原始传入的 URL 字符串 */
   protected $URL = null;
+  /** @var string|null 主机名，如 `example.com` */
   public $host = null;
+  /** @var string|null 源站（origin）：`scheme://host[:port]`，仅当 scheme 与 host 同时存在时计算 */
   public $origin = null;
+  /** @var int|null 端口号，缺省为 null（表示使用协议默认端口） */
   public $port = null;
+  /** @var string|null 用户身份信息中的用户名（URL 的 userinfo 段） */
   public $user = null;
+  /** @var string|null 用户身份信息中的密码（URL 的 userinfo 段） */
   public $password = null;
+  /** @var string|null 路径部分，如 `/path/to/page` */
   public $pathName = null;
+  /** @var string|null 协议（scheme），如 `http` / `https` */
   public $protocol = null;
+  /** @var string|null 原始查询字符串（不含前导 `?`），如 `a=1&b=2` */
   public $queryString = null;
+  /** @var array 解析后的查询参数键值对，如 `["a" => "1", "b" => "2"]` */
   public $queryParams = [];
+  /** @var string|null 片段（fragment），即 `#` 之后的 hash 部分，不含前导 `#` */
   public $fragment = null;
   /**
-   * 构建URL类实例
+   * 构建 URL 类实例
    *
-   * @param string $URL URL
+   * 解析传入的 URL 字符串，并将各组成部分写入对应的公开属性。
+   * 传入 `null` 时所有属性保持默认值（多为 `null`），可后续通过 setter 逐项赋值再 `toString()`。
+   *
+   * @param string|null $URL 待解析的 URL 字符串，为空则仅初始化属性
    */
   public function __construct($URL = null)
   {
@@ -62,10 +85,14 @@ class URL
     return $url;
   }
   /**
-   * 解析URL
+   * 解析 URL 为结构化数组
    *
-   * @param string $URL URL地址
-   * @return array
+   * 使用 PHP 内置 `parse_url()` 拆解 URL，并对缺失的组成部分统一返回 `null`。
+   * `origin` 字段按标准语义计算为 `scheme://host[:port]`（仅当 scheme 与 host 同时存在时）。
+   * `query` 部分会进一步经 `parseQueryString()` 解析为关联数组。
+   *
+   * @param string $URL URL 地址
+   * @return array 含 protocol/host/port/user/password/pathName/queryString/fragment/origin/queryParams 的结构
    */
   static function parseURL($URL)
   {
@@ -99,10 +126,14 @@ class URL
     ];
   }
   /**
-   * 解析请求字符串
+   * 解析查询字符串为键值对数组
    *
-   * @param string $queryString 请求字符串
-   * @return array
+   * 以 `&` 分割参数，每段再以首个 `=` 拆分为键与值。
+   * 无 `=` 的参数（如 `?a&b`）其值退化为空字符串；键与值均经 `urldecode` + `rawurldecode` 双重解码。
+   * 空字符串或非字符串入参直接返回空数组。
+   *
+   * @param string|null $queryString 查询字符串（不含前导 `?`）
+   * @return array 形如 `["a" => "1", "b" => "2"]` 的关联数组
    */
   static function parseQueryString($queryString)
   {
@@ -121,11 +152,15 @@ class URL
     return $QueryParams;
   }
   /**
-   * 构建请求字符串
+   * 由关联数组构建查询字符串
    *
-   * @param array $queryParams 请求字符串参数
-   * @param boolean $encode 是否对键值进行编码
-   * @return string 构建后的请求字符串
+   * 遍历参数拼装 `key=value`，以 `&` 连接。当键为数值时退化为「裸参数」：
+   * 以值作为键名、值置空（即 `value=`），仅输出键名本身。
+   * `$encode` 为 true 时对键与值调用 `rawurlencode`。
+   *
+   * @param array $queryParams 请求参数键值对
+   * @param boolean $encode 是否对键值进行编码（默认 true）
+   * @return string 构建后的查询字符串（不含前导 `?`），无参数时返回空串
    */
   static function buildQuery($queryParams, $encode = true)
   {
@@ -148,17 +183,21 @@ class URL
     return $queryString;
   }
   /**
-   * 构建URL
+   * 由各部分拼装完整 URL
    *
-   * @param string $host 主机信息
-   * @param string $pathName 路径
-   * @param array $queryParams 请求参数
-   * @param string $fragment hash片段
-   * @param string $protocol 请求协议
-   * @param int $port 端口
-   * @param string $user 用户名
-   * @param string $password 密码
-   * @return string 构建后的URL
+   * 各片段空值时会自动省略对应段（如 `$port` 为空则不拼 `:port`）。
+   * userinfo 按 `user:pass@` 形式拼接，仅存在用户名时也会附加 `@`。
+   * 查询参数经 `buildQuery()` 生成，且自动加前导 `?`（仅当非空）。
+   *
+   * @param string $host 主机名
+   * @param string $pathName 路径（会自动补前导 `/`）
+   * @param array $queryParams 查询参数键值对
+   * @param string|null $fragment hash 片段（自动补前导 `#`）
+   * @param string $protocol 协议（默认 `https`）
+   * @param int|null $port 端口（自动补前导 `:`）
+   * @param string|null $user 用户名（userinfo 段）
+   * @param string|null $password 密码（userinfo 段）
+   * @return string 构建后的完整 URL
    */
   static function buildURL(
     $host = "",
@@ -199,10 +238,13 @@ class URL
     ]);
   }
   /**
-   * 组合成一个路径名称
+   * 组合多个路径段为一个归一化路径
    *
-   * @param string[] ...$paths 路径元素
-   * @return string
+   * 过滤空段，并去除每段首尾的斜杠/反斜杠，再以单斜杠拼接，天然避免段间重复斜杠。
+   * 最后用正则仅折叠「非协议冒号后」的连续斜杠，避免误伤 `https://host` 中的合法双斜杠。
+   *
+   * @param string[] ...$paths 路径元素（可变参数）
+   * @return string 拼接并归一化后的路径
    */
   static function combinedPathName(...$paths)
   {
@@ -237,7 +279,7 @@ class URL
    * 设置协议
    *
    * @param string $protocol 协议
-   * @return this
+   * @return $this
    */
   public function setProtocol($protocol)
   {
@@ -248,7 +290,7 @@ class URL
    * 设置主机
    *
    * @param string $host 主机
-   * @return this
+   * @return $this
    */
   public function setHost($host)
   {
@@ -259,7 +301,7 @@ class URL
    * 设置路径（保留已有 query/fragment）
    *
    * @param string $pathName 路径
-   * @return this
+   * @return $this
    */
   public function setPath($pathName)
   {
@@ -270,7 +312,7 @@ class URL
    * 设置端口
    *
    * @param int|null $port 端口
-   * @return this
+   * @return $this
    */
   public function setPort($port)
   {
@@ -281,7 +323,7 @@ class URL
    * 设置hash片段
    *
    * @param string|null $fragment hash片段
-   * @return this
+   * @return $this
    */
   public function setFragment($fragment)
   {
@@ -322,11 +364,20 @@ class URL
     return $base;
   }
   /**
-   * 设置请求参数
+   * 设置（写入）查询参数，支持两种调用形态：
    *
-   * @param string|array $value 参数值
-   * @param string $key 参数名
-   * @return this
+   * 1. 批量数组：`queryParam(['a' => '1', 'b'])`，以键值对写入；
+   *    数值键（如 `'b'`）退化为裸参数，键名即参数名、值置空。
+   * 2. 单参数：
+   *    - 同时传 `$key` 与 `$value`：写入 `$queryParams[$key] = $value`；
+   *    - 仅传 `$value`（或 `$value` 为真且 `$key` 为空）：把 `$value` 当作裸参数键名（解码后）写入，值置空。
+   *
+   * 注意：当 `$value` 为空串且未提供 `$key` 时不会写入（避免写入空键）。
+   * 所有写入均返回 `$this`，可链式调用。
+   *
+   * @param string|array $value 参数值或批量参数数组
+   * @param string|null $key 参数名（单参数形态下）
+   * @return $this
    */
   public function queryParam($value, $key = null)
   {
@@ -375,7 +426,7 @@ class URL
    * 移除请求参数
    *
    * @param string $key 参数名
-   * @return this
+   * @return $this
    */
   public function removeQueryParam($key)
   {
@@ -387,7 +438,7 @@ class URL
   /**
    * 清空请求参数
    *
-   * @return this
+   * @return $this
    */
   public function clearQueryParams()
   {
@@ -395,11 +446,12 @@ class URL
     return $this;
   }
   /**
-   * 获取当前请求完整 URL
+   * 获取当前请求的完整 URL
    *
-   * 读取 $_SERVER 推导当前请求的完整地址（含 query 与 fragment）
+   * 基于 `$_SERVER` 推导：先经 `baseURL()` 取得 `scheme://host`，再拼接 `REQUEST_URI`（含路径、query 与 fragment）。
+   * 在 CLI 或非 Web 上下文（`REQUEST_SCHEME`/`HTTP_HOST` 缺失）下 `baseURL()` 返回空串，此时本方法返回空串。
    *
-   * @return string 当前请求完整 URL
+   * @return string 当前请求完整 URL，无法推导时返回空串
    */
   static function current()
   {

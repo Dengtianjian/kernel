@@ -15,6 +15,12 @@ class ResponseView extends Response
   protected $viewFileBaseDir = "";
   protected $templateId = "";
   /**
+   * 布局渲染上下文（layout 包裹的页面文件与数据），用于 inject() 取回
+   *
+   * @var array|null
+   */
+  protected static $layoutContext = null;
+  /**
    * 响应视图类，构建函数渲染的是页面，相当于调用了page函数
    *
    * @param string $viewFile 渲染的视图文件，相对于$viewFileBaseDir目录
@@ -68,8 +74,10 @@ class ResponseView extends Response
    */
   public function layout($layout = null, $viewData = [], $fileBaseDir = "Views/Layout", $templateId = "layout")
   {
-    $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] = $this->viewFilePath;
-    $GLOBALS['_STORE']['__View_LayoutRenderViewData'] = $this->responseData;
+    self::$layoutContext = [
+      "file" => $this->viewFilePath,
+      "data" => $this->responseData,
+    ];
 
     $this->templateId = $templateId;
     $this->viewFilePath = FileHelper::combinedFilePath(Path::root(), $fileBaseDir, $layout . ".php");
@@ -99,7 +107,7 @@ class ResponseView extends Response
     }
     http_response_code($this->responseStatusCode);
     $CallClass = get_called_class();
-    return $CallClass::render($this->viewFilePath, $this->responseData, $this->templateId);
+    echo $CallClass::render($this->viewFilePath, $this->responseData, $this->templateId);
     // exit;
   }
   /**
@@ -124,32 +132,15 @@ class ResponseView extends Response
     if (!Arr::isAssoc($viewData)) {
       $viewData = [];
     }
-    $DataKeys = implode(",", array_map(function ($item) {
-      return "$" . $item . "=null";
-    }, array_keys($viewData)));
 
-    $TemplateIncludeCodes = [];
+    // 将渲染数据抽取为局部变量，等价于原 eval 生成的 "$key=null" 函数签名
+    extract($viewData, EXTR_SKIP);
+
+    ob_start();
     foreach ($viewFiles as $file) {
-      $code = <<<PHP
-      include_once("$file")
-PHP;
-      $code = str_replace("\\", "\\\\", $code);
-      array_push($TemplateIncludeCodes, trim($code));
+      include $file;
     }
-
-    if (count($TemplateIncludeCodes) === 0) return false;
-    $TemplateIncludeCodes = implode("\n", $TemplateIncludeCodes);
-    $CallFunctionCode = <<<PHP
-return function($DataKeys)
-{
-  $TemplateIncludeCodes;
-  return true;
-};
-PHP;
-
-    $fun = eval($CallFunctionCode);
-
-    return call_user_func_array($fun, array_values($viewData));
+    return ob_get_clean();
   }
   /**
    * 渲染App的模板，模板文件相对于当前运行的应用根目录
@@ -179,9 +170,9 @@ PHP;
    */
   public static function inject()
   {
-    $PageFilePath = $GLOBALS['_STORE']['__View_LayoutRenderViewFile'] ?? null;
-    $RenderData = $GLOBALS['_STORE']['__View_LayoutRenderViewData'] ?? null;
-    unset($GLOBALS['_STORE']['__View_LayoutRenderViewFile'], $GLOBALS['_STORE']['__View_LayoutRenderViewData']);
+    $PageFilePath = self::$layoutContext["file"] ?? null;
+    $RenderData = self::$layoutContext["data"] ?? null;
+    self::$layoutContext = null;
 
     return static::render($PageFilePath, $RenderData, "inject");
   }

@@ -3,6 +3,7 @@
 namespace kernel\Foundation\HTTP\Response;
 
 use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\HTTP\Request\Extract\RequestPagination;
 use kernel\Foundation\HTTP\Response;
 
 class ResponsePagination extends Response
@@ -26,6 +27,12 @@ class ResponsePagination extends Response
    */
   private $items = null;
   /**
+   * 从请求中提取的分页参数
+   *
+   * @var RequestPagination
+   */
+  private $pagination = null;
+  /**
    * 响应分页类
    *
    * @param Request $R 请求体
@@ -35,6 +42,7 @@ class ResponsePagination extends Response
   public function __construct(Request $R, $total, $data = null)
   {
     $this->request = $R;
+    $this->pagination = new RequestPagination($R);
     $this->total = $total;
     $this->responseData = $data;
     if (!is_null($data) && is_array($data)) {
@@ -54,12 +62,9 @@ class ResponsePagination extends Response
   }
   public function output()
   {
-    $limit = (int)$this->request->query->get("limit");
-    if (!$limit) $limit = (int)$this->request->query->get("perPage");
-    if (!$limit) $limit = 10;
-    $page = (int)$this->request->query->get("page");
-    if (!$page) $page = 1;
-    $skip = $this->request->query->has("skip") ? (int)$this->request->query->get("skip") : null;
+    $limit = (int)$this->pagination->perPage;
+    $page = (int)$this->pagination->page;
+    $skip = $this->pagination->skip;
 
     $this->responseData = [
       "list" => $this->responseData,

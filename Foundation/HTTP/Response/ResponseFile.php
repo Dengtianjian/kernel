@@ -38,7 +38,7 @@ class ResponseFile extends ResponseDownload
     $this->httpExpires = $httpExpires;
     parent::__construct($R, $filePath, $downloadFileName, false);
   }
-  private function createThumb($filePath, $fileName, $targetWdith, $targetHeight, $targetRatio, $NewExtension = null)
+  private function createThumb($filePath, $fileName, $targetWidth, $targetHeight, $targetRatio, $NewExtension = null)
   {
     $targetExt = "webp";
     switch (exif_imagetype($filePath)) {
@@ -55,7 +55,7 @@ class ResponseFile extends ResponseDownload
         $targetExt = "png";
         break;
       case IMAGETYPE_BMP:
-        $sourceImage = imagecreatefromwbmp($filePath);
+        $sourceImage = imagecreatefrombmp($filePath);
         $targetExt = "bmp";
         break;
       case IMAGETYPE_XBM:
@@ -68,34 +68,41 @@ class ResponseFile extends ResponseDownload
         break;
     }
 
+    if ($sourceImage === false) {
+      throw new \kernel\Foundation\Exception\Error("无法读取图片源文件 - " . $filePath, 500);
+    }
+
     $imageInfo = getimagesize($filePath);
+    if ($imageInfo === false) {
+      throw new \kernel\Foundation\Exception\Error("无法获取图片尺寸 - " . $filePath, 500);
+    }
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
     if ($targetRatio) {
       if ($targetRatio > 1) {
         $targetRatio = doubleval("0.$targetRatio");
       }
-      $targetWdith = $sourceWidth * $targetRatio;
+      $targetWidth = $sourceWidth * $targetRatio;
       $targetHeight = $sourceHeight * $targetRatio;
     } else {
-      if ($targetWdith === false && $targetHeight === false) {
-        $targetWdith = $sourceWidth;
+      if ($targetWidth === false && $targetHeight === false) {
+        $targetWidth = $sourceWidth;
         $targetHeight = $sourceHeight;
       } else {
-        if ($targetWdith && !$targetHeight) {
-          $targetHeight = $sourceHeight / ($sourceWidth / $targetWdith);
+        if ($targetWidth && !$targetHeight) {
+          $targetHeight = $sourceHeight / ($sourceWidth / $targetWidth);
         } else if ($targetHeight) {
-          $targetWdith = $sourceWidth / ($sourceHeight / $targetHeight);
+          $targetWidth = $sourceWidth / ($sourceHeight / $targetHeight);
         }
       }
     }
 
     imagesavealpha($sourceImage, true);
-    $targetImage = imagecreatetruecolor($targetWdith, $targetHeight);
+    $targetImage = imagecreatetruecolor($targetWidth, $targetHeight);
     imagealphablending($targetImage, false);
     imagesavealpha($targetImage, true);
 
-    imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWdith, $targetHeight, $sourceWidth, $sourceHeight);
+    imagecopyresampled($targetImage, $sourceImage, 0, 0, 0, 0, $targetWidth, $targetHeight, $sourceWidth, $sourceHeight);
 
     $quality = $this->request->query->get("q") ?: $this->imageQuality;
     $targetExt = $NewExtension ?: $targetExt;
@@ -103,21 +110,26 @@ class ResponseFile extends ResponseDownload
     switch ($targetExt) {
       case "jpg":
       case "jpeg":
+        $quality = $quality === null ? 75 : $quality;
         imagejpeg($targetImage, null, $quality);
         break;
       case "png":
-        $NumberList = [10 => 0, 9 => 1, 8 => 2, 7 => 3, 6 => 4, 5 => 5, 4 => 6, 3 => 7, 2 => 8, 1 => 9, 0 => 9];
-        if ($quality !== -1) {
-          $firstStr = $quality > 99.99 ? substr($quality, 0, 2) : substr($quality, 0, 1);
-          $quality = substr_replace($quality, $NumberList[$firstStr], 0, 1);
-        }
-
-        if ($quality <= -1) {
+        if ($quality === null) {
           $quality = -1;
-        } else if ($quality > 9) {
-          $quality = doubleval("0.$quality") * 10;
-        } else if ($quality < 1) {
-          $quality = $quality * 10;
+        } else {
+          $NumberList = [10 => 0, 9 => 1, 8 => 2, 7 => 3, 6 => 4, 5 => 5, 4 => 6, 3 => 7, 2 => 8, 1 => 9, 0 => 9];
+          if ($quality !== -1) {
+            $firstStr = $quality > 99.99 ? substr($quality, 0, 2) : substr($quality, 0, 1);
+            $quality = substr_replace($quality, $NumberList[$firstStr], 0, 1);
+          }
+
+          if ($quality <= -1) {
+            $quality = -1;
+          } else if ($quality > 9) {
+            $quality = doubleval("0.$quality") * 10;
+          } else if ($quality < 1) {
+            $quality = $quality * 10;
+          }
         }
 
         imagepng($targetImage, null, $quality);
@@ -129,6 +141,7 @@ class ResponseFile extends ResponseDownload
         imagebmp($targetImage);
         break;
       default:
+        $quality = $quality === null ? 80 : $quality;
         imagewebp($targetImage, null, $quality);
         break;
     }
@@ -144,23 +157,29 @@ class ResponseFile extends ResponseDownload
       $Etag = $_SERVER['HTTP_IF_NONE_MATCH'];
       if ($fileTag === $Etag) {
         header("HTTP/1.1 304 Not Modified");
-        exit;
+        return;
       }
     }
-    header("Last-modified:" . date("D, d M Y H:i:s", time()));
+    header("Last-modified:" . gmdate("D, d M Y H:i:s", time()) . " GMT");
     header("etag: " . $fileTag);
 
     header("cache-control: {$this->cacheControl}");
 
     if ($this->httpExpires) {
-      header("expires: {$this->httpExpires}");
+      header("expires: " . gmdate("D, d M Y H:i:s", $this->httpExpires) . " GMT");
     }
   }
   public function output()
   {
+    if (!file_exists($this->filePath)) {
+      header("HTTP/1.1 404 Not Found");
+      echo "";
+      return;
+    }
+
     header('Accept-Ranges: bytes');
     header('Content-Length: ' . $this->fileSize);
-    header('Content-Disposition: inline; filename=' . urlencode($this->fileName));
+    header('Content-Disposition: inline; filename="' . urlencode($this->fileName) . '"');
     header('Content-type: ' . mime_content_type($this->filePath) . ';', true);
     $PathInfo = pathinfo($this->filePath);
 
@@ -168,20 +187,23 @@ class ResponseFile extends ResponseDownload
       if ($this->request->query->has("w") || $this->request->query->has("h") || $this->request->query->has("r") || $this->request->query->has("q") || $this->request->query->get("ext")) {
         header_remove("Content-Length");
         $imageInfo = getimagesize($this->filePath);
+        if ($imageInfo === false) {
+          throw new \kernel\Foundation\Exception\Error("无法获取图片尺寸 - " . $this->filePath, 500);
+        }
         $sourceWidth = $imageInfo[0];
         $sourceHeight = $imageInfo[1];
-        $targetWdith = $this->request->query->get("w") ?: false;
+        $targetWidth = $this->request->query->get("w") ?: false;
         $targetHeight = $this->request->query->get("h") ?: false;
         $targetRatio = $this->request->query->get("r") ?: false;
         $outputExtension = $this->request->query->get("ext") ?: false;
         if ($outputExtension) {
-          header('Content-Disposition: inline; filename=' . urlencode($PathInfo['filename'] . ".{$outputExtension}"));
+          header('Content-Disposition: inline; filename="' . urlencode($PathInfo['filename'] . ".{$outputExtension}") . '"');
           header("Content-type: image/{$outputExtension};", true);
         }
 
-        $this->setCache($this->filePath . ":$sourceWidth-$sourceHeight-$targetWdith-$targetHeight-$targetRatio");
+        $this->setCache($this->filePath . ":$sourceWidth-$sourceHeight-$targetWidth-$targetHeight-$targetRatio");
 
-        $this->createThumb($this->filePath, $this->fileName, $targetWdith, $targetHeight, $targetRatio, $outputExtension);
+        $this->createThumb($this->filePath, $this->fileName, $targetWidth, $targetHeight, $targetRatio, $outputExtension);
       } else {
         $this->setCache($this->filePath);
 
@@ -190,11 +212,7 @@ class ResponseFile extends ResponseDownload
     } else {
       $this->setCache($this->filePath);
 
-      if (file_exists($this->filePath)) {
-        $this->printContent(true);
-      } else {
-        echo "";
-      }
+      $this->printContent(true);
     }
   }
 }

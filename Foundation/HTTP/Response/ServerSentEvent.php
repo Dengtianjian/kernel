@@ -4,9 +4,7 @@ namespace kernel\Foundation\HTTP\Response;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
-use kernel\Foundation\Output;
 
 class ServerSentEvent extends Response
 {
@@ -18,18 +16,33 @@ class ServerSentEvent extends Response
   protected $responseEventName = "message";
   protected $closed = false;
   /**
+   * 推流回调
+   *
+   * @var callable
+   */
+  protected $callback = null;
+  /**
+   * 推送间隔（秒）
+   *
+   * @var int
+   */
+  protected $intervalTime = 1;
+  /**
    * 构建SSE响应
+   *
+   * 构造仅做配置（设置响应头、输出类型与推流回调/间隔），**不会立即推流**；
+   * 需显式调用 {@see run()} 才开始循环推送。这样可在启动前链式追加配置，也便于单元测试。
    *
    * @param callable $callback 回调函数，只有在该回调函数里面调用输出方法前端才可接收到数据。该回调函数第一个参数接收的是当前响应实例。
    * ```php
    * use kernel\Foundation\HTTP\Response\ServerSentEvent;
    * 
-   * new ServerSentEvent(function (ServerSentEvent $Response) {
+   * (new ServerSentEvent(function (ServerSentEvent $Response) {
       $Response->success([
         "time" => time()
       ]);
       $Response->ping();
-    });
+    }))->run();
    * ```
    * @param int $intervalTime 间隔时间，单位：秒
    * @param string $outputType 输出数据类型，可传入json、text、xml
@@ -40,9 +53,20 @@ class ServerSentEvent extends Response
     $this->header("Content-Type", "text/event-stream", true);
     $this->header("Cache-Control", "no-cache", true);
     $this->outputType = $outputType;
-
+    $this->callback = $callback;
+    $this->intervalTime = $intervalTime;
+  }
+  /**
+   * 启动 SSE 推送循环
+   *
+   * 每轮调用回调产出一帧，直到 {@see close()} 被调用、客户端断开或回调主动中断。
+   *
+   * @return void
+   */
+  public function run()
+  {
     while (!$this->closed) {
-      call_user_func($callback, $this);
+      call_user_func($this->callback, $this);
 
       while (ob_get_level() > 0) {
         ob_end_flush();
@@ -51,7 +75,7 @@ class ServerSentEvent extends Response
 
       if (connection_aborted()) break;
 
-      sleep($intervalTime);
+      sleep($this->intervalTime);
     }
   }
   /**
