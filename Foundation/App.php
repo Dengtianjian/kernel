@@ -352,7 +352,7 @@ class App
       $callParams = $route['params'] ?: [];
       $routeInstantiateParams = $route['parameters'];
       $controller = null;
-      if (is_callable($route['controller'])) {
+      if (isSafeCallable($route['controller'])) {
         $callTarget = $route['controller'];
         //* 闭包路由：按名绑定参数（反射获取参数名，从 $route['params'] 中按名取值）
         $closure = new \ReflectionFunction($callTarget);
