@@ -7,7 +7,7 @@ use kernel\Platform\DiscuzX\Modules\SettingModule\DiscuzXSettingModuleBase;
 
 class DiscuzXSaveSettingsController extends DiscuzXController
 {
-  public $Admin = true;
+  public $admin = true;
   /**
    * 设置模块实例
    *

@@ -16,7 +16,7 @@ use kernel\Model\ExtensionsModel;
  */
 class InstallExtensionController extends AuthController
 {
-  public $Admin = true;
+  public $admin = true;
   public function data($request)
   {
     $extensionId = \addslashes($request->params("extension_id"));

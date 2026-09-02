@@ -216,6 +216,7 @@ class Response
    */
   public function success($data, $statusCode = 200, $code = 200, $message = "ok")
   {
+    $this->error = false;
     $this->responseStatusCode = $statusCode;
     $this->responseData = $data;
     $this->responseCode = $code;
@@ -342,20 +343,6 @@ class Response
   public function html()
   {
     $this->outputType = "html";
-    return $this;
-  }
-  /**
-   * 重定向
-   *
-   * @param string $url 重定向的URL
-   * @param integer $statusCode HTTP状态码
-   * @return Response
-   */
-  public function redirect($url, $statusCode = 301)
-  {
-    $this->header("Location", $url, true);
-    $this->statusCode($statusCode);
-
     return $this;
   }
   /**

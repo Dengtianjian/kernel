@@ -17,7 +17,7 @@ use kernel\Model\ExtensionsModel;
  */
 class ExtensionListViewController extends AuthController
 {
-  public $Admin = true;
+  public $admin = true;
   public function data($request)
   {
     $extensions = Extensions::scanDir("source/plugin/" . Arr::get($GLOBALS['_STORE'], '__App.id'));

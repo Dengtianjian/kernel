@@ -138,7 +138,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     $adminChecked = false;
     $authChecked = false;
 
-    if ($this->controller->Admin) {
+    if ($this->controller->admin) {
       $adminChecked = true;
       $Verified = $this->verifyToken();
       if ($Verified->error) {
@@ -149,7 +149,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
         return $adminVerified;
       }
     }
-    if (!$adminChecked && $this->controller->Auth) {
+    if (!$adminChecked && $this->controller->auth) {
       $authChecked = true;
       $Verified = $this->verifyToken();
       if ($Verified->error) {

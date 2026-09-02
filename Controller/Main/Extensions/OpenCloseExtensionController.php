@@ -14,7 +14,7 @@ use kernel\Model\ExtensionsModel;
  */
 class OpenCloseExtensionController extends AuthController
 {
-  public $Admin = 1;
+  public $admin = 1;
   public function data($request)
   {
     $extensionId = \addslashes($request->params("extension_id"));

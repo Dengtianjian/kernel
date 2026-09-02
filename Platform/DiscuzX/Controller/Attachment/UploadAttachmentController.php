@@ -7,7 +7,7 @@ use kernel\Platform\DiscuzX\Foundation\DiscuzXController;
 
 class UploadAttachmentController extends DiscuzXController
 {
-  public $Auth = false;
+  public $admin = false;
   public $serializes = [
     "aid" => "int",
     "fileName" => "string",

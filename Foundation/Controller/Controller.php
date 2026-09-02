@@ -13,6 +13,17 @@ use kernel\Foundation\HTTP\Response;
  *
  * 所有业务控制器的抽象基类，封装了完整的请求-响应处理流程。
  *
+ * ## 核心属性速览
+ * | 属性 | 类型 | 作用 |
+ * |------|------|------|
+ * | `$requestQuery` / `$requestBody` | ControllerQuery / ControllerBody | 封装后的 GET / Body 参数处理器（含校验结果） |
+ * | `$requestQuerySerializes` / `$requestBodySerializes` | array\|Mutator\|null | GET / Body 参数的类型转换规则，null 表示不转换 |
+ * | `$requestQueryValidator` / `$requestBodyValidator` | array\|Validator\|null | GET / Body 参数的校验规则，null 表示不校验 |
+ * | `$responseSerializes` | array\|string\|Mutator\|Serializer\|null | 响应数据的序列化规则，null 表示原样输出 |
+ * | `$allowedTransformers` | string[] | 允许客户端通过 `_transform` 参数调用的数据变换器白名单 |
+ * | `$request` | Request | 当前请求对象（含原始 query/body/路由 params） |
+ * | `$response` | Response | 响应对象，生命周期内可被替换 |
+ *
  * ## 生命周期
  * ```
  * __construct  →  boot  →  before  →  data (或自定义 handle)  →  after
@@ -184,9 +195,7 @@ class Controller
    * 在 requestQuery/requestBody 构造完成后调用。
    * 适合做依赖注入、属性初始化等无需依赖 query/body 校验结果的操作。
    */
-  protected function boot(): void
-  {
-  }
+  protected function boot(): void {}
 
   /**
    * 获取路由参数（URL 中的占位符，如 /post/{id} 中的 id）
@@ -275,7 +284,7 @@ class Controller
    * @param int|string     $code       业务状态码
    * @param string         $message    响应消息
    */
-  protected function success(mixed $data = null, int $statusCode = 200, int|string $code = 200, string $message = "ok"): Response
+  protected function success($data = null,  $statusCode = 200, $code = 200, $message = "ok")
   {
     return $this->response->success($data, $statusCode, $code, $message);
   }
@@ -302,11 +311,11 @@ class Controller
    */
   final function before(): void
   {
-    if ($this->requestQuery->validatedResult->error) {
+    if ($this->requestQuery->validatedResult && $this->requestQuery->validatedResult->error) {
       $this->response = $this->requestQuery->validatedResult;
       return;
     }
-    if ($this->requestBody->validatedResult->error) {
+    if ($this->requestBody->validatedResult && $this->requestBody->validatedResult->error) {
       $this->response = $this->requestBody->validatedResult;
     }
   }
@@ -342,18 +351,18 @@ class Controller
    */
   private function serialization(): void
   {
-    $ClassNamespace = explode("\\", get_class($this));
-    $ClassName = $ClassNamespace[count($ClassNamespace) - 1];
-    $ClassName = str_replace("Controller", "", $ClassName);
-    $ClassName = lcfirst($ClassName);
     if ($this->responseSerializes instanceof Mutator) {
       $this->response->addData($this->responseSerializes->data($this->response->getData())->convert(), true);
     } else if ($this->responseSerializes instanceof Serializer) {
+      // Serializer 实例走其 useRuleName 规则名；第三参 $ClassName 在此分支被 Serializer 忽略（仅数组规则才写入 _serlizer）
       $this->response->addData(Serializer::serialization($this->responseSerializes->useRuleName, $this->response->getData()), true);
-    } else if (is_array($this->responseSerializes)) {
-      $this->response->addData(Serializer::serialization($this->responseSerializes, $this->response->getData(), $ClassName), true);
-    } else if (is_string($this->responseSerializes)) {
-      $this->response->addData(Serializer::serialization($this->responseSerializes, $this->response->getData(), $ClassName), true);
+    } else if (is_array($this->responseSerializes) || is_string($this->responseSerializes)) {
+      $classNamespace = explode("\\", get_class($this));
+      $className = $classNamespace[count($classNamespace) - 1];
+      $className = str_replace("Controller", "", $className);
+      $className = lcfirst($className);
+
+      $this->response->addData(Serializer::serialization($this->responseSerializes, $this->response->getData(), $className), true);
     }
   }
 

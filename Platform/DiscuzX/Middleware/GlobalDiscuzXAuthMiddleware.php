@@ -27,7 +27,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   {
     $RR = new Result(true);
     $Member = getglobal("member");
-    if (is_bool($this->controller->Admin)) {
+    if (is_bool($this->controller->admin)) {
       if ((int)$Member['uid'] === 0) {
         $RR->error(401, "DiscuzXAdminAuth:401001", "请登录后重试", "未登录，缺少Token（Admin）");
       }
@@ -36,12 +36,12 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
       }
     }
     if ((int)$Member['adminid'] !== 1) {
-      if (is_array($this->controller->Admin)) {
-        if (!in_array($Member['adminid'], $this->controller->Admin)) {
+      if (is_array($this->controller->admin)) {
+        if (!in_array($Member['adminid'], $this->controller->admin)) {
           $RR->error(403, "DiscuzXAdminAuth:403001", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
         }
-      } else if (is_numeric($this->controller->Admin) || is_string($this->controller->Admin)) {
-        if ((int)$Member['adminid'] !== (int)$this->controller->Admin) {
+      } else if (is_numeric($this->controller->admin) || is_string($this->controller->admin)) {
+        if ((int)$Member['adminid'] !== (int)$this->controller->admin) {
           $RR->error(403, "DiscuzXAdminAuth:403002", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
         }
       }
@@ -58,17 +58,17 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   {
     $RR = new Result(true);
     $Member = getglobal("member");
-    if (is_bool($this->controller->Auth)) {
+    if (is_bool($this->controller->auth)) {
       if ((int)$Member['uid'] === 0) {
         $RR->error(401, "DiscuzXAuth:401001", "请登录后重试", "未登录，缺少Token（Auth）");
       }
     }
-    if (is_array($this->controller->Auth)) {
-      if (!in_array($Member['groupid'], $this->controller->Auth)) {
+    if (is_array($this->controller->auth)) {
+      if (!in_array($Member['groupid'], $this->controller->auth)) {
         $RR->error(403, "DiscuzXAuth:403001", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth1）");
       }
-    } else if (is_numeric($this->controller->Auth) || is_string($this->controller->Auth)) {
-      if ((int)$Member['groupid'] !== (int)$this->controller->Auth) {
+    } else if (is_numeric($this->controller->auth) || is_string($this->controller->auth)) {
+      if ((int)$Member['groupid'] !== (int)$this->controller->auth) {
         $RR->error(403, "DiscuzXAuth:403002", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth2）");
       }
     }
@@ -145,7 +145,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $adminChecked = false;
     $authChecked = false;
     $verified = null;
-    if ($this->controller->Admin) {
+    if ($this->controller->admin) {
       $adminChecked = true;
       $verified = $this->verify("admin");
       if (!$verified->error) {
@@ -155,7 +155,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
         }
       }
     }
-    if (!$adminChecked && $this->controller->Auth) {
+    if (!$adminChecked && $this->controller->auth) {
       $authChecked = true;
       $verified = $this->verify("auth");
       if (!$verified->error) {
