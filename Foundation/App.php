@@ -13,6 +13,7 @@ use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Lifecycle;
 use kernel\Foundation\Middleware\Middleware;
+use kernel\Foundation\Module\Modules;
 use kernel\Foundation\Router\Router;
 use kernel\Foundation\URL;
 
@@ -36,6 +37,15 @@ class App
    * @var Middleware
    */
   protected $middleware = null;
+  /**
+   * 模块管理器（Modules），承载已装载模块的启动/停止与检索
+   *
+   * 延迟实例化：setup() 未注入时由 ensureInstances() / modules() 自动 new 默认实例。
+   * 装配时手动 new Modules($app) 后通过 $app->set(["modules" => $modules]) 注入自定义实例。
+   *
+   * @var Modules|null
+   */
+  protected $modules = null;
   /**
    * 请求实例（Request），承载当前请求的 URI / 方法 / 参数 / Route 等
    *
@@ -186,6 +196,10 @@ class App
       if ($this->middleware === null) {
         $this->middleware = new Middleware();
       }
+      //* 模块管理器
+      if ($this->modules === null) {
+        $this->modules = new Modules($this);
+      }
       //* 生命周期管理器（先于 Request/Middleware 已就绪，Lifecycle 构造会触发 beforeCreate/afterCreate 钩子）
       if ($this->lifeCycle === null) {
         $this->lifeCycle = new Lifecycle();
@@ -202,9 +216,10 @@ class App
    *     "request" => $request,
    *     "router" => $router,
    *     "lifeCycle" => $lifeCycle,
-   *     "middleware" => $middleware
+   *     "middleware" => $middleware,
+   *     "modules" => $modules
    *   ]);
-   * 支持键：request / router / lifeCycle / middleware（其余键忽略）。
+   * 支持键：request / router / lifeCycle / middleware / modules（其余键忽略）。
    * 路由由 App 实例化并持有（也可经 set() 注入自定义实例），匹配时经 getApp()->request() 获取当前请求。
    *
    * @param array $instances 组件名 => 实例
@@ -212,7 +227,7 @@ class App
    */
   public function set(array $instances)
   {
-    foreach (["request", "router", "lifeCycle", "middleware"] as $name) {
+    foreach (["request", "router", "lifeCycle", "middleware", "modules"] as $name) {
       if (array_key_exists($name, $instances)) {
         $this->{$name} = $instances[$name];
       }
@@ -323,6 +338,8 @@ class App
         "error" => false,
         "preflight" => true
       ]);
+      //* 停止已装载模块（保证与正常路径一致的生命周期对称性）
+      $this->shutdownModules();
       return;
     }
 
@@ -330,6 +347,9 @@ class App
     try {
       //* 调用生命周期"启动"钩子
       $this->lifeCycle->fireBootUp();
+
+      //* 启动已装载模块（模块随应用启动而启动，供后续路由/中间件使用）
+      $this->bootModules();
 
       //* 路由：直接调用 App 持有的 Router 实例获取匹配结果，命中参数注入 $request->params
       $route = $this->router->route();
@@ -414,6 +434,9 @@ class App
         "error" => false
       ]);
 
+      //* 停止已装载模块（模块随应用结束而停止，释放资源）
+      $this->shutdownModules();
+
       if (is_callable($controller->response->getData())) {
         call_user_func_array($controller->response->getData(), []);
       } else {
@@ -427,6 +450,8 @@ class App
         "exception" => $e,
         "error" => true
       ]);
+      //* 停止已装载模块（异常路径同样需释放资源）
+      $this->shutdownModules();
       throw $e;
     }
   }
@@ -479,6 +504,40 @@ class App
       $this->middleware = new Middleware();
     }
     return $this->middleware;
+  }
+  /**
+   * 获取模块管理器（未实例化则延迟实例化默认实例）
+   *
+   * @return Modules 模块管理器实例
+   */
+  public function modules()
+  {
+    if ($this->modules === null) {
+      $this->modules = new Modules($this);
+    }
+    return $this->modules;
+  }
+  /**
+   * 启动所有已装载模块（供生命周期调用；模块未装载则无操作）
+   *
+   * @return void
+   */
+  protected function bootModules(): void
+  {
+    if ($this->modules !== null) {
+      $this->modules->bootAll();
+    }
+  }
+  /**
+   * 停止所有已装载模块（供生命周期调用；模块未装载则无操作）
+   *
+   * @return void
+   */
+  protected function shutdownModules(): void
+  {
+    if ($this->modules !== null) {
+      $this->modules->shutdownAll();
+    }
   }
   /**
    * 获取当前（最近实例化）的 App 实例
