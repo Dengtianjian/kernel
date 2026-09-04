@@ -2,16 +2,16 @@
 
 namespace kernel\Platform\DiscuzX\Modules\SettingModule;
 
-use kernel\Modules\SettingModule\SettingModuleBase;
+use kernel\Modules\Setting\SettingModule;
 
-class DiscuzXSettingModuleBase extends SettingModuleBase
+class DiscuzXSettingModuleBase extends SettingModule
 {
   /**
    * 设置项模型实例
    *
    * @var DiscuzXSettingsModel
    */
-  protected $SettingModelInstance = null;
+  protected $settingModelInstance = null;
 
   protected $publicNames = [];
   protected $groupNames = [];
@@ -25,9 +25,9 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    * @param array $adminNames 不同管理组可以获取的键名，键是数组ID，值是键名数组 [ 1=>['appId','appName'],3=>['appName'] ]
    * @return void
    */
-  public function __construct(DiscuzXSettingsModel $SettingsModel, $publicNames = [], $groupNames = [], $adminNames = [])
+  public function __construct(DiscuzXSettingsModel $settingsModel, $publicNames = [], $groupNames = [], $adminNames = [])
   {
-    $this->SettingModelInstance = $SettingsModel;
+    $this->SettingModelInstance = $settingsModel;
 
     $this->publicNames = $publicNames;
     $this->groupNames = $groupNames;
@@ -56,7 +56,12 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    */
   public function items(...$names)
   {
-    return $this->SettingModelInstance->items(...$names);
+    $settingsData = $this->SettingModelInstance->where("name", $names)->get();
+    $settings = [];
+    foreach ($settingsData as $item) {
+      $settings[$item['name']] = $item['value'] ? $this->decodeValue($item['value']) : null;
+    }
+    return $settings;
   }
   /**
    * 获取单个设置项值
@@ -66,7 +71,11 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    */
   public function item($name)
   {
-    return $this->SettingModelInstance->item($name);
+    $setting = $this->SettingModelInstance->where("name", $name)->first();
+    if (!$setting) {
+      return null;
+    }
+    return $this->decodeValue($setting['value'] ?? null);
   }
   /**
    * 查询某个设置项是否存在
@@ -76,7 +85,7 @@ class DiscuzXSettingModuleBase extends SettingModuleBase
    */
   public function exist($name)
   {
-    return $this->SettingModelInstance->where("name", $name)->exist();
+    return $this->SettingModelInstance->where("name", $name)->exists();
   }
   /**
    * 添加设置项

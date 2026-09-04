@@ -3,7 +3,7 @@
 namespace kernel\Platform\DiscuzX\Modules\SettingModule;
 
 use kernel\Foundation\App;
-use kernel\Modules\SettingModule\SettingsModel;
+use kernel\Modules\Setting\SettingsModel;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Platform\DiscuzX\Foundation\Database\DiscuzXQuery;
 
