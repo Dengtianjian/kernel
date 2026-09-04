@@ -279,8 +279,8 @@ class Routes
    * 提取命名组作为 def["params"] 匹配值回填；any 动态路由同样参与兜底。
    * 所有正常路由未命中时，按域名序查 fallback 兜底路由（若注册），仍无则返回 null。
    *
-   * 注：OPTIONS 预检由 App 层统一处理（fireShutdown 直接结束），此处不做 options
-   * 专属汇总；显式注册的 options 路由仍按普通方法参与正常匹配。
+   * 注：OPTIONS 请求不单独拦截，与 GET/POST 等方法走相同匹配流程；
+   * 业务应用可显式注册 options 路由自行处理预检，或由中间件统一补充 CORS 头。
    *
    * @param string $method 请求方法（如 get/post），any 路由键为 "*"
    * @param string $uri 请求路径（不含组前缀，精确匹配）

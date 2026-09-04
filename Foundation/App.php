@@ -314,8 +314,7 @@ class App
    *
    * 处理流程：
    * 1. ensureInstances() 兜底实例化未注入的组件；
-   * 2. OPTIONS 预检请求：直接 fireShutdown 结束（preflight 标记），保证生命周期有始有终；
-   * 3. fireBootUp() 触发启动钩子；
+   * 2. fireBootUp() 触发启动钩子；
    * 4. 直接调用 App 持有的 Router 实例匹配当前请求（match()），命中参数与 append 隐式参数合并经 $request->params->fill() 注入，未命中抛 404 Error；
    * 5. 命中后构建控制器（含 before()）或闭包路由（闭包预建默认 Controller 承载响应）；
    * 6. 通过 middleware->execute() 执行中间件链，回调内 executeController() 执行业务；
@@ -330,18 +329,6 @@ class App
   {
     //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化
     $this->ensureInstances();
-
-    if ($this->request()->method() === "options") {
-      //* 预检请求也执行结束钩子，保证生命周期有始有终（记录日志、释放资源等）
-      $this->lifeCycle->fireShutdown(null, [
-        "exception" => null,
-        "error" => false,
-        "preflight" => true
-      ]);
-      //* 停止已装载模块（保证与正常路径一致的生命周期对称性）
-      $this->shutdownModules();
-      return;
-    }
 
     //* 载入扩展 ~ 输出：正常与异常结束都会执行结束钩子（异常交由全局异常处理器输出）
     try {

@@ -204,7 +204,7 @@ class Lifecycle
    * 同一请求只触发一次（shutdownFired 幂等），避免异常路径重复执行。
    *
    * @param mixed $arg 传给钩子的数据（HTTP：$controller->response；CLI：命令退出码；异常路径可能为 null）
-   * @param array|null $context 结束上下文：["exception" => Throwable|null, "error" => bool, "preflight" => bool]
+   * @param array|null $context 结束上下文：["exception" => Throwable|null, "error" => bool]
    * @return void
    */
   public function fireShutdown($arg = null, $context = null)
