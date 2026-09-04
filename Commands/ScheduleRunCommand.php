@@ -1,7 +1,8 @@
 <?php
 
 namespace kernel\Commands;
-use kernel\Foundation\FileSystem\Path;
+
+use kernel\Facades\Crons;
 
 /**
  * 定时任务执行命令
@@ -9,10 +10,11 @@ use kernel\Foundation\FileSystem\Path;
  * 命令名 schedule:run 在 kernel/console 中注册（Console::register）。
  *
  * 用法：
- *   php kernel/console schedule:run
+ *   php isdtj/console schedule:run
  *
- * 扫描当前应用 Crons/ 目录下的定时任务类（继承 kernel\Foundation\Cron），
- * 按 plan() 定义的计划执行到期的任务。
+ * 直接经 Crons 门面执行：业务应用可先经门面登记定时器（如 Crons::registerClass(...)）；
+ * 未登记时门面自动实例化并扫描当前应用 Crons/ 目录，
+ * 对继承 kernel\Foundation\Crontab\Cron 且到期的任务调用 run()。
  */
 class ScheduleRunCommand
 {
@@ -26,40 +28,11 @@ class ScheduleRunCommand
    */
   public function handle($console, $args, $options): int
   {
-    $cronsDirectory = Path::root() . "/Crons";
-    if (!is_dir($cronsDirectory)) {
-      $console->warning("No Crons/ directory found in " . Path::root());
-      return 0;
-    }
+    // 经门面执行：业务已登记则复用同一单例，否则自动扫描 App Crons/ 目录
+    $ran = Crons::runDue();
 
-    $cronFiles = glob($cronsDirectory . "/*Cron.php");
-    if (empty($cronFiles)) {
-      $console->info("No cron classes found in {$cronsDirectory}");
-      return 0;
-    }
-
-    $app = \getApp();
-    if (!$app) {
-      $console->error("App instance not found. Run schedule:run through the console entry.");
-      return 1;
-    }
-
-    $namespace = $app->id() . "\\Crons";
-    $ran = 0;
-    foreach ($cronFiles as $file) {
-      $className = $namespace . "\\" . pathinfo($file, PATHINFO_FILENAME);
-      if (!class_exists($className)) {
-        $console->warning("Cron class not found: {$className}");
-        continue;
-      }
-
-      /** @var \kernel\Foundation\Cron $cron */
-      $cron = new $className();
-      if ($cron->due()) {
-        $console->line("Running: {$className}");
-        $cron->handle();
-        $ran++;
-      }
+    foreach (Crons::notFound() as $className) {
+      $console->warning("Cron class not found: {$className}");
     }
 
     if ($ran === 0) {
