@@ -4,6 +4,7 @@ namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Controller\AuthController;
+use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Middleware\MiddlewareBase;
 use kernel\Foundation\Result;
 
@@ -30,11 +31,10 @@ class GlobalAuthMiddleware extends MiddlewareBase
     // 仅从 Authorization 头取 token，避免 token 进入 URL/Body 被日志记录或泄露
 
     if ($strongCheck && (empty($token) || is_null($token))) {
-      $RR->error(401, "Auth:401001", "请登录后重试", [
+      return $RR->error(401, "Auth:401001", "请登录后重试", [
         "strongCheck" => $strongCheck,
         "msg" => "未登录，缺少Token（verify）"
       ]);
-      return $RR;
     }
     if (empty($token)) {
       return $RR;
@@ -56,13 +56,11 @@ class GlobalAuthMiddleware extends MiddlewareBase
     }
     $expirationDay = (int)($authData['expire_days'] ?? 0);
     $diffDay = round((time() - $authData['created_at']) / 86400);
-    header("Authorization:" . $authData['token'] . "/" . $expiresAt, true);
 
     //* 如果token的有效期剩余20%，就自动刷新token
     if ($expirationDay > 0 && $diffDay / $expirationDay > 0.8) {
       //* 自动刷新token
       $newToken = Auth::createToken($authData['user_id']);
-      header("Authorization:" . $newToken['value'] . "/" . $newToken['expiresAt'], true);
       Auth::deleteToken($authData['token']);
 
       $token = $newToken['value'];
@@ -76,14 +74,23 @@ class GlobalAuthMiddleware extends MiddlewareBase
 
     return $RR;
   }
-  public function handle(\Closure $next)
+  /**
+   * 中间件处理：校验通过后执行业务逻辑，并为响应补充 Authorization 头
+   *
+   * 后置注入——先 $next() 执行后续逻辑拿到 Response，再统一写入鉴权头，
+   * 不绕过框架的响应头管理（避免直接调用全局 header()）。
+   *
+   * @param \Closure $next
+   * @return \kernel\Foundation\HTTP\Response
+   */
+  public function handle(\Closure $next): Response
   {
     if (!($this->controller instanceof AuthController)) {
       $verified = $this->verifyToken(false);
       if ($verified->error) {
         return $verified;
       }
-      return $next();
+      return $this->applyAuthHeader($next());
     }
 
     $needAdmin = !empty($this->controller->admin);
@@ -106,11 +113,23 @@ class GlobalAuthMiddleware extends MiddlewareBase
       }
     }
 
-    $res = $next();
-    if (Auth::logged()) {
-      header("Authorization:" . Auth::token() . "/" . Auth::tokenExpiresAt(), true);
-    }
+    return $this->applyAuthHeader($next());
+  }
 
-    return $res;
+  /**
+   * 为响应补充 Authorization 头（后置注入）
+   *
+   * 仅当本次请求成功登录（Auth::logged() 为真）时才写入，便于客户端
+   * 续期/携带 token。通过 Response::header() 管理头信息，由框架统一输出。
+   *
+   * @param \kernel\Foundation\HTTP\Response $response
+   * @return \kernel\Foundation\HTTP\Response
+   */
+  protected function applyAuthHeader(Response $response): Response
+  {
+    if (Auth::logged()) {
+      $response->header("Authorization", Auth::token() . "/" . Auth::tokenExpiresAt());
+    }
+    return $response;
   }
 }
