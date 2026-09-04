@@ -124,21 +124,27 @@ class Route
    * 注册 OPTIONS 路由（预检/跨域探测）
    *
    * 未传入控制器时，自动以「空响应（204 No Content）」放行——绝大多数业务对
-   * OPTIONS 预检只需通过、无需返回实体，调用 `Route::options($uri)` 即让该 URI
-   * 的 OPTIONS 请求自动返回空响应；如需自定义预检逻辑，再显式传入控制器/闭包。
+   * OPTIONS 预检只需通过、无需返回实体。
+   * - `Route::options("users")`：仅该 URI 的 OPTIONS 请求返回 204；
+   * - `Route::options()`（`$uri` 为 null）：通配任意 URI，全量放行 OPTIONS；
+   * 如需自定义预检逻辑，显式传入控制器/闭包即可。
    * 空响应由 `GlobalCorsMiddleware` 等跨域中间件按需补 Access-Control-* 头。
    *
-   * @param string $uri 路由 URI
+   * @param string|null $uri 路由 URI；为 null 时通配全部 URI（全量放行）
    * @param string|array|\Closure|null $controller 控制器类/`[类,方法]`/闭包，省略则空响应放行
    * @return RouteRegister
    */
-  static function options($uri, $controller = null)
+  static function options($uri = null, $controller = null)
   {
     // 省略控制器：以空响应（204）自动放行 OPTIONS 预检，业务无需额外处理
     if ($controller === null) {
       $controller = function () {
         return new Response(null, 204);
       };
+    }
+    // uri 为 null 时通配全部 URI，全量放行 OPTIONS 预检
+    if ($uri === null) {
+      $uri = "{path:.*}";
     }
     return self::make($uri, "options", $controller);
   }
