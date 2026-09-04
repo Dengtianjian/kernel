@@ -59,6 +59,8 @@ kernel/
 | `Object/` | 基础对象模型 |
 | `Result.php` | 标准化返回结果（Result，继承 Response） |
 | `Validation/` | 数据验证框架 |
+| `Facade.php` | [门面基类](ruyi-docs/docs/php/api/foundation/facade)：静态转发 + 单例/多例自动判定（`resolve()`/`accessor()`） |
+| `Crontab/` | [定时任务](ruyi-docs/docs/php/api/foundation/crontab/cron)（`Cron` 基类 + `Crons` 管理器），由 `schedule:run` 经门面驱动 |
 
 ## 入口文件
 
