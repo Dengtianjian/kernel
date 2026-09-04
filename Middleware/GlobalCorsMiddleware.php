@@ -2,61 +2,52 @@
 
 namespace kernel\Middleware;
 
-
-use kernel\Foundation\Config;
+use kernel\Foundation\HTTP\Cors;
+use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Middleware\MiddlewareBase;
 
+/**
+ * 全局 CORS 中间件
+ *
+ * 职责：仅「补充响应头」，不拦截请求、不短路 OPTIONS。所有 CORS 响应头
+ * （Access-Control-*）的解析与装配逻辑统一由 kernel\Foundation\HTTP\Cors 完成，
+ * 本类仅做薄封装：取请求 Origin → 委托 Cors::applyTo() 注入响应头。
+ *
+ * 执行时机：本中间件为「后置」中间件——先 $next() 执行后续逻辑拿到 Response，
+ * 再统一注入 CORS 头。因是后置，不会阻断任何请求。
+ *
+ * 关于预检（OPTIONS）：CORS 预检请求不再由框架统一拦截，交由业务应用自行处理
+ * （注册 options 路由返回 204/空体，或倚赖本中间件为响应补 CORS 头）。若未来需要
+ * 在框架层「按 origin 短路」预检，需将本中间件改为前置中间件。
+ *
+ * 配置键（cors.*，默认值见 Cors::DEFAULTS）。
+ */
 class GlobalCorsMiddleware extends MiddlewareBase
 {
   /**
-   * 获取请求来源
+   * 获取请求的 Origin（仅取自 HTTP_ORIGIN 头）
    *
-   * @return string
+   * 无该头（同源请求、非浏览器、服务器间调用等）视为非跨域，返回 null。
+   *
+   * @return string|null
    */
-  public function getOrigin()
+  public function getOrigin(): ?string
   {
-    $origin = null;
-    if (array_key_exists('HTTP_ORIGIN', $_SERVER)) {
-      $origin = $_SERVER['HTTP_ORIGIN'];
-    } else  if (array_key_exists('HTTP_REFERER', $_SERVER)) {
-      $origin = $_SERVER['HTTP_REFERER'];
-    } else {
-      $origin = $_SERVER['REMOTE_ADDR'];
-    }
-
-    return $origin;
+    return $_SERVER['HTTP_ORIGIN'] ?? null;
   }
-  public function handle($next)
+
+  /**
+   * 中间件处理：为响应补充 CORS 头
+   *
+   * 后置中间件——先执行后续逻辑拿到 Response，再委托 Cors 注入跨域头。
+   *
+   * @param \Closure $next
+   * @return \kernel\Foundation\HTTP\Response
+   */
+  public function handle($next): Response
   {
+    // 后置中间件：先执行后续逻辑，再补充 CORS 响应头（不拦截、不短路）
     $Response = $next();
-    $origin = $this->getOrigin();
-    $allowOrigin = Config::get("cors/allowOrigin");
-    if (!is_array($allowOrigin)) {
-      if ($allowOrigin !== "*") {
-        $allowOrigin = array_map(function ($item) {
-          return trim($item);
-        }, explode(",", $allowOrigin));
-      }
-    }
-    if ($allowOrigin === "*") {
-      $Response->header("Access-Control-Allow-Origin", $origin);
-    } else {
-      if (in_array($origin, $allowOrigin)) {
-        $Response->header("Access-Control-Allow-Origin", $origin);
-      } else {
-        $Response->header("Access-Control-Allow-Origin", "");
-      }
-    }
-
-    $Response->header("Access-Control-Allow-Headers", implode(",", Config::get("cors/allowHeaders") ?: ["Authorization"]));
-    $Response->header("Access-Control-Expose-Headers", implode(",", Config::get("cors/exposeHeaders") ?: ["Authorization"]));
-    $Response->header("Access-Control-Max-Age", Config::get("cors/maxAge") ?: 86400);
-
-    if ($_SERVER['REQUEST_METHOD'] === "OPTIONS") {
-      $Response->null();
-      return $Response;
-    }
-
-    return $Response;
+    return Cors::applyTo($Response, $this->getOrigin());
   }
 }
