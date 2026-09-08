@@ -4,8 +4,7 @@ namespace kernel\Platform\Wechat\Miniprogram;
 
 use kernel\Foundation\Result;
 use kernel\Foundation\Data\Arr;
-use kernel\Model\WechatUsersModel;
-
+use kernel\Platform\Wechat\Models\WechatUsersModel;
 
 class User extends WechatMiniProgram
 {
@@ -59,9 +58,8 @@ class User extends WechatMiniProgram
       return $res;
     }
     $res = $res->result();
-    $WUM = new WechatUsersModel();
     $member = Arr::get($GLOBALS['_STORE'], '__App.member');
-    return $WUM->bind($member['uid'], $res['openid'], $res['unionid']);
+    return WechatUsersModel::bind($member['uid'], $res['openid'], $res['unionid']);
   }
   /**
    * 注册
@@ -76,7 +74,6 @@ class User extends WechatMiniProgram
       return $res;
     }
     $res = $res->result();
-    $WUM = new WechatUsersModel();
-    return $WUM->register($res['openid'], $res['unionid']);
+    return WechatUsersModel::register($res['openid'], $res['unionid']);
   }
 }

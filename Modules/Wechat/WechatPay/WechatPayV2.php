@@ -26,9 +26,9 @@ class WechatPayV2 extends WechatPay
    */
   public function __construct($AppId, $MerchantId, $ApiSecret, $PublicKeyFilePath, $SSLCertFilePath, $SSLKeyFilePath)
   {
-    $this->AppId = $AppId;
+    $this->appId = $AppId;
     $this->MerchantId = $MerchantId;
-    $this->ApiSecret = $ApiSecret;
+    $this->appSecret = $ApiSecret;
     $this->PublicKeyFilePath = $PublicKeyFilePath;
     $this->SSLCertFilePath = $SSLCertFilePath;
     $this->SSLKeyFilePath = $SSLKeyFilePath;

@@ -1,8 +1,10 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilities;
 
-class UserManagement extends WechatOfficialAccount
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountAbility;
+
+class UserManagement extends WechatOfficialAccountAbility
 {
   /**
    * 获取用户列表

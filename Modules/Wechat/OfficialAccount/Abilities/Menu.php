@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilities;
 
-use kernel\Foundation\Data\Arr;
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountAbility;
 
-class Menu extends WechatOfficialAccount
+class Menu extends WechatOfficialAccountAbility
 {
   public function getCurrentSelfmenuInfo()
   {

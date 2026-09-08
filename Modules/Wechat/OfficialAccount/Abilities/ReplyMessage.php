@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilities;
 
 use kernel\Foundation\Data\Arr;
 

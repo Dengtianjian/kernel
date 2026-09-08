@@ -12,16 +12,16 @@ class WechatPay extends Wechat
    *
    * @var string
    */
-  protected $MerchantId = null;
+  protected $merchantId = null;
   /**
    * 实例化微信支付类
    *
    * @param string $AppId 公众平台AppId
    * @param string $MerchantId 微信支付平台商户ID
    */
-  function __construct($AppId, $MerchantId)
+  function __construct($AppId, $merchantId)
   {
-    $this->MerchantId = $MerchantId;
+    $this->merchantId = $merchantId;
 
     parent::__construct(null, $AppId);
   }

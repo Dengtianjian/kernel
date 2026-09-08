@@ -1,13 +1,15 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilitie;
+
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountAbility;
 
 /**
  * 微信公众号模板消息
  * @inheritDoc https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Template_Message_Interface.html
  * 
  */
-class TemplateMessage extends WechatOfficialAccount
+class TemplateMessage extends WechatOfficialAccountAbility
 {
   /**
    * 设置所属行业

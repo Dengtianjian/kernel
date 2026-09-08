@@ -1,8 +1,10 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilities;
 
-class WebApp extends WechatOfficialAccount
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountAbility;
+
+class WebApp extends WechatOfficialAccountAbility
 {
   /**
    * 生成获取code的URL地址

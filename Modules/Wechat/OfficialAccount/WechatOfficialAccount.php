@@ -6,4 +6,8 @@ use kernel\Platform\Wechat\Wechat;
 
 class WechatOfficialAccount extends Wechat
 {
+  public function name()
+  {
+    return "wechatOfficialAccount";
+  }
 }

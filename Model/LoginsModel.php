@@ -5,7 +5,6 @@ namespace kernel\Model;
 use kernel\Foundation\App;
 use kernel\Foundation\Database\PDO\Model;
 
-
 class LoginsModel extends Model
 {
   public $tableName = "logins";

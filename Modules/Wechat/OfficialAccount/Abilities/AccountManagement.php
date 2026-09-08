@@ -1,8 +1,10 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Platform\Wechat\OfficialAccount\Abilities;
 
-class AccountManagement extends WechatOfficialAccount
+use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountAbility;
+
+class AccountManagement extends WechatOfficialAccountAbility
 {
   /**
    * 生成带参数的二维码
