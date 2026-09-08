@@ -7,7 +7,7 @@ use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Request;
 use kernel\Foundation\Extension\ExtensionProvisioner;
 use kernel\Foundation\Extension\Extensions;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
+use kernel\Modules\DiscuzX\Foundation\DiscuzXLang;
 use kernel\Foundation\Response;
 use kernel\Model\ExtensionsModel;
 

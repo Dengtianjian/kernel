@@ -4,7 +4,7 @@ use kernel\Foundation\App;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Output;
 use kernel\Middleware\GlobalWechatOfficialAccountMiddleware;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXApp;
+use kernel\Modules\DiscuzX\Foundation\DiscuzXApp;
 
 include_once("../kernel/vendor/autoload.php");
 

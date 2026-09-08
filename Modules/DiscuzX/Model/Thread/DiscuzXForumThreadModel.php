@@ -1,0 +1,26 @@
+<?php
+
+namespace kernel\Modules\DiscuzX\Model\Thread;
+
+use kernel\Foundation\HTTP\Response\ResponsePagination;
+use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+
+class DiscuzXForumThreadModel extends DiscuzXModel
+{
+  public $tableName = "forum_thread";
+  public function items($tids = null, $subjectKeywords = null, $authorIds = null, $page = 1, $perPage = 10)
+  {
+    if ($tids) {
+      $this->where("tid", $tids);
+    }
+    if ($subjectKeywords) {
+      $this->where("subject", "%" . $subjectKeywords . "%", "LIKE");
+    }
+    if ($authorIds) {
+      $this->where("authorid", $authorIds);
+    }
+    $total = $this->reset(false)->count();
+    $this->page($page, $perPage);
+    return new ResponsePagination(getApp()->request(), $total, $this->getAll());
+  }
+}

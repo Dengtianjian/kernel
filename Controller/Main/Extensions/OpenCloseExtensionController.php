@@ -5,7 +5,7 @@ namespace kernel\App\Main\Extensions;
 
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Request;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
+use kernel\Modules\DiscuzX\Foundation\DiscuzXLang;
 use kernel\Foundation\Response;
 use kernel\Model\ExtensionsModel;
 

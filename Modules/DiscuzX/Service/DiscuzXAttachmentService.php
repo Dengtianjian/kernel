@@ -1,0 +1,156 @@
+<?php
+
+namespace kernel\Modules\DiscuzX\Service;
+use kernel\Foundation\FileSystem\FileSystem;
+
+
+use forum_upload;
+use kernel\Foundation\App;
+use kernel\Foundation\Config;
+use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\Result;
+use kernel\Foundation\Router\Route;
+use kernel\Foundation\Router\RouteSame;
+use kernel\Foundation\Service;
+use kernel\Modules\DiscuzX\Controller\Attachment as AttachmentNamespace;
+use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+
+class DiscuzXAttachmentService extends Service
+{
+  /**
+   * 保存文件
+   *
+   * @param array $files 上传的文件或者上传的文件列表
+   * @param string $saveDir 保存的路径，基于data/plugindata/{插件ID}/attachments目录
+   * @return Result
+   */
+  public static function saveFile($files, $saveDir = "")
+  {
+    $savePath = Config::get("attachmentPath");
+    if (!$savePath) {
+      $savePath = FileHelper::combinedFilePath("data", "plugindata", App::id(), "attachments", $saveDir);
+      if (!is_dir($savePath)) {
+        mkdir($savePath, 0777, true);
+      }
+    }
+    return new Result(FileSystem::upload($files, $savePath));
+  }
+  /**
+   * 上传文件
+   *
+   * @param array $file 上传的文件
+   * @return Result
+   */
+  public static function uploadFile($file)
+  {
+    global $_G;
+    $R = new Result(null);
+    $_GET['uid'] = $_G['uid'];
+    $_GET['hash'] = md5(substr(md5($_G['config']['security']['authkey']), 8) . $_G['uid']);
+
+    $_FILES['Filedata'] = $file;
+    $FU = new forum_upload(true);
+    if ($FU->statusid) {
+      $errorMessage = lang("touch/template", "uploadstatusmsg" . $FU->statusid);
+      $R->error(400, 400, $errorMessage, [
+        "statusId" => $FU->statusid
+      ]);
+      return $R;
+    }
+    $aid = $FU->aid;
+    $TableId = dintval(strval($aid)[strlen($aid) - 1]);
+    $FU->attach['aid'] = $aid;
+    $FU->attach['tableId'] = $TableId;
+
+    include libfile("function/post");
+    updateattach(0, intval("-" . $aid), 0, [
+      $aid => $FU->attach
+    ]);
+
+    $R->addData($FU->attach, true);
+    return $R;
+  }
+  /**
+   * 根据附件ID获取附件信息
+   *
+   * @param integer $AttachmentId 附件ID
+   * @return Result
+   */
+  public static function getAttachment($AttachmentId, $thumbWidth = null, $thumbHeight = null)
+  {
+    $AM = new DiscuzXModel("forum_attachment");
+    $attachment = $AM->where("aid", $AttachmentId)->getOne();
+    if (!$attachment) {
+      return new Result(null, 404, 404001, "附件不存在");
+    }
+    $TableId = $attachment['tableid'];
+    $SAM = new DiscuzXModel("forum_attachment_$TableId");
+    $attachment = $SAM->where("aid", $AttachmentId)->getOne();
+    if (!$attachment) {
+      return new Result(null, 404, 404001, "附件不存在");
+    }
+    $attachment['downloadLink'] = "forum.php?mod=attachment&aid=" . aidencode($AttachmentId) . "&nothumb=yes";
+    $attachment['thumbURL'] = null;
+    if ($attachment['isimage']) {
+      if (is_null($thumbWidth)) {
+        $thumbWidth = $attachment['width'];
+      }
+      if (is_null($thumbHeight)) {
+        $thumbHeight = $attachment['height'];
+      }
+      $attachment['thumbURL'] = getforumimg($AttachmentId, 0, $thumbWidth, $thumbHeight, fileext($attachment['filename']));
+    }
+
+    $attachment = [
+      "aid" => $attachment['aid'],
+      "fileName" => $attachment['filename'],
+      "isImage" => $attachment['isimage'],
+      "size" => $attachment['filesize'],
+      "width" =>  $attachment['width'],
+      "height" =>  $attachment['height'],
+      "downloadLink" => $attachment['downloadLink'],
+      "thumbURL" => $attachment['thumbURL']
+    ];
+
+    return new Result($attachment);
+  }
+  /**
+   * 删除附件
+   *
+   * @param int|array $aids 附件ID|附件ID列表
+   * @return bool
+   */
+  public static function deleteAttachment($aids)
+  {
+    if (!is_array($aids)) {
+      $aids = [$aids];
+    }
+    \C::t('forum_attachment')->delete_by_id("aid", $aids);
+    \C::t('forum_attachment_exif')->delete($aids);
+    $tables = [];
+    foreach ($aids as $aid) {
+      $tableId = intval(strval($aid)[strlen($aid) - 1]);
+      if (!isset($tables[$tableId])) {
+        $tables[$tableId] = [];
+      }
+      array_push($tables[$tableId], $aid);
+    }
+    foreach ($tables as $tableId => $aids) {
+      \C::t('forum_attachment_n')->delete_attachment($tableId, $aids);
+    }
+    return true;
+  }
+  /**
+   * 注册附件相关路由
+   *
+   * @return void
+   */
+  public static function registerRoute()
+  {
+    Route::post("attachment", AttachmentNamespace\UploadAttachmentController::class);
+    new RouteSame("attachment/{attach:\w+}", function (RouteSame $same) {
+      $same->get(AttachmentNamespace\GetAttachmentController::class);
+      $same->delete(AttachmentNamespace\DeleteAttachmentController::class);
+    });
+  }
+}

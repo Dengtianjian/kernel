@@ -6,7 +6,7 @@ namespace kernel\App\Main\Extensions;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Extension\Extensions;
-use kernel\Platform\DiscuzX\Foundation\DiscuzXLang;
+use kernel\Modules\DiscuzX\Foundation\DiscuzXLang;
 use kernel\Foundation\Request;
 use kernel\Foundation\Response;
 use kernel\Foundation\View;
