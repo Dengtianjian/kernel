@@ -163,9 +163,9 @@ class Controller
    * - data() 中通过 success()/fail() 可替换
    * - App 层在 data() 返回 ResponsePagination 时直接作为分页响应输出
    *
-   * @var Response
+   * @var ControllerResponse
    */
-  public Response $response;
+  public $response;
 
   // endregion
 

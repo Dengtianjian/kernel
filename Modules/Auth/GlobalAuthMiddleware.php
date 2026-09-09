@@ -83,7 +83,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
    * @param \Closure $next
    * @return \kernel\Foundation\HTTP\Response
    */
-  public function handle(\Closure $next): Response
+  public function handle(\Closure $next)
   {
     if (!($this->controller instanceof AuthController)) {
       $verified = $this->verifyToken(false);
