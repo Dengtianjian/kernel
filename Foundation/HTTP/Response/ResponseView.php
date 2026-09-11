@@ -1,13 +1,13 @@
 <?php
 
 namespace kernel\Foundation\HTTP\Response;
+
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response;
-use kernel\Foundation\Output;
 
 class ResponseView extends Response
 {

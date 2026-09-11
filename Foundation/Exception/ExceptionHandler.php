@@ -116,7 +116,7 @@ class ExceptionHandler
       if ($expectsJson) {
         self::respondJson($statusCode, $errorCode, $message, $errorDetails, $code, $file, $line, $trace, $traceString, $previous);
       } else {
-        self::renderView($statusCode, $errorCode, $message, $errorDetails);
+        self::renderView($statusCode, $errorCode, $message, $errorDetails, $code, $file, $line, $trace, $traceString, $previous);
       }
     } catch (Throwable $inner) {
       // handler 自身抛错时，绝不让 PHP 钩子再次回调 → 退化为直接 PHP 输出 + 强制退出
@@ -145,6 +145,8 @@ class ExceptionHandler
       $statusCode = $exception->statusCode;
       $errorCode = $exception->errorCode;
       $errorDetails = $exception->errorDetails;
+    } else {
+      $errorDetails = $exception->getTrace();
     }
 
     self::handle(
@@ -180,7 +182,7 @@ class ExceptionHandler
    * 写日志
    */
   private static function writeLog(
-    int $code,
+    int|string $code,
     string $message,
     string $file,
     int $line,
@@ -204,11 +206,11 @@ class ExceptionHandler
    * 输出 JSON 错误响应（客户端期望 JSON 时）
    */
   private static function respondJson(
-    int $statusCode,
+    int|string $statusCode,
     int|string $errorCode,
     string $message,
     mixed $errorDetails,
-    int $code,
+    int|string $code,
     string $file,
     int $line,
     array $trace,
@@ -245,8 +247,18 @@ class ExceptionHandler
    *   2. 退回 kernel 默认 `kernel/Views/error.php`
    *   3. 都找不到则降级为纯文本
    */
-  private static function renderView(int $statusCode, int|string $errorCode, string $message, mixed $errorDetails): void
-  {
+  private static function renderView(
+    int|string $statusCode,
+    int|string $errorCode,
+    string $message,
+    mixed $errorDetails,
+    int|string $code,
+    string $file,
+    int $line,
+    array $trace,
+    ?string $traceString,
+    ?Throwable $previous
+  ): void {
     $appViewDir = Path::root() . "/Views";
     $kernelViewDir = Path::kernelRoot() . "/Views";
 
@@ -259,8 +271,19 @@ class ExceptionHandler
       }
       // 2. 退回 kernel 视图
       if (is_dir($kernelViewDir) && file_exists($kernelViewDir . "/error.php")) {
-        $viewResponse = new ResponseView("error", null, $kernelViewDir, "kernel_page");
-        $viewResponse->render($appViewDir . "/error.php");
+        $viewResponse = new ResponseView("error", [
+          "errorCode" => $errorCode,
+          "code" => $code,
+          "message" => $message,
+          "file" => $file,
+          "line" => $line,
+          "trace" => $trace,
+          "traceString" => $traceString,
+          "previous" => $previous,
+          "details" => $errorDetails,
+        ], "Views", "kernel_page", Path::kernelRoot());
+        $viewResponse->statusCode($statusCode);
+        $viewResponse->output();
         return;
       }
     } catch (Throwable $e) {

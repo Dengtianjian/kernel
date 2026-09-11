@@ -25,7 +25,7 @@ use kernel\Foundation\Output;
       border-radius: 5px;
     }
   </style>
-  <h1><? echo $code; ?></h1>
+  <h1><? if ($errorCode) { ?> 「<? echo $errorCode; ?>」 <? } ?> <? echo $code; ?></h1>
   <h2><? echo $message; ?></h2>
   <section>
     <p>
@@ -36,12 +36,12 @@ use kernel\Foundation\Output;
     </p>
     <p>
       Trace:
-    <pre><? Output::printContent(implode("\n", $traceString)) ?></pre>
+    <pre><? Output::printContent($traceString) ?></pre>
     </p>
     <?php if (App::mode() === "development") { ?>
       <p>
         Details:
-      <pre><? Output::printContent($error) ?></pre>
+      <pre><? Output::printContent($details) ?></pre>
       </p>
     <?php } ?>
   </section>
