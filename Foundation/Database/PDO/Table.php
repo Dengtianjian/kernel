@@ -14,6 +14,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * ## 职责范围
  *
  * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`（统一返回 bool）
+ * - **建表 SQL 生成**：`buildCreateSQL()` 基于 $schema 生成 CREATE TABLE SQL（不执行）
  * - **信息查询**：`tableExists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
  * - **表名管理**：`prefix()` 自动添加配置前缀，`prefixReplaces` 支持前缀占位替换
  * - **Schema 映射**：`getPhpSchema()` 将 `$schema` 中的 Schema 定义转换为字段→PHP类型映射
@@ -187,14 +188,34 @@ class Table extends AbilityBaseObject
    */
   public function create()
   {
-    if (empty($this->schema)) {
+    $sql = $this->buildCreateSQL();
+    if ($sql === '') {
       return true;
     }
 
-    $sql = Schema::createTableSQL($this->tableName, $this->schema);
-
     // 见本分区说明：DDL 成功返回 0，需与 false 严格比较
     return $this->exec($sql) !== false;
+  }
+
+  /**
+   * 根据 $this->schema 生成建表 SQL（不执行）
+   *
+   * 与 getCreateSQL() 的区别：
+   * - getCreateSQL() 经 SHOW CREATE TABLE 返回数据库实际的建表语句；
+   * - 本方法基于 PHP 侧 $this->schema（Schema 定义）生成 SQL，不会触碰数据库，
+   *   适用于预览建表语句、调试、单元测试等场景。
+   *
+   * @return string 生成的 CREATE TABLE SQL；无 schema 定义时返回空串
+   *
+   * @see Schema::createTableSQL() 实际的 SQL 拼装逻辑
+   */
+  public function buildCreateSQL()
+  {
+    if (empty($this->schema)) {
+      return '';
+    }
+
+    return Schema::createTableSQL($this->tableName, $this->schema);
   }
 
   /**

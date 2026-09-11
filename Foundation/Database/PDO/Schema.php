@@ -610,7 +610,7 @@ class Schema
    * 从 Schema 数组生成完整的 CREATE TABLE SQL
    *
    * 自动处理 PRIMARY KEY、UNIQUE KEY、INDEX，
-   * 使用 InnoDB + utf8mb4。
+   * 使用 InnoDB + utf8mb4；含 AUTO_INCREMENT 列时追加 AUTO_INCREMENT=1。
    *
    * @param string $tableName 表名（含前缀）
    * @param Schema[] $columns 字段定义数组
@@ -622,6 +622,7 @@ class Schema
     $primaryKeys = [];
     $uniqueKeys = [];
     $indexKeys = [];
+    $hasAutoIncrement = false;
 
     foreach ($columns as $col) {
       if (!($col instanceof Schema)) continue;
@@ -636,6 +637,10 @@ class Schema
       }
       if ($col->isIndex() && !$col->isPrimary() && !$col->isAutoIncrement() && !$col->isUnique()) {
         $indexKeys[] = $col;
+      }
+
+      if ($col->isAutoIncrement()) {
+        $hasAutoIncrement = true;
       }
     }
 
@@ -654,6 +659,11 @@ class Schema
       $colSQLs[] = "INDEX `{$col->getIndexName()}` (`{$col->getName()}`)";
     }
 
-    return "CREATE TABLE IF NOT EXISTS `{$tableName}` (\n  " . implode(",\n  ", $colSQLs) . "\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    $tableOptions = "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    if ($hasAutoIncrement) {
+      $tableOptions .= " AUTO_INCREMENT=1";
+    }
+
+    return "CREATE TABLE IF NOT EXISTS `{$tableName}` (\n  " . implode(",\n  ", $colSQLs) . "\n) {$tableOptions};";
   }
 }

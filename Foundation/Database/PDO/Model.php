@@ -135,6 +135,29 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  * @method int|bool     insert(array $data, bool $isReplaceInto = false, bool $isIgnore = false, bool $returnId = false, array $params = [])
  * @method int|string   insertGetId(array $data, bool $isReplaceInto = false, bool $isIgnore = false, array $params = [])
  * @method int|bool     update(array $data, array $params = [])
+ * ------------------------------------------------------------------
+ * === 父类 Table 方法（继承自 DDL / 表管理基类，实例与静态均可调用）===
+ * @method string tableName() 获取当前（含前缀）表名
+ * @method string prefix(string $tableName) 为表名追加配置前缀
+ * @method bool create() 依据 $schema 建表
+ * @method bool drop() 删表
+ * @method bool truncate() 清空表（保留结构）
+ * @method bool rename(string $newName) 重命名表
+ * @method bool copy(string $newName, bool $withData = false) 复制表（可选连带数据）
+ * @method bool tableExists() 表是否存在
+ * @method string getCreateSQL() 获取建表 DDL
+ * @method array getColumns() 获取字段结构
+ * @method array getIndexes() 获取索引
+ * @method array|null getStatus() 获取表状态（引擎/行数/自增值等）
+ * @method bool optimize() 优化表（整理碎片）
+ * @method array getPhpSchema() $schema → 字段→PHP类型 映射
+ * @method int|false exec(string $sql) 执行写/DDL SQL（PDO::exec）
+ * @method \PDOStatement|false execQuery(string $sql) 执行 SQL 返回结果集对象
+ * @method array select(string $sql, array $bindings = []) 原生查询取全部行
+ * @method array|null selectOne(string $sql, array $bindings = []) 原生查询取单行
+ * @method mixed scalar(string $sql, array $bindings = []) 原生查询取标量
+ * @method int insertId() 最后插入的自增 ID
+ * ------------------------------------------------------------------
  */
 class Model extends Table
 {
