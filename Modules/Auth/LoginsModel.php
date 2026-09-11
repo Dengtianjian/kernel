@@ -55,10 +55,10 @@ class LoginsModel extends Model
     $this->schema = [
       (new Schema("id"))->bigint()->nullable(false)->autoIncrement()->comment("id")->primary(),
       (new Schema("token"))->varchar(260)->nullable(true)->index('token_value')->unsigned()->comment("token值"),
-      (new Schema("expires_at"))->unixtime()->nullable(true)->comment("有效期至"),
       (new Schema("user_id"))->varchar(26)->nullable(true)->comment("所属用户"),
       (new Schema("app_id"))->varchar(26)->nullable(true)->comment("所属app"),
       (new Schema("salt"))->varchar(64)->nullable(true)->comment("token 盐值（用于校验/轮换）"),
+      (new Schema("expires_at"))->unixtime()->nullable(true)->comment("有效期至"),
       (new Schema("expire_days"))->int()->nullable(true)->comment("有效期天数"),
       (new Schema("created_at"))->unixtime()->nullable(true)->comment("创建时间"),
       (new Schema("updated_at"))->unixtime()->nullable(true)->comment("最后更新时间"),
