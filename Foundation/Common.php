@@ -33,7 +33,7 @@ function import($fileName, $args = [], $basePath = null)
     $fileName = "{$fileName}.php";
   }
 
-  $realFilePath = FileHelper::combinedFilePath($basePath, $fileName);
+  $realFilePath = Path::join($basePath, $fileName);
   if (!file_exists($realFilePath)) {
     return false;
   }

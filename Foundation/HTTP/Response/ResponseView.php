@@ -52,7 +52,7 @@ class ResponseView extends Response
     if (pathinfo($viewFile, PATHINFO_EXTENSION)) {
       $extension = "";
     }
-    $this->viewFilePath = FileHelper::combinedFilePath($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
+    $this->viewFilePath = Path::join($viewFileDir, $viewFileDirBaseProject, $viewFile . $extension);
     if (!file_exists($this->viewFilePath)) {
       throw new Error("模板文件不存在 - " . $this->viewFilePath, 500, 500, $this->viewFilePath);
     }
@@ -80,7 +80,7 @@ class ResponseView extends Response
     ];
 
     $this->templateId = $templateId;
-    $this->viewFilePath = FileHelper::combinedFilePath(Path::root(), $fileBaseDir, $layout . ".php");
+    $this->viewFilePath = Path::join(Path::root(), $fileBaseDir, $layout . ".php");
     $this->viewFileBaseDir = $fileBaseDir;
     $this->responseData = $viewData;
 
@@ -155,10 +155,10 @@ class ResponseView extends Response
   {
     if (is_array($viewFiles)) {
       foreach ($viewFiles as &$fileItem) {
-        $fileItem = FileHelper::combinedFilePath(Path::root(), $viewFileBaseDir, "$fileItem.php");
+        $fileItem = Path::join(Path::root(), $viewFileBaseDir, "$fileItem.php");
       }
     } else {
-      $viewFiles = FileHelper::combinedFilePath(Path::root(), $viewFileBaseDir, "$viewFiles.php");
+      $viewFiles = Path::join(Path::root(), $viewFileBaseDir, "$viewFiles.php");
     }
     return static::render($viewFiles, $viewData, $templateId);
   }

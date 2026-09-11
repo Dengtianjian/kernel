@@ -40,14 +40,14 @@ class Config
    */
   function __construct()
   {
-    $configFilesDir = FileHelper::combinedFilePath(Path::root(), "Configs");
+    $configFilesDir = Path::join(Path::root(), "Configs");
     if (!is_dir($configFilesDir))
       return;
 
     $readConfigFiles = ["Config.php", "Config.development.php", "Config.local.php", "Config.production.php", "Config.release.php"];
 
     foreach ($readConfigFiles as $configFileName) {
-      self::read(FileHelper::combinedFilePath($configFilesDir, $configFileName));
+      self::read(Path::join($configFilesDir, $configFileName));
     }
   }
 

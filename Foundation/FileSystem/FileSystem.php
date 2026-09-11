@@ -35,8 +35,8 @@ final class FileSystem
     if ($appRoot === null) {
       return;
     }
-    self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Data"));
-    self::ensureDirectory(FileHelper::combinedFilePath($appRoot, "Storage"));
+    self::ensureDirectory(Path::join($appRoot, "Data"));
+    self::ensureDirectory(Path::join($appRoot, "Storage"));
   }
 
   /**
@@ -110,8 +110,8 @@ final class FileSystem
     $saveFullFileName = $fileExtension ? "{$fileName}.{$fileExtension}" : $fileName;
     $path = $saveFullFileName;
     if ($savePath) {
-      $path = FileHelper::combinedFilePath($savePath, $saveFullFileName);
-      $folderPath = FileHelper::combinedFilePath(Path::storage(), $savePath);
+      $path = Path::join($savePath, $saveFullFileName);
+      $folderPath = Path::join(Path::storage(), $savePath);
       if (!is_dir($folderPath)) {
         mkdir($folderPath, 0700, true);
       }
@@ -121,7 +121,7 @@ final class FileSystem
       mkdir(Path::storage(), 0700, true);
     }
 
-    $saveFullPath = FileHelper::combinedFilePath(Path::storage(), $path);
+    $saveFullPath = Path::join(Path::storage(), $path);
     if (is_string($file)) {
       if (!file_exists($file)) {
         throw new Error("文件保存失败", 500, "FileUpload:500002");
@@ -192,8 +192,8 @@ final class FileSystem
       if ($handle == "." || $handle == "..") {
         continue;
       }
-      $sourceItem = FileHelper::combinedFilePath($sourcePath, $handle);
-      $destItem = FileHelper::combinedFilePath($destPath, $handle);
+      $sourceItem = Path::join($sourcePath, $handle);
+      $destItem = Path::join($destPath, $handle);
       if (is_dir($sourceItem)) {
         self::cloneDirectory($sourceItem, $destItem);
       } else {
@@ -272,7 +272,7 @@ final class FileSystem
       if ($item === "." || $item === "..") {
         continue;
       }
-      $itemPath = FileHelper::combinedFilePath($path, $item);
+      $itemPath = Path::join($path, $item);
       if (is_dir($itemPath)) {
         self::deleteDirectory($itemPath);
       } else {
@@ -307,7 +307,7 @@ final class FileSystem
 
     $result = true;
     foreach ($files as $fileItem) {
-      $path = FileHelper::combinedFilePath($targetPath, $fileItem);
+      $path = Path::join($targetPath, $fileItem);
       if (in_array($path, $whiteList)) continue;
 
       if (is_dir($path)) {
@@ -356,8 +356,8 @@ final class FileSystem
 
     $result = true;
     foreach ($files as $fileItem) {
-      $pathItem = FileHelper::combinedFilePath($targetPath, $fileItem);
-      $destPathItem = FileHelper::combinedFilePath($destPath, $fileItem);
+      $pathItem = Path::join($targetPath, $fileItem);
+      $destPathItem = Path::join($destPath, $fileItem);
       if (in_array($destPathItem, $whiteList)) continue;
 
       if (is_dir($pathItem)) {

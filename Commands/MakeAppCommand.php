@@ -1,6 +1,7 @@
 <?php
 
 namespace kernel\Commands;
+
 use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Config;
@@ -56,8 +57,12 @@ class MakeAppCommand
     mkdir($targetDirectory . "/Data", 0755, true);
     mkdir($targetDirectory . "/Storage", 0755, true);
 
+    file_put_contents($targetDirectory . "/Data/install.key", uniqid());
+
     //* 应用装配类：手动实例化配置、缓存、文件系统等组件
-    file_put_contents($targetDirectory . "/Setup/Bootstrap.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/Setup/Bootstrap.php",
+      <<<PHP
 <?php
 
 namespace {$AppId}\\Setup;
@@ -117,7 +122,9 @@ PHP
     );
 
     //* HTTP 入口
-    file_put_contents($targetDirectory . "/index.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/index.php",
+      <<<PHP
 <?php
 include_once("{$kernelRoot}/vendor/autoload.php");
 
@@ -131,7 +138,9 @@ PHP
     );
 
     //* 路由文件（HTTP 路由）
-    file_put_contents($targetDirectory . "/Routes/index.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/Routes/index.php",
+      <<<PHP
 <?php
 use kernel\\Foundation\\Router\\Route;
 
@@ -140,7 +149,9 @@ PHP
     );
 
     //* 引导/关闭装配类
-    file_put_contents($targetDirectory . "/Setup/Bootup.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/Setup/Bootup.php",
+      <<<PHP
 <?php
 
 namespace {$AppId}\\Setup;
@@ -159,7 +170,9 @@ class Bootup
 PHP
     );
 
-    file_put_contents($targetDirectory . "/Setup/Shutdown.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/Setup/Shutdown.php",
+      <<<PHP
 <?php
 
 namespace {$AppId}\\Setup;
@@ -179,7 +192,9 @@ PHP
     );
 
     //* CLI 入口（Console 子类，可补充 register() 注册额外命令）
-    file_put_contents($targetDirectory . "/console", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/console",
+      <<<PHP
 #!/usr/bin/env php
 <?php
 include_once("{$kernelRoot}/vendor/autoload.php");
@@ -196,7 +211,9 @@ PHP
     );
 
     //* 示例控制器
-    file_put_contents($targetDirectory . "/Controller/IndexController.php", <<<PHP
+    file_put_contents(
+      $targetDirectory . "/Controller/IndexController.php",
+      <<<PHP
 <?php
 
 namespace {$AppId}\\Controller;

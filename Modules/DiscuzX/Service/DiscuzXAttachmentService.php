@@ -8,6 +8,7 @@ use forum_upload;
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Result;
 use kernel\Foundation\Router\Route;
 use kernel\Foundation\Router\RouteSame;
@@ -28,7 +29,7 @@ class DiscuzXAttachmentService extends Service
   {
     $savePath = Config::get("attachmentPath");
     if (!$savePath) {
-      $savePath = FileHelper::combinedFilePath("data", "plugindata", App::id(), "attachments", $saveDir);
+      $savePath = Path::join("data", "plugindata", App::id(), "attachments", $saveDir);
       if (!is_dir($savePath)) {
         mkdir($savePath, 0777, true);
       }

@@ -143,7 +143,7 @@ class Upgrade_0_2_1
 {
   public function __construct()
   {
-    $sql = file_get_contents(FileHelper::combinedFilePath(F_APP_BASE,"Provisioner/Upgrade/Upgrade_0_2_1",CHARSET.".sql"));
+    $sql = file_get_contents(Path::join(F_APP_BASE,"Provisioner/Upgrade/Upgrade_0_2_1",CHARSET.".sql"));
     
     \runquery($sql);
   }

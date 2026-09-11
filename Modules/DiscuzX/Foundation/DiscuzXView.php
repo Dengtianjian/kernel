@@ -36,9 +36,9 @@ class DiscuzXView extends ResponseView
       return template($viewFile, implode("_", [
         App::id(),
         $templateId
-      ]), FileHelper::combinedFilePath($dir, $viewFileDirBaseProject));
+      ]), Path::join($dir, $viewFileDirBaseProject));
     } else {
-      return FileHelper::combinedFilePath($dir, $viewFileDirBaseProject, $viewFile);
+      return Path::join($dir, $viewFileDirBaseProject, $viewFile);
     }
   }
   public function page($viewFile, $viewData, $viewFileDirBaseProject = "Views", $templateId = "page", $viewFileDir = null)
@@ -60,7 +60,7 @@ class DiscuzXView extends ResponseView
     $this->viewFilePath = template($layout, implode("_", [
       App::id(),
       $templateId
-    ]), FileHelper::combinedFilePath(Path::dir(), $fileBaseDir));
+    ]), Path::join(Path::dir(), $fileBaseDir));
 
     $this->viewFileBaseDir = $fileBaseDir;
     $this->responseData = $viewData;

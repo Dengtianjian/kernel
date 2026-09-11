@@ -63,7 +63,7 @@ class Path
     if (App::id() === null) {
       return null;
     }
-    return FileHelper::combinedFilePath(dirname(self::kernelRoot()), App::id());
+    return self::join(dirname(self::kernelRoot()), App::id());
   }
 
   /**
@@ -74,7 +74,7 @@ class Path
   public static function data(): ?string
   {
     $appRoot = self::root();
-    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Data");
+    return $appRoot === null ? null : self::join($appRoot, "Data");
   }
 
   /**
@@ -85,7 +85,7 @@ class Path
   public static function storage(): ?string
   {
     $appRoot = self::root();
-    return $appRoot === null ? null : FileHelper::combinedFilePath($appRoot, "Storage");
+    return $appRoot === null ? null : self::join($appRoot, "Storage");
   }
 
   /**
@@ -129,5 +129,36 @@ class Path
   {
     $relative = substr($path, strlen($base));
     return ltrim(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $relative), DIRECTORY_SEPARATOR);
+  }
+  /**
+   * 组合多个路径段为一个完整路径
+   *
+   * 自动过滤空路径段，并规范化路径分隔符为当前系统的 DIRECTORY_SEPARATOR。
+   * 适用于跨平台路径拼接。
+   *
+   * 使用示例：
+   * ```php
+   * self::join('/var/www', 'app', 'config.php');
+   * // Linux:   "/var/www/app/config.php"
+   * // Windows: "\var\www\app\config.php"
+   * ```
+   *
+   * @param string ...$paths 可变数量的路径段
+   * @return string 组合后的完整路径
+   */
+  public static function join(...$paths)
+  {
+    $paths = array_filter($paths, function ($item) {
+      return !($item === null || $item === "");
+    });
+    $path = implode(DIRECTORY_SEPARATOR, $paths);
+    $path = str_replace([
+      "//",
+      "\\",
+      "/",
+      "\\\\"
+    ], DIRECTORY_SEPARATOR, $path);
+
+    return $path;
   }
 }

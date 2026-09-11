@@ -11,7 +11,7 @@ use kernel\Foundation\FileSystem\FileHelper;
  * 本地磁盘存储
  *
  * {@see AbstractStorage} 的本地实现：文件存储在由 {@see Path::storage()} 指向的
- * 本地存储目录下，路径经 {@see FileHelper::combinedFilePath()} 安全拼接，避免
+ * 本地存储目录下，路径经 {@see Path::join()} 安全拼接，避免
  * 目录穿越。
  *
  * 磁盘名称固定为 `local`。
@@ -39,7 +39,7 @@ class LocalStorage extends AbstractStorage
    */
   public function get($fileName)
   {
-    $filePath = FileHelper::combinedFilePath(Path::storage(), $fileName);
+    $filePath = Path::join(Path::storage(), $fileName);
 
     $fileInfo = FileSystem::getFileInfo($filePath);
     if ($fileInfo) {
@@ -106,13 +106,13 @@ class LocalStorage extends AbstractStorage
    * 获取本地文件的完整路径
    *
    * 将 {@see Path::storage()} 与 `$fileName` 经
-   * {@see FileHelper::combinedFilePath()} 安全拼接。
+   * {@see Path::join()} 安全拼接。
    *
    * @param string $fileName 文件名称（相对 storage 根目录的路径）
    * @return string 文件在本地磁盘上的完整路径
    */
   public function url($fileName)
   {
-    return FileHelper::combinedFilePath(Path::storage(), $fileName);
+    return Path::join(Path::storage(), $fileName);
   }
 }

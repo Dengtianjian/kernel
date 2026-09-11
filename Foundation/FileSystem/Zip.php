@@ -150,7 +150,7 @@ class Zip
    */
   public function zipDirectory($sourcePath, $outputPath)
   {
-    $sourcePath = rtrim(FileHelper::combinedFilePath($sourcePath), "/");
+    $sourcePath = rtrim(Path::join($sourcePath), "/");
     if (!is_dir($sourcePath)) {
       $this->lastError = "源目录不存在：{$sourcePath}";
       return false;
@@ -295,7 +295,7 @@ class Zip
         return false;
       }
 
-      $destPath = FileHelper::combinedFilePath($dest, $name);
+      $destPath = Path::join($dest, $name);
       //* 目标目录越界防护：条目解析出的真实目录必须在解压目标之内
       $realDir = realpath(dirname($destPath));
       if ($realDir === false || ($realDir !== $realDest && !str_starts_with($realDir, $realDest . "/"))) {
@@ -387,7 +387,7 @@ class Zip
       return;
     }
     foreach ($dirs as $dirItem) {
-      $sourceFilePath = FileHelper::combinedFilePath($directory, $dirItem);
+      $sourceFilePath = Path::join($directory, $dirItem);
 
       //* 符号链接不打包，避免链接目标被当作文件/目录错误处理
       if (is_link($sourceFilePath)) {

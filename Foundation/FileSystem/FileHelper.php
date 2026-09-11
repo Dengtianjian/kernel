@@ -131,6 +131,7 @@ class FileHelper
    * // Windows: "\var\www\app\config.php"
    * ```
    *
+   * @deprecated 使用 PATH::join()
    * @param string ...$paths 可变数量的路径段
    * @return string 组合后的完整路径
    */

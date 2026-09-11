@@ -5,6 +5,7 @@ namespace kernel\Foundation\FileSystem\Storage;
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Model\FilesModel;
@@ -391,7 +392,7 @@ class FileStorage extends AbilityBaseObject
 
       $verifiedFileName = $file['name'];
       $savePath = $fileKeyOrSavePath;
-      $fileKey = FileHelper::combinedFilePath($savePath, self::generateFileKey($pathInfo['extension']));
+      $fileKey = Path::join($savePath, self::generateFileKey($pathInfo['extension']));
     } else {
       $fileKey = $verifiedFileName = $fileKeyOrSavePath;
     }

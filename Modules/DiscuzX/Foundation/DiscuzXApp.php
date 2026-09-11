@@ -4,6 +4,7 @@ namespace kernel\Modules\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
 use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\URL;
 
 class DiscuzXApp extends App
@@ -55,25 +56,25 @@ class DiscuzXApp extends App
      * DiscuzX插件目录
      */
     if (!defined("F_DISCUZX_PLUGIN_ROOT")) {
-      define("F_DISCUZX_PLUGIN_ROOT", FileHelper::combinedFilePath($root, "source", "plugin"));
+      define("F_DISCUZX_PLUGIN_ROOT", Path::join($root, "source", "plugin"));
     }
     /**
      * DiscuzX插件目录，相对路径
      */
     if (!defined("F_DISCUZX_PLUGIN")) {
-      define("F_DISCUZX_PLUGIN", FileHelper::combinedFilePath("source", "plugin"));
+      define("F_DISCUZX_PLUGIN", Path::join("source", "plugin"));
     }
     /**
      * DiscuzX Data目录
      */
     if (!defined("F_DISCUZX_DATA")) {
-      define("F_DISCUZX_DATA", FileHelper::combinedFilePath($root, "data"));
+      define("F_DISCUZX_DATA", Path::join($root, "data"));
     }
     /**
      * DiscuzX Data下存放插件数据的目录
      */
     if (!defined("F_DISCUZX_DATA_PLUGIN")) {
-      define("F_DISCUZX_DATA_PLUGIN", FileHelper::combinedFilePath($root, "data", "plugindata", App::id()));
+      define("F_DISCUZX_DATA_PLUGIN", Path::join($root, "data", "plugindata", App::id()));
     }
 
     global $_G;

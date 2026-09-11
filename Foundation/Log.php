@@ -42,7 +42,7 @@ class Log
    */
   static private function generateLogPath(...$paths)
   {
-    return FileHelper::combinedFilePath(self::basePath(), ...$paths);
+    return Path::join(self::basePath(), ...$paths);
   }
   /**
    * 日志存储根目录（固定为 Data/Logs，不可修改）

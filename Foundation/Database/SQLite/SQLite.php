@@ -22,7 +22,7 @@ class SQLite extends SQLite3
    */
   public function __construct($tableFileName, $flags = SQLITE3_OPEN_READWRITE, $encryptionKey = null)
   {
-    $tableFileName = FileHelper::combinedFilePath(Path::root(), $tableFileName);
+    $tableFileName = Path::join(Path::root(), $tableFileName);
     if (!file_exists($tableFileName)) {
       throw new Error("SQLite数据库文件不存在", 500);
     }

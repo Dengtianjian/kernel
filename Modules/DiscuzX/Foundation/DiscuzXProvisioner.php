@@ -43,14 +43,14 @@ class DiscuzXProvisioner extends Provisioner
   {
     $this->cleanInstall();
     $this->cleanUpgrade();
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner"));
+    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner"));
   }
   public function cleanInstall()
   {
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner", "Install"));
+    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner", "Install"));
   }
   public function cleanUpgrade()
   {
-    return FileSystem::deleteDirectory(FileHelper::combinedFilePath(Path::root(), "Provisioner", "Upgrade"));
+    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner", "Upgrade"));
   }
 }

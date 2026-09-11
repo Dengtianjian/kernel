@@ -1,10 +1,8 @@
 <?php
 
 namespace kernel\Foundation;
+
 use kernel\Foundation\FileSystem\Path;
-
-use kernel\Foundation\FileSystem\FileHelper;
-
 
 /**
  * 应用生命周期编排器：安装 / 增量升级 / 回滚 / 卸载
@@ -17,6 +15,11 @@ use kernel\Foundation\FileSystem\FileHelper;
  * 版本管理：
  * - .version 文件存储完整版本号（如 2.2.0.20260721.1746）
  * - 对比时自动提取前三段基础版本号（2.2.0）与升级脚本版本号做比较
+ *
+ * 安装辅助：
+ * - install() / lockInstall() / installLocked()：创建数据/存储目录、写入并检测安装锁文件（install.lock）
+ * - verifiyInstallKey() / refreshInstallKey()：校验与重新生成安装密钥（install.key）
+ * - resetVersion() / uninstall()：强制改写版本号、删除 .version 版本记录
  *
  * 升级脚本文件格式：
  * ```php
@@ -67,7 +70,7 @@ class Provisioner
   public function __construct(
     protected ?string $upgradesDir = null,
   ) {
-    $versionFile = FileHelper::combinedFilePath(Path::data(), ".version");
+    $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
       $this->latestVersion = trim(file_get_contents($versionFile));
       $this->currentSemver = $this->parseSemver($this->latestVersion);
@@ -105,6 +108,54 @@ class Provisioner
       mkdir(Path::storage(), 0777, true);
     }
     return $this;
+  }
+  /**
+   * 判断安装是否已锁定
+   *
+   * 检测数据目录下的 install.lock 文件是否存在，存在即视为已完成安装。
+   *
+   * @return bool 已锁定返回 true，否则 false
+   */
+  public function installLocked()
+  {
+    return file_exists(Path::join(Path::data(), "install.lock"));
+  }
+  /**
+   * 写入安装锁文件，标记安装完成
+   *
+   * 在 data 目录下创建 install.lock，内容为当前时间戳。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  public function lockInstall()
+  {
+    return file_put_contents(Path::join(Path::data(), "install.lock"), time());
+  }
+  /**
+   * 校验安装密钥
+   *
+   * 读取 install.key 内容并与传入的 $key 比对。
+   * $key 为空时直接返回 false；install.key 不存在（无内容）时也返回 false。
+   *
+   * @param string $key 待校验的安装密钥
+   * @return bool 密钥一致返回 true，否则 false
+   */
+  public function verifiyInstallKey($key)
+  {
+    if (!$key) return false;
+    $fileContent = file_get_contents(Path::join(Path::data(), "install.key"));
+    return  $fileContent ? $fileContent === $key : false;
+  }
+  /**
+   * 重新生成并写入安装密钥
+   *
+   * 在 data 目录下写入一个新的 uniqid() 作为 install.key 内容。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  public function refreshInstallKey()
+  {
+    return file_put_contents(Path::join(Path::data(), "install.key"), uniqid());
   }
   /**
    * 执行增量升级
@@ -145,6 +196,29 @@ class Provisioner
     }
 
     return $this;
+  }
+  /**
+   * 将配置中的版本号持久化到 .version 文件
+   *
+   * 读取 config("version")（应用配置中的目标版本号）并写入 data 目录下的 .version。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  function updateVersion()
+  {
+    return file_put_contents(Path::join(Path::data(), ".version"), config("version"));
+  }
+  /**
+   * 读取当前持久化的完整版本号
+   *
+   * 返回 data 目录下 .version 文件的原文（如 2.2.0.20260721.1746）；
+   * 文件不存在时返回 null。
+   *
+   * @return string|null
+   */
+  function version()
+  {
+    return file_get_contents(Path::join(Path::data(), ".version")) ?: null;
   }
 
   /**
@@ -190,7 +264,7 @@ class Provisioner
   /** 获取升级目录路径，未设置时返回默认路径 {Path::root()}/Upgrades */
   private function upgradesDir(): string
   {
-    return $this->upgradesDir ?? FileHelper::combinedFilePath(Path::root(), "Upgrades");
+    return $this->upgradesDir ?? Path::join(Path::root(), "Upgrades");
   }
 
   /**
@@ -214,7 +288,7 @@ class Provisioner
       }
 
       $version = str_replace('_', '.', $matches[1]);
-      $upgradeList[$version] = FileHelper::combinedFilePath($upgradesDir, $file);
+      $upgradeList[$version] = Path::join($upgradesDir, $file);
     }
 
     return $upgradeList;
@@ -302,7 +376,7 @@ class Provisioner
    */
   private function persistVersion(string $version): void
   {
-    $versionFile = FileHelper::combinedFilePath(Path::data(), ".version");
+    $versionFile = Path::join(Path::data(), ".version");
     file_put_contents($versionFile, $version);
     $this->latestVersion = $version;
     $this->currentSemver = $this->parseSemver($version);
@@ -314,7 +388,7 @@ class Provisioner
    */
   public function uninstall()
   {
-    $versionFile = FileHelper::combinedFilePath(Path::data(), ".version");
+    $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
       unlink($versionFile);
     }
