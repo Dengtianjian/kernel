@@ -23,6 +23,25 @@ abstract class Facade
   protected static array $registry = [];
 
   /**
+   * 门面构造函数
+   *
+   * 实例化门面时按子类实现策略主动解析底层实例：
+   *   - 子类覆写 resolve()（单例）→ 调用 resolve() 创建兜底实例；
+   *   - 子类覆写 accessor()（多例）→ 调用 accessor() 获取实例；
+   *   - 两者皆无 → 不执行任何解析（空构造）。
+   *
+   * 该构造仅为「实例化即预热」提供入口，静态调用路径（__callStatic）不受影响。
+   */
+  public function __construct()
+  {
+    if (self::hasOwnMethod("resolve")) {
+      static::resolve();
+    } elseif (self::hasOwnMethod("accessor")) {
+      static::accessor();
+    }
+  }
+
+  /**
    * 标识该门面是否为单例模式（自动检测，子类无需手动覆写）
    *
    * 判定规则：子类覆写 resolve() 即为单例，覆写 accessor() 即为多例，
@@ -30,10 +49,26 @@ abstract class Facade
    *
    * @return bool
    */
+  /**
+   * 判定子类是否自行声明（覆写）了指定方法
+   *
+   * 用于区分「基类默认实现」与「子类覆写实现」：仅当方法确实由子类
+   * （而非 Facade 基类）声明时返回 true。
+   *
+   * @param string $name 方法名
+   * @return bool
+   */
+  protected static function hasOwnMethod(string $name): bool
+  {
+    if (!method_exists(static::class, $name)) {
+      return false;
+    }
+    return (new \ReflectionMethod(static::class, $name))->getDeclaringClass()->getName() !== self::class;
+  }
+
   public static function singleton(): bool
   {
-    $resolve = new \ReflectionMethod(static::class, "resolve");
-    return $resolve->getDeclaringClass()->getName() !== self::class;
+    return self::hasOwnMethod("resolve");
   }
 
   /**

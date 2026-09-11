@@ -3,6 +3,7 @@
 namespace kernel\Modules\Auth;
 
 use kernel\Foundation\Facade;
+use Override;
 
 /**
  * Auth 门面
@@ -44,7 +45,12 @@ class Auth extends Facade
     if ($app === null) {
       return null;
     }
+    $module = null;
+    if (!$app->modules()->has("auth")) {
+      getApp()->modules()->register(new AuthModule());
+    }
     $module = $app->modules()->get("auth");
-    return $module instanceof AuthModule ? $module : null;
+
+    return $module;
   }
 }
