@@ -43,12 +43,12 @@ class Arr
    */
   static function tree($arr, $dataPrimaryKey, $relatedParentKey, $childArrayKeys = "childs")
   {
-    usort($arr, function ($a, $b) {
-      if ($a['parentId'] && $b['parentId'])
+    usort($arr, function ($a, $b) use ($relatedParentKey) {
+      if ($a[$relatedParentKey] && $b[$relatedParentKey])
         return 0;
-      if ($a['parentId'])
+      if ($a[ $relatedParentKey])
         return 1;
-      if ($b['parentId'])
+      if ($b[ $relatedParentKey])
         return -1;
 
       return 0;
