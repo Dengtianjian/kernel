@@ -198,9 +198,7 @@ class Query extends AbilityBaseObject
    * 有状态的可变构建器，paginate()/chunk() 等方法需要基于当前实例克隆
    * 出独立副本来执行 COUNT 等辅助查询，因此此处显式开放克隆。
    */
-  public function __clone()
-  {
-  }
+  public function __clone() {}
 
   /**
    * 设置执行 SQL 时使用的数据库驱动
@@ -510,15 +508,19 @@ class Query extends AbilityBaseObject
       $SQLs['join'] = Statement::join($this->options['joins']);
     }
 
-    if (count($this->options['conditions']) > 0 || count($this->filterNullConditions) > 0) {
-      // 过滤值为空的 filterNull 条件
-      $this->filterNullConditions = array_filter($this->filterNullConditions, function ($item) {
-        return !is_null($item['value']) && !empty($item['value']);
-      });
+    // INSERT / REPLACE 不支持 WHERE 子句，忽略任何残留条件
+    // （如软删除作用域、误加的 where），避免生成非法 SQL
+    if ($this->executeType !== 'insert' && $this->executeType !== 'replace') {
+      if (count($this->options['conditions']) > 0 || count($this->filterNullConditions) > 0) {
+        // 过滤值为空的 filterNull 条件
+        $this->filterNullConditions = array_filter($this->filterNullConditions, function ($item) {
+          return !is_null($item['value']) && !empty($item['value']);
+        });
 
-      if (count($this->options['conditions'])) {
-        $whereSql = Statement::where($this->options['conditions']);
-        $SQLs['condition'] = $this->executeType ? "WHERE {$whereSql}" : $whereSql;
+        if (count($this->options['conditions'])) {
+          $whereSql = Statement::where($this->options['conditions']);
+          $SQLs['condition'] = $this->executeType ? "WHERE {$whereSql}" : $whereSql;
+        }
       }
     }
 
@@ -2958,5 +2960,4 @@ class Query extends AbilityBaseObject
     $this->executeType = "delete";
     return $this->executeWrite($params);
   }
-
 }

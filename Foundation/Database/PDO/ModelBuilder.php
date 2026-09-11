@@ -85,8 +85,6 @@ class ModelBuilder
     'min',
     'avg',
     'sum',
-    'insert',
-    'insertGetId',
     'update',
     'delete',
     'cursor',
