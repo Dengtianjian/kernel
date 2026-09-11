@@ -169,6 +169,12 @@ class ModelBuilder
       $this->applyScopes();
     }
 
+    // 查询级写操作（insert / insertGetId / update）自动维护时间戳
+    if (in_array($method, ['insert', 'insertGetId', 'update'], true)) {
+      $isInsert = ($method === 'insert' || $method === 'insertGetId');
+      $parameters[0] = $this->model->touchTimestampForData($parameters[0] ?? [], $isInsert);
+    }
+
     $result = $this->query->$method(...$parameters);
 
     if ($result === $this->query) {

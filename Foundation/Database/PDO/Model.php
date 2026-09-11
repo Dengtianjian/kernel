@@ -27,7 +27,7 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  *   PHP 赋值/DB 取值 ──→ castToDb()  ──→  存入 $data（DB 兼容格式）
  *   读取/输出        ──→ castFromDb() ──→  转为 PHP 期望类型
  *
- * 时间戳自动维护：save() 时自动填充 created_at / updated_at，精度由字段的 cast 类型决定
+ * 时间戳自动维护：save() 实例操作、以及 insert/update 等查询级写操作（受 $queryTimestamps 控制）都会自动填充 created_at / updated_at，精度由字段的 cast 类型决定
  * 软删除：delete() 写入 deleted_at 而非真删，查询默认过滤 deleted_at IS NULL
  *
  * ## 代码组织（自上而下）
@@ -207,6 +207,18 @@ class Model extends Table
 
   /** @var string 更新时间字段名 */
   protected $updateTime = 'updated_at';
+
+  /**
+   * 查询级（非实例）写操作时是否自动维护 created_at / updated_at
+   *
+   * 与 $timestamps（控制 save() 实例操作）分开：本开关作用于
+   * Model::insert() / Model::insertGetId() / Model::update() 这类
+   * 不经模型实例、直接走查询构建器的批量写入。仅当字段缺失时填充，
+   * 已显式传入的值保留。
+   *
+   * @var bool
+   */
+  protected $queryTimestamps = true;
 
   /** @var bool 是否启用软删除（delete() 写 deleted_at 而非真删） */
   protected $softDelete = false;
@@ -1090,6 +1102,51 @@ class Model extends Table
   }
 
   /**
+   * 为外部写入数据数组注入 created_at / updated_at（查询级写操作用）
+   *
+   * 与 touchTimestamps() 同理，但作用于传入的 $data（而非 $this->data），
+   * 并复用以字段 cast 类型为准的 castToDb 转换，保证存储格式一致。
+   * 仅当字段缺失时填充，已显式传入的值保留；模型未声明该列时跳过。
+   *
+   * @param array $data    写入数据（单行关联数组，或批量索引数组）
+   * @param bool  $isInsert 是否 INSERT（true 同时设 created_at；false 只设 updated_at）
+   * @return array 注入后的数据
+   */
+  public function touchTimestampForData(array $data, bool $isInsert = false): array
+  {
+    if (!$this->usesQueryTimestamps()) {
+      return $data;
+    }
+
+    $nowMs = $this->freshTimestamp();
+    $createType = $this->schemaCasts[$this->createTime] ?? $this->casts[$this->createTime] ?? 'timestamp';
+    $updateType = $this->schemaCasts[$this->updateTime] ?? $this->casts[$this->updateTime] ?? 'timestamp';
+    $hasCreate = array_key_exists($this->createTime, $this->casts) || array_key_exists($this->createTime, $this->schemaCasts);
+    $hasUpdate = array_key_exists($this->updateTime, $this->casts) || array_key_exists($this->updateTime, $this->schemaCasts);
+
+    $fillRow = function (array $row) use ($nowMs, $createType, $updateType, $hasCreate, $hasUpdate, $isInsert): array {
+      if ($isInsert && $hasCreate && !array_key_exists($this->createTime, $row)) {
+        $row[$this->createTime] = $this->castToDb($createType, $nowMs);
+      }
+      if ($hasUpdate && !array_key_exists($this->updateTime, $row)) {
+        $row[$this->updateTime] = $this->castToDb($updateType, $nowMs);
+      }
+      return $row;
+    };
+
+    // 批量插入：data 为索引数组，每个元素是一行
+    if (!empty($data) && array_key_exists(0, $data) && is_array($data[0])) {
+      foreach ($data as &$row) {
+        $row = $fillRow($row);
+      }
+      unset($row);
+      return $data;
+    }
+
+    return $fillRow($data);
+  }
+
+  /**
    * 获取当前时间戳（毫秒精度）
    *
    * 返回毫秒级 Unix 时间戳 int，由 castToDb 根据字段类型决定最终的 DB 存储格式。
@@ -1107,6 +1164,14 @@ class Model extends Table
   protected function usesTimestamps(): bool
   {
     return $this->timestamps;
+  }
+
+  /**
+   * 查询级（非实例）写操作是否自动维护时间戳
+   */
+  protected function usesQueryTimestamps(): bool
+  {
+    return $this->queryTimestamps;
   }
 
   // ===================================================================
