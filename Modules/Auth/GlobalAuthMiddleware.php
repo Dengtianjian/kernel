@@ -41,7 +41,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     }
 
     // 校验时绑定 app_id，避免多 app 共用表时串号
-    $authData = Auth::model()->where("token", $token)->where("app_id", App::id())->first();
+    $authData = Auth::model()->where("token", $token)->where("app_id", App::id())->orWhere("app_id", null)->first();
     if (empty($authData)) {
       if ($strongCheck) {
         return $RR->error(401, "Auth:401003", "请登录后重试", "无效的Token");

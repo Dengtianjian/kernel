@@ -309,7 +309,7 @@ class Provisioner
     $shortName = pathinfo($filePath, PATHINFO_FILENAME);
     $relativePath = ltrim(str_replace(Path::root(), '', $this->upgradesDir()), '/');
     $namespace = str_replace('/', '\\', $relativePath);
-    return $namespace . '\\' . $shortName;
+    return App::id() . '\\' . $namespace . '\\' . $shortName;
   }
 
   /**
