@@ -139,7 +139,7 @@ class Controller
    *
    * @var string[]
    */
-  protected array $allowedTransformers = [];
+  protected $allowedTransformers = [];
 
   // endregion
 
