@@ -270,10 +270,11 @@ class Model extends Table
   // ===================================================================
 
   /**
-   * 软删除作用域模式
+   * 软删除作用域默认模式
    *
-   * 取 TRASHED_* 常量之一。由 withTrashed() / onlyTrashed() / withoutTrashed() 修改，
-   * 并在 ModelBuilder 执行 SQL 前应用为实际的查询条件。
+   * 取 TRASHED_* 常量之一，作为 scopedBuilder() 创建 ModelBuilder 时的默认作用域。
+   * 实际的修改与应用由 ModelBuilder 上的 withTrashed() / onlyTrashed() / withoutTrashed()
+   * 在执行 SQL 前完成（延迟到首个执行方法前应用）。
    *
    * @var int
    */
@@ -1269,45 +1270,14 @@ class Model extends Table
   // ===================================================================
 
   /**
-   * 查询范围：包含已软删除的记录
+   * 软删除作用域（withTrashed / onlyTrashed / withoutTrashed）已在 ModelBuilder 上实现，
+   * 通过 __call / __callStatic 自动转发，因此可直接以静态或实例形式链式调用：
    *
-   * 返回不含软删除过滤的查询构建器，数据包含软删和未删。
+   *   LinksModel::withoutTrashed()->where('id', 1)->get();
+   *   (new LinksModel())->withTrashed()->first();
    *
-   * @return ModelBuilder
-   *
-   * @example
-   * UserModel::withTrashed()->where('id', 1)->first();
+   * Model 仅保留 $trashedScope 作为 scopedBuilder() 的默认作用域（默认 TRASHED_EXCLUDE）。
    */
-  public function withTrashed(): ModelBuilder
-  {
-    $this->trashedScope = self::TRASHED_INCLUDE;
-
-    return $this->scopedBuilder();
-  }
-
-  /**
-   * 查询范围：仅查询已软删除的记录（WHERE deleted_at IS NOT NULL）
-   *
-   * @return ModelBuilder
-   */
-  public function onlyTrashed(): ModelBuilder
-  {
-    $this->trashedScope = self::TRASHED_ONLY;
-
-    return $this->scopedBuilder();
-  }
-
-  /**
-   * 查询范围：仅查询未软删除的记录（WHERE deleted_at IS NULL，默认行为）
-   *
-   * @return ModelBuilder
-   */
-  public function withoutTrashed(): ModelBuilder
-  {
-    $this->trashedScope = self::TRASHED_EXCLUDE;
-
-    return $this->scopedBuilder();
-  }
 
   // ===================================================================
   // 关联关系
