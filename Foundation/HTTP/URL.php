@@ -10,6 +10,7 @@ namespace kernel\Foundation\HTTP;
  * - 通过 `buildURL()` / `buildQuery()` 反向拼装 URL 与查询字符串；
  * - 实例支持链式修改协议、主机、路径、端口、参数等，再由 `toString()` 还原为完整 URL；
  * - 提供 `current()` / `fromCurrent()` 读取并解析当前请求 URL；
+ * - 提供 `domain()` 静态方法获取当前请求归一化域名（小写、去端口、去 IPv6 方括号）；
  * - 提供 `normalizeDomain()` 对域名做路由级归一化（小写、去端口、去 IPv6 方括号）。
  *
  * 所有组成部分在解析缺失时统一置为 `null`（而非空字符串），避免下标访问警告。
@@ -473,6 +474,25 @@ class URL
   static function fromCurrent()
   {
     return new self(self::current());
+  }
+
+  /**
+   * 获取当前请求的域名（归一化）
+   *
+   * 从 `$_SERVER['HTTP_HOST']` 读取当前请求主机，经 `normalizeDomain()` 归一化
+   * （小写、去端口、去 IPv6 方括号）后返回，可直接用于路由匹配与域名比对，
+   * 与 `Route::domain()` 注册侧、`Router::route()` 消费侧归一化口径保持一致。
+   *
+   * CLI / 非 Web 上下文（`HTTP_HOST` 缺失）下返回 `null`。
+   *
+   * @return string|null 当前请求归一化域名；无主机信息时返回 null
+   */
+  static function domain()
+  {
+    if (!array_key_exists("HTTP_HOST", $_SERVER) || !$_SERVER['HTTP_HOST']) {
+      return null;
+    }
+    return self::normalizeDomain($_SERVER['HTTP_HOST']);
   }
 
   /**

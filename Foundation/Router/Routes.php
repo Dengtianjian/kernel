@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Router;
 
+use kernel\Foundation\HTTP\URL;
+
 /**
  * 路由表集合（静态容器）
  *
@@ -291,7 +293,7 @@ class Routes
   {
     self::distribute();
     $method = strtolower($method);
-    $domain = $domain === null ? "*" : $domain;
+    $domain = $domain === null || $domain === URL::domain() ? "*" : $domain;
 
     //* HEAD 语义等同 GET（仅不含响应体）：未注册 head 路由时回退 get 路由
     $methods = $method === "head" ? ["head", "get"] : [$method];
@@ -358,7 +360,7 @@ class Routes
     if ($result === false) {
       throw new \InvalidArgumentException(
         "路由正则编译失败，无法匹配：URI \"{$def["uri"]}\"（当前路径 \"{$uri}\"）。"
-        . "请检查 where() 或 URI 内联的正则是否合法。"
+          . "请检查 where() 或 URI 内联的正则是否合法。"
       );
     }
     if (!$result) {

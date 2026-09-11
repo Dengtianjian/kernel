@@ -747,7 +747,7 @@ class RouteRegister
       return trim($s, "/");
     }, $segments));
 
-    return $uri === "/" ? "/" : ltrim($uri, "/");
+    return empty($uri) || $uri === "/" ? "/" : ltrim($uri, "/");
   }
 
   /**
