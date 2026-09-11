@@ -128,7 +128,8 @@ class GlobalAuthMiddleware extends MiddlewareBase
   protected function applyAuthHeader(Response $response): Response
   {
     if (Auth::logged()) {
-      $response->header("Authorization", Auth::token() . "/" . Auth::tokenExpiresAt());
+      $response->header("x-auth-token", Auth::token());
+      $response->header("x-auth-token-expires-at", Auth::tokenExpiresAt());
     }
     return $response;
   }

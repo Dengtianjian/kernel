@@ -19,7 +19,7 @@ use kernel\Foundation\Config;
  *   - allowOrigin   允许来源，默认 "*"
  *   - allowMethods  允许方法，默认 GET/POST/PUT/DELETE/PATCH/OPTIONS
  *   - allowHeaders  允许请求头，默认 ["Authorization"]
- *   - exposeHeaders 允许暴露响应头，默认 ["Authorization"]
+ *   - exposeHeaders 允许暴露响应头，默认 ["x-auth-token","x-auth-token-expires-at"]
  *   - maxAge        预检缓存秒数，默认 86400
  *   - allowCredentials 是否允许凭据，true 时输出 Allow-Credentials
  */
@@ -30,7 +30,7 @@ class Cors
     "allowOrigin" => "*",
     "allowMethods" => ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     "allowHeaders" => ["Authorization"],
-    "exposeHeaders" => ["Authorization"],
+    "exposeHeaders" => ["x-auth-token", "x-auth-token-expires-at"],
     "maxAge" => 86400,
     "allowCredentials" => false,
   ];
