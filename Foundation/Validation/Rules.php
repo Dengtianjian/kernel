@@ -90,7 +90,7 @@ class Rules extends Rule
           throw new Error("校验数组规则的传入的规则必须是校验规则类实例");
         }
       }
-      $this->FieldRules = $fieldRules;
+      $this->fieldRules = $fieldRules;
     }
   }
 
@@ -102,7 +102,7 @@ class Rules extends Rule
    */
   public function has($key)
   {
-    return isset($this->FieldRules[$key]);
+    return isset($this->fieldRules[$key]);
   }
 
   /**
@@ -113,7 +113,7 @@ class Rules extends Rule
    */
   public function get($key)
   {
-    return $this->FieldRules[$key] ?? null;
+    return $this->fieldRules[$key] ?? null;
   }
 
   /**
@@ -123,7 +123,7 @@ class Rules extends Rule
    */
   public function all()
   {
-    return $this->FieldRules;
+    return $this->fieldRules;
   }
 
   /**
@@ -166,7 +166,7 @@ class Rules extends Rule
    */
   public function addRule(string $attribute, Rule $rule)
   {
-    $this->FieldRules[$attribute] = $rule;
+    $this->fieldRules[$attribute] = $rule;
     return $this;
   }
 
@@ -177,7 +177,7 @@ class Rules extends Rule
    */
   public function hasWildcard(): bool
   {
-    foreach ($this->FieldRules as $fieldName => $_) {
+    foreach ($this->fieldRules as $fieldName => $_) {
       if (str_contains($fieldName, '*')) {
         return true;
       }
@@ -193,7 +193,7 @@ class Rules extends Rule
   public function wildcardRules(): array
   {
     $result = [];
-    foreach ($this->FieldRules as $fieldName => $rule) {
+    foreach ($this->fieldRules as $fieldName => $rule) {
       if (str_contains($fieldName, '*')) {
         $result[$fieldName] = $rule;
       }

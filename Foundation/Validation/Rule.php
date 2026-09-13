@@ -24,6 +24,7 @@ namespace kernel\Foundation\Validation;
  * @property-read array       $errorMessages           各规则对应的错误信息
  *
  * @method Rule required(string $message = "")          校验值是否为空或为 null
+ * @method Rule sometimes()                             存在性闸门：字段键不存在时跳过整条规则（可选但传了才校验）
  * @method Rule type(string|array $value, string $message = "") 校验数据类型，支持 int/string/bool/array 等，int 和 bool 会自动转为 integer 和 boolean
  * @method Rule equal(mixed $value, string $message = "")      校验值是否等于指定值（严格比较 ===）
  * @method Rule includes(string|array $value, string $message = "") 校验字符串是否包含子串，或数组是否包含指定元素

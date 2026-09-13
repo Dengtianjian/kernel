@@ -52,6 +52,23 @@ class RuleBuilder implements RuleInterface
   }
 
   /**
+   * 存在性闸门（sometimes）
+   *
+   * 仅当字段键存在于待校验数据中时才执行后续规则；键不存在则整条规则跳过。
+   * 用于「可选字段，但一旦传了就必须校验」场景，等价于 Laravel 的 sometimes 前置语义。
+   *
+   * 与 {@see \kernel\Foundation\Validation\Rules::sometimes()}（回调式条件规则）区分：
+   * 本方法无回调，仅判定字段键是否存在（Arr::has）。
+   *
+   * @return $this
+   */
+  public function sometimes()
+  {
+    $this->rule["sometimes"] = true;
+    return $this;
+  }
+
+  /**
    * 校验目标值的数据类型是否等于指定数据类型或者目标值的数据类型是否存在于指定的数据类型数组中
    *
    * @param string|array $value 数据类型或者数据类型数组

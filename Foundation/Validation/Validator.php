@@ -217,6 +217,11 @@ class Validator
             continue;
           }
 
+          // sometimes（存在性闸门）：字段键不存在时跳过整条规则（可选但传了才校验）
+          if (isset($fieldRule['sometimes']) && !Arr::has($target, $fieldName)) {
+            continue;
+          }
+
           // prohibited：字段不能存在于输入数据中
           if (isset($fieldRule['prohibited'])) {
             if (Arr::has($target, $fieldName)) {
