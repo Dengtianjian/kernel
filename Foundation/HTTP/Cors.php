@@ -13,6 +13,8 @@ use kernel\Foundation\Config;
  * 设计约定：
  *   - 仅从请求头 Origin 读取来源；畸形/伪造（缺 scheme+host）一律视为非同源。
  *   - 允许来源支持 "*"、逗号分隔字符串、数组三种配置形态。
+ *   - allowMethods/allowHeaders/exposeHeaders 同样支持 "*"、逗号分隔字符串、数组三种形态（"*" 即通配），
+ *     配置为字符串时原样输出，不再要求必须是数组。
  *   - 命中白名单时精确回显请求 origin（便于配合 credentials）；未命中不输出 Allow-Origin 头。
  *
  * 配置键（cors.*，未配置时用 DEFAULTS）：
@@ -142,6 +144,26 @@ class Cors
    * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
    * @return \kernel\Foundation\HTTP\Response
    */
+  /**
+   * 将 allowMethods/allowHeaders/exposeHeaders 配置归一化为响应头字符串
+   *
+   * 支持三种形态：
+   *   - 数组        → 用逗号拼接（如 ["GET","POST"] → "GET,POST"）
+   *   - "*" / 字符串 → 原样输出（"*" 即通配；逗号分隔字符串也原样回写）
+   *
+   * 直接对字符串调 implode 在 PHP 8 会抛 TypeError，故此处做形态兜底。
+   *
+   * @param mixed $value
+   * @return string
+   */
+  private static function toHeaderList($value): string
+  {
+    if (is_array($value)) {
+      return implode(",", $value);
+    }
+    return (string) $value;
+  }
+
   public static function applyTo(Response $response, ?string $requestOrigin): Response
   {
     $allowOrigin = self::resolveAllowOrigin($requestOrigin);
@@ -156,9 +178,9 @@ class Cors
       }
     }
 
-    $response->header("Access-Control-Allow-Methods", implode(",", self::config("allowMethods")));
-    $response->header("Access-Control-Allow-Headers", implode(",", self::config("allowHeaders")));
-    $response->header("Access-Control-Expose-Headers", implode(",", self::config("exposeHeaders")));
+    $response->header("Access-Control-Allow-Methods", self::toHeaderList(self::config("allowMethods")));
+    $response->header("Access-Control-Allow-Headers", self::toHeaderList(self::config("allowHeaders")));
+    $response->header("Access-Control-Expose-Headers", self::toHeaderList(self::config("exposeHeaders")));
     $response->header("Access-Control-Max-Age", self::config("maxAge"));
 
     return $response;
