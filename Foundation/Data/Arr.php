@@ -46,9 +46,9 @@ class Arr
     usort($arr, function ($a, $b) use ($relatedParentKey) {
       if ($a[$relatedParentKey] && $b[$relatedParentKey])
         return 0;
-      if ($a[ $relatedParentKey])
+      if ($a[$relatedParentKey])
         return 1;
-      if ($b[ $relatedParentKey])
+      if ($b[$relatedParentKey])
         return -1;
 
       return 0;
@@ -63,12 +63,12 @@ class Arr
           $arrItem['reference'] = &$result[$arrItem[$dataPrimaryKey]];
           $arrItem['reference'][$childArrayKeys] = [];
         }
-      } else { //* 下级
+      } else if ($arr[$arrItem[$relatedParentKey]]) { //* 下级
         if ($arr[$arrItem[$relatedParentKey]]['reference']) {
           $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]] = $arrItem;
           $arrItem['reference'] = &$arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys][$arrItem[$dataPrimaryKey]];
         }
-        $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = array_values($arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]);
+        $arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys] = $arr[$arrItem[$relatedParentKey]] ? array_values($arr[$arrItem[$relatedParentKey]]['reference'][$childArrayKeys]) : [];
       }
     }
     return array_values($result);
