@@ -13,7 +13,7 @@ namespace kernel\Foundation\Data;
  * - 密文遮盖（mask / mask:4），将字符串中间部分替换为 *，默认遮盖 80%
  * - 字符串清洗（trim / lower / upper / strip_tags / htmlspecialchars）
  * - 数值处理（number 提取数字 / abs 绝对值 / round 四舍五入 / number_format 千分位）
- * - 空值兜底（default:值），null / '' 时使用默认值
+ * - 空值兜底（default:值），null / '' 时使用默认值（其余规则对 null 不做转换，保持原值）
  * - JSON 编解码（json / json_decode）
  * - 数组操作（pluck 提取 / implode 拼接）
  * - 编码转换（urlencode / urldecode / base64 / base64_decode）
@@ -439,14 +439,15 @@ class Mutator
      *
      * @param array|string|null $types 转换规则。传入 null 则使用构造时或 fluent 方法设定的规则。
      * @return mixed 转换后的数据。以下情况返回 false：
-     *   - $this->data 为 null
      *   - types 未指定（构造时、fluent 方法、convert() 参数均未传）
      *   - types 为数组但 data 不是数组
+     * 特别地：值为 null 时不按任何规则转换、保持原值（whole data 为 null 时返回 null；
+     * default 规则仍对 null 生效，用于空值兜底）。
      */
     public function convert($types = null)
     {
         if ($this->data === null) {
-            return false;
+            return null;
         }
 
         $types = $types ?? $this->types;
@@ -636,7 +637,8 @@ class Mutator
         }
 
         if (isSafeCallable($type)) {
-            $result[$keyStr] = $type($this->data[$keyStr]);
+            // 值为 null 时不调用回调，保持原值（null 不按规则转换）
+            $result[$keyStr] = $this->data[$keyStr] === null ? null : $type($this->data[$keyStr]);
             return;
         }
 
@@ -984,6 +986,14 @@ class Mutator
      */
     private function setType($target, string $type)
     {
+        // null 值不按规则转换，保持原值；仅 default 规则专门为空值兜底，仍需对 null 生效
+        if ($target === null) {
+            if ($type === 'default' || strpos($type, 'default:') === 0) {
+                return $this->applyDefault($target, $type);
+            }
+            return null;
+        }
+
         if ($type === 'any') {
             return $this->auto($target);
         }
@@ -1698,7 +1708,8 @@ class Mutator
         }
 
         if (isSafeCallable($type)) {
-            return $type($value);
+            // 值为 null 时不调用回调，保持原值（null 不按规则转换）
+            return $value === null ? null : $type($value);
         }
 
         return $this->convertValue($value, (string)$type);
