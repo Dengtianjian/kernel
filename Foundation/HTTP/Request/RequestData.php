@@ -11,10 +11,23 @@ use kernel\Foundation\Validation\Rules;
 use kernel\Foundation\Validation\Rule;
 use kernel\Foundation\Validation\Validator;
 
+/**
+ * 请求数据包
+ *
+ * 承载单一请求来源（如路由参数、查询串、请求体、请求头）的原始数据，
+ * 并提供「校验 → 转换 → 读取/写入/合并/删除」能力：
+ * - 校验：通过 $validator 约束字段（Rule 实例 / Rules 关联数组 / Validator 实例）；
+ * - 转换：通过 $mutator 对数据做映射、类型转换、字段裁剪；
+ * - 读写：get()/some()/has() 支持点号路径与通配符，set()/fill()/remove() 支持写入与合并。
+ *
+ * 典型流程：fill() 注入数据 → prepare() 先校验再转换（转换结果原地写回 $data）→ 业务侧 get()/some() 取值。
+ */
 class RequestData
 {
   /**
-   * 数据
+   * 原始数据 / 当前数据
+   *
+   * 由 fill() 注入而来；prepare() 完成校验与转换后，会被原地替换为「转换后的数据」。
    *
    * @var array
    */
@@ -22,20 +35,32 @@ class RequestData
   /**
    * 数据转换规则
    *
+   * 可为：
+   * - null：不做转换，原样返回；
+   * - Mutator 实例：直接使用其转换逻辑；
+   * - 数组：按（fields, completion=false, removeNotExistRuleKey=true）交给 Mutator 处理，
+   *   即「仅保留规则覆盖的字段，其余键被剔除」。
+   *
    * @var Mutator|array|null
    */
   protected $mutator = null;
   /**
-   * 数据校验规则或者数据校验器
+   * 数据校验规则 / 校验器
    *
-   * @var Validator|array|null
+   * 可为：
+   * - null：不校验；
+   * - 关联数组：字段名 => Rule 实例（与 Rules 构造契约一致），prepare() 会包成 Validator 校验；
+   * - Validator 实例：直接对当前数据校验；
+   * - 单个 Rule 实例：包成单字段 Validator 校验。
+   *
+   * @var Validator|Rule|array|null
    */
   protected $validator = null;
   /**
    * 实例化请求数据类
    *
-   * @param Mutator|array|null $mutator 数据转换规则
-   * @param Validator|array|null $validator 数据校验规则或者数据校验器
+   * @param Mutator|array|null $mutator  数据转换规则（null/Mutator 实例/字段映射数组）
+   * @param Validator|Rule|array|null $validator 数据校验规则或校验器（null/Rule 实例/关联数组/Validator 实例）
    */
   public function __construct($mutator = null, $validator = null)
   {
@@ -71,6 +96,22 @@ class RequestData
     if (!is_array($this->data)) return $default;
 
     return Arr::get($this->data, $key, $default);
+  }
+  /**
+   * 写入单个键值（覆盖式）
+   *
+   * 不做点号路径展开：键名整体作为一级键写入（即 $key 含 "." 时按字面量存储，不会被拆成嵌套）。
+   * 返回当前实例以支持链式调用。
+   *
+   * @param string $key 键名（按字面量存储，不解析点号路径）
+   * @param mixed $value 值
+   * @return static
+   */
+  public function set($key, $value)
+  {
+    $this->data[$key] = $value;
+
+    return $this;
   }
   /**
    * 获取数据
@@ -133,17 +174,24 @@ class RequestData
     return (new Mutator($this->mutator, false, true))->data($data)->convert();
   }
   /**
-   * 校验器结果
+   * 最近一次 prepare() 的校验结果
    *
-   * @var Result
+   * 仅在校验未通过（error=true）时业务侧需要读取；prepare() 开头即初始化为「通过」，
+   * 无校验器时仍为通过态。注意默认值为 null（早于 prepare() 调用前尚未赋值）。
+   *
+   * @var Result|null
    */
   public $validatedResult = null;
   /**
-   * 准备数据
-   * 会先执行校验器再使用数据转换器转换数据
-   * 数据转换器转换完后会把转换后的数据赋值到当前实例的data属性
+   * 准备数据：先校验，再转换，最后把转换结果写回 $data
    *
-   * @return boolean 是否校验通过并完成转换
+   * 执行顺序：
+   * 1. 初始化 validatedResult 为「通过」；
+   * 2. 若设置了 $validator，按类型（关联数组 / Validator 实例 / 单个 Rule 实例）执行校验，
+   *    未通过则把错误写入 validatedResult 并返回 false；
+   * 3. 通过后用 $mutator 转换数据（无转换规则则跳过），转换成功写回 $data。
+   *
+   * @return boolean 校验通过且（若有转换）转换成功时为 true；否则 false
    */
   public function prepare()
   {
