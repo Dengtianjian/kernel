@@ -8,6 +8,8 @@ use kernel\Commands\MakeControllerCommand;
 use kernel\Commands\MakeModelCommand;
 use kernel\Commands\MakeMiddlewareCommand;
 use kernel\Commands\ScheduleRunCommand;
+use kernel\Commands\PackageCommand;
+use kernel\Commands\UnpackCommand;
 
 /**
  * 内核 CLI 装配类
@@ -25,6 +27,8 @@ class Bootstrap
       ->register("make:controller", MakeControllerCommand::class, "Create a new controller class")
       ->register("make:model", MakeModelCommand::class, "Create a new model class")
       ->register("make:middleware", MakeMiddlewareCommand::class, "Create a new middleware class")
-      ->register("schedule:run", ScheduleRunCommand::class, "Run scheduled tasks (Crons/)");
+      ->register("schedule:run", ScheduleRunCommand::class, "Run scheduled tasks (Crons/)")
+      ->register("package", PackageCommand::class, "Package isdtj and kernel into zip archives")
+      ->register("unpack", UnpackCommand::class, "Unpack isdtj.zip and kernel.zip into directories");
   }
 }

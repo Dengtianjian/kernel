@@ -6,11 +6,11 @@ use kernel\Foundation\Output;
 use kernel\Middleware\GlobalWechatOfficialAccountMiddleware;
 use kernel\Modules\DiscuzX\Foundation\DiscuzXApp;
 
-include_once("../kernel/vendor/autoload.php");
+// include_once("./vendor/autoload.php");
 
-if (file_exists("./vendor/autoload.php")) {
-  include_once("./vendor/autoload.php");
-}
+// if (file_exists("./vendor/autoload.php")) {
+//   include_once("./vendor/autoload.php");
+// }
 
 // $App = new App("kernel");
 // $App = new DiscuzXApp("kernel");
