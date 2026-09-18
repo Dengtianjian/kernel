@@ -8,12 +8,12 @@ use ZipArchive;
  * ZIP 压缩/解压工具
  *
  * 基于 PHP 内置 ZipArchive 的目录打包与解压封装：
- * - zipDirectory() / pack()：将目录递归打包为 zip，支持黑名单排除、压缩等级配置；
+ * - zipDirectory() / pack()：将目录递归打包为 zip，支持忽略名单排除、压缩等级配置；
  * - unzip() / extract()：解压 zip 到指定目录，内置 zip slip（路径穿越）防护、
  *   解压大小/文件数上限（防 zip bomb）、符号链接策略；
  * - isZip()：快速校验文件是否为合法 zip。
  *
- * 黑名单规则（blacklist，默认 [".git", "README.md"]）：
+ * 忽略名单规则（ignore，默认 [".git", "README.md"]）：
  * - 普通条目按文件名精确匹配（任意层级同名即排除，如 .git、README.md）；
  * - 含通配符（*、?、[]）的条目按 fnmatch 对文件名匹配（如 *.md）。
  *
@@ -23,11 +23,11 @@ use ZipArchive;
 class Zip
 {
   /**
-   * 打包排除名单：普通条目精确匹配文件名，含通配符的条目 fnmatch 匹配
+   * 打包忽略名单：普通条目精确匹配文件名，含通配符的条目 fnmatch 匹配
    *
    * @var array
    */
-  public $blacklist = [
+  public $ignore = [
     ".git",
     "README.md"
   ];
@@ -56,17 +56,17 @@ class Zip
    */
   public $preserveSymlinks = false;
   /**
-   * 精确匹配的黑名单文件名（每次打包前重置，仅对本次打包生效）
+   * 精确匹配的忽略文件名（每次打包前重置，仅对本次打包生效）
    *
    * @var array
    */
-  protected $blacklistFileNames = [];
+  protected $ignoreFileNames = [];
   /**
-   * 通配符黑名单（fnmatch 模式，仅对本次打包生效）
+   * 通配符忽略项（fnmatch 模式，仅对本次打包生效）
    *
    * @var array
    */
-  protected $blacklistWildcards = [];
+  protected $ignoreWildcards = [];
   /**
    * 最近一次操作的错误信息（成功或未操作时为 null）
    *
@@ -93,15 +93,15 @@ class Zip
   }
 
   /**
-   * 追加黑名单条目（链式，去重合并进 blacklist）
+   * 追加忽略条目（链式，去重合并进 ignore）
    *
    * @param array $names 文件名或 fnmatch 通配符（如 [".svn", "*.log"]）
    * @return $this
    */
   public function exclude(array $names)
   {
-    $this->blacklist = array_values(array_unique(
-      array_merge($this->blacklist, $names)
+    $this->ignore = array_values(array_unique(
+      array_merge($this->ignore, $names)
     ));
 
     return $this;
@@ -141,7 +141,7 @@ class Zip
   /**
    * 将目录递归打包为 zip
    *
-   * 目录不存在返回 false；打包过程中黑名单内条目（任意层级）会被跳过。
+   * 目录不存在返回 false；打包过程中忽略名单内条目（任意层级）会被跳过。
    * 失败原因可通过 lastError() 读取。
    *
    * @param string $sourcePath 源目录路径
@@ -165,14 +165,14 @@ class Zip
       return false;
     }
 
-    //* 黑名单只对本次打包生效（连续打包多个目录时互不残留）
-    $this->blacklistFileNames = [];
-    $this->blacklistWildcards = [];
-    foreach ($this->blacklist as $item) {
+    //* 忽略名单只对本次打包生效（连续打包多个目录时互不残留）
+    $this->ignoreFileNames = [];
+    $this->ignoreWildcards = [];
+    foreach ($this->ignore as $item) {
       if (strpbrk($item, "*?[") !== false) {
-        array_push($this->blacklistWildcards, $item);
+        array_push($this->ignoreWildcards, $item);
       } else {
-        array_push($this->blacklistFileNames, $item);
+        array_push($this->ignoreFileNames, $item);
       }
     }
 
@@ -227,14 +227,14 @@ class Zip
    *
    * @param string $sourcePath 源目录路径
    * @param string $outputPath 输出 zip 文件路径
-   * @param array $options 选项：blacklist（追加黑名单）、compressionLevel（压缩等级 -1~9）
+   * @param array $options 选项：ignore（追加忽略名单）、compressionLevel（压缩等级 -1~9）
    * @return boolean 打包成功返回 true
    */
   public static function pack($sourcePath, $outputPath, array $options = [])
   {
     $zip = new self();
-    if (isset($options["blacklist"])) {
-      $zip->exclude((array)$options["blacklist"]);
+    if (isset($options["ignore"])) {
+      $zip->exclude((array)$options["ignore"]);
     }
     if (isset($options["compressionLevel"])) {
       $zip->setCompressionLevel($options["compressionLevel"]);
@@ -368,18 +368,39 @@ class Zip
     return true;
   }
 
+  private function matchIgnoreFileName($fileName, $basePath = null)
+  {
+    $hit = false;
+    foreach ($this->ignoreFileNames as $item) {
+      $filePath = $fileName;
+
+      if (strpos($item, "/") !== false) {
+        $filePath = $basePath ? Path::join($basePath, $fileName) : "/{$fileName}";
+        print_r("\n");
+        print_r($filePath);
+        print_r("\n");
+        // exit;
+      }
+
+      $hit = $filePath === $item;
+
+      if ($hit) break;
+    }
+
+    return $hit;
+  }
   /**
    * 递归遍历目录并写入 zip（内部辅助）
    *
    * 文件条目 addFile、目录条目 addEmptyDir 后递归；符号链接跳过，
-   * 黑名单按文件名匹配任意层级；压缩等级非默认时逐条目设置。
+   * 忽略名单按文件名匹配任意层级；压缩等级非默认时逐条目设置。
    *
    * @param \ZipArchive $zip 目标 zip 实例
    * @param string $directory 当前遍历目录
    * @param integer $removedLength 源目录字符串长度（用于计算 zip 内相对路径）
    * @return void
    */
-  private function directoryToZip($zip, $directory, $removedLength)
+  private function directoryToZip($zip, $directory, $removedLength, $root = true)
   {
     $dirs = FileHelper::scandir($directory);
     if ($dirs === false) {
@@ -393,13 +414,13 @@ class Zip
       if (is_link($sourceFilePath)) {
         continue;
       }
-      //* 精确文件名黑名单（任意层级同名条目，如 .git、README.md）
-      if (in_array($dirItem, $this->blacklistFileNames)) {
+      //* 精确文件名忽略项（任意层级同名条目，如 .git、README.md）
+      if ($this->matchIgnoreFileName($dirItem, $root ? null : $directory)) {
         continue;
       }
-      //* 通配符黑名单（如 *.md：fnmatch 对文件名匹配）
+      //* 通配符忽略项（如 *.md：fnmatch 对文件名匹配）
       $skip = false;
-      foreach ($this->blacklistWildcards as $item) {
+      foreach ($this->ignoreWildcards as $item) {
         if (fnmatch($item, $dirItem)) {
           $skip = true;
           break;
@@ -417,7 +438,7 @@ class Zip
         }
       } else {
         $zip->addEmptyDir($localPath);
-        $this->directoryToZip($zip, $sourceFilePath, $removedLength);
+        $this->directoryToZip($zip, $sourceFilePath, $removedLength, false);
       }
     }
   }
