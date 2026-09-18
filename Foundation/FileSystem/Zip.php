@@ -376,10 +376,6 @@ class Zip
 
       if (strpos($item, "/") !== false) {
         $filePath = $basePath ? Path::join($basePath, $fileName) : "/{$fileName}";
-        print_r("\n");
-        print_r($filePath);
-        print_r("\n");
-        // exit;
       }
 
       $hit = $filePath === $item;

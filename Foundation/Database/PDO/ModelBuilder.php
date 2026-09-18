@@ -42,6 +42,17 @@ namespace kernel\Foundation\Database\PDO;
  * $user->get();           // 查全表，不含 a=1
  * ```
  *
+ * ## 条件链式
+ *
+ * 可选条件可用 `when()` / `unless()` 优雅表达，无需为分支单独声明变量：
+ *
+ * ```php
+ * UserModel::orderBy('id')
+ *   ->when($onlyActive, fn($q) => $q->where('active', 1))
+ *   ->unless($onlyTrashed, fn($q) => $q->withoutTrashed())
+ *   ->get();
+ * ```
+ *
  * @see Model::scopedBuilder() 创建入口（含全局作用域）
  */
 class ModelBuilder
@@ -202,6 +213,48 @@ class ModelBuilder
     $this->eagerLoads = array_values(array_unique(array_merge($this->eagerLoads, $relations)));
 
     return $this;
+  }
+
+  /**
+   * 条件式链式调用：条件为真时执行回调，否则跳过
+   *
+   * 回调接收当前 Builder 与条件值两个参数，返回 $this 以维持链式。
+   * 用于「可选条件」场景，避免为条件分支单独声明变量。
+   *
+   * @param mixed    $condition 条件（真值判定）
+   * @param callable $callback  条件为真时调用：fn(ModelBuilder $q, $condition)
+   * @param callable|null $default 条件为假时可调用的回退回调（可选）
+   * @return $this
+   *
+   * @example
+   * LinksModel::orderBy('sort')
+   *   ->when(!Auth::logged(), fn($q) => $q->where('private', false))
+   *   ->get();
+   */
+  public function when($condition, callable $callback, ?callable $default = null): static
+  {
+    if ($condition) {
+      $callback($this, $condition);
+    } elseif ($default !== null) {
+      $default($this, $condition);
+    }
+
+    return $this;
+  }
+
+  /**
+   * 条件式链式调用（反向）：条件为假时执行回调
+   *
+   * 等价于 when(!$condition, $callback, $default)。
+   *
+   * @param mixed    $condition 条件（真值判定）
+   * @param callable $callback  条件为假时调用：fn(ModelBuilder $q, $condition)
+   * @param callable|null $default 条件为真时可调用的回退回调（可选）
+   * @return $this
+   */
+  public function unless($condition, callable $callback, ?callable $default = null): static
+  {
+    return $this->when(!$condition, $callback, $default);
   }
 
   /**
