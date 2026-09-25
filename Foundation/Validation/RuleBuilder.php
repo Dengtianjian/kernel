@@ -264,6 +264,45 @@ class RuleBuilder implements RuleInterface
   }
 
   /**
+   * 校验值对应的记录是否存在于指定模型
+   *
+   * 默认按主键对被校验值执行 `where(主键, 值)`，再判断 `exists()`；
+   * 可通过第三参数指定查询字段，通过闭包追加额外查询条件（拓展）。
+   *
+   * 支持多种调用方式重载：
+   *   exists($model, $message)                         — 默认按主键查询
+   *   exists($model, $message, 'username')             — 按指定字段查询
+   *   exists($model, $message, $callback)              — 按主键查询 + 闭包拓展
+   *   exists($model, $message, 'username', $callback)  — 按指定字段查询 + 闭包拓展
+   *
+   * @param \kernel\Foundation\Database\PDO\Model $model            对应模型实例
+   * @param string                                 $message          校验失败报错信息
+   * @param string|\Closure|callable|null          $fieldOrCallback  第三个参数：字符串=查询字段名，闭包=拓展回调，null=默认主键
+   * @param \Closure|callable|null                 $callback         第四个参数：拓展回调（仅在第三参数为字段名时传入）
+   *                                                                 签名 `function($query, $value)`：
+   *                                                                 第一个参数为模型查询（Query，已应用 `where(字段, 值)`，可继续链式调用），
+   *                                                                 第二个参数为被校验的值；
+   *                                                                 返回 bool 时直接采用该结果，否则执行 `$query->exists()`
+   * @return $this
+   */
+  public function exists($model, $message = "", $fieldOrCallback = null, $callback = null)
+  {
+    //* 第三个参数是闭包时视为拓展回调，查询字段回退默认（主键）
+    if (is_callable($fieldOrCallback) && $callback === null) {
+      $callback = $fieldOrCallback;
+      $fieldOrCallback = null;
+    }
+
+    $this->rule['exists'] = [
+      'model'    => $model,
+      'field'    => $fieldOrCallback,
+      'callback' => $callback,
+    ];
+    $this->errorMessages['exists'] = $message;
+    return $this;
+  }
+
+  /**
    * 使用别的校验规则
    *
    * @param RuleInterface $validateRule 校验规则实例

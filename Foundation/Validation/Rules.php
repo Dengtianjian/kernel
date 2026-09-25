@@ -47,6 +47,7 @@ use kernel\Foundation\Exception\Error;
  * @method Rules requiredIf(string $anotherField, array|string $values, string $message = "") 当另一字段等于指定值时必填
  * @method Rules requiredUnless(string $anotherField, array|string $values, string $message = "") 除非另一字段等于指定值否则必填
  * @method Rules custom(\Closure|callable $callback)             自定义校验
+ * @method Rules exists(\kernel\Foundation\Database\PDO\Model $model, string $message = "", string|\Closure|callable|null $fieldOrCallback = null, \Closure|callable|null $callback = null) 校验记录是否存在于指定模型，默认按主键查询
  * @method Rules useRule(RuleInterface $validateRule)           复用已有的校验规则实例
  *
  * @see Rule
