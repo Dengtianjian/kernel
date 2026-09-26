@@ -110,6 +110,8 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  * @method $this setDatabaseDriver($driver)
  * @method $this when(mixed $condition, callable $callback, ?callable $default = null) 条件为真时执行回调（Laravel 风格可选条件）
  * @method $this unless(mixed $condition, callable $callback, ?callable $default = null) 条件为假时执行回调（when 的反向）
+ * @method $this map(callable $callback) 注册结果集逐项处理回调（get/first/paginate 执行时逐项应用，用返回值替换原数据）
+ * @method $this with(string ...$relations) 声明预加载的关联关系
  * ------------------------------------------------------------------
  * === Query 终端方法（结束链式调用，直接返回结果）===
  * @method array|false                   first(array $params = [])

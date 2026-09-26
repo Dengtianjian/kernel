@@ -53,6 +53,16 @@ namespace kernel\Foundation\Database\PDO;
  *   ->get();
  * ```
  *
+ * ## 结果处理
+ *
+ * 取到数据后需要对每条结果统一加工时，用 `map()` 注册回调（`get()`/`first()`/`paginate()` 执行时应用）：
+ *
+ * ```php
+ * LinksModel::orWhereLike('show_pages', '%list%')
+ *   ->map(fn($item) => $item + ['host' => parse_url($item['url'], PHP_URL_HOST)])
+ *   ->get();
+ * ```
+ *
  * @see Model::scopedBuilder() 创建入口（含全局作用域）
  */
 class ModelBuilder
@@ -64,6 +74,15 @@ class ModelBuilder
    * 与既有行为一致。
    */
   private const HYDRATE_METHODS = ['get', 'first', 'paginate'];
+
+  /**
+   * 会对结果集逐项应用 map() 回调的终端方法
+   *
+   * - get/all：逐行应用
+   * - first：对单条应用
+   * - paginate：对分页项逐条应用
+   */
+  private const MAP_METHODS = ['get', 'first', 'paginate'];
 
   /**
    * 方法别名映射
@@ -146,6 +165,16 @@ class ModelBuilder
   private bool $scopesApplied = false;
 
   /**
+   * 结果集逐项处理回调（由 map() 注册）
+   *
+   * 在终端方法（get/first/paginate）返回前对每条数据应用一次，用返回值替换原数据；
+   * null 表示未注册，跳过处理。
+   *
+   * @var callable|null
+   */
+  private $resultMap = null;
+
+  /**
    * 构造查询构建器
    *
    * @param Model $model       原型 Model 实例
@@ -193,7 +222,12 @@ class ModelBuilder
     }
 
     if (!empty($this->eagerLoads) && in_array($method, self::HYDRATE_METHODS, true)) {
-      return $this->hydrateResult($method, $result);
+      $result = $this->hydrateResult($method, $result);
+    }
+
+    // 结果集逐项处理（map()），在 hydrate 之后应用，保证 with() 预加载时回调拿到的是 Model 实例
+    if ($this->resultMap !== null && in_array($method, self::MAP_METHODS, true)) {
+      $result = $this->applyResultMap($method, $result);
     }
 
     return $result;
@@ -211,6 +245,30 @@ class ModelBuilder
   public function with(string ...$relations): static
   {
     $this->eagerLoads = array_values(array_unique(array_merge($this->eagerLoads, $relations)));
+
+    return $this;
+  }
+
+  /**
+   * 注册结果集逐项处理回调
+   *
+   * 在查询执行后（get / first / paginate）对每条结果应用一次，**用回调的返回值替换原数据**，
+   * 适合取到数据后统一加工（补字段、格式化、裁剪字段等）。可链式，多次调用以最后一次为准。
+   *
+   * 与 when()/unless() 的区别：when/unless 作用于「查询条件」，map 作用于「查询结果」。
+   *
+   * @param callable $callback 处理函数 fn($item) => $newItem。
+   *                           $item 为结果行：未声明 with() 时为关联数组，声明了 with() 预加载时为 Model 实例。
+   * @return $this
+   *
+   * @example
+   * LinksModel::orWhereLike('show_pages', '%list%')
+   *   ->map(fn($item) => $item + ['host' => parse_url($item['url'], PHP_URL_HOST)])
+   *   ->get();
+   */
+  public function map(callable $callback): static
+  {
+    $this->resultMap = $callback;
 
     return $this;
   }
@@ -357,6 +415,43 @@ class ModelBuilder
       default:
         return $result;
     }
+  }
+
+  /**
+   * 对查询结果逐项应用 map() 回调
+   *
+   * - get/all：对结果数组逐行应用（array_map，单数组时保留键名）
+   * - first：对单条应用
+   * - paginate：对分页项逐条应用
+   * 空结果（null/false）原样返回，不触发回调。
+   *
+   * @param string $method 终端方法名
+   * @param mixed  $result 查询结果
+   * @return mixed 处理后的结果
+   */
+  private function applyResultMap(string $method, mixed $result): mixed
+  {
+    if ($result === null || $result === false) {
+      return $result;
+    }
+
+    $map = $this->resultMap;
+
+    switch ($method) {
+      case 'first':
+        return $map($result);
+
+      case 'get':
+        return array_map($map, $result);
+
+      case 'paginate':
+        if ($result instanceof Paginator) {
+          $result->setItems(array_map($map, $result->getItems()));
+        }
+        return $result;
+    }
+
+    return $result;
   }
 
   /**
