@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\FileSystem\Storage;
 
+use kernel\Facades\Storage as FacadesStorage;
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
@@ -147,6 +148,8 @@ class FileStorage extends AbilityBaseObject
     }
 
     $this->baseURL = URL::baseURL();
+
+    FacadesStorage::setInstance($this);
   }
 
   /**

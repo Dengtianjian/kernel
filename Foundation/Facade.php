@@ -107,6 +107,48 @@ abstract class Facade
   }
 
   /**
+   * 替换门面背后的底层实例（单例门面）
+   *
+   * 用于应用装配阶段注入自定义实例（例如给 FileStorage 门面注入带多磁盘 / 云存储 /
+   * 元信息落库的实例），或测试时替换为桩实例。设置后，静态调用一律转发到该实例，
+   * 不再触发 resolve()。
+   *
+   * 注意：多例门面（覆写 accessor()）不使用本注册表，本方法对其无效。
+   *
+   * @param object $instance 底层实例
+   * @return void
+   */
+  public static function setInstance(object $instance): void
+  {
+    static::$registry[static::class] = $instance;
+  }
+
+  /**
+   * 获取当前已解析的底层实例（不触发 resolve()）
+   *
+   * 尚未解析 / setInstance 过时返回 null；需要确保拿到实例请改用 {@see accessor()}。
+   *
+   * @return object|null
+   */
+  public static function getInstance(): ?object
+  {
+    return static::$registry[static::class] ?? null;
+  }
+
+  /**
+   * 清除已解析的底层实例
+   *
+   * 清除后下次静态调用会重新解析：单例门面重新走 {@see resolve()}，
+   * 多例门面走子类 {@see accessor()}。
+   *
+   * @return void
+   */
+  public static function clearInstance(): void
+  {
+    unset(static::$registry[static::class]);
+  }
+
+  /**
    * 静态转发：将未定义的静态方法调用委托给底层实例
    *
    * @param string $method 方法名
