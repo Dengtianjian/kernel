@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Validation;
 
+use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Exception\Error;
@@ -630,6 +631,38 @@ class Validator
         }
       }
 
+    //* 存在性校验：校验值对应记录是否存在于指定模型（可指定查询字段，闭包用于拓展）
+    if (isset($rule['exists'])) {
+      $existsRule = $rule['exists'];
+      $model = $existsRule['model'];
+
+      if (!($model instanceof Model)) {
+        return $this->ReturnParamError();
+      }
+
+      //* 带全局作用域（含软删除过滤）的查询实例，可继续链式调用模型查询方法
+      $query = $model->scopedQuery();
+      //* 查询字段：未指定时默认用主键
+      $field = $existsRule['field'] ?? $model->getPrimaryKey();
+      $callback = $existsRule['callback'] ?? null;
+
+      //* 基础条件：where(字段, 被校验值)
+      $query->where($field, $target);
+      if (is_callable($callback)) {
+        $result = $callback($query, $target);
+        $exists = is_bool($result) ? $result : $query->exists();
+      } else {
+        $exists = $query->exists();
+      }
+
+      if (!$exists) {
+        $validatedResult->error(400, "400:ValidateFailed:Exists", $this->getErrorMessage("exists"), [
+          "value" => $target,
+          "model" => get_class($model),
+        ]);
+        return $validatedResult;
+      }
+    }
     //* 自定义校验
     if (isset($rule['CustomValidate'])) {
       $validatedResult = $rule['CustomValidate']($target, $rule, $data);

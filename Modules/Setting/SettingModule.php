@@ -14,6 +14,9 @@ class SettingModule extends Module
   protected $model = null;
   public function __construct($settingsModel = null)
   {
+    //* 必须调用父类构造：$name 是无默认值的 typed 属性，不初始化会在 Modules::register() 取 name() 时报错
+    parent::__construct();
+
     $this->model = $settingsModel ?: new SettingsModel();
   }
   /**

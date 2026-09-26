@@ -118,7 +118,7 @@ class AuthModule extends Module
    */
   function deleteExpiredTokens()
   {
-    $this->model()->where("expires_at", time(), "<")->forceDelete();
+    $this->model()->where("expires_at", "<", time())->forceDelete();
   }
   /**
    * 吊销某用户的所有登录凭证（软删除，常用于改密码后全平台下线）

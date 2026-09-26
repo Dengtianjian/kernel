@@ -37,6 +37,7 @@ namespace kernel\Foundation\Validation;
  * @method Rule length(int $min, int $max, string $message = "") 校验字符串/数组长度是否在 [min, max] 范围内
  * @method Rule pattern(string $pattern, string $message = "")  正则表达式校验
  * @method Rule custom(\Closure|callable $callback)             自定义校验，回调签名 function(mixed $value, array $rule, mixed $data): \kernel\Foundation\HTTP\Response
+ * @method Rule exists(\kernel\Foundation\Database\PDO\Model $model, string $message = "", string|\Closure|callable|null $fieldOrCallback = null, \Closure|callable|null $callback = null) 校验记录是否存在于指定模型，默认按主键查询；第三参为字符串=字段名、闭包=拓展回调，第四参仅在第三参为字段名时传入
  * @method Rule useRule(RuleInterface $validateRule)            复用已有的校验规则实例
  * @method Rule email(string $message = "")                     校验值是否为有效的邮箱地址
  * @method Rule url(string $message = "")                       校验值是否为有效的 URL 地址
@@ -67,6 +68,7 @@ namespace kernel\Foundation\Validation;
  * @method static Rule length(int $min, int $max, string $message = "") [静态] 校验字符串/数组长度在 [min, max] 范围内
  * @method static Rule pattern(string $pattern, string $message = "")  [静态] 正则表达式校验
  * @method static Rule custom(\Closure|callable $callback)             [静态] 自定义校验
+ * @method static Rule exists(\kernel\Foundation\Database\PDO\Model $model, string $message = "", string|\Closure|callable|null $fieldOrCallback = null, \Closure|callable|null $callback = null) [静态] 校验记录是否存在于指定模型，默认按主键查询
  * @method static Rule useRule(RuleInterface $validateRule)           [静态] 复用已有的校验规则实例
  * @method static Rule email(string $message = "")                    [静态] 校验值是否为有效的邮箱地址
  * @method static Rule url(string $message = "")                      [静态] 校验值是否为有效的 URL 地址

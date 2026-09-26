@@ -31,7 +31,7 @@ class Middleware
    * @param \Closure|object|string $classOrFun 中间件类或者函数
    * @param array $executeParams 执行中间件时传入的参数
    * @param string|null $alias 中间件别名（可选，用于键名和路由引用）
-   * @return void
+   * @return $this 返回当前实例以支持链式注册
    */
   public function set($classOrFun, $executeParams = null, $alias = null)
   {
@@ -40,6 +40,8 @@ class Middleware
       "target" => $classOrFun,
       "params" => $executeParams
     ];
+
+    return $this;
   }
 
   /**
