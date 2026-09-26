@@ -181,6 +181,7 @@ class Provisioner
 
     ksort($upgradeList);
 
+    $targetVersion = $this->parseSemver($targetVersion);
     $currentVersion = $this->currentSemver;
     foreach ($upgradeList as $version => $filePath) {
       if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
