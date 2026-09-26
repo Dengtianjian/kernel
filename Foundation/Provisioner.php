@@ -3,6 +3,7 @@
 namespace kernel\Foundation;
 
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
  * 应用生命周期编排器：安装 / 增量升级 / 回滚 / 卸载
@@ -56,7 +57,7 @@ use kernel\Foundation\FileSystem\Path;
  * $status = $p->getStatus();
  * ```
  */
-class Provisioner
+class Provisioner extends AbilityBaseObject
 {
   /**
    * 完整版本号（.version 文件原文，如 2.2.0.20260721.1746）
@@ -195,8 +196,7 @@ class Provisioner
    * 2. 若类有 upgrade() 方法则调用之，否则构造器本身即升级逻辑（向后兼容）
    *
    * @param string|null $targetVersion 目标版本号，null 表示升级到最新
-   * @return $this|true 无升级文件或无需升级时返回 true，否则返回 $this
-   * @throws \RuntimeException 升级脚本执行失败时抛出
+   * @return bool true=升级完成，false=升级失败，有错误
    */
   public function upgrade($targetVersion = null): bool|Provisioner
   {
@@ -205,10 +205,15 @@ class Provisioner
       return true;
     }
 
-    ksort($upgradeList);
-
     $targetVersion = $this::parseSemver($targetVersion);
     $currentVersion = $this->currentSemver;
+
+    if (!array_key_exists($targetVersion, $upgradeList)) {
+      $upgradeList[$targetVersion] = null;
+    }
+
+    ksort($upgradeList);
+
     foreach ($upgradeList as $version => $filePath) {
       if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
         break;
@@ -217,12 +222,17 @@ class Provisioner
         continue;
       }
 
-      $this->runUpgrade($filePath, $version);
+      if ($filePath) {
+        if (!$this->runUpgrade($filePath, $version)) {
+          return $this->forwardBreak();
+        }
+      }
+
       $currentVersion = $version;
       $this->persistVersion($currentVersion);
     }
 
-    return $this;
+    return true;
   }
   /**
    * 将配置中的版本号持久化到 .version 文件
@@ -256,8 +266,7 @@ class Provisioner
    * 仅定义了 rollback() 方法的升级类参与回滚，无该方法则跳过。
    *
    * @param string $targetVersion 回滚目标版本号
-   * @return $this|true 无升级脚本或无需回滚时返回 true，否则返回 $this
-   * @throws \RuntimeException 回滚脚本执行失败时抛出
+   * @return bool true=回滚完成，false=回滚失败，有错误
    */
   public function rollback($targetVersion): bool|Provisioner
   {
@@ -266,10 +275,16 @@ class Provisioner
       return true;
     }
 
+    $targetVersion = $this::parseSemver($targetVersion);
+    $currentVersion = $this->currentSemver;
+
+    if (!array_key_exists($targetVersion, $upgradeList)) {
+      $upgradeList[$targetVersion] = null;
+    }
+
     // 降序：从高版本向低版本回滚
     krsort($upgradeList);
 
-    $currentVersion = $this->currentSemver;
     foreach ($upgradeList as $version => $filePath) {
       // 不高于目标版本，后续版本均不高于目标，无需继续
       if (version_compare($version, $targetVersion, "<=") === true) {
@@ -280,12 +295,17 @@ class Provisioner
         continue;
       }
 
-      $this->runRollback($filePath, $version);
+      if ($filePath) {
+        if (!$this->runRollback($filePath, $version)) {
+          return $this->forwardBreak();
+        }
+      }
+
       $currentVersion = $version;
       $this->persistVersion($version);
     }
 
-    return $this;
+    return true;
   }
 
   /**
@@ -354,15 +374,14 @@ class Provisioner
    *
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
-   * @throws \RuntimeException 脚本执行失败时抛出
    */
-  private function runUpgrade(string $filePath, string $version): void
+  private function runUpgrade(string $filePath, string $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
 
     if (!class_exists($className)) {
-      throw new \RuntimeException("升级到 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
+      return $this->break(500, 500, "升级到 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
     }
 
     try {
@@ -371,7 +390,7 @@ class Provisioner
         $instance->upgrade();
       }
     } catch (\Throwable $th) {
-      throw new \RuntimeException("升级到 {$version} 失败: " . $th->getMessage(), 0, $th);
+      return $this->break(500, 500, "升级到 {$version} 失败: " . $th->getMessage(), $th);
     }
   }
 
@@ -383,15 +402,14 @@ class Provisioner
    *
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
-   * @throws \RuntimeException 回滚脚本执行失败时抛出
    */
-  private function runRollback(string $filePath, string $version): void
+  private function runRollback(string $filePath, string $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
 
     if (!class_exists($className)) {
-      throw new \RuntimeException("回滚 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
+      return $this->break(500, 500, "回滚 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
     }
 
     try {
@@ -400,7 +418,7 @@ class Provisioner
         $instance->rollback();
       }
     } catch (\Throwable $th) {
-      throw new \RuntimeException("回滚 {$version} 失败: " . $th->getMessage(), 0, $th);
+      return $this->break(500, 500, "回滚 {$version} 失败: " . $th->getMessage(), $th);
     }
   }
   /**
