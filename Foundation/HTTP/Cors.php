@@ -24,6 +24,9 @@ use kernel\Foundation\Config;
  *   - exposeHeaders 允许暴露响应头，默认 ["x-auth-token","x-auth-token-expires-at"]
  *   - maxAge        预检缓存秒数，默认 86400
  *   - allowCredentials 是否允许凭据，true 时输出 Allow-Credentials
+ *   - 开发模式（mode=development）下不做来源限制：任意合法 origin 一律放行（回显该 origin），
+ *     便于本地联调时错误响应也能被浏览器读取
+ *   - headers()/applyTo()/emit()：同一套头部计算，分别供「装配到 Response」「直接 header() 输出」使用
  */
 class Cors
 {
@@ -127,6 +130,12 @@ class Cors
       return null;
     }
     $origin = self::normalizeOrigin($requestOrigin);
+
+    //* 开发模式：不做来源限制，任意合法 origin 一律放行（回显该 origin）
+    if (self::isDevelopment()) {
+      return $origin;
+    }
+
     $allowed = self::allowOrigins();
     if (in_array("*", $allowed, true) || in_array($origin, $allowed, true)) {
       return $origin;
@@ -135,15 +144,22 @@ class Cors
   }
 
   /**
-   * 将 CORS 响应头应用到 Response
+   * 是否开发模式（mode=development）
    *
-   * 后置使用：先拿到 Response 再调用本方法补充头。非白名单来源不输出
-   * Access-Control-Allow-Origin（符合规范），但其它 Access-Control-* 常驻头仍会设置。
+   * 开发模式下 CORS 不做来源限制：任意合法 origin 均放行，便于本地联调。
+   * 配置未加载或读取失败时按非开发模式处理（保守），避免误放开线上。
    *
-   * @param \kernel\Foundation\HTTP\Response $response
-   * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
-   * @return \kernel\Foundation\HTTP\Response
+   * @return bool
    */
+  public static function isDevelopment(): bool
+  {
+    try {
+      return Config::get("mode", "production") === "development";
+    } catch (\Throwable $e) {
+      return false;
+    }
+  }
+
   /**
    * 将 allowMethods/allowHeaders/exposeHeaders 配置归一化为响应头字符串
    *
@@ -164,25 +180,71 @@ class Cors
     return (string) $value;
   }
 
-  public static function applyTo(Response $response, ?string $requestOrigin): Response
+  /**
+   * 计算全部 CORS 响应头（key => value）
+   *
+   * 供 applyTo()（写入 Response）与 emit()（直接 header() 输出）复用，
+   * 避免两处重复装配逻辑。
+   *
+   * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
+   * @return array<string,string>
+   */
+  public static function headers(?string $requestOrigin): array
   {
+    $headers = [];
     $allowOrigin = self::resolveAllowOrigin($requestOrigin);
     if ($allowOrigin !== null) {
-      $response->header("Access-Control-Allow-Origin", $allowOrigin);
+      $headers["Access-Control-Allow-Origin"] = $allowOrigin;
       if (self::config("allowCredentials") === true) {
-        $response->header("Access-Control-Allow-Credentials", "true");
+        $headers["Access-Control-Allow-Credentials"] = "true";
       }
       // 非通配（按请求 origin 动态回显）时告知缓存按 origin 区分
       if (!in_array("*", self::allowOrigins(), true)) {
-        $response->header("Vary", "Origin");
+        $headers["Vary"] = "Origin";
       }
     }
 
-    $response->header("Access-Control-Allow-Methods", self::toHeaderList(self::config("allowMethods")));
-    $response->header("Access-Control-Allow-Headers", self::toHeaderList(self::config("allowHeaders")));
-    $response->header("Access-Control-Expose-Headers", self::toHeaderList(self::config("exposeHeaders")));
-    $response->header("Access-Control-Max-Age", self::config("maxAge"));
+    $headers["Access-Control-Allow-Methods"] = self::toHeaderList(self::config("allowMethods"));
+    $headers["Access-Control-Allow-Headers"] = self::toHeaderList(self::config("allowHeaders"));
+    $headers["Access-Control-Expose-Headers"] = self::toHeaderList(self::config("exposeHeaders"));
+    $headers["Access-Control-Max-Age"] = (string) self::config("maxAge");
+
+    return $headers;
+  }
+
+  /**
+   * 将 CORS 响应头应用到 Response
+   *
+   * 后置使用：先拿到 Response 再调用本方法补充头。非白名单来源不输出
+   * Access-Control-Allow-Origin（符合规范），但其它 Access-Control-* 常驻头仍会设置。
+   *
+   * @param \kernel\Foundation\HTTP\Response $response
+   * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
+   * @return \kernel\Foundation\HTTP\Response
+   */
+  public static function applyTo(Response $response, ?string $requestOrigin): Response
+  {
+    foreach (self::headers($requestOrigin) as $key => $value) {
+      $response->header($key, $value);
+    }
 
     return $response;
+  }
+
+  /**
+   * 直接输出 CORS 响应头（header()）
+   *
+   * 用于拿不到 Response 的场景：全局异常处理器在输出错误响应前补 CORS 头，
+   * 使「抛异常 → 错误响应」同样带上跨域头，浏览器才能读到报错内容。
+   * PHP header() 会累积，随后 Response::output() 输出的头部不会覆盖这些 CORS 头。
+   *
+   * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
+   * @return void
+   */
+  public static function emit(?string $requestOrigin): void
+  {
+    foreach (self::headers($requestOrigin) as $key => $value) {
+      header($key . ":" . $value);
+    }
   }
 }
