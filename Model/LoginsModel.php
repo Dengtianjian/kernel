@@ -5,6 +5,9 @@ namespace kernel\Model;
 use kernel\Foundation\App;
 use kernel\Foundation\Database\PDO\Model;
 
+/**
+ * @deprecated  已废弃
+ */
 class LoginsModel extends Model
 {
   public $tableName = "logins";
