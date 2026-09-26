@@ -19,7 +19,13 @@ use kernel\Foundation\FileSystem\Path;
  * 安装辅助：
  * - install() / lockInstall() / installLocked()：创建数据/存储目录、写入并检测安装锁文件（install.lock）
  * - verifiyInstallKey() / refreshInstallKey()：校验与重新生成安装密钥（install.key）
+ * - updateVersion() / version()：把配置版本号写入 .version、读取 .version 原文
  * - resetVersion() / uninstall()：强制改写版本号、删除 .version 版本记录
+ *
+ * 查询与状态（只读，不执行升级/回滚）：
+ * - parseSemver() / compare()：提取三段基础版本号、按基础版本号比较两个版本
+ * - getPendingUpgrades()：列出待升级版本（过滤条件与 upgrade() 一致）
+ * - getStatus()：返回 app_id / current_version / latest_version / upgrade_dir / data_dir 快照
  *
  * 升级脚本文件格式：
  * ```php
@@ -73,7 +79,7 @@ class Provisioner
     $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
       $this->latestVersion = trim(file_get_contents($versionFile));
-      $this->currentSemver = $this->parseSemver($this->latestVersion);
+      $this->currentSemver = $this::parseSemver($this->latestVersion);
     }
   }
 
@@ -86,13 +92,31 @@ class Provisioner
    * @param string $fullVersion 完整版本号
    * @return string 基础版本号
    */
-  private function parseSemver(string $fullVersion): string
+  public static function parseSemver(string $fullVersion): string
   {
     $parts = explode('.', $fullVersion);
     if (count($parts) >= 3) {
       return implode('.', array_slice($parts, 0, 3));
     }
     return $fullVersion;
+  }
+  /**
+   * 比较两个版本号
+   *
+   * 先各自提取三段基础版本号（见 parseSemver），再交给 version_compare 比较。
+   * 传 $operator 返回 bool（如 ">="、"<"）；不传返回 int（-1 / 0 / 1）。
+   *
+   * @param string $version1 版本号 1
+   * @param string $version2 版本号 2
+   * @param string|null $operator 比较运算符（>、>=、<、<=、==、!= 等），null 时返回 int
+   * @return int|bool 无运算符时返回 -1/0/1；有运算符时返回 bool
+   */
+  public static function compare(string $version1, string $version2, ?string $operator = null): int|bool
+  {
+    $version1 = self::parseSemver($version1);
+    $version2 = self::parseSemver($version2);
+
+    return version_compare($version1, $version2, $operator);
   }
   /**
    * 首次安装：创建应用数据和存储目录
@@ -136,6 +160,8 @@ class Provisioner
    *
    * 读取 install.key 内容并与传入的 $key 比对。
    * $key 为空时直接返回 false；install.key 不存在（无内容）时也返回 false。
+   *
+   * 注：方法名 "verifiy" 为历史拼写（正确应为 "verify"），为保持向后兼容未改名。
    *
    * @param string $key 待校验的安装密钥
    * @return bool 密钥一致返回 true，否则 false
@@ -181,6 +207,7 @@ class Provisioner
 
     ksort($upgradeList);
 
+    $targetVersion = $this::parseSemver($targetVersion);
     $currentVersion = $this->currentSemver;
     foreach ($upgradeList as $version => $filePath) {
       if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
@@ -229,7 +256,7 @@ class Provisioner
    * 仅定义了 rollback() 方法的升级类参与回滚，无该方法则跳过。
    *
    * @param string $targetVersion 回滚目标版本号
-   * @return $this|true 无升级目录或无需回滚时返回 true
+   * @return $this|true 无升级脚本或无需回滚时返回 true，否则返回 $this
    * @throws \RuntimeException 回滚脚本执行失败时抛出
    */
   public function rollback($targetVersion): bool|Provisioner
@@ -261,7 +288,13 @@ class Provisioner
     return $this;
   }
 
-  /** 获取升级目录路径，未设置时返回默认路径 {Path::root()}/Upgrades */
+  /**
+   * 获取升级脚本目录路径
+   *
+   * 未通过构造参数指定时返回默认路径 {Path::root()}/Upgrades。
+   *
+   * @return string 升级脚本目录（绝对路径）
+   */
   private function upgradesDir(): string
   {
     return $this->upgradesDir ?? Path::join(Path::root(), "Upgrades");
@@ -297,9 +330,10 @@ class Provisioner
   /**
    * 从升级目录路径和文件名构建类的完全限定名
    *
-   * 推导逻辑：upgradesDir 相对 Path::root() 的路径 → 目录分隔符转命名空间分隔符 → 拼接类短名
-   * 例：upgradesDir=/app/Controller/Iuu/Upgrades/List, file=Upgrade_1_1_0.php
-   *     → Controller\Iuu\Upgrades\List\Upgrade_1_1_0
+   * 推导逻辑：取 upgradesDir 相对 Path::root() 的路径 → 目录分隔符转命名空间分隔符
+   * → 以 App::id() 为根命名空间拼接类短名。
+   * 例：App::id()=myapp，upgradesDir={root}/Controller/Iuu/Upgrades/List，file=Upgrade_1_1_0.php
+   *     → myapp\Controller\Iuu\Upgrades\List\Upgrade_1_1_0
    *
    * @param string $filePath 升级脚本完整路径
    * @return string 完全限定类名
@@ -379,7 +413,7 @@ class Provisioner
     $versionFile = Path::join(Path::data(), ".version");
     file_put_contents($versionFile, $version);
     $this->latestVersion = $version;
-    $this->currentSemver = $this->parseSemver($version);
+    $this->currentSemver = $this::parseSemver($version);
   }
   /**
    * 卸载：删除 .version 文件
@@ -395,9 +429,9 @@ class Provisioner
   }
 
   /**
-   * 获取应用当前状态
+   * 获取应用当前状态快照
    *
-   * @return array 包含 appId, currentVersion, latestVersion, upgradeDir 等信息
+   * @return array{app_id: string|null, current_version: string, latest_version: string|null, upgrade_dir: string, data_dir: string|null}
    */
   public function getStatus(): array
   {
