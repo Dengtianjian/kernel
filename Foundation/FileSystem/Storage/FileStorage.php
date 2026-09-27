@@ -3,12 +3,14 @@
 namespace kernel\Foundation\FileSystem\Storage;
 
 use kernel\Facades\Storage as FacadesStorage;
+use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\App;
 use kernel\Foundation\Exception\Error;
-use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Object\AbilityBaseObject;
+use kernel\Foundation\Router\Route;
+use kernel\Foundation\Router\Router;
 use kernel\Model\FilesModel;
 
 /**
@@ -170,6 +172,60 @@ class FileStorage extends AbilityBaseObject
     return join("/", array_filter($routeUris, function ($item) {
       return $item;
     }));
+  }
+  private $registrableRoutes = [
+    "get" => FilesNamespace\GetFileController::class,
+    "auth" => FilesNamespace\GetFileAuthController::class,
+    "upload" => FilesNamespace\UploadFileController::class,
+    "update" => FilesNamespace\UpdateFileController::class,
+    "delete" => FilesNamespace\DeleteFileController::class,
+    "preview" => FilesNamespace\PrewiewFileController::class,
+    "download" => FilesNamespace\DownloadFileController::class,
+  ];
+  private $registrableRouteMethods = [
+    "get" => "get",
+    "auth" => "post",
+    "upload" => "post",
+    "update" => "patch",
+    "delete" => "delete",
+    "preview" => "get",
+    "download" => "get",
+  ];
+  private $registrableRouteUriSuffixs = [
+    "get" => null,
+    "auth" => "auth/{method:(get|post|patch|delete)}",
+    "upload" => null,
+    "update" => null,
+    "delete" => null,
+    "preview" => "preview",
+    "download" => "download",
+  ];
+  function registerRoute($nameOrUri, $methodOrController = null, $controller = null)
+  {
+    if (array_key_exists($nameOrUri, $this->registrableRoutes)) {
+      if (is_null($controller)) {
+        $method = $this->registrableRouteMethods[$nameOrUri];
+        $controller = $methodOrController ?: $this->registrableRoutes[$nameOrUri];
+
+        $uri = $this::buildFileKeyRouteUri($this->prefix, $this->registrableRouteUriSuffixs[$nameOrUri]);
+        if ($nameOrUri === 'auth') {
+          $uri = implode("/", [$this->prefix, $this->registrableRouteUriSuffixs[$nameOrUri]]);
+        }
+
+        call_user_func([Route::class, $method], $uri, $controller);
+
+        return $this;
+      }
+    }
+
+    $uri = $nameOrUri;
+    if (strpos($uri, $this->prefix) === false) {
+      $uri = $this::buildFileKeyRouteUri($this->prefix, $uri);
+    }
+
+    call_user_func([Route::class, $methodOrController], $uri, $controller);
+
+    return $this;
   }
   /**
    * 生成一个带唯一前缀的文件键（Key）
@@ -377,7 +433,7 @@ class FileStorage extends AbilityBaseObject
   {
     $result = $this->useDisk->get($fileKey);
     if ($this->useDisk->error) return $this->useDisk->return();
-    
+
     $file = $result->toArray();
     if (!$file) return $this->break(500, 500, "获取文件信息失败");
 
