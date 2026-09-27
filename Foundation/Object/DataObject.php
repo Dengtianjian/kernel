@@ -89,6 +89,27 @@ class DataObject extends stdClass
   }
 
   /**
+   * 批量赋值：把数组中的值赋给已有属性
+   *
+   * 仅更新已存在的属性（已声明的属性 + 已写入的动态属性），
+   * 数组中不存在的键会被忽略，也不会创建新的动态属性。
+   * 区别于 {@see set()}：set() 会无条件写入任意键（含动态属性）。
+   *
+   * @param array $data 键值对数据
+   * @return $this 返回当前实例以支持链式调用
+   */
+  public function assign(array $data)
+  {
+    foreach ($this->properties() as $key) {
+      if (array_key_exists($key, $data)) {
+        $this->$key = $data[$key];
+      }
+    }
+
+    return $this;
+  }
+
+  /**
    * 获取全部属性名（已声明属性 + 已写入的动态属性）
    *
    * @return string[]
