@@ -142,13 +142,13 @@ final class FileSystem
     $fileInfo = [
       "name" => $saveFullFileName,
       "sourceFileName" => $fileSourceName,
-      "path" => $savePath ? FileHelper::optimizedPath($savePath) : null,
+      "path" => $savePath ? Path::optimizedPath($savePath) : null,
       "extension" => $fileExtension,
       "size" => $fileSize,
       "width" => 0,
       "height" => 0,
 
-      "filePath" => FileHelper::optimizedPath($saveFullPath)
+      "filePath" => Path::optimizedPath($saveFullPath)
     ];
     if (FileHelper::isImage($saveFullPath)) {
       $imageInfo = \getimagesize($saveFullPath);
@@ -395,7 +395,7 @@ final class FileSystem
    */
   public static function getFileInfo($filePath)
   {
-    $filePath = FileHelper::optimizedPath($filePath);
+    $filePath = Path::optimizedPath($filePath);
     if (!file_exists($filePath)) {
       return false;
     }
@@ -439,7 +439,7 @@ final class FileSystem
    */
   public static function exists($filePath)
   {
-    $filePath = FileHelper::optimizedPath($filePath);
+    $filePath = Path::optimizedPath($filePath);
     return file_exists($filePath);
   }
   /**
@@ -450,7 +450,7 @@ final class FileSystem
    */
   public static function deleteFile($filePath)
   {
-    $filePath = FileHelper::optimizedPath($filePath);
+    $filePath = Path::optimizedPath($filePath);
     if (file_exists($filePath)) {
       return unlink($filePath);
     }
@@ -475,7 +475,7 @@ final class FileSystem
    */
   public static function readFile($filePath)
   {
-    $filePath = FileHelper::optimizedPath($filePath);
+    $filePath = Path::optimizedPath($filePath);
     if (!file_exists($filePath)) {
       return false;
     }
@@ -504,8 +504,8 @@ final class FileSystem
    */
   public static function copyFile($sourcePath, $destPath, $overwrite = false)
   {
-    $sourcePath = FileHelper::optimizedPath($sourcePath);
-    $destPath = FileHelper::optimizedPath($destPath);
+    $sourcePath = Path::optimizedPath($sourcePath);
+    $destPath = Path::optimizedPath($destPath);
 
     if (!file_exists($sourcePath)) {
       return false;
@@ -547,8 +547,8 @@ final class FileSystem
    */
   public static function moveFile($sourcePath, $destPath, $overwrite = false)
   {
-    $sourcePath = FileHelper::optimizedPath($sourcePath);
-    $destPath = FileHelper::optimizedPath($destPath);
+    $sourcePath = Path::optimizedPath($sourcePath);
+    $destPath = Path::optimizedPath($destPath);
 
     if (!file_exists($sourcePath)) {
       return false;
@@ -587,7 +587,7 @@ final class FileSystem
    */
   public static function ensureDirectory($path, $permissions = 0755)
   {
-    $path = FileHelper::optimizedPath($path);
+    $path = Path::optimizedPath($path);
     if (is_dir($path)) {
       return true;
     }
@@ -613,7 +613,7 @@ final class FileSystem
    */
   public static function fileSize($filePath)
   {
-    $filePath = FileHelper::optimizedPath($filePath);
+    $filePath = Path::optimizedPath($filePath);
     if (!file_exists($filePath)) {
       return false;
     }

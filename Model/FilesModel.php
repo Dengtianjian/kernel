@@ -77,8 +77,8 @@ class FilesModel extends Model
       (new Schema("height"))->double()->comment("高度（媒体文件才有该值）"),
       (new Schema("extension"))->varchar(30)->nullable(false)->comment("文件扩展名"),
       (new Schema("access_control"))->varchar(60)->default("private")->nullable(false)->comment("访问控制权限"),
-      (new Schema("created_at"))->unixtime_ms()->nullable(false)->comment("创建时间"),
-      (new Schema("updated_at"))->unixtime_ms()->nullable(false)->comment("最后更新时间"),
+      (new Schema("created_at"))->unixtime()->nullable(false)->comment("创建时间"),
+      (new Schema("updated_at"))->unixtime()->nullable(false)->comment("最后更新时间"),
     ];
 
     parent::__construct();

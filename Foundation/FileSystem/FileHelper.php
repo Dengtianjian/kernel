@@ -151,28 +151,6 @@ class FileHelper
     return $path;
   }
   /**
-   * 优化文件路径
-   *
-   * 将路径中的分隔符统一替换为当前运行系统的 DIRECTORY_SEPARATOR。
-   *
-   * 使用示例：
-   * ```php
-   * FileHelper::optimizedPath('path/to\\file.txt');
-   * // Linux:   "path/to/file.txt"
-   * // Windows: "path\to\file.txt"
-   * ```
-   *
-   * @param string $path 需要优化的路径字符串
-   * @return string 优化后的文件路径
-   */
-  static function optimizedPath($path)
-  {
-    return str_replace([
-      "/",
-      "\\"
-    ], DIRECTORY_SEPARATOR, $path);
-  }
-  /**
    * 扫描目录
    *
    * 对 PHP 内置 scandir() 的增强封装，自动过滤掉 "." 和 ".."，
@@ -238,10 +216,10 @@ class FileHelper
 
     $allDirs = [];
     foreach ($dirs as $dir) {
-      $fullPath = self::combinedFilePath($rootDir, $dir);
+      $fullPath = Path::join($rootDir, $dir);
       $relativePath = $parentDir === null || $parentDir === false
         ? $dir
-        : self::combinedFilePath($parentDir, $dir);
+        : Path::join($parentDir, $dir);
 
       if (is_dir($fullPath)) {
         $allDirs = array_merge(
@@ -294,8 +272,8 @@ class FileHelper
 
     $result = true;
     foreach ($targetFiles as $index => $targetFileItem) {
-      $targetFullPath = self::combinedFilePath($targetPath, $targetFileItem);
-      $sourceFullPath = self::combinedFilePath($sourcePath, $sourceFiles[$index]);
+      $targetFullPath = Path::join($targetPath, $targetFileItem);
+      $sourceFullPath = Path::join($sourcePath, $sourceFiles[$index]);
       if (is_dir($targetFullPath)) {
         if (!self::compareDirectories($targetFullPath, $sourceFullPath)) {
           $result = false;

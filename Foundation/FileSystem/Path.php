@@ -95,7 +95,7 @@ class Path
    */
   public static function kernelDir(): ?string
   {
-    $root = self::root();
+    $root = self::projectRoot();
     $kernelRoot = self::kernelRoot();
     if ($root === null || $kernelRoot === null) {
       return null;
@@ -160,5 +160,26 @@ class Path
     ], DIRECTORY_SEPARATOR, $path);
 
     return $path;
+  }
+
+  /**
+   * 优化路径分隔符
+   *
+   * 将路径中的 "/" 与 "\" 统一替换为当前运行系统的 DIRECTORY_SEPARATOR。
+   * 已从 FileHelper 迁移至此，作为路径规范化的统一入口。
+   *
+   * 使用示例：
+   * ```php
+   * Path::optimizedPath('path/to\\file.txt');
+   * // Linux:   "path/to/file.txt"
+   * // Windows: "path\to\file.txt"
+   * ```
+   *
+   * @param string $path 需要优化的路径字符串
+   * @return string 优化后的路径
+   */
+  public static function optimizedPath($path)
+  {
+    return str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $path);
   }
 }
