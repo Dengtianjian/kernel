@@ -27,24 +27,25 @@ use kernel\Foundation\Output;
   </style>
   <h1><? if ($errorCode) { ?> 「<? echo $errorCode; ?>」 <? } ?> <? echo $code; ?></h1>
   <h2><? echo $message; ?></h2>
-  <section>
-    <p>
-      File:<? echo $file; ?>
-    </p>
-    <p>
-      Line:<? echo $line; ?>
-    </p>
-    <p>
-      Trace:
-    <pre><? Output::printContent($traceString) ?></pre>
-    </p>
-    <?php if (App::mode() === "development") { ?>
+  <?php if (App::mode() === "development") { ?>
+    <section>
+      <p>
+        File:<? echo $file; ?>
+      </p>
+      <p>
+        Line:<? echo $line; ?>
+      </p>
+      <p>
+        Trace:
+      <pre><? Output::printContent($traceString) ?></pre>
+      </p>
+
       <p>
         Details:
       <pre><? Output::printContent($details) ?></pre>
       </p>
-    <?php } ?>
-  </section>
+    </section>
+  <?php } ?>
 </body>
 
 </html>

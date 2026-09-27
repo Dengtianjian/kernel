@@ -5,6 +5,8 @@ namespace kernel\Foundation\HTTP;
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Output;
 
 class Response
@@ -456,7 +458,17 @@ class Response
         break;
       case "html":
         header("Content-type:text/html", true);
-        echo $data;
+        $content = $data;
+
+        if ($this->responseStatusCode > 399 && $this->responseStatusCode < 499) {
+          $content = ResponseView::render(Path::join(Path::kernelRoot(), "Views", "4xx.php"), $body);
+        }
+        if ($this->responseStatusCode > 499) {
+          $content = ResponseView::render(Path::join(Path::kernelRoot(), "Views", "5xx.php"), $body);
+        }
+
+        echo $content;
+        
         break;
       case "text":
         if ($this->formatOutputTypeOfText) {

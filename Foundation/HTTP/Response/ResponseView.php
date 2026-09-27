@@ -115,7 +115,6 @@ class ResponseView extends Response
    *
    * @param string|string[] $viewFiles 渲染的模板文件绝对路径，或者字符串数组，里面存在渲染的模板文件绝对路径
    * @param array $viewData 渲染的数据
-   * @return void
    */
   public static function render($viewFiles, $viewData = [])
   {

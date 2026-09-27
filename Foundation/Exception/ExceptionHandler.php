@@ -243,8 +243,8 @@ class ExceptionHandler
    * 渲染错误视图
    *
    * 渲染逻辑：
-   *   1. 优先用应用层 `{$root}/Views/error.php`
-   *   2. 退回 kernel 默认 `kernel/Views/error.php`
+   *   1. 优先用应用层 `{$root}/Views/5xx.php`
+   *   2. 退回 kernel 默认 `kernel/Views/5xx.php`
    *   3. 都找不到则降级为纯文本
    */
   private static function renderView(
@@ -264,13 +264,13 @@ class ExceptionHandler
 
     // 1. 优先应用层视图
     try {
-      if (is_dir($appViewDir) && file_exists($appViewDir . "/error.php")) {
+      if (is_dir($appViewDir) && file_exists($appViewDir . "/5xx.php")) {
         $viewResponse = new ResponseView("error", null, $appViewDir, "error");
-        $viewResponse->render($appViewDir . "/error.php");
+        $viewResponse->render($appViewDir . "/5xx.php");
         return;
       }
       // 2. 退回 kernel 视图
-      if (is_dir($kernelViewDir) && file_exists($kernelViewDir . "/error.php")) {
+      if (is_dir($kernelViewDir) && file_exists($kernelViewDir . "/5xx.php")) {
         $viewResponse = new ResponseView("error", [
           "errorCode" => $errorCode,
           "code" => $code,
