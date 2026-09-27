@@ -2,26 +2,40 @@
 
 namespace kernel\Controller\Main\Files;
 
-class GetFileController extends FileBaseController
+use kernel\Facades\Storage;
+use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\FileSystem\Storage\StorageFile;
+
+class GetFileController extends Controller
 {
-  public $serializes = [
+  public $responseSerializes = [
+    "id" => "int",
     "key" => "string",
     "name" => "string",
+    "source_file_name" => "string",
+    "path" => "string",
     "extension" => "string",
     "size" => "int",
-    "width" => "double",
-    "height" => "double",
-    "url" => "string",
-    "previewURL" => "string",
-    "downloadURL" => "string",
-    "transferPreviewURL"=>"string",
-    "transferDownloadURL"=>"string"
+    "width" => "int",
+    "height" => "int",
+    "disk" => "int",
+    "mime_type" => "string"
   ];
-  public function data($FileKey)
+  public function data($fileKey)
   {
-    $GetResponse = $this->platform->getFile($FileKey);
-    if ($this->platform->error) return $this->platform->return();
+    if (!Storage::authorizeOperation($fileKey)) return Storage::return();
 
-    return $GetResponse->toArray();
+    if (Storage::dataSave()) {
+      $file = Storage::model()->where("key", $fileKey)->first();
+    } else {
+      $file = Storage::get($fileKey);
+      if (Storage::isError()) return Storage::return();
+    }
+
+    if (!$file) {
+      return $this->fail(404, 404, "文件不存在");
+    }
+
+    return (new StorageFile($file))->toArray();
   }
 }

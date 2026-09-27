@@ -50,9 +50,12 @@ use kernel\Foundation\FileSystem\Storage\LocalStorage;
  * @method static \kernel\Foundation\FileSystem\Storage\AbstractStorage|null disk(string|null $name = null) 获取指定磁盘或当前使用磁盘
  * @method static \kernel\Foundation\FileSystem\Storage\AbstractStorage use(string|null $name = null) 切换当前使用磁盘
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage enableDataSave(\kernel\Model\FilesModel|null $model = null) 启用文件元信息落库（save/add/delete/exists 依赖）
+ * @method static boolean dataSave() 读取文件数据存储是否启用
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage|\kernel\Model\FilesModel|null model(\kernel\Model\FilesModel|null $model = null) 读取/设置文件数据模型
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage|boolean auth(boolean|null $val = null) 读取/开启请求签名鉴权
+ * @method static boolean authEnabled() 读取请求签名鉴权是否启用
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage|boolean accessControl(boolean|null $val = null) 读取/开启访问控制
+ * @method static boolean accessControlEnabled() 读取访问控制是否启用
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage|mixed accessControlAuthId(mixed|null $val = null) 读取/设置访问控制认证身份
  * @method static array|false get(string $fileKey) 获取文件信息
  * @method static \kernel\Foundation\FileSystem\Storage\StorageFile|false put(array $file, string|null $saveFileName = null) 上传文件到当前磁盘
@@ -69,6 +72,9 @@ use kernel\Foundation\FileSystem\Storage\LocalStorage;
  * @method static boolean|mixed authorizeOperation(string $fileKey, string $operation = "read") 校验对文件执行读/写的授权
  * @method static boolean checkAccessControl(string $fileKey, string $authTag, mixed $ownerId, string $action = "read") 基于 ACL 标签判定操作是否允许
  * @method static string generateFileKey(string $extension) 生成带唯一前缀的文件键
+ * @method static string buildFileKey(string $filePath, string $fileName) 拼接目录与文件名，构建统一正斜杠分隔的文件键
+ * @method static string fileKeyRoutePattern() 获取文件键的路由匹配正则
+ * @method static string buildFileKeyRouteUri(string $prefix, string|null $suffix = null) 构建带文件键占位符的路由 URI
  */
 class Storage extends Facade
 {

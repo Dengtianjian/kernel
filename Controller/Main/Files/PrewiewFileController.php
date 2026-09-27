@@ -1,50 +1,54 @@
 <?php
 
 namespace kernel\Controller\Main\Files;
+
+use kernel\Facades\Storage;
+use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\FileSystem\Storage\FileStorage;
 
-use kernel\Foundation\FileSystem\FileHelper;
-use kernel\Service\StorageService;
-
-class PrewiewFileController extends FileBaseController
+class PrewiewFileController extends Controller
 {
-  /**
-   * 主体
-   *
-   * @param string $FileKey 文件名
-   * @return mixed
-   */
   public function data($fileKey = null)
   {
-    $File = $this->platform->getFile($fileKey, FALSE);
-    if (!$File) return $this->platform->return();
+    if (!Storage::authorizeOperation($fileKey, "read")) return Storage::return();
 
-    $RequestQuerys = $this->request->query->some();
-    $URLParams = [];
-    foreach ($RequestQuerys as $key => $value) {
+    if (Storage::dataSave()) {
+      $file = Storage::model()->where("key", $fileKey)->first();
+    } else {
+      $file = Storage::get($fileKey);
+      if (Storage::isError()) return Storage::return();
+    }
+
+    if (!$file) {
+      return $this->fail(404, 404, "文件不存在");
+    }
+
+    $querys = $this->query();
+    $urlParams = [];
+    foreach ($querys as $key => $value) {
       if (!in_array($key, ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"])) {
-        $URLParams[$key] = $value;
+        $urlParams[$key] = $value;
       }
     }
 
-    $Platform = StorageService::getPlatform($File->platform);
-
-    if ($File->remote && $File->platform !== "local") {
-      if (!StorageService::hasPlatform($File->platform)) {
-        return $this->response->error(400, 400, "抱歉，当前文件无法预览", "文件所属存储平台未实例化");
+    $disk = Storage::disk($file['disk']);
+    if ($file['disk'] !== "local") {
+      if (!$disk) {
+        return $this->fail(500, 500, "抱歉，当前文件无法预览", "文件所属存储平台未实例化");
       }
 
-      $URL = $Platform->getFilePreviewURL($fileKey,  $Platform->convertURLParams($URLParams, $File->platform));
-      if (!$URL) return $this->response->error(404, 404, "预览文件失败", "获取到的远程文件URL为空");
+      $url = $disk->url($fileKey, $urlParams);
+      if (!$url) return $this->response->error(500, 500, "预览文件失败", "获取到的远程文件URL为空");
 
-      return $this->response->redirect($URL, 302);
+      return $this->response->redirect($url, 302);
     } else {
-      $FilePath = Path::join(Path::storage(), $File->filePath);
-      if (!file_exists($FilePath)) {
-        return $this->response->error(404, 404, "文件不存在", "文件实体不存在");
+      $filePath = Path::join(Path::storage(), $fileKey);
+      if (!file_exists($filePath)) {
+        return $this->response->error(500, 500, "文件不存在", "文件实体不存在");
       }
 
-      return $this->response->file($FilePath, $File->fileName, null, "max-age=43200");
+      return $this->response->file($filePath, $file['source_file_name'], null, "max-age=43200");
     }
   }
 }

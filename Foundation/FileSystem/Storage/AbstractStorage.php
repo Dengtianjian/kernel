@@ -61,7 +61,7 @@ abstract class AbstractStorage extends AbilityBaseObject
    * 返回指定文件的元信息数组；文件不存在时返回 false。
    *
    * @param string $fileName 文件名称（含相对路径，相对所属磁盘根目录）
-   * @return false|array{name:string,disk:string,sourceFileName:string,path:string,extension:string,size:int,width:int|null,height:int|null,filePath:string} 文件信息数组，文件不存在时返回 false
+   * @return false|StorageFile 文件信息数组，文件不存在时返回 false
    */
   abstract function get($fileName);
 
@@ -72,7 +72,7 @@ abstract class AbstractStorage extends AbilityBaseObject
    * 失败时通常调用 {@see AbilityBaseObject::break()} 返回错误态。
    *
    * @param array $file 源文件描述数组（通常含 `name`/`tmp_name`/`type`/`size` 等，来自上传或本地数组）
-   * @return string|mixed 成功时返回保存后的文件路径；失败时返回错误态（取决于子类实现）
+   * @return false|StorageFile 成功时返回保存后的文件路径；失败时返回错误态（取决于子类实现）
    */
   abstract function put($file);
 

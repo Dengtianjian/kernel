@@ -20,7 +20,7 @@ use kernel\Model\FilesModel;
  * - 借助 FilesModel（启用数据存储后）做文件元信息落库与基于 ACL 标签（PRIVATE / PUBLIC_READ …）的访问控制。
  *
  * 鉴权相关开关：
- * - $authorizationEnabled / {@see auth()}：是否校验请求签名（verifyRequestSignature）；
+ * - $authEnabled / {@see auth()}：是否校验请求签名（verifyRequestSignature）；
  * - $accessControlEnabled / {@see accessControl()}：是否按 ACL 标签校验操作权限（checkAccessControl）；
  * - $dataSave / {@see enableDataSave()}：是否把文件元信息写入数据库（save/add/delete/exists 依赖）。
  *
@@ -108,25 +108,13 @@ class FileStorage extends AbilityBaseObject
    *
    * @var mixed
    */
-  protected $accessControlAuthId = null;
+  protected $accessControlAuthIdValue = null;
   /**
    * 是否启用数据存储（写入文件模型）
    *
    * @var boolean
    */
   protected $dataSave = false;
-  /**
-   * 是否启用 ACL 校验（checkAccessControl 依赖）
-   *
-   * @var boolean
-   */
-  protected $acEnabled = false;
-  /**
-   * 是否启用请求签名授权（verifyRequestSignature 依赖）
-   *
-   * @var boolean
-   */
-  protected $authorizationEnabled = false;
 
   /**
    * 构造文件存储门面
@@ -153,6 +141,37 @@ class FileStorage extends AbilityBaseObject
   }
 
   /**
+   * 获取文件键（fileKey）的路由匹配正则
+   *
+   * 匹配含相对目录的文件键（如 "dir/file.txt"），作为路由 {fileKey:...} 占位符的匹配规则。
+   *
+   * @return string 路由匹配正则，如 "[\w\/]+?\.\w+"
+   */
+  static function fileKeyRoutePattern()
+  {
+    return "[\w\/]+?\.\w+";
+  }
+  /**
+   * 构建带文件键（fileKey）占位符的路由 URI
+   *
+   * 将目录前缀、fileKey 匹配占位符与后缀拼为一条路由 URI 模式，供路由注册使用。
+   * 形如 "{prefix}/{fileKey:[\w\/]+?\.\w+}[/suffix]"。
+   *
+   * @param string $prefix 路由目录前缀（如 "files"）
+   * @param string|null $suffix 路由后缀（可选，为空时省略）
+   * @return string 组合后的路由 URI 模式
+   */
+  static function buildFileKeyRouteUri($prefix, $suffix = null)
+  {
+    $matchPattern = "{fileKey:" . self::fileKeyRoutePattern() . "}";
+    $matchPattern = str_replace("\/", "/", $matchPattern);
+    $routeUris = [$prefix, $matchPattern, $suffix];
+
+    return join("/", array_filter($routeUris, function ($item) {
+      return $item;
+    }));
+  }
+  /**
    * 生成一个带唯一前缀的文件键（Key）
    *
    * 形如 `66f3a1b2c3d4.jpg`，用于作为文件在存储中的唯一标识。
@@ -163,6 +182,22 @@ class FileStorage extends AbilityBaseObject
   static function generateFileKey($extension)
   {
     return join([uniqid(), ".", $extension]);
+  }
+  /**
+   * 拼接文件目录与文件名，构建文件键（Key）
+   *
+   * 以 {@see Path::join()} 组合目录与文件名，并将分隔符统一为正斜杠 "/"，
+   * 使文件键在跨平台环境下保持一致，可直接作为存储读写与访问 URL 的标识。
+   * 与 {@see generateFileKey()} 不同：本方法不生成唯一前缀，仅组合给定路径与文件名。
+   *
+   * @param string $filePath 文件目录路径（可为空，空时仅返回文件名）
+   * @param string $fileName 文件名（可含扩展名）
+   * @return string 以 "/" 分隔的文件键，如 "dir/file.txt"
+   */
+  static function buildFileKey($filePath, $fileName)
+  {
+    $path = Path::join($filePath, $fileName);
+    return str_replace("\\", "/", $path);
   }
 
   /**
@@ -177,8 +212,20 @@ class FileStorage extends AbilityBaseObject
   public function enableDataSave($model = null)
   {
     $this->model = $model ?: new FilesModel();
+    $this->dataSave = true;
 
     return $this;
+  }
+  /**
+   * 读取文件数据存储是否启用
+   *
+   * 对应 {@see enableDataSave()}：返回数据存储开关的当前状态。
+   *
+   * @return boolean
+   */
+  public function dataSave()
+  {
+    return $this->dataSave;
   }
   /**
    * 读取或设置文件数据模型
@@ -254,6 +301,17 @@ class FileStorage extends AbilityBaseObject
   }
 
   /**
+   * 读取请求签名鉴权是否启用
+   *
+   * 对应 {@see auth()}：返回签名鉴权开关的当前状态。
+   *
+   * @return boolean
+   */
+  public function authEnabled()
+  {
+    return $this->authEnabled;
+  }
+  /**
    * 读取或开启基于 ACL 标签的访问控制
    *
    * 读写一体：传 $val 时设置开关并返回 $this（链式）；不传时返回当前开关值。
@@ -262,13 +320,29 @@ class FileStorage extends AbilityBaseObject
    * @param boolean|null $val 是否启用
    * @return static|boolean
    */
-  public function accessControl($val = null)
+  public function accessControl($val = null, $authId = null)
   {
     if (!is_null($val)) {
       $this->accessControlEnabled = $val;
+      if ($val) {
+        $this->accessControlAuthIdValue = $authId;
+      } else {
+        $this->accessControlAuthIdValue = null;
+      }
       return $this;
     }
 
+    return $this->accessControlEnabled;
+  }
+  /**
+   * 读取访问控制是否启用
+   *
+   * 对应 {@see accessControl()}：返回访问控制开关的当前状态。
+   *
+   * @return boolean
+   */
+  public function accessControlEnabled()
+  {
     return $this->accessControlEnabled;
   }
   /**
@@ -283,11 +357,11 @@ class FileStorage extends AbilityBaseObject
   public function accessControlAuthId($val = null)
   {
     if (!is_null($val)) {
-      $this->accessControlAuthId = $val;
+      $this->accessControlAuthIdValue = $val;
       return $this;
     }
 
-    return $this->accessControlAuthId;
+    return is_callable($this->accessControlAuthIdValue) ? call_user_func($this->accessControlAuthIdValue) : $this->accessControlAuthIdValue;
   }
 
   /**
@@ -303,9 +377,11 @@ class FileStorage extends AbilityBaseObject
   {
     $result = $this->useDisk->get($fileKey);
     if ($this->useDisk->error) return $this->useDisk->return();
-    if (!$result) return $this->break(500, 500, "获取文件信息失败");
+    
+    $file = $result->toArray();
+    if (!$file) return $this->break(500, 500, "获取文件信息失败");
 
-    return $result;
+    return $file;
   }
 
   /**
@@ -329,7 +405,7 @@ class FileStorage extends AbilityBaseObject
     }
     if ($this->accessControlEnabled) {
       $accessControl = self::AUTHENTICATED_READ;
-      $ownerId = $this->accessControlAuthId;
+      $ownerId = $this->accessControlAuthId();
 
       if ($this->checkAccessControl($key, $accessControl, $ownerId, "write") === false) {
         return $this->break(403, "uploadFile:403002", "抱歉，您没有上传该文件的权限");
@@ -343,7 +419,7 @@ class FileStorage extends AbilityBaseObject
       return $this->break(500, "putFileFailed:500", "文件上传失败", $this->useDisk->errorDetails);
     }
 
-    $data = [
+    $fileInfo->assign([
       "key" => $key,
       "disk" => $this->useDisk->name(),
       "ref" => null,
@@ -354,14 +430,14 @@ class FileStorage extends AbilityBaseObject
       "name" => $pathInfo['basename'],
       "size" => $file['size'],
       "path" => $pathInfo['dirname'],
-      "filePath" => $fileInfo['filePath'],
-      "width" => $fileInfo['width'],
-      "height" =>  $fileInfo['height'],
+      "filePath" => $fileInfo->filePath,
+      "width" => $fileInfo->width,
+      "height" =>  $fileInfo->height,
       "extension" => $pathInfo['extension'],
       "access_control" => self::PUBLIC_READ
-    ];
+    ]);
 
-    return new StorageFile($data);
+    return $fileInfo;
   }
   /**
    * 保存文件并记录元信息到数据库
@@ -638,7 +714,7 @@ class FileStorage extends AbilityBaseObject
     $urlParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
     foreach ($urlParamKeys as $key) {
       if (!array_key_exists($key, $rawURLParams)) {
-        return $this->break(400, "verifyAuth:400001", "缺少参数");
+        return $this->break(403, "verifyAuth:403001", "缺少参数");
       }
     }
     unset($rawURLParams['__storage_name']);
@@ -655,19 +731,19 @@ class FileStorage extends AbilityBaseObject
     }
     $signature = $rawURLParams['signature'];
 
-    if ($signAlgorithm !== StorageSignature::getSignAlgorithm()) return $this->break(400, "verifyAuth:400002", "参数错误");
-    if (strpos($signTime, ";") === false || strpos($keyTime, ";") === false) return $this->break(400, "verifyAuth:400003", "参数错误");
-    if ($signTime !== $keyTime) return $this->break(400, "verifyAuth:400004", "参数错误");
+    if ($signAlgorithm !== StorageSignature::getSignAlgorithm()) return $this->break(403, "verifyAuth:403002", "参数错误");
+    if (strpos($signTime, ";") === false || strpos($keyTime, ";") === false) return $this->break(403, "verifyAuth:403003", "参数错误");
+    if ($signTime !== $keyTime) return $this->break(403, "verifyAuth:403004", "参数错误");
     list($startTime, $endTime) = explode(";", $signTime);
     list($keyStartTime, $keyEndTime) = explode(";", $keyTime);
     $startTime = intval($startTime);
     $endTime = intval($endTime);
     $keyStartTime = intval($keyStartTime);
     $keyEndTime = intval($keyEndTime);
-    if ($endTime < $startTime) return $this->break(400, "verifyAuth:400005", "验证信息已过期");
-    if ($endTime < time()) return $this->break(400, "verifyAuth:400006", "验证信息已过期");
-    if ($keyEndTime < $keyStartTime) return $this->break(400, "verifyAuth:400007", "验证信息已过期");
-    if ($keyEndTime < time()) return $this->break(400, "verifyAuth:400008", "验证信息已过期");
+    if ($endTime < $startTime) return $this->break(403, "verifyAuth:403005", "验证信息已过期");
+    if ($endTime < time()) return $this->break(403, "verifyAuth:403006", "验证信息已过期");
+    if ($keyEndTime < $keyStartTime) return $this->break(403, "verifyAuth:403007", "验证信息已过期");
+    if ($keyEndTime < time()) return $this->break(403, "verifyAuth:403008", "验证信息已过期");
 
     $headers = [];
     if ($headerList) {
@@ -675,7 +751,7 @@ class FileStorage extends AbilityBaseObject
         $key = rawurldecode(urldecode($key));
         $value = rawurldecode(urldecode($value));
         if (!array_key_exists($key, $headerList)) {
-          return $this->break(400, "verifyAuth:400009", "头部参数缺失");
+          return $this->break(403, "verifyAuth:403009", "头部参数缺失");
         }
         $headers[$key] = $value;
       }
@@ -692,7 +768,7 @@ class FileStorage extends AbilityBaseObject
 
       if (!in_array($key, $urlParamList)) {
         if (!in_array($key, $urlParamKeys)) {
-          return $this->break(400, "verifyAuth:400010", "URL 参数缺失");
+          return $this->break(403, "verifyAuth:403010", "URL 参数缺失");
         }
       }
       if (!in_array($key, $urlParamKeys)) {
@@ -703,13 +779,13 @@ class FileStorage extends AbilityBaseObject
     if ($this->signature->verifyAuthorization($signature, $fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod)) {
       return true;
     } else {
-      return $this->break(403, "verifyAuth:403001", "抱歉，您没有操作该文件的权限");
+      return $this->break(403, "verifyAuth:403011", "抱歉，您没有操作该文件的权限");
     }
   }
   /**
    * 从当前 HTTP 请求中提取参数并校验文件签名
    *
-   * 当未启用签名鉴权（$authorizationEnabled）时直接放行（返回 true）。
+   * 当未启用签名鉴权（$authEnabled）时直接放行（返回 true）。
    * 否则从当前请求的 query / header / method 提取参数，调用 {@see verifySignature()} 校验。
    * $silent 为 true 时，把非布尔、非数字错误码归一为 $this->errorStatusCode（供 checkAccessControl 判定），而非直接返回错误态。
    *
@@ -719,7 +795,7 @@ class FileStorage extends AbilityBaseObject
    */
   public function verifyRequestSignature($key, $silent = false)
   {
-    if (!$this->authorizationEnabled) return TRUE;
+    if (!$this->authEnabled) return true;
 
     $request = getApp()->request();
     $urlParams = $request->query->some();
@@ -746,27 +822,23 @@ class FileStorage extends AbilityBaseObject
    */
   public function authorizeOperation($fileKey, $operation = "read")
   {
-    $fileInfo = null;
+    $file = null;
     if ($this->dataSave) {
-      $fileInfo = $this->model->field("ownerId", "accessControl")->where("key", $fileKey)->first();
-      if (!$fileInfo) {
-        return $this->break(404, "operationAuthorization:404", "文件不存在");
-      };
+      $file = $this->model->addSelect("owner_id", "access_control")->where("key", $fileKey)->first();
 
-      if ($this->accessControlAuthId() != $fileInfo['ownerId']) {
-        // if ($this->verifyRequestSignature($fileKey) === FALSE) {
-        //   return $this->break(403, "getFile:403003", "抱歉，您无权获取该文件信息");
-        // }
-        if ($this->checkAccessControl($fileKey, $fileInfo['accessControl'], $fileInfo['ownerId'], $operation) === FALSE) {
-          return $this->break(403, "operationAuthorization:403001", "抱歉，您无权操作/获取该文件", [
-            "statusCode" => $this->errorStatusCode,
-            "code" => $this->errorCode,
-            "message" => $this->errorMessage,
-          ]);
+      if (!$file) return $this->break(404, 404, "文件不存在");
+
+      if ($this->accessControlEnabled()) {
+        if (!$this->accessControlAuthId() || !$file['owner_id'] || $this->accessControlAuthId() !== $file['owner_id']) {
+          if ($this->checkAccessControl($fileKey, $file['access_control'], $file['owner_id'], $operation) === FALSE) {
+            return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
+          }
         }
+      } else if ($this->verifyRequestSignature($fileKey) === FALSE) {
+        return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
       }
     } else if ($this->verifyRequestSignature($fileKey) === FALSE) {
-      return $this->break(403, "operationAuthorization:403002", "抱歉，您无权操作/获取该文件");
+      return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
     }
 
     return true;
@@ -774,7 +846,7 @@ class FileStorage extends AbilityBaseObject
   /**
    * 基于 ACL 标签判定操作是否被允许
    *
-   * 仅当启用数据存储（$dataSave）且启用 ACL 校验（$acEnabled）时生效，否则一律放行。
+   * 仅当启用数据存储（$dataSave）且启用访问控制（$accessControlEnabled）时生效，否则一律放行。
    * 判定规则：
    * - 访问者与文件归属者相同 → 放行；
    * - 归属者不同且为 PRIVATE → 拒绝；
@@ -789,31 +861,35 @@ class FileStorage extends AbilityBaseObject
    */
   public function checkAccessControl($fileKey, $authTag, $ownerId, $action = "read")
   {
-    if (!$this->dataSave || !$this->acEnabled) return TRUE;
+    if (!$this->dataSave || !$this->accessControlEnabled) return true;
+
+    //* 相同的 id 说明拥有人和当前登录的用户是同一个人，直接返回 true
+    if ($ownerId === $this->accessControlAuthId()) return true;
+
+    //* 后面就是不相同的 ID，说明拥有人和当前登录的用户不是同一个人
+
     $action = strtolower($action);
 
-    if (!$this->accessControlAuthId() || $ownerId != $this->accessControlAuthId()) {
-      if ($authTag === self::PRIVATE) {
-        return FALSE;
-      } else if (in_array($authTag, [
-        self::AUTHENTICATED_READ_WRITE,
-        self::AUTHENTICATED_READ
-      ])) {
-        if ($authTag === self::AUTHENTICATED_READ && $action !== "read") {
-          return FALSE;
-        }
-        $verified = $this->verifyRequestSignature($fileKey, true);
-        return is_numeric($verified) || $verified === FALSE ? FALSE : TRUE;
-      } else if (in_array($authTag, [
-        self::PUBLIC_READ,
-        self::PUBLIC_READ_WRITE
-      ])) {
-        if ($authTag === self::PUBLIC_READ && $action !== "read") {
-          return FALSE;
-        }
+    if ($authTag === self::PRIVATE) {
+      return false;
+    } else if (in_array($authTag, [
+      self::AUTHENTICATED_READ_WRITE,
+      self::AUTHENTICATED_READ
+    ])) {
+      if ($authTag === self::AUTHENTICATED_READ && $action !== "read") {
+        return false;
+      }
+      $verified = $this->verifyRequestSignature($fileKey, true);
+      return is_numeric($verified) || $verified === false ? false : true;
+    } else if (in_array($authTag, [
+      self::PUBLIC_READ,
+      self::PUBLIC_READ_WRITE
+    ])) {
+      if ($authTag === self::PUBLIC_READ && $action !== "read") {
+        return false;
       }
     }
 
-    return TRUE;
+    return true;
   }
 }

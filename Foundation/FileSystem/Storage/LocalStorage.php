@@ -35,7 +35,7 @@ class LocalStorage extends AbstractStorage
    * 读取元信息，并补充 `disk = "local"` 字段。
    *
    * @param string $fileName 文件名称（相对 storage 根目录的路径）
-   * @return false|array{name:string,disk:string,sourceFileName:string,path:string,extension:string,size:int,width:int|null,height:int|null,filePath:string} 文件信息数组，文件不存在时返回 false
+   * @return false|StorageFile 文件信息数组，文件不存在时返回 false
    */
   public function get($fileName)
   {
@@ -46,7 +46,16 @@ class LocalStorage extends AbstractStorage
       $fileInfo['disk'] = "local";
     }
 
-    return $fileInfo;
+    return new StorageFile([
+      "name" => $fileInfo['name'],
+      "source_file_name" => $fileInfo['sourceFileName'],
+      "path" => $fileInfo['path'],
+      "extension" => $fileInfo['extension'],
+      "size" => $fileInfo['size'],
+      "width" => $fileInfo['width'],
+      "height" => $fileInfo['height'],
+      "filePath" => $fileInfo['filePath'],
+    ]);
   }
 
   /**
@@ -58,7 +67,7 @@ class LocalStorage extends AbstractStorage
    *
    * @param array  $file         源文件描述数组（含 `name` 等上传信息）
    * @param string|null $saveFileName 保存后的文件名称（含相对路径）；为 null 时使用 `$file['name']`
-   * @return false|array{name:string,disk:string,sourceFileName:string,path:string,extension:string,size:int,width:int|null,height:int|null,filePath:string} 成功时返回文件信息；失败时返回 false
+   * @return false|StorageFile 成功时返回文件信息；失败时返回 false
    */
   public function put($file, $saveFileName = null)
   {
