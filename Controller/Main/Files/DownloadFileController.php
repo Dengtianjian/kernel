@@ -40,13 +40,13 @@ class DownloadFileController extends Controller
       }
 
       $url = $disk->url($fileKey, $urlParams);
-      if (!$url) return $this->response->error(500, 500, "下载文件失败", "获取到的远程文件URL为空");
+      if (!$url) return $this->fail(500, 500, "下载文件失败", "获取到的远程文件URL为空");
 
       return $this->response->redirect($url, 302);
     } else {
       $filePath = Path::join(Path::storage(), $fileKey);
       if (!file_exists($filePath)) {
-        return $this->response->error(500, 500, "文件不存在", "文件实体不存在");
+        return $this->fail(500, 500, "文件不存在", "文件实体不存在");
       }
 
       return $this->response->download($filePath, $file['source_file_name']);

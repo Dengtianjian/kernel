@@ -11,7 +11,7 @@ class UploadFileController extends Controller
   {
     $files = $this->request->file();
     if (!$files) {
-      return $this->response->error(400, "UploadFile:400001", "请上传文件", $_FILES);
+      return $this->fail(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
     $uploadFile = $files[array_key_first($files)];
 

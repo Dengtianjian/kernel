@@ -21,7 +21,7 @@ class UploadAttachmentController extends DiscuzXController
   public function data()
   {
     if (count($_FILES) === 0 || !$_FILES['file']) {
-      return $this->response->error(400, "Attachment:400001", "请上传文件", $_FILES);
+      return $this->fail(400, "Attachment:400001", "请上传文件", $_FILES);
     }
 
     $UploadResult = DiscuzXAttachmentService::uploadFile($_FILES['file']);

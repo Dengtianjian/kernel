@@ -36,11 +36,11 @@ class GetFileAuthController extends AuthController
 
   public function data(string $method)
   {
-    if (!in_array($method, ["post", "get", "patch", "delete"])) return $this->response->error(400, 400, "非法的方法参数");
+    if (!in_array($method, ["post", "get", "patch", "delete"])) return $this->fail(400, 400, "非法的方法参数");
 
     $this->fileKey = $fileKey = $this->body("fileKey");
 
-    if ($method !== "post" && !$fileKey) return $this->response->error(400, 400, "文件名不可为空");
+    if ($method !== "post" && !$fileKey) return $this->fail(400, 400, "文件名不可为空");
 
     $auth = $this->$method($fileKey);
     if ($auth instanceof Response) return $auth;
@@ -53,7 +53,7 @@ class GetFileAuthController extends AuthController
   }
   protected function patch(string $fileKey)
   {
-    if (!Auth::logged()) return $this->response->error(403, 403, "抱歉，您无权获取修改文件授权");
+    if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取修改文件授权");
 
     return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, [], [], "patch");
   }
@@ -63,7 +63,7 @@ class GetFileAuthController extends AuthController
   }
   protected function post(?string $fileKey)
   {
-    if (!Auth::logged()) return $this->response->error(403, 403, "抱歉，您无权获取上传文件授权");
+    if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取上传文件授权");
 
     $body = $this->requestBody->some(
       [
