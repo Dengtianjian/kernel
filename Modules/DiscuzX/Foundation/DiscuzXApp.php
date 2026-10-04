@@ -3,9 +3,7 @@
 namespace kernel\Modules\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
-use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Foundation\HTTP\URL;
 
 class DiscuzXApp extends App
 {
@@ -14,6 +12,11 @@ class DiscuzXApp extends App
     if (!defined("CHARSET")) {
       define("CHARSET", "utf-8");
     }
+
+    //* 注册当前应用实例（等价 parent::__construct 的注册部分，但不安装内核的全局异常/错误处理器）
+    $this->register($appId, "gstudio_kernel");
+
+    include_once(Path::join(Path::kernelRoot(), "Foundation", "Common.php"));
 
     parent::__construct($appId, "gstudio_kernel");
 
