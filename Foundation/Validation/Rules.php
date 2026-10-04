@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Validation;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Error;
 
 /**
@@ -179,7 +180,7 @@ class Rules extends Rule
   public function hasWildcard(): bool
   {
     foreach ($this->fieldRules as $fieldName => $_) {
-      if (str_contains($fieldName, '*')) {
+      if (Str::contains($fieldName, '*')) {
         return true;
       }
     }
@@ -195,7 +196,7 @@ class Rules extends Rule
   {
     $result = [];
     foreach ($this->fieldRules as $fieldName => $rule) {
-      if (str_contains($fieldName, '*')) {
+      if (Str::contains($fieldName, '*')) {
         $result[$fieldName] = $rule;
       }
     }

@@ -4,6 +4,8 @@ namespace kernel\Foundation\FileSystem;
 
 use ZipArchive;
 
+use kernel\Foundation\Data\Str;
+
 /**
  * ZIP 压缩/解压工具
  *
@@ -290,7 +292,7 @@ class Zip
       }
 
       //* zip slip 防护：拒绝路径穿越与绝对路径条目
-      if (str_contains($name, "..") || str_starts_with($name, "/") || preg_match('#^[A-Za-z]:[/\\\\]#', $name)) {
+      if (Str::contains($name, "..") || Str::startsWith($name, "/") || preg_match('#^[A-Za-z]:[/\\\\]#', $name)) {
         $this->lastError = "zip 含不安全条目，已拒绝：{$name}";
         return false;
       }
@@ -298,13 +300,13 @@ class Zip
       $destPath = Path::join($dest, $name);
       //* 目标目录越界防护：条目解析出的真实目录必须在解压目标之内
       $realDir = realpath(dirname($destPath));
-      if ($realDir === false || ($realDir !== $realDest && !str_starts_with($realDir, $realDest . "/"))) {
+      if ($realDir === false || ($realDir !== $realDest && !Str::startsWith($realDir, $realDest . "/"))) {
         $this->lastError = "条目目标超出解压目录，已拒绝：{$name}";
         return false;
       }
 
       //* 目录条目
-      if (str_ends_with($name, "/") || ($stat["crc"] === 0 && !$stat["size"])) {
+      if (Str::endsWith($name, "/") || ($stat["crc"] === 0 && !$stat["size"])) {
         if (!is_dir($destPath)) {
           mkdir($destPath, 0755, true);
         }

@@ -245,7 +245,7 @@ class Arr
     }
 
     // 不含点号 → 直接检查
-    if (!str_contains($key, '.')) {
+    if (!Str::contains($key, '.')) {
       if (is_array($array)) {
         return array_key_exists($key, $array);
       }
@@ -296,12 +296,12 @@ class Arr
     }
 
     // 不含点号和通配符，尝试直接访问
-    if (!str_contains($key, '.') && !str_contains($key, '*')) {
+    if (!Str::contains($key, '.') && !Str::contains($key, '*')) {
       return $array[$key] ?? $default;
     }
 
     // 含通配符 → 展开匹配
-    if (str_contains($key, '*')) {
+    if (Str::contains($key, '*')) {
       return self::wildcardGet($array, $key, $default);
     }
 
@@ -383,7 +383,7 @@ class Arr
     }
 
     // 不含点号 → 直接删除
-    if (!str_contains($key, '.')) {
+    if (!Str::contains($key, '.')) {
       if (is_array($array)) {
         unset($array[$key]);
       } elseif ($array instanceof \ArrayAccess) {

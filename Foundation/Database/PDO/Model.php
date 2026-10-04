@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Relation\HasOne;
 use kernel\Foundation\Database\PDO\Relation\HasMany;
 use kernel\Foundation\Database\PDO\Relation\BelongsTo;
@@ -463,7 +464,7 @@ class Model extends Table
   public function getTableBaseName(): string
   {
     $prefix = Table::getPrefix();
-    if ($prefix && str_starts_with($this->tableName, $prefix)) {
+    if ($prefix && Str::startsWith($this->tableName, $prefix)) {
       return substr($this->tableName, strlen($prefix));
     }
     return $this->tableName;
@@ -698,13 +699,13 @@ class Model extends Table
     $result = date($clean, $ts);
 
     // 按需拼接亚秒
-    if (str_contains($format, '.u')) {
+    if (Str::contains($format, '.u')) {
       $result .= '.' . sprintf('%06d', (int) round($micro * 1000000));
-    } elseif (str_contains($format, 'u')) {
+    } elseif (Str::contains($format, 'u')) {
       $result .= sprintf('%06d', (int) round($micro * 1000000));
-    } elseif (str_contains($format, '.v')) {
+    } elseif (Str::contains($format, '.v')) {
       $result .= '.' . sprintf('%03d', (int) round($micro * 1000));
-    } elseif (str_contains($format, 'v')) {
+    } elseif (Str::contains($format, 'v')) {
       $result .= sprintf('%03d', (int) round($micro * 1000));
     }
 

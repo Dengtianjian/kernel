@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Database\PDO;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Str;
 use kernel\Foundation\Output;
 
 
@@ -106,7 +107,7 @@ class Statement
       $target = $target === true ? 1 : 0;
     } else if (is_string($target)) {
       // 处理 table.column 或 db.table.column 格式：分别用反引号包围各段
-      if ($stringQuote === '`' && str_contains($target, '.')) {
+      if ($stringQuote === '`' && Str::contains($target, '.')) {
         $parts = array_map(function ($part) use ($stringQuote) {
           return $stringQuote . $part . $stringQuote;
         }, explode('.', $target));

@@ -5,6 +5,7 @@ namespace kernel\Foundation\Validation;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
+use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Result;
 
@@ -210,7 +211,7 @@ class Validator
           $fieldRule = $fieldValidateRule->rule;
 
           // 通配符字段：展开后逐个校验
-          if (str_contains($fieldName, '*')) {
+          if (Str::contains($fieldName, '*')) {
             $validatedResult = $this->validateWildcardField($target, $fieldName, $fieldValidateRule, $target);
             if ($validatedResult->error) {
               break;
