@@ -8,6 +8,10 @@ use kernel\Foundation\FileSystem\Path;
 
 class DiscuzXApp extends App
 {
+  /**
+   * @var DiscuzXProvisioner
+   */
+  private $provisioner = null;
   public function __construct($appId)
   {
     if (!defined("CHARSET")) {
@@ -41,5 +45,16 @@ class DiscuzXApp extends App
     $this->ensureInstances();
 
     $this->request->uri($uri);
+  }
+  /**
+   * @return DiscuzXProvisioner
+   */
+  function provisioner()
+  {
+    if (!$this->provisioner) {
+      $this->provisioner = new DiscuzXProvisioner();
+    }
+
+    return $this->provisioner;
   }
 }
