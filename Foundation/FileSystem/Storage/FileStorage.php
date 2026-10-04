@@ -78,7 +78,10 @@ class FileStorage extends AbilityBaseObject
   /**
    * 文件数据模型（启用数据存储后使用）
    *
-   * @var FilesModel|null
+   * 默认 {@see FilesModel}；也可传入同基类（kernel `Model`）的自定义模型，
+   * 例如 DiscuzX 侧走 Discuz `\DB` 的 `Modules\DiscuzX\Model\System\FilesModel`。
+   *
+   * @var \kernel\Foundation\Database\PDO\Model|null
    */
   protected $model = null;
   /**
@@ -125,7 +128,7 @@ class FileStorage extends AbilityBaseObject
    * 并将第一块磁盘设为默认使用磁盘，基础访问地址取应用基础 URL。
    *
    * @param array<string,AbstractStorage> $disks 磁盘驱动表（磁盘名 => 磁盘实例）
-   * @param FilesModel|null $model 文件数据模型，传 null 表示暂不启用数据存储
+   * @param \kernel\Foundation\Database\PDO\Model|null $model 文件数据模型（默认 {@see FilesModel}），传 null 表示暂不启用数据存储
    */
   public function __construct($disks, $model = null)
   {
@@ -262,7 +265,7 @@ class FileStorage extends AbilityBaseObject
    * 启用后 save/add/delete/exists 等方法会读写文件模型。
    * 若不传 $model 则使用默认的 {@see FilesModel}。
    *
-   * @param FilesModel|null $model 自定义文件模型，null 时使用 FilesModel
+   * @param \kernel\Foundation\Database\PDO\Model|null $model 自定义文件模型，null 时使用 {@see FilesModel}
    * @return static
    */
   public function enableDataSave($model = null)
@@ -288,8 +291,8 @@ class FileStorage extends AbilityBaseObject
    *
    * 读写一体：传 $model 时注入模型并返回 $this（链式）；不传时返回当前模型。
    *
-   * @param FilesModel|null $model 要注入的文件模型
-   * @return static|FilesModel|null
+   * @param \kernel\Foundation\Database\PDO\Model|null $model 要注入的文件模型
+   * @return static|\kernel\Foundation\Database\PDO\Model|null
    */
   public function model($model = null)
   {
