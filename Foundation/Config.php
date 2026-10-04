@@ -74,7 +74,7 @@ class Config
    */
   static function read($filePath = null, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!$filePath || !\file_exists($filePath)) {
       return false;
     }
@@ -108,7 +108,7 @@ class Config
    */
   static function get($key = null, $defaultValue = null, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!isset(self::$configs[$appId])) {
       return $defaultValue;
     }
@@ -145,7 +145,7 @@ class Config
    */
   static function set($keyOrValue, $value = null, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
     }
@@ -182,7 +182,7 @@ class Config
    */
   static function has($key, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!isset(self::$configs[$appId])) {
       return false;
     }
@@ -207,7 +207,7 @@ class Config
    */
   static function loaded($appId = null): bool
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     return isset(self::$configs[$appId]);
   }
   /**
@@ -225,7 +225,7 @@ class Config
    */
   static function forget($key, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!isset(self::$configs[$appId])) {
       return;
     }
@@ -256,7 +256,7 @@ class Config
    */
   static function push($key, $value, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
     }
@@ -289,7 +289,7 @@ class Config
    */
   static function flush($appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     unset(self::$configs[$appId]);
   }
   /**

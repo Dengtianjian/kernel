@@ -4,6 +4,7 @@ namespace kernel\Foundation\Middleware;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
 
 class Middleware
@@ -113,7 +114,7 @@ class Middleware
       return $callback();
 
     // 取第一个中间件（保持关联数组键名）
-    $key = array_key_first($middlewares);
+    $key = Arr::firstKey($middlewares);
     $middleware = $middlewares[$key];
     unset($middlewares[$key]);
 

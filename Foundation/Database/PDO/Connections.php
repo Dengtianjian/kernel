@@ -1,6 +1,7 @@
 <?php
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Database\PDO\Driver;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
@@ -141,7 +142,7 @@ class Connections extends AbilityBaseObject
     if (!$defaultDriver && array_key_exists("default", self::$drivers)) {
       $defaultDriver = self::$drivers['default'];
     } else {
-      $defaultDriver = self::$drivers[array_key_first(self::$drivers)];
+      $defaultDriver = Arr::first(self::$drivers);
     }
     self::$useDriver = $defaultDriver;
   }

@@ -102,8 +102,8 @@ class AliyunOSSStorage extends AbstractOSSStroage
   {
     $provider = new Oss\Credentials\CredentialsProviderFunc(function () {
       return new Credentials(
-        accessKeyId: $this->secretId,
-        accessKeySecret: $this->secretKey
+        $this->secretId,
+        $this->secretKey
       );
     });
 
@@ -214,9 +214,9 @@ class AliyunOSSStorage extends AbstractOSSStroage
 
     try {
       $uploader->uploadFile(
-        request: new Oss\Models\PutObjectRequest($this->bucket(), key: $saveFileName), // 创建PutObjectRequest对象，指定Bucket和对象名称
-        filepath: $tempFileInfo['filePath'], // 指定要上传的本地文件路径
-        args: [ // 可选参数，用于自定义分片上传行为
+        new Oss\Models\PutObjectRequest($this->bucket(), $saveFileName), // 创建PutObjectRequest对象，指定Bucket和对象名称
+        $tempFileInfo['filePath'], // 指定要上传的本地文件路径
+        [ // 可选参数，用于自定义分片上传行为
           'part_size' => 1024 * 1024, // 自定义分片大小
           'parallel_num' => 1, // 并发上传的分片数量
         ]
@@ -292,7 +292,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
    */
   function url($fileName, $urlParams = [], $expires = 1800, $withSignature = true)
   {
-    $request = new Oss\Models\GetObjectRequest(bucket: $this->bucket, key: $fileName);
+    $request = new Oss\Models\GetObjectRequest($this->bucket, $fileName);
     return $this->sdkClient->presign($request)->url;
   }
   /**

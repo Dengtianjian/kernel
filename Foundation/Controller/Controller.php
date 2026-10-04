@@ -63,7 +63,7 @@ class Controller
    *
    * @var ControllerQuery
    */
-  protected ControllerQuery $requestQuery;
+  protected $requestQuery;
 
   /**
    * GET 参数序列化规则
@@ -92,7 +92,7 @@ class Controller
    *
    * @var ControllerBody
    */
-  protected ControllerBody $requestBody;
+  protected $requestBody;
 
   /**
    * Body 参数序列化规则
@@ -152,7 +152,7 @@ class Controller
    *
    * @var Request
    */
-  protected Request $request;
+  protected $request;
 
   /**
    * 响应对象
@@ -195,7 +195,7 @@ class Controller
    * 在 requestQuery/requestBody 构造完成后调用。
    * 适合做依赖注入、属性初始化等无需依赖 query/body 校验结果的操作。
    */
-  protected function boot(): void {}
+  protected function boot() {}
 
   /**
    * 获取路由参数（URL 中的占位符，如 /post/{id} 中的 id）
@@ -203,7 +203,7 @@ class Controller
    * @param string|null $key    参数名，为 null 时返回全部路由参数
    * @param mixed       $default 参数不存在时的默认值
    */
-  protected function params(?string $key = null, mixed $default = null): mixed
+  protected function params($key = null, $default = null)
   {
     if ($key === null) {
       return $this->request->params->some();
@@ -220,7 +220,7 @@ class Controller
    * @param string|null $key    参数名，为 null 时返回全部 Body 参数
    * @param mixed       $default 参数不存在时的默认值
    */
-  protected function body(?string $key = null, mixed $default = null): mixed
+  protected function body($key = null, $default = null)
   {
     $data = $this->requestBody->some();
     if ($key === null) {
@@ -237,7 +237,7 @@ class Controller
    * @param string|null $key    参数名，为 null 时返回全部 Query 参数
    * @param mixed       $default 参数不存在时的默认值
    */
-  protected function query(?string $key = null, mixed $default = null): mixed
+  protected function query($key = null, $default = null)
   {
     $data = $this->requestQuery->some();
     if ($key === null) {
@@ -252,7 +252,7 @@ class Controller
    * @param string|null $key    参数名，为 null 时返回全部数据
    * @param mixed       $default 参数不存在时的默认值
    */
-  protected function rawBody(?string $key = null, mixed $default = null): mixed
+  protected function rawBody($key = null, $default = null)
   {
     if ($key === null) {
       return $this->request->body->some();
@@ -267,7 +267,7 @@ class Controller
    * @param string|null $key    参数名，为 null 时返回全部数据
    * @param mixed       $default 参数不存在时的默认值
    */
-  protected function rawQuery(?string $key = null, mixed $default = null): mixed
+  protected function rawQuery($key = null, $default = null)
   {
     if ($key === null) {
       return $this->request->query->some();
@@ -298,7 +298,7 @@ class Controller
    * @param mixed          $details    错误详情
    * @param mixed          $data       附加数据
    */
-  protected function fail(int $statusCode = 500, int|string $code = "500:ServerError", string $message = "error", mixed $details = [], mixed $data = []): Response
+  protected function fail(int $statusCode = 500, $code = "500:ServerError", string $message = "error", $details = [], $data = []): Response
   {
     return $this->response->error($statusCode, $code, $message, $details, $data);
   }
@@ -309,7 +309,7 @@ class Controller
    * 检查 requestQuery 和 requestBody 的校验结果。
    * 任一校验失败时，将 response 替换为错误响应，阻止后续 data() 执行。
    */
-  final function before(): void
+  final function before()
   {
     if ($this->requestQuery->validatedResult && $this->requestQuery->validatedResult->error) {
       $this->response = $this->requestQuery->validatedResult;
@@ -329,7 +329,7 @@ class Controller
    *
    * 若 response 已经是错误状态，跳过所有后处理。
    */
-  final function after(): void
+  final function after()
   {
     if ($this->response->error) return;
 
@@ -349,7 +349,7 @@ class Controller
    * - Serializer 实例      → 使用其 useRuleName 规则
    * - 数组 / 字符串         → 作为序列化规则名传入 Serializer::serialization()
    */
-  private function serialization(): void
+  private function serialization()
   {
     if ($this->responseSerializes instanceof Mutator) {
       $this->response->addData($this->responseSerializes->data($this->response->getData())->convert(), true);
@@ -372,7 +372,7 @@ class Controller
    * 客户端通过 query/body 中的 `_transform` 参数请求对响应数据做变换。
    * 仅允许 $allowedTransformers 中声明的变换器，防止客户端调用未授权逻辑。
    */
-  private function transform(): void
+  private function transform()
   {
     if ($this->response->error) return;
 

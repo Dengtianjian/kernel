@@ -23,7 +23,7 @@ use kernel\Foundation\Module\Module;
 class AuthModule extends Module
 {
   /** @var string 模块标识，用于注册与查找 */
-  protected string $name = "auth";
+  protected $name = "auth";
 
   /** @var LoginsModel|null 登录凭证模型，首次访问时延迟初始化 */
   protected $loginsModel = null;
@@ -46,7 +46,7 @@ class AuthModule extends Module
    *
    * @return void
    */
-  function onBoot(): void
+  function onBoot()
   {
     getApp()->middleware()->set(GlobalAuthMiddleware::class);
     $this->loginsModel = new LoginsModel();

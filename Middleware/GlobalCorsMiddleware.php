@@ -32,7 +32,7 @@ class GlobalCorsMiddleware extends MiddlewareBase
    *
    * @return string|null
    */
-  public function getOrigin(): ?string
+  public function getOrigin()
   {
     return $_SERVER['HTTP_ORIGIN'] ?? null;
   }

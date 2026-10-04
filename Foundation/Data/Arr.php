@@ -415,4 +415,70 @@ class Arr
 
     return $array;
   }
+
+  /**
+   * 取数组的第一个值
+   *
+   * PHP 7.0 兼容替代「array_key_first()（PHP 7.3+）+ 取值」的写法，且不会移动数组内部指针。
+   *
+   * @param array $array 原数组
+   * @param mixed $default 空数组或非数组时返回的默认值
+   * @return mixed 第一个元素的值
+   */
+  static function first($array, $default = null)
+  {
+    $key = self::firstKey($array, null);
+    return $key === null ? $default : $array[$key];
+  }
+
+  /**
+   * 取数组的最后一个值
+   *
+   * PHP 7.0 兼容替代「array_key_last()（PHP 7.3+）+ 取值」的写法。
+   *
+   * @param array $array 原数组
+   * @param mixed $default 空数组或非数组时返回的默认值
+   * @return mixed 最后一个元素的值
+   */
+  static function last($array, $default = null)
+  {
+    $key = self::lastKey($array, null);
+    return $key === null ? $default : $array[$key];
+  }
+
+  /**
+   * 取数组的第一个键名
+   *
+   * PHP 7.0 兼容替代 array_key_first()（PHP 7.3+）。
+   *
+   * @param array $array 原数组
+   * @param mixed $default 空数组或非数组时返回的默认值
+   * @return mixed 第一个键名
+   */
+  static function firstKey($array, $default = null)
+  {
+    if (!is_array($array) || count($array) === 0) {
+      return $default;
+    }
+    $keys = array_keys($array);
+    return $keys[0];
+  }
+
+  /**
+   * 取数组的最后一个键名
+   *
+   * PHP 7.0 兼容替代 array_key_last()（PHP 7.3+）。
+   *
+   * @param array $array 原数组
+   * @param mixed $default 空数组或非数组时返回的默认值
+   * @return mixed 最后一个键名
+   */
+  static function lastKey($array, $default = null)
+  {
+    if (!is_array($array) || count($array) === 0) {
+      return $default;
+    }
+    $keys = array_keys($array);
+    return $keys[count($keys) - 1];
+  }
 }

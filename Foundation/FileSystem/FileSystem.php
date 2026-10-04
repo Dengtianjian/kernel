@@ -29,7 +29,7 @@ final class FileSystem
    *
    * 未实例化 App（App::id() 为 null）时路径不可推导，直接跳过。
    */
-  private static function ensureDirectories(): void
+  private static function ensureDirectories()
   {
     $appRoot = Path::root();
     if ($appRoot === null) {

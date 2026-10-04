@@ -37,37 +37,37 @@ abstract class Relation extends AbilityBaseObject
    * 关联的 Model 类名
    * @var string
    */
-  protected string $relatedClass;
+  protected $relatedClass;
 
   /**
    * 关联表的外键字段名
    * @var string
    */
-  protected string $foreignKey;
+  protected $foreignKey;
 
   /**
    * 本地表的主键字段名
    * @var string
    */
-  protected string $localKey;
+  protected $localKey;
 
   /**
    * 持有该关系的父 Model 实例
    * @var Model
    */
-  protected Model $parent;
+  protected $parent;
 
   /**
    * 底层 Query 构建器，已配置 JOIN 和 WHERE 约束
    * @var Query
    */
-  protected Query $query;
+  protected $query;
 
   /**
    * 懒加载结果缓存
    * @var mixed|null
    */
-  protected mixed $results = null;
+  protected $results = null;
 
   /**
    * 构造关联关系实例
@@ -116,7 +116,7 @@ abstract class Relation extends AbilityBaseObject
    * HasOne/HasMany：JOIN 关联表 ON 本地主键 = 关联表外键
    * BelongsTo：JOIN 关联表 ON 本表外键 = 关联表主键
    */
-  abstract protected function addConstraints(): void;
+  abstract protected function addConstraints();
 
   /**
    * 获取关联查询结果
@@ -125,7 +125,7 @@ abstract class Relation extends AbilityBaseObject
    *
    * @return mixed HasOne → Model|null, HasMany → Model[], BelongsTo → Model|null
    */
-  abstract public function getResults(): mixed;
+  abstract public function getResults();
 
   /**
    * 方法代理：未定义方法自动转发给底层 Query 对象

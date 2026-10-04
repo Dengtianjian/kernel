@@ -2522,7 +2522,7 @@ class Query extends AbilityBaseObject
         break;
       }
 
-      $lastId = $items[array_key_last($items)][$column];
+      $lastId = Arr::last($items)[$column];
 
       if ($callback($items) === false) {
         return false;
@@ -2574,7 +2574,7 @@ class Query extends AbilityBaseObject
         break;
       }
 
-      $lastId = $items[array_key_last($items)][$column];
+      $lastId = Arr::last($items)[$column];
 
       foreach ($items as $item) {
         yield $item;
@@ -2606,7 +2606,7 @@ class Query extends AbilityBaseObject
     $query = clone $this;
     $query->addSelect($query->raw("{$func}({$column})"));
     $data = $query->first($params);
-    return $data === false ? false : $data[array_key_first($data)];
+    return $data === false ? false : Arr::first($data);
   }
 
   /**
@@ -2761,7 +2761,7 @@ class Query extends AbilityBaseObject
     $prefix = $not ? "NOT EXISTS" : "EXISTS";
     $this->sql = "SELECT {$prefix}({$this->sql}) as exist";
     $data = $this->databaseDriver->fetch($this->sql, $this->mergeBindings($params));
-    return boolval($data[array_key_first($data)]);
+    return boolval(Arr::first($data));
   }
 
   /**

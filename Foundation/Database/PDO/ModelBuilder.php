@@ -73,7 +73,7 @@ class ModelBuilder
    * 仅在声明了 with() 预加载时转换；否则保持 Query 原始返回（关联数组），
    * 与既有行为一致。
    */
-  private const HYDRATE_METHODS = ['get', 'first', 'paginate'];
+  const HYDRATE_METHODS = ['get', 'first', 'paginate'];
 
   /**
    * 会对结果集逐项应用 map() 回调的终端方法
@@ -82,7 +82,7 @@ class ModelBuilder
    * - first：对单条应用
    * - paginate：对分页项逐条应用
    */
-  private const MAP_METHODS = ['get', 'first', 'paginate'];
+  const MAP_METHODS = ['get', 'first', 'paginate'];
 
   /**
    * 方法别名映射
@@ -92,7 +92,7 @@ class ModelBuilder
    *
    * - `all()` → `get()`：语义完全一致，仅命名更贴近 SQL 习惯
    */
-  private const METHOD_ALIASES = [
+  const METHOD_ALIASES = [
     'all' => 'get',
   ];
 
@@ -102,7 +102,7 @@ class ModelBuilder
    * 全局作用域（软删除过滤）在这些方法调用前才应用，
    * 因此 withTrashed()/onlyTrashed() 在链中任意位置声明都有效。
    */
-  private const EXECUTE_METHODS = [
+  const EXECUTE_METHODS = [
     'get',
     'first',
     'value',
@@ -130,7 +130,7 @@ class ModelBuilder
    *
    * @var Model
    */
-  protected Model $model;
+  protected $model;
 
   /**
    * 本次查询链专属的 Query 实例
@@ -139,21 +139,21 @@ class ModelBuilder
    *
    * @var Query
    */
-  protected Query $query;
+  protected $query;
 
   /**
    * 待预加载的关联关系名列表
    *
    * @var array<string>
    */
-  protected array $eagerLoads = [];
+  protected $eagerLoads = [];
 
   /**
    * 软删除作用域模式，取自 Model 的当前设置
    *
    * @var int Model::TRASHED_*
    */
-  protected int $trashedScope;
+  protected $trashedScope;
 
   /**
    * 全局作用域是否已应用
@@ -162,7 +162,7 @@ class ModelBuilder
    *
    * @var bool
    */
-  private bool $scopesApplied = false;
+  private $scopesApplied = false;
 
   /**
    * 结果集逐项处理回调（由 map() 注册）
@@ -242,7 +242,7 @@ class ModelBuilder
    * @example
    * UserModel::with('profile', 'posts')->where('status', 1)->get();
    */
-  public function with(string ...$relations): static
+  public function with(string ...$relations)
   {
     $this->eagerLoads = array_values(array_unique(array_merge($this->eagerLoads, $relations)));
 
@@ -266,7 +266,7 @@ class ModelBuilder
    *   ->map(fn($item) => $item + ['host' => parse_url($item['url'], PHP_URL_HOST)])
    *   ->get();
    */
-  public function map(callable $callback): static
+  public function map(callable $callback)
   {
     $this->resultMap = $callback;
 
@@ -289,7 +289,7 @@ class ModelBuilder
    *   ->when(!Auth::logged(), fn($q) => $q->where('private', false))
    *   ->get();
    */
-  public function when($condition, callable $callback, ?callable $default = null): static
+  public function when($condition, callable $callback,$default = null)
   {
     if ($condition) {
       $callback($this, $condition);
@@ -310,7 +310,7 @@ class ModelBuilder
    * @param callable|null $default 条件为真时可调用的回退回调（可选）
    * @return $this
    */
-  public function unless($condition, callable $callback, ?callable $default = null): static
+  public function unless($condition, callable $callback,$default = null)
   {
     return $this->when(!$condition, $callback, $default);
   }
@@ -322,7 +322,7 @@ class ModelBuilder
    *
    * @return $this
    */
-  public function withTrashed(): static
+  public function withTrashed()
   {
     $this->trashedScope = Model::TRASHED_INCLUDE;
 
@@ -334,7 +334,7 @@ class ModelBuilder
    *
    * @return $this
    */
-  public function onlyTrashed(): static
+  public function onlyTrashed()
   {
     $this->trashedScope = Model::TRASHED_ONLY;
 
@@ -346,7 +346,7 @@ class ModelBuilder
    *
    * @return $this
    */
-  public function withoutTrashed(): static
+  public function withoutTrashed()
   {
     $this->trashedScope = Model::TRASHED_EXCLUDE;
 
@@ -359,7 +359,7 @@ class ModelBuilder
    * 延迟到首个执行方法前调用一次，因此 withTrashed()/onlyTrashed()
    * 可以在链的任意位置覆盖作用域。
    */
-  private function applyScopes(): void
+  private function applyScopes()
   {
     $this->scopesApplied = true;
 
@@ -369,11 +369,17 @@ class ModelBuilder
 
     $column = $this->model->tableName . '.' . $this->model->getDeleteTime();
 
-    match ($this->trashedScope) {
-      Model::TRASHED_EXCLUDE => $this->query->whereNull($column),
-      Model::TRASHED_ONLY    => $this->query->whereNotNull($column),
-      Model::TRASHED_INCLUDE => null,
-    };
+    // 注意：$this->trashedScope 取自 Model::TRASHED_* 整型常量，switch 的松散比较与
+    switch ($this->trashedScope) {
+      case Model::TRASHED_EXCLUDE:
+        $this->query->whereNull($column);
+        break;
+      case Model::TRASHED_ONLY:
+        $this->query->whereNotNull($column);
+        break;
+      case Model::TRASHED_INCLUDE:
+        break;
+    }
   }
 
   /**
@@ -383,7 +389,7 @@ class ModelBuilder
    * @param mixed  $result Query 查询结果
    * @return mixed
    */
-  private function hydrateResult(string $method, mixed $result): mixed
+  private function hydrateResult(string $method, $result)
   {
     if ($result === null || $result === false || (is_array($result) && empty($result))) {
       return $result;
@@ -399,14 +405,18 @@ class ModelBuilder
 
       case 'get':
       case 'all':
-        $models = array_map(fn($row) => $this->model->rowToModel($row), $result);
+        $models = array_map(function ($row) {
+          return $this->model->rowToModel($row);
+        }, $result);
         $this->model->eagerLoadRelations($models);
         return $models;
 
       case 'paginate':
         if ($result instanceof Paginator) {
           $items  = $result->getItems();
-          $models = array_map(fn($row) => $this->model->rowToModel($row), $items);
+          $models = array_map(function ($row) {
+            return $this->model->rowToModel($row);
+          }, $items);
           $this->model->eagerLoadRelations($models);
           $result->setItems($models);
         }
@@ -429,7 +439,7 @@ class ModelBuilder
    * @param mixed  $result 查询结果
    * @return mixed 处理后的结果
    */
-  private function applyResultMap(string $method, mixed $result): mixed
+  private function applyResultMap(string $method, $result)
   {
     if ($result === null || $result === false) {
       return $result;
@@ -465,7 +475,7 @@ class ModelBuilder
    * @param array $params 预处理参数
    * @return int|bool 影响行数
    */
-  public function forceDelete($params = []): int|bool
+  public function forceDelete($params = [])
   {
     $this->trashedScope = Model::TRASHED_INCLUDE;
 

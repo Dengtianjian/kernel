@@ -43,7 +43,7 @@ SQL;
    */
   public function add($token, $expiration, $userId, $appId = null)
   {
-    $appId ??= App::id();
+    $appId = $appId ?? App::id();
     return $this->insert([
       "id" => $this->genId(),
       "token" => $token,

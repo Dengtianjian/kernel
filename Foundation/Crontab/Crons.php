@@ -23,10 +23,10 @@ namespace kernel\Foundation\Crontab;
 class Crons
 {
   /** @var Cron[] 已登记的任务实例 */
-  protected array $tasks = [];
+  protected $tasks = [];
 
   /** @var string[] 扫描时未找到的类名（供调用方告警） */
-  protected array $notFound = [];
+  protected $notFound = [];
 
   /**
    * 登记一个任务实例
@@ -34,7 +34,7 @@ class Crons
    * @param Cron $cron
    * @return static
    */
-  public function register(Cron $cron): static
+  public function register(Cron $cron)
   {
     $this->tasks[] = $cron;
     return $this;
@@ -46,7 +46,7 @@ class Crons
    * @param string $class
    * @return static
    */
-  public function registerClass(string $class): static
+  public function registerClass(string $class)
   {
     if (!class_exists($class)) {
       $this->notFound[] = $class;
@@ -69,7 +69,7 @@ class Crons
    * @param string $namespace 类命名空间（不含尾部反斜杠）
    * @return static
    */
-  public function discover(string $directory, string $namespace): static
+  public function discover(string $directory, string $namespace)
   {
     if (!is_dir($directory)) {
       return $this;

@@ -112,7 +112,7 @@ class Date
    * @example
    * Date::diff(1786635816000, 1786635816123)  // 123
    */
-  public static function diff(int $startMs, ?int $endMs = null): int
+  public static function diff(int $startMs,$endMs = null): int
   {
     return ($endMs ?? self::milliseconds()) - $startMs;
   }
@@ -172,7 +172,7 @@ class Date
    * Date::parse("2026-08-13 10:00:00")  // 1786...
    * Date::parse("invalid")              // null
    */
-  public static function parse($str): ?int
+  public static function parse($str)
   {
     if ($str === null || $str === "") {
       return null;

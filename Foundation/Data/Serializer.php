@@ -168,7 +168,7 @@ class Serializer
    */
   static function load($FileName, $ruleName = null, $BasePath = null)
   {
-    $BasePath ??= Path::root();
+    $BasePath = $BasePath ?? Path::root();
 
     $Rule = import($FileName, [], $BasePath);
     if (is_null($ruleName)) {
@@ -188,7 +188,7 @@ class Serializer
    */
   static function loadGet($FileName, $ruleName = null, $Names = null, $upperLevel = null, $BasePath = null)
   {
-    $BasePath ??= Path::root();
+    $BasePath = $BasePath ?? Path::root();
 
     if (is_null($ruleName)) {
       $ruleName = pathinfo($FileName, PATHINFO_BASENAME);

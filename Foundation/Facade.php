@@ -20,7 +20,7 @@ namespace kernel\Foundation;
 abstract class Facade
 {
   /** @var array<string,mixed> 门面实例存储，按门面类名隔离（key 为 static::class） */
-  protected static array $registry = [];
+  protected static $registry = [];
 
   /**
    * 门面构造函数
@@ -81,7 +81,7 @@ abstract class Facade
    *
    * @return object|null 实例无法解析时返回 null
    */
-  protected static function accessor(): ?object
+  protected static function accessor()
   {
     if (!static::singleton()) {
       return null;
@@ -99,7 +99,7 @@ abstract class Facade
    *
    * @return object
    */
-  protected static function resolve(): object
+  protected static function resolve()
   {
     throw new \BadMethodCallException(
       static::class . " is not a singleton facade; override resolve() to enable singleton mode."
@@ -118,7 +118,7 @@ abstract class Facade
    * @param object $instance 底层实例
    * @return void
    */
-  public static function setInstance(object $instance): void
+  public static function setInstance($instance)
   {
     static::$registry[static::class] = $instance;
   }
@@ -130,7 +130,7 @@ abstract class Facade
    *
    * @return object|null
    */
-  public static function getInstance(): ?object
+  public static function getInstance()
   {
     return static::$registry[static::class] ?? null;
   }
@@ -143,7 +143,7 @@ abstract class Facade
    *
    * @return void
    */
-  public static function clearInstance(): void
+  public static function clearInstance()
   {
     unset(static::$registry[static::class]);
   }

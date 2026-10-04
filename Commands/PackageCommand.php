@@ -32,7 +32,7 @@ class PackageCommand
    * 打包忽略名单（追加进 Zip 的 ignore 列表）
    * @var array<int,string>
    */
-  private const IGNORE = [
+  const IGNORE = [
     ".git",
     ".github",
     ".gitattributes",

@@ -39,7 +39,7 @@ use PDO;
 class Driver
 {
   /** @var PDO PDO 连接实例 */
-  private PDO $PDOInstance;
+  private $PDOInstance;
   /**
    * 创建 PDO 数据库连接
    *

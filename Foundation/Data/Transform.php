@@ -46,7 +46,7 @@ class Transform
    * @param mixed  $data       待处理的原始数据
    * @return mixed             处理后的数据
    */
-  static function apply(array $transforms, array $whitelist, object $handler, $data)
+  static function apply(array $transforms, array $whitelist, $handler, $data)
   {
     // 白名单过滤
     $transforms = array_filter($transforms, function ($t) use ($whitelist) {

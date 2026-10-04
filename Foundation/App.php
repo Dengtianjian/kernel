@@ -41,7 +41,7 @@ class App
    * 模块管理器（Modules），承载已装载模块的启动/停止与检索
    *
    * 延迟实例化：setup() 未注入时由 ensureInstances() / modules() 自动 new 默认实例。
-   * 装配时手动 new Modules($app) 后通过 $app->set(["modules" => $modules]) 注入自定义实例。
+   * 装配时手动 new Modules() 后通过 $app->set(["modules" => $modules]) 注入自定义实例。
    *
    * @var Modules|null
    */
@@ -213,9 +213,9 @@ class App
         $this->middleware = new Middleware();
       }
       //* 模块管理器
-      // if ($this->modules === null) {
-      //   $this->modules = new Modules($this);
-      // }
+      if ($this->modules === null) {
+        $this->modules = new Modules();
+      }
       //* 生命周期管理器（先于 Request/Middleware 已就绪，Lifecycle 构造会触发 beforeCreate/afterCreate 钩子）
       if ($this->lifeCycle === null) {
         $this->lifeCycle = new Lifecycle();
@@ -516,7 +516,7 @@ class App
   public function modules()
   {
     if ($this->modules === null) {
-      $this->modules = new Modules($this);
+      $this->modules = new Modules();
     }
     return $this->modules;
   }
@@ -525,7 +525,7 @@ class App
    *
    * @return void
    */
-  protected function bootModules(): void
+  protected function bootModules()
   {
     if ($this->modules !== null) {
       $this->modules->bootAll();
@@ -536,7 +536,7 @@ class App
    *
    * @return void
    */
-  protected function shutdownModules(): void
+  protected function shutdownModules()
   {
     if ($this->modules !== null) {
       $this->modules->shutdownAll();
@@ -561,7 +561,7 @@ class App
    *
    * @return string|null 尚未实例化任何 App 时返回 null
    */
-  public static function id(): ?string
+  public static function id()
   {
     return self::$currentApp === null ? null : self::$currentApp->id;
   }
@@ -572,7 +572,7 @@ class App
    *
    * @return string|null 尚未实例化任何 App 时返回 null
    */
-  public static function kernelId(): ?string
+  public static function kernelId()
   {
     return self::$currentApp === null ? null : self::$currentApp->kernelId;
   }

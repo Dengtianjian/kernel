@@ -4,6 +4,7 @@ namespace kernel\Controller\Main\Files;
 
 use kernel\Facades\Storage;
 use kernel\Foundation\Controller\Controller;
+use kernel\Foundation\Data\Arr;
 
 class UploadFileController extends Controller
 {
@@ -13,7 +14,7 @@ class UploadFileController extends Controller
     if (!$files) {
       return $this->fail(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
-    $uploadFile = $files[array_key_first($files)];
+    $uploadFile = Arr::first($files);
 
     $file = Storage::put($uploadFile, $fileKey);
     if (Storage::isError()) return Storage::return();

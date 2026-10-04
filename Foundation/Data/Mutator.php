@@ -81,7 +81,7 @@ class Mutator
      *
      * @var string[]
      */
-    private const ALLOWED_TYPES = [
+    const ALLOWED_TYPES = [
         'boolean', 'bool', 'integer', 'int', 'float',
         'double', 'string', 'array', 'object', 'null', 'any',
     ];
@@ -92,7 +92,7 @@ class Mutator
      *
      * @var string[]
      */
-    private const WHOLE_VALUE_TYPES = [
+    const WHOLE_VALUE_TYPES = [
         'json', 'json_decode', 'implode', 'pluck',
     ];
 
@@ -598,7 +598,7 @@ class Mutator
      * @param int|string $key 规则键名
      * @param string|self|callable $type 规则类型
      */
-    private function applyFlatRule(array &$result, $key, $type): void
+    private function applyFlatRule(array &$result, $key, $type)
     {
         // 数值键：值本身就是字段名，无类型定义 → 原样透传，不做任何转换
         $keyStr = $key;
@@ -655,7 +655,7 @@ class Mutator
      * @param string $key 字段名
      * @param self $mutator 子 Mutator 实例
      */
-    private function applyMutatorRule(array &$result, string $key, self $mutator): void
+    private function applyMutatorRule(array &$result, string $key, self $mutator)
     {
         if (!array_key_exists($key, $this->data)) {
             if ($this->completion) {
@@ -693,7 +693,7 @@ class Mutator
      * @param string $ruleKey 点号路径规则键，如 "user.profile.id"
      * @param string|self|callable $type 转换规则
      */
-    private function applyDotRule(array &$result, string $ruleKey, $type): void
+    private function applyDotRule(array &$result, string $ruleKey, $type)
     {
         $path = $this->parsePath($ruleKey);
         $wildcardIndex = array_search('*', $path, true);
@@ -732,7 +732,7 @@ class Mutator
      * @param int          $wildcardIndex  "*" 在 $path 中的索引位置
      * @param string|self|callable $type  转换规则
      */
-    private function applyWildcardRule(array &$result, array $path, int $wildcardIndex, $type): void
+    private function applyWildcardRule(array &$result, array $path, int $wildcardIndex, $type)
     {
         $prefixPath = array_slice($path, 0, $wildcardIndex);
         $suffixPath = array_slice($path, $wildcardIndex + 1);
@@ -827,7 +827,7 @@ class Mutator
      * @param string|array $type 类型规则
      * @return string[]|null 步骤数组，非管道类型返回 null
      */
-    private function getPipelineSteps($type): ?array
+    private function getPipelineSteps($type)
     {
         // 字符串管道："string|int|mask:3"
         if (is_string($type) && strpos($type, '|') !== false) {
@@ -1478,7 +1478,9 @@ class Mutator
         $str = (string)$target;
         list(, $allowed) = $this->parseFormattedType($type);
         if ($allowed !== null && $allowed !== '') {
-            $tags = implode('', array_map(fn($t) => '<' . trim($t) . '>', explode(',', $allowed)));
+            $tags = implode('', array_map(function ($t) {
+              return '<' . trim($t) . '>';
+            }, explode(',', $allowed)));
             return strip_tags($str, $tags);
         }
         return strip_tags($str);
@@ -1662,7 +1664,7 @@ class Mutator
      * @param string[] $path   路径段数组
      * @param mixed    $value  要写入的值
      */
-    private function setNestedValue(array &$array, array $path, $value): void
+    private function setNestedValue(array &$array, array $path, $value)
     {
         $lastKey = array_pop($path);
         $current = &$array;

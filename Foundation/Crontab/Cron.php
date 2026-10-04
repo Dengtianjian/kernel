@@ -38,7 +38,7 @@ abstract class Cron
    *
    * @return void
    */
-  public function handle(): void
+  public function handle()
   {
   }
 
@@ -47,7 +47,7 @@ abstract class Cron
    *
    * @return void
    */
-  public function run(): void
+  public function run()
   {
     $this->handle();
     $this->markRun();
@@ -76,7 +76,7 @@ abstract class Cron
    * @param integer $now
    * @return integer|null
    */
-  protected function currentTick(array $plan, int $now): ?int
+  protected function currentTick(array $plan, int $now)
   {
     switch ($plan["type"] ?? "") {
       case "interval":
@@ -110,7 +110,7 @@ abstract class Cron
    * @param integer $now
    * @return integer|null
    */
-  protected function prevCronTick(string $expr, int $now): ?int
+  protected function prevCronTick(string $expr, int $now)
   {
     $fields = preg_split("/\s+/", trim($expr));
     if (count($fields) !== 5) {
@@ -250,7 +250,7 @@ abstract class Cron
    *
    * @return integer|null
    */
-  protected function lastRun(): ?int
+  protected function lastRun()
   {
     $file = $this->lastRunFile();
     if ($file === null || !is_file($file)) {
@@ -265,7 +265,7 @@ abstract class Cron
    *
    * @return void
    */
-  protected function markRun(): void
+  protected function markRun()
   {
     $file = $this->lastRunFile();
     if ($file === null) {
@@ -285,7 +285,7 @@ abstract class Cron
    *
    * @return string|null
    */
-  protected function lastRunFile(): ?string
+  protected function lastRunFile()
   {
     $data = Path::data();
     if ($data === null) {

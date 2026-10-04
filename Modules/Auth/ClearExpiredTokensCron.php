@@ -30,7 +30,7 @@ class ClearExpiredTokensCron extends Cron
    *
    * @return void
    */
-  public function handle(): void
+  public function handle()
   {
     Auth::deleteExpiredTokens();
   }

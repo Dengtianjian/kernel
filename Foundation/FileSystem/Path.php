@@ -32,7 +32,7 @@ class Path
    *
    * @return string|null
    */
-  public static function projectRoot(): ?string
+  public static function projectRoot()
   {
     if (defined("\\DISCUZ_ROOT")) {
       return rtrim(\DISCUZ_ROOT, "/\\");
@@ -48,7 +48,7 @@ class Path
    *
    * @return string
    */
-  public static function kernelRoot(): ?string
+  public static function kernelRoot()
   {
     return dirname(__DIR__, 2);
   }
@@ -58,7 +58,7 @@ class Path
    *
    * @return string|null
    */
-  public static function root(): ?string
+  public static function root()
   {
     if (App::id() === null) {
       return null;
@@ -71,7 +71,7 @@ class Path
    *
    * @return string|null
    */
-  public static function data(): ?string
+  public static function data()
   {
     $appRoot = self::root();
     return $appRoot === null ? null : self::join($appRoot, "Data");
@@ -82,7 +82,7 @@ class Path
    *
    * @return string|null
    */
-  public static function storage(): ?string
+  public static function storage()
   {
     $appRoot = self::root();
     return $appRoot === null ? null : self::join($appRoot, "Storage");
@@ -93,7 +93,7 @@ class Path
    *
    * @return string|null
    */
-  public static function kernelDir(): ?string
+  public static function kernelDir()
   {
     $root = self::projectRoot();
     $kernelRoot = self::kernelRoot();
@@ -108,7 +108,7 @@ class Path
    *
    * @return string|null
    */
-  public static function dir(): ?string
+  public static function dir()
   {
     $root = self::root();
     $appRoot = self::root();

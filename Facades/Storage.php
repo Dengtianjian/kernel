@@ -85,7 +85,7 @@ class Storage extends Facade
    *
    * @return object
    */
-  protected static function resolve(): object
+  protected static function resolve()
   {
     return new FileStorageAggregate([
       "local" => new LocalStorage(),

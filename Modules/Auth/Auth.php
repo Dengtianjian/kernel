@@ -39,7 +39,7 @@ class Auth extends Facade
    *
    * @return AuthModule|null 模块未装载或 App 未实例化时返回 null
    */
-  protected static function accessor(): ?AuthModule
+  protected static function accessor()
   {
     $app = getApp();
     if ($app === null) {

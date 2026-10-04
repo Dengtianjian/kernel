@@ -2,13 +2,14 @@
 
 namespace kernel\Foundation\Module;
 
-use kernel\Foundation\App;
-
 /**
  * 模块管理器
  *
  * 负责装载（load）、卸载（unload）框架模块，并按名称检索、批量启停。
  * 内部以「模块名 => Module 实例」关联数组存储，模块名由 Module::name() 提供。
+ *
+ * 注：本类不持有 App 实例 —— 模块若需访问应用，用全局的 `getApp()` / `App::getInstance()`
+ * （避免 App 与 Modules 相互持有）。因此构造函数无需任何参数。
  */
 class Modules
 {
@@ -17,17 +18,7 @@ class Modules
    *
    * @var array<string, Module>
    */
-  protected array $modules = [];
-  protected ?App $app = null;
-
-  /**
-   * 构建模块管理器
-   *
-   */
-  public function __construct(App $app)
-  {
-    $this->app = $app;
-  }
+  protected $modules = [];
 
   /**
    * 登记模块（不自动启动）
@@ -37,7 +28,7 @@ class Modules
    * @param Module $module 模块实例
    * @return static
    */
-  public function register(Module $module): static
+  public function register(Module $module)
   {
     $this->modules[$module->name()] = $module;
     return $this;
@@ -52,7 +43,7 @@ class Modules
    * @param bool $boot 是否立即启动（默认 true）
    * @return static
    */
-  public function load(Module $module, bool $boot = true): static
+  public function load(Module $module, bool $boot = true)
   {
     $this->register($module);
     if ($boot) {
@@ -70,7 +61,7 @@ class Modules
    * @return static
    * @throws \InvalidArgumentException 模块不存在时抛出
    */
-  public function unload(string $name): static
+  public function unload(string $name)
   {
     if (!isset($this->modules[$name])) {
       throw new \InvalidArgumentException(sprintf('模块 [%s] 未装载，无法卸载', $name));
@@ -87,7 +78,7 @@ class Modules
    * @return static
    * @throws \InvalidArgumentException 模块不存在时抛出
    */
-  public function boot(string $name): static
+  public function boot(string $name)
   {
     $module = $this->get($name);
     if ($module === null) {
@@ -104,7 +95,7 @@ class Modules
    * @return static
    * @throws \InvalidArgumentException 模块不存在时抛出
    */
-  public function shutdown(string $name): static
+  public function shutdown(string $name)
   {
     $module = $this->get($name);
     if ($module === null) {
@@ -119,7 +110,7 @@ class Modules
    *
    * @return static
    */
-  public function bootAll(): static
+  public function bootAll()
   {
     foreach ($this->modules as $module) {
       $module->boot();
@@ -132,7 +123,7 @@ class Modules
    *
    * @return static
    */
-  public function shutdownAll(): static
+  public function shutdownAll()
   {
     foreach ($this->modules as $module) {
       $module->shutdown();
@@ -147,7 +138,7 @@ class Modules
    *
    * @return static
    */
-  public function clear(): static
+  public function clear()
   {
     foreach ($this->modules as $module) {
       $module->shutdown();
@@ -162,7 +153,7 @@ class Modules
    * @param string $name 模块名称
    * @return Module|null 不存在时返回 null
    */
-  public function get(string $name): ?Module
+  public function get(string $name)
   {
     return $this->modules[$name] ?? null;
   }

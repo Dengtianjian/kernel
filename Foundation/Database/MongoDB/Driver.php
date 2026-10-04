@@ -6,7 +6,7 @@ use kernel\Foundation\Output;
 
 class Driver
 {
-  private ?\MongoDB\Driver\Manager $instance = null;
+  private $instance = null;
   private $config = [
     "host" => "localhost",
     "port" => 27017,
@@ -79,7 +79,7 @@ class Driver
     $bulk->delete($query, $options);
     return $this->instance->executeBulkWrite($this->genNamespace($setName), $bulk, $options)->getDeletedCount();
   }
-  public function commamd(array $commands = [], ?array $options = []): \MongoDB\Driver\Command
+  public function commamd(array $commands = [],$options = []): \MongoDB\Driver\Command
   {
     return new \MongoDB\Driver\Command($commands, $options);
   }

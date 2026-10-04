@@ -31,7 +31,7 @@ use kernel\Foundation\Config;
 class Cors
 {
   /** @var array CORS 配置默认值（业务未配置 cors.* 时使用） */
-  public const DEFAULTS = [
+  const DEFAULTS = [
     "allowOrigin" => "*",
     "allowMethods" => ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     "allowHeaders" => ["Authorization"],
@@ -124,7 +124,7 @@ class Cors
    * @param string|null $requestOrigin 取自请求头 Origin 的值（可为 null）
    * @return string|null
    */
-  public static function resolveAllowOrigin(?string $requestOrigin): ?string
+  public static function resolveAllowOrigin($requestOrigin)
   {
     if ($requestOrigin === null || !self::isValidOrigin($requestOrigin)) {
       return null;
@@ -189,7 +189,7 @@ class Cors
    * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
    * @return array<string,string>
    */
-  public static function headers(?string $requestOrigin): array
+  public static function headers($requestOrigin): array
   {
     $headers = [];
     $allowOrigin = self::resolveAllowOrigin($requestOrigin);
@@ -222,7 +222,7 @@ class Cors
    * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
    * @return \kernel\Foundation\HTTP\Response
    */
-  public static function applyTo(Response $response, ?string $requestOrigin): Response
+  public static function applyTo(Response $response,$requestOrigin): Response
   {
     foreach (self::headers($requestOrigin) as $key => $value) {
       $response->header($key, $value);
@@ -241,7 +241,7 @@ class Cors
    * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
    * @return void
    */
-  public static function emit(?string $requestOrigin): void
+  public static function emit($requestOrigin)
   {
     foreach (self::headers($requestOrigin) as $key => $value) {
       header($key . ":" . $value);

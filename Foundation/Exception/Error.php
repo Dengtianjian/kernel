@@ -62,7 +62,7 @@ class Error extends GlobalException
    * @param mixed $details 业务上下文详情（不入 ErrorCode 注册的，仅 runtime 上下文）
    * @return never
    */
-  public static function raise(string $name, mixed $details = null): never
+  public static function raise(string $name, $details = null)
   {
     // 防循环：ErrorCode 若未加载就退化为本地异常
     if (!class_exists(ErrorCode::class, false)) {

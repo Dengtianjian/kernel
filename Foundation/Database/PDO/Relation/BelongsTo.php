@@ -30,7 +30,7 @@ use kernel\Foundation\Database\PDO\Model;
  */
 class BelongsTo extends Relation
 {
-  protected function addConstraints(): void
+  protected function addConstraints()
   {
     $parentTable = $this->parent->tableName;
     $relatedTable = $this->query->getTableName();
@@ -48,7 +48,7 @@ class BelongsTo extends Relation
     $this->query->where("{$relatedTable}.{$this->localKey}", $parentKeyValue);
   }
 
-  public function getResults(): mixed
+  public function getResults()
   {
     if ($this->results === null) {
       $row = $this->query->first();

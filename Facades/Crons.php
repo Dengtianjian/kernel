@@ -30,7 +30,7 @@ class Crons extends Facade
    *
    * @return object
    */
-  protected static function resolve(): object
+  protected static function resolve()
   {
     $manager = new CronsManager();
     $app = \getApp();

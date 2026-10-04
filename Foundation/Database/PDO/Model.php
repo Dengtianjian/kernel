@@ -283,7 +283,7 @@ class Model extends Table
    *
    * @var int
    */
-  protected int $trashedScope = self::TRASHED_EXCLUDE;
+  protected $trashedScope = self::TRASHED_EXCLUDE;
 
   /**
    * 子类自定义的 Query 原型（可选）
@@ -389,7 +389,7 @@ class Model extends Table
   /**
    * 遍历 $schema 找到首个主键或自增列，设置为 $primaryKey
    */
-  private function detectPrimaryKey(): void
+  private function detectPrimaryKey()
   {
     if (empty($this->schema)) {
       return;
@@ -405,7 +405,7 @@ class Model extends Table
   /**
    * 如果 $casts 和 $schemaCasts 中不存在 $createTime 或 $updateTime，则关闭时间戳自动维护
    */
-  private function detectTimestamps(): void
+  private function detectTimestamps()
   {
     if (!$this->timestamps) {
       return;
@@ -426,7 +426,7 @@ class Model extends Table
   /**
    * 如果 $casts 和 $schemaCasts 中都不存在 $deleteTime 字段，则关闭软删除
    */
-  private function detectSoftDelete(): void
+  private function detectSoftDelete()
   {
     if (!$this->softDelete) {
       return;
@@ -535,24 +535,37 @@ class Model extends Table
    * @param mixed  $value 任意 PHP 值
    * @return mixed 数据库兼容值
    */
-  private function castToDb(string $type, mixed $value): mixed
+  private function castToDb(string $type, $value)
   {
     ['base' => $baseType] = $this->parseCastType($type);
-    return match ($baseType) {
-      'int'           => (int) $value,
-      'float'         => (float) $value,
-      'bool'          => (bool) $value,
-      'string'        => (string) $value,
-      'array'         => json_encode($value, JSON_UNESCAPED_UNICODE),
-      'timestamp'     => $this->formatTimestamp($this->dateFormat, $this->parseTimestamp($value)),
-      'timestamp_ms'  => ($tsMs = $this->parseTimestamp($value, 'ms')) === null
-        ? null
-        : $this->formatTimestamp('Y-m-d H:i:s.v', (int) ($tsMs / 1000), ($tsMs % 1000) / 1000),
-      'unixtime'      => $this->parseTimestamp($value, 's'),
-      'unixtime_ms'   => $this->parseTimestamp($value, 'ms'),
-      'date'          => $this->formatTimestamp('Y-m-d', $this->parseTimestamp($value)),
-      default         => $value,
-    };
+
+    switch ($baseType) {
+      case 'int':
+        return (int) $value;
+      case 'float':
+        return (float) $value;
+      case 'bool':
+        return (bool) $value;
+      case 'string':
+        return (string) $value;
+      case 'array':
+        return json_encode($value, JSON_UNESCAPED_UNICODE);
+      case 'timestamp':
+        return $this->formatTimestamp($this->dateFormat, $this->parseTimestamp($value));
+      case 'timestamp_ms':
+        $tsMs = $this->parseTimestamp($value, 'ms');
+        return $tsMs === null
+          ? null
+          : $this->formatTimestamp('Y-m-d H:i:s.v', (int) ($tsMs / 1000), ($tsMs % 1000) / 1000);
+      case 'unixtime':
+        return $this->parseTimestamp($value, 's');
+      case 'unixtime_ms':
+        return $this->parseTimestamp($value, 'ms');
+      case 'date':
+        return $this->formatTimestamp('Y-m-d', $this->parseTimestamp($value));
+      default:
+        return $value;
+    }
   }
 
   /**
@@ -571,22 +584,34 @@ class Model extends Table
    * @param mixed  $value DB 中取出的原始值
    * @return mixed PHP 期望类型值
    */
-  private function castFromDb(string $type, mixed $value): mixed
+  private function castFromDb(string $type, $value)
   {
     ['base' => $baseType, 'format' => $customFormat] = $this->parseCastType($type);
-    return match ($baseType) {
-      'int'           => (int) $value,
-      'float'         => (float) $value,
-      'bool'          => (bool) $value,
-      'string'        => (string) $value,
-      'array'         => is_array($value) ? $value : json_decode($value, true) ?? [],
-      'timestamp'     => $this->parseTimestamp($value, 's'),
-      'timestamp_ms'  => $this->parseTimestamp($value, 'ms'),
-      'unixtime'      => ($value === null || $value === '') ? null : (int) $value,
-      'unixtime_ms'   => ($value === null || $value === '') ? null : (int) $value,
-      'date'          => $this->formatTimestamp($customFormat ?? $this->dateFormat, $this->parseTimestamp($value)),
-      default         => $value,
-    };
+
+    switch ($baseType) {
+      case 'int':
+        return (int) $value;
+      case 'float':
+        return (float) $value;
+      case 'bool':
+        return (bool) $value;
+      case 'string':
+        return (string) $value;
+      case 'array':
+        return is_array($value) ? $value : json_decode($value, true) ?? [];
+      case 'timestamp':
+        return $this->parseTimestamp($value, 's');
+      case 'timestamp_ms':
+        return $this->parseTimestamp($value, 'ms');
+      case 'unixtime':
+        return ($value === null || $value === '') ? null : (int) $value;
+      case 'unixtime_ms':
+        return ($value === null || $value === '') ? null : (int) $value;
+      case 'date':
+        return $this->formatTimestamp($customFormat ?? $this->dateFormat, $this->parseTimestamp($value));
+      default:
+        return $value;
+    }
   }
 
   /**
@@ -613,21 +638,28 @@ class Model extends Table
    * unixtime/unixtime_ms 取 0（与整数列语义一致，时间戳非负）；
    * 若字段可空且希望「未设置」为 null，请显式赋值 null 或改用 timestamp 系列。
    */
-  private function castDefault(string $type): mixed
+  private function castDefault(string $type)
   {
     $baseType = $this->parseCastType($type)['base'];
-    return match ($baseType) {
-      'int',
-      'unixtime',
-      'unixtime_ms'   => 0,
-      'float'         => 0.0,
-      'bool'          => false,
-      'array'         => [],
-      'timestamp',
-      'timestamp_ms',
-      'date'          => null,
-      default         => '',
-    };
+
+    switch ($baseType) {
+      case 'int':
+      case 'unixtime':
+      case 'unixtime_ms':
+        return 0;
+      case 'float':
+        return 0.0;
+      case 'bool':
+        return false;
+      case 'array':
+        return [];
+      case 'timestamp':
+      case 'timestamp_ms':
+      case 'date':
+        return null;
+      default:
+        return '';
+    }
   }
 
   /**
@@ -643,7 +675,7 @@ class Model extends Table
    * @param string $unit 返回精度：'s' 秒（默认），'ms' 毫秒
    * @return int|null Unix 时间戳，无法解析则返回 null
    */
-  private function parseTimestamp(mixed $value, string $unit = 's'): ?int
+  private function parseTimestamp($value, string $unit = 's')
   {
     if ($value === null || $value === '') {
       return null;
@@ -688,7 +720,7 @@ class Model extends Table
    * @param int|null $ts     Unix 秒级时间戳，null 时返回 null
    * @param float    $micro  亚秒小数部分（0.0 ~ 0.999999）
    */
-  private function formatTimestamp(string $format, ?int $ts, float $micro = 0.0): ?string
+  private function formatTimestamp(string $format,$ts, float $micro = 0.0)
   {
     if ($ts === null) {
       return null;
@@ -863,7 +895,7 @@ class Model extends Table
   /**
    * 设置关联数据缓存（用于 eager loading 分发）
    */
-  public function setRelation(string $name, mixed $value): void
+  public function setRelation(string $name, $value)
   {
     $this->relations[$name] = $value;
   }
@@ -875,7 +907,7 @@ class Model extends Table
    *
    * @param array<static> $models Model 实例数组
    */
-  public function eagerLoadRelations(array $models): void
+  public function eagerLoadRelations(array $models)
   {
     if (empty($models) || empty($this->eagerLoads)) {
       return;
@@ -1054,7 +1086,7 @@ class Model extends Table
    *
    * @return $this
    */
-  public function save(): static
+  public function save()
   {
     $pk       = $this->primaryKey;
     $pkValue  = $this->data[$pk] ?? null;
@@ -1092,7 +1124,7 @@ class Model extends Table
    *
    * @param bool $isInsert 是否 INSERT（true 时同时设 created_at；false 只设 updated_at）
    */
-  private function touchTimestamps(bool $isInsert = false): void
+  private function touchTimestamps(bool $isInsert = false)
   {
     if (!$this->usesTimestamps()) {
       return;
@@ -1194,7 +1226,7 @@ class Model extends Table
    *
    * @return int|bool
    */
-  public function delete($params = []): int|bool
+  public function delete($params = [])
   {
     $pk       = $this->primaryKey;
     $pkValue  = $this->data[$pk] ?? null;
@@ -1226,7 +1258,7 @@ class Model extends Table
    *
    * @return int|bool
    */
-  public function forceDelete($params = []): int|bool
+  public function forceDelete($params = [])
   {
     $pk       = $this->primaryKey;
     $pkValue  = $this->data[$pk] ?? null;
@@ -1243,7 +1275,7 @@ class Model extends Table
    *
    * @return $this
    */
-  public function restore(): static
+  public function restore()
   {
     $pk       = $this->primaryKey;
     $pkValue  = $this->data[$pk] ?? null;
@@ -1376,7 +1408,7 @@ class Model extends Table
    * @param string $relation 关系方法名
    * @return mixed
    */
-  public function getRelation(string $relation): mixed
+  public function getRelation(string $relation)
   {
     if (array_key_exists($relation, $this->relations)) {
       return $this->relations[$relation];
@@ -1402,7 +1434,7 @@ class Model extends Table
    * $user = User::find(1);
    * $user->load('profile', 'posts');
    */
-  public function load(string ...$relations): static
+  public function load(string ...$relations)
   {
     foreach ($relations as $relation) {
       $this->getRelation($relation);
@@ -1423,7 +1455,7 @@ class Model extends Table
    * $users = User::with('profile')->where('status', 1)->get();
    * $post  = Post::with('comments', 'author')->first();
    */
-  public static function with(string ...$relations): static
+  public static function with(string ...$relations)
   {
     $instance = new static();
     $instance->eagerLoads = $relations;
@@ -1450,7 +1482,9 @@ class Model extends Table
       if ($value instanceof Model) {
         $result[$name] = $value->toArray();
       } elseif (is_array($value)) {
-        $result[$name] = array_map(fn($item) => $item instanceof Model ? $item->toArray() : $item, $value);
+        $result[$name] = array_map(function ($item) {
+          return $item instanceof Model ? $item->toArray() : $item;
+        }, $value);
       } else {
         $result[$name] = $value;
       }

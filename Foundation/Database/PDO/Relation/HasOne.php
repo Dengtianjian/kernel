@@ -29,7 +29,7 @@ use kernel\Foundation\Database\PDO\Model;
  */
 class HasOne extends Relation
 {
-  protected function addConstraints(): void
+  protected function addConstraints()
   {
     $parentTable = $this->parent->tableName;
     $relatedTable = $this->query->getTableName();
@@ -47,7 +47,7 @@ class HasOne extends Relation
     $this->query->where("{$parentTable}.{$this->localKey}", $parentKeyValue);
   }
 
-  public function getResults(): mixed
+  public function getResults()
   {
     if ($this->results === null) {
       $row = $this->query->first();
@@ -66,7 +66,7 @@ class HasOne extends Relation
   /**
    * 将数据库行数据填充到 Model 实例
    */
-  protected function hydrate(Model $instance, array $row): void
+  protected function hydrate(Model $instance, array $row)
   {
     foreach ($row as $key => $value) {
       $instance->$key = $value;

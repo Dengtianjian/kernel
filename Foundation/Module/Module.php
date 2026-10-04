@@ -21,21 +21,21 @@ class Module extends AbilityBaseObject
    *
    * @var string
    */
-  protected string $name;
+  protected $name;
 
   /**
    * 是否已启动
    *
    * @var bool
    */
-  protected bool $booted = false;
+  protected $booted = false;
 
   /**
    * 构建模块
    *
    * @param string|null $name 模块名称；留空则取短类名作为默认名称
    */
-  public function __construct(?string $name = null)
+  public function __construct($name = null)
   {
     if ($name !== null) {
       $this->name = $name;
@@ -80,7 +80,7 @@ class Module extends AbilityBaseObject
    *
    * @return void
    */
-  final public function boot(): void
+  final public function boot()
   {
     if ($this->booted) {
       return;
@@ -94,7 +94,7 @@ class Module extends AbilityBaseObject
    *
    * @return void
    */
-  final public function shutdown(): void
+  final public function shutdown()
   {
     if (!$this->booted) {
       return;
@@ -108,12 +108,12 @@ class Module extends AbilityBaseObject
    *
    * @return void
    */
-  protected function onBoot(): void {}
+  protected function onBoot() {}
 
   /**
    * 停止钩子（子类重写）
    *
    * @return void
    */
-  protected function onShutdown(): void {}
+  protected function onShutdown() {}
 }

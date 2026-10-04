@@ -61,7 +61,7 @@ class GetFileAuthController extends AuthController
   {
     return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, [], [], "get");
   }
-  protected function post(?string $fileKey)
+  protected function post($fileKey)
   {
     if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取上传文件授权");
 

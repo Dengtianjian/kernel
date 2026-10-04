@@ -32,11 +32,11 @@ class Command
   /** @var array proc_open 的 options 参数（bypass_shell、suppress_errors 等） */
   private $options = [];
   /** @var string 当前工作目录，默认应用根目录 Path::root() */
-  private string $cwd = "";
+  private $cwd = "";
   /** @var string 初始化命令（shell 路径），exec() 执行的命令基于它运行 */
   private $initCommand = "";
   /** @var int|null 最近一次执行的退出码，执行中/尚未执行时为 null */
-  private ?int $lastExitcode = null;
+  private $lastExitcode = null;
   /** @var bool 最近一次执行是否超时 */
   private $timedOut = false;
   /** @var bool 最近一次执行是否因输出超限被终止 */
@@ -179,7 +179,7 @@ class Command
    *
    * @return void
    */
-  public function close(): void
+  public function close()
   {
     if (!$this->sessionOpened && !is_resource($this->process)) {
       return;
@@ -350,7 +350,7 @@ class Command
    *
    * @throws Error proc_open 失败时抛出
    */
-  private function initProcess(): void
+  private function initProcess()
   {
     $descriptorspec = [
       ['pipe', 'r'], // 标准输入
@@ -390,7 +390,7 @@ class Command
    *
    * @param string $command 待执行的命令原文
    */
-  private function prepare(string $command): void
+  private function prepare(string $command)
   {
     $finalCommand = escapeshellcmd($command);
     if (strpos(PHP_OS, "WIN") !== false) {
@@ -417,7 +417,7 @@ class Command
    * @param int $idx 管道索引：0=stdin, 1=stdout, 2=stderr
    * @param string $data 要写入的数据
    */
-  private function writeStream(int $idx, string $data): void
+  private function writeStream(int $idx, string $data)
   {
     $stream = $this->pipes[$idx] ?? null;
     if (!is_resource($stream)) {
@@ -450,7 +450,7 @@ class Command
    *
    * @param int $idx 管道索引：0=stdin, 1=stdout, 2=stderr
    */
-  private function closeStream(int $idx): void
+  private function closeStream(int $idx)
   {
     if (is_resource($this->pipes[$idx] ?? null)) {
       fclose($this->pipes[$idx]);
@@ -463,7 +463,7 @@ class Command
    * 使用 0 超时的 stream_select 同时轮询 stdout/stderr，避免任一管道阻塞；
    * 累计输出超过 maxOutput 时终止进程并置 outputExceeded 标记。
    */
-  private function readAvailable(): void
+  private function readAvailable()
   {
     $read = [];
     foreach ([1, 2] as $idx) {
@@ -507,7 +507,7 @@ class Command
    * @param string|null $marker 会话命令结束标记，null 表示读取到进程结束
    * @return array [stdout, stderr]
    */
-  private function readToEnd(?string $marker = null): array
+  private function readToEnd($marker = null): array
   {
     $stdout = "";
     $stderr = "";
@@ -704,7 +704,7 @@ class Command
   /**
    * 关闭所有管道
    */
-  private function closePipes(): void
+  private function closePipes()
   {
     foreach ([0, 1, 2] as $idx) {
       $this->closeStream($idx);
@@ -716,7 +716,7 @@ class Command
    * @param callable|null $callback 输出回调
    * @param string $chunk 输出片段
    */
-  private function emit($callback, string $chunk): void
+  private function emit($callback, string $chunk)
   {
     if (is_callable($callback)) {
       call_user_func($callback, $chunk);
@@ -772,7 +772,7 @@ class Command
    *
    * @return integer|null
    */
-  public function exitcode(): ?int
+  public function exitcode()
   {
     return $this->lastExitcode;
   }
@@ -811,7 +811,7 @@ class Command
    * @param integer $escalateAfter 等待秒数后升级 SIGKILL，0 表示不升级
    * @return void
    */
-  public function terminate(int $signal = 15, int $escalateAfter = 2): void
+  public function terminate(int $signal = 15, int $escalateAfter = 2)
   {
     if (!is_resource($this->process)) {
       return;

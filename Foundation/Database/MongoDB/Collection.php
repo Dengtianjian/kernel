@@ -7,8 +7,8 @@ use stdClass;
 
 class Collection
 {
-  public string $collectionName = "";
-  public static ?\kernel\Foundation\Database\MongoDB\Collection $instance = null;
+  public $collectionName = "";
+  public static $instance = null;
   public static function instance()
   {
     if (!self::$instance) {
@@ -24,7 +24,7 @@ class Collection
   {
     return Mongo::realId($id);
   }
-  public function find(array $filter = [], array $options = [], bool $associative = false): array|stdClass
+  public function find(array $filter = [], array $options = [], bool $associative = false)
   {
     $filter = Mongo::optimParams($filter);
     $result = Mongo::find($this->collectionName, $filter, $options);
@@ -33,7 +33,7 @@ class Collection
     }
     return $result;
   }
-  public function findOne(array $filter = [], array $options = [], bool $associative = false): stdClass|null|array
+  public function findOne(array $filter = [], array $options = [], bool $associative = false)
   {
     $filter = Mongo::optimParams($filter);
     $result = Mongo::findOne($this->collectionName, $filter, $options);

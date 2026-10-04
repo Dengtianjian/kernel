@@ -207,7 +207,7 @@ class Console extends App
    * @param array|null $argv 命令行参数（不含脚本名）。不传时使用构造时捕获的 GLOBALS['argv']
    * @return integer 退出码
    */
-  public function handle(?array $argv = null): int
+  public function handle($argv = null): int
   {
     //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化（Request/Middleware/Lifecycle/Config）
     $this->ensureInstances();
@@ -396,7 +396,7 @@ class Console extends App
    * @param resource|null $stream 输出流，默认 STDOUT
    * @return Console
    */
-  public function line(string $text = "", ?string $color = null, $stream = null): Console
+  public function line(string $text = "",$color = null, $stream = null): Console
   {
     if ($stream === null) {
       $stream = STDOUT;

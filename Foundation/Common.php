@@ -22,7 +22,7 @@ use kernel\Foundation\Output;
  */
 function import($fileName, $args = [], $basePath = null)
 {
-  $basePath ??= Path::root();
+  $basePath = $basePath ?? Path::root();
 
   $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
   if ($fileExt && $fileExt !== "php") {

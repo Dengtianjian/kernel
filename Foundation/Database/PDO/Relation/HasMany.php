@@ -29,7 +29,7 @@ use kernel\Foundation\Database\PDO\Model;
  */
 class HasMany extends HasOne
 {
-  public function getResults(): mixed
+  public function getResults()
   {
     if ($this->results === null) {
       $rows = $this->query->get();

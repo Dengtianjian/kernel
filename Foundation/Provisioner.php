@@ -63,20 +63,30 @@ class Provisioner extends AbilityBaseObject
    * 完整版本号（.version 文件原文，如 2.2.0.20260721.1746）
    * @var string|null
    */
-  protected ?string $latestVersion = null;
+  protected $latestVersion = null;
 
   /**
    * 从完整版本号中提取的三段基础版本号（如 2.2.0），用于与升级脚本版本号做 version_compare
    * @var string
    */
-  protected string $currentSemver = '0.0.0';
+  protected $currentSemver = '0.0.0';
 
   /**
-   * @param ?string $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades
+   * 升级脚本目录（null 时默认为 {Path::root()}/Upgrades）
+   *
+   * 原为「构造器属性提升」（PHP 7.4/8.0 语法），已改为显式属性声明 + 构造赋值，以兼容 PHP 7。
+   *
+   * @var string|null
    */
-  public function __construct(
-    protected ?string $upgradesDir = null,
-  ) {
+  protected $upgradesDir = null;
+
+  /**
+   * @param string|null $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades
+   */
+  public function __construct($upgradesDir = null)
+  {
+    $this->upgradesDir = $upgradesDir;
+
     $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
       $this->latestVersion = trim(file_get_contents($versionFile));
@@ -112,7 +122,7 @@ class Provisioner extends AbilityBaseObject
    * @param string|null $operator 比较运算符（>、>=、<、<=、==、!= 等），null 时返回 int
    * @return int|bool 无运算符时返回 -1/0/1；有运算符时返回 bool
    */
-  public static function compare(string $version1, string $version2, ?string $operator = null): int|bool
+  public static function compare($version1,  $version2, $operator = null)
   {
     $version1 = self::parseSemver($version1);
     $version2 = self::parseSemver($version2);
@@ -198,7 +208,7 @@ class Provisioner extends AbilityBaseObject
    * @param string|null $targetVersion 目标版本号，null 表示升级到最新
    * @return bool true=升级完成，false=升级失败，有错误
    */
-  public function upgrade($targetVersion = null): bool|Provisioner
+  public function upgrade($targetVersion = null)
   {
     $upgradeList = $this->scanUpgradeFiles();
     if (empty($upgradeList)) {
@@ -268,7 +278,7 @@ class Provisioner extends AbilityBaseObject
    * @param string $targetVersion 回滚目标版本号
    * @return bool true=回滚完成，false=回滚失败，有错误
    */
-  public function rollback($targetVersion): bool|Provisioner
+  public function rollback($targetVersion)
   {
     $upgradeList = $this->scanUpgradeFiles();
     if (empty($upgradeList)) {
@@ -358,7 +368,7 @@ class Provisioner extends AbilityBaseObject
    * @param string $filePath 升级脚本完整路径
    * @return string 完全限定类名
    */
-  private function buildUpgradeClassName(string $filePath): string
+  private function buildUpgradeClassName( $filePath)
   {
     $shortName = pathinfo($filePath, PATHINFO_FILENAME);
     $relativePath = ltrim(str_replace(Path::root(), '', $this->upgradesDir()), '/');
@@ -375,7 +385,7 @@ class Provisioner extends AbilityBaseObject
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
    */
-  private function runUpgrade(string $filePath, string $version)
+  private function runUpgrade( $filePath,  $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
@@ -403,7 +413,7 @@ class Provisioner extends AbilityBaseObject
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
    */
-  private function runRollback(string $filePath, string $version)
+  private function runRollback( $filePath,  $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
@@ -426,7 +436,7 @@ class Provisioner extends AbilityBaseObject
    *
    * @param string $version 要写入的版本号
    */
-  private function persistVersion(string $version): void
+  private function persistVersion( $version)
   {
     $versionFile = Path::join(Path::data(), ".version");
     file_put_contents($versionFile, $version);
@@ -468,7 +478,7 @@ class Provisioner extends AbilityBaseObject
    * @param string|null $targetVersion 目标版本
    * @return array 待升级的版本号列表，按升序排列
    */
-  public function getPendingUpgrades(?string $targetVersion = null): array
+  public function getPendingUpgrades($targetVersion = null): array
   {
     $upgradeList = $this->scanUpgradeFiles();
     if (empty($upgradeList)) {

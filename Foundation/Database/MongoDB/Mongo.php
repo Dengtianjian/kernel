@@ -6,7 +6,7 @@ use stdClass;
 
 class Mongo
 {
-  private static Driver $driver;
+  private static $driver;
   public static function driver(Driver $driver)
   {
     self::$driver = $driver;
