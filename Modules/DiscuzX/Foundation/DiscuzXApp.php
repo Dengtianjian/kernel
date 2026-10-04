@@ -3,6 +3,7 @@
 namespace kernel\Modules\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Data\Arr;
 use kernel\Foundation\FileSystem\Path;
 
 class DiscuzXApp extends App
@@ -17,6 +18,8 @@ class DiscuzXApp extends App
     $this->register($appId, "gstudio_kernel");
 
     include_once(Path::join(Path::kernelRoot(), "Foundation", "Common.php"));
+
+    DiscuzXLang::load("Modules/DiscuzX/Langs/" . (strtolower(CHARSET) === "gbk" ? "gbk" : "utf-8"), Path::kernelRoot());
 
     //* 延迟实例化兜底：setup() 未注入时自动实例化（Request 等，下方直接写入 URI）
     $this->ensureInstances();
