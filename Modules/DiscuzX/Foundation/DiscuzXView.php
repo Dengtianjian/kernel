@@ -29,9 +29,7 @@ class DiscuzXView extends ResponseView
   }
   static function generateTemplatePath($viewFile, $templateId, $viewFileDirBaseProject, $viewFileDir = null)
   {
-    if (!$viewFileDir) {
-      $dir = Path::dir();
-    }
+    $dir = $viewFileDir ?: Path::dir();
     if (strpos($viewFile, ".") === false) {
       return template($viewFile, implode("_", [
         App::id(),
