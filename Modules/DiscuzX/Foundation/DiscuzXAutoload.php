@@ -11,7 +11,7 @@ function loader($className)
     include_once($filePath);
   } else {
     if (strpos($filePath, "gstudio") !== false && \kernel\Foundation\App::mode() === "development") {
-      debug([$className, $filePath]);
+      debug(["autoload 文件不存在", $className, $filePath]);
     }
   }
 }

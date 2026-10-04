@@ -9,22 +9,22 @@ use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
 
 class DiscuzXThread extends BaseObject
 {
-  function changeThreadViews($threadId, $newViews)
+  function changeThreadViews($threadId,  $newViews)
   {
     return \C::t('forum_thread')->increase($threadId, array('views' => $newViews), true);
   }
   /**
    * 获取主题附件
    *
-   * @param int|array $ThreadId 主题ID或者主题ID数组
+   * @param int|array $threadId 主题ID或者主题ID数组
    * @param boolean $onlyImage 只获取图片附件
    * @return array
    */
-  function getThreadAttachments($ThreadId, $onlyImage = false)
+  function getThreadAttachments($threadId, $onlyImage = false)
   {
     $FPM = new DiscuzXModel("forum_post");
     $posts = $FPM->field("pid", "tid")->where([
-      "tid" => $ThreadId,
+      "tid" => $threadId,
       "first" => 1
     ])->getAll();
     $postAttachs = DiscuzXPost::singleton()->getThreadPostAttachments(array_column($posts, "pid"), $onlyImage);

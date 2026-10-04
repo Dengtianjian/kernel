@@ -383,7 +383,6 @@ class Statement
             break;
         }
 
-        // debug($ConditionItem);
         $statement && $conditionSQLs[] = trim($statement);
       }
 

@@ -7,10 +7,10 @@ use kernel\Foundation\Exception\Error;
 
 class DiscuzXController extends AuthController
 {
-  public $Formhash = false;
+  public $forumhash = false;
   final public function verifyFormhash()
   {
-    if (self::$Formhash) {
+    if (self::$forumhash) {
       if (!defined("FORMHASH")) {
         define("FORMHASH", 1);
       }

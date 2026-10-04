@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\DiscuzX\Foundation;
 
-//* 100%源自DiscuzX json.class.php。收录于框架中，便于开发调用，减少依赖。
+//* 把 DiscuzX的 json.class.php 规整成一个独立类
 
 class DiscuzXGBKJsonResponse
 {

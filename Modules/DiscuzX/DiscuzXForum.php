@@ -2,21 +2,21 @@
 
 namespace kernel\Modules\DiscuzX;
 
-use kernel\Foundation\BaseObject;
+use kernel\Foundation\Object\BaseObject;
 
 class DiscuzXForum extends BaseObject
 {
-  public function getForum($ForumId)
+  public function getForum($forumId)
   {
     global $_G;
     include_once libfile('function/forum');
     include_once libfile('function/forumlist');
     include_once libfile('function/discuzcode');
 
-    $ForumIds = is_array($ForumId) ? $ForumId : [$ForumId];
+    $forumIds = is_array($forumId) ? $forumId : [$forumId];
 
     $adminid = $_G['adminid'];
-    $Forums = \DB::fetch_all("SELECT ff.*, f.* FROM %t f LEFT JOIN %t ff ON ff.fid=f.fid WHERE f.fid IN(%n)", array("forum_forum", 'forum_forumfield', $ForumIds));
+    $Forums = \DB::fetch_all("SELECT ff.*, f.* FROM %t f LEFT JOIN %t ff ON ff.fid=f.fid WHERE f.fid IN(%n)", array("forum_forum", 'forum_forumfield', $forumIds));
 
     foreach ($Forums as &$Forum) {
       if ($_G['uid']) {
@@ -127,6 +127,6 @@ class DiscuzXForum extends BaseObject
       $Forum['icon'] = get_forumimg($Forum['icon']);
     }
 
-    return is_array($ForumId) ? $Forums : $Forums[0];
+    return is_array($forumId) ? $Forums : $Forums[0];
   }
 }

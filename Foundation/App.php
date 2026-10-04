@@ -112,13 +112,7 @@ class App
    */
   function __construct($id, $kernelId = "kernel")
   {
-    //* 注册当前 App 实例：getApp() / App::getInstance() 返回该实例（后实例化者覆盖前者）
-    self::$currentApp = $this;
-
-    $this->id = $id;
-    $this->kernelId = $kernelId;
-
-    $this->startTime = Date::milliseconds();
+    $this->register($id, $kernelId);
 
     include_once(Path::join(Path::kernelRoot() . "/Foundation/Common.php"));
 
@@ -126,6 +120,28 @@ class App
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
+  }
+  /**
+   * 注册为「当前应用」并初始化标识
+   *
+   * 构造即注册（后实例化者覆盖前者），getApp() / App::getInstance() 从静态存储读取当前实例，
+   * 同时写入 id / kernelId / startTime。
+   *
+   * 与安装全局异常/错误处理器解耦：子类覆写构造函数时可安全复用本方法，
+   * 以保留注册与标识初始化，同时自行决定是否安装内核的全局处理器。
+   *
+   * @param string $id 应用ID（与项目目录同名）
+   * @param string $kernelId 内核ID（内核目录名，默认 kernel）
+   * @return void
+   */
+  protected function register($id, $kernelId = "kernel")
+  {
+    self::$currentApp = $this;
+
+    $this->id = $id;
+    $this->kernelId = $kernelId;
+
+    $this->startTime = Date::milliseconds();
   }
   /**
    * 应用装配：手动实例化组件（配置、缓存、文件系统、自定义 Request 等）
@@ -197,9 +213,9 @@ class App
         $this->middleware = new Middleware();
       }
       //* 模块管理器
-      if ($this->modules === null) {
-        $this->modules = new Modules($this);
-      }
+      // if ($this->modules === null) {
+      //   $this->modules = new Modules($this);
+      // }
       //* 生命周期管理器（先于 Request/Middleware 已就绪，Lifecycle 构造会触发 beforeCreate/afterCreate 钩子）
       if ($this->lifeCycle === null) {
         $this->lifeCycle = new Lifecycle();

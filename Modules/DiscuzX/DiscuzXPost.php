@@ -2,8 +2,8 @@
 
 namespace kernel\Modules\DiscuzX;
 
-use kernel\Foundation\BaseObject;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Object\BaseObject;
 use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
 
 class DiscuzXPost extends BaseObject
