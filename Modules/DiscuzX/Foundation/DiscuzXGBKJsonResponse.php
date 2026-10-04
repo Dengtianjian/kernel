@@ -132,14 +132,14 @@ class DiscuzXGBKJsonResponse
 				if (is_array($var) && count($var) && (array_keys($var) !== range(0, sizeof($var) - 1))) {
 					return '{' .
 						join(',', array_map(
-							[GJson::class, "nameValue"],
+							[self::class, "nameValue"],
 							array_keys($var),
 							array_values($var)
 						))
 						. '}';
 				}
 
-				return '[' . join(',', array_map(array(GJson::class, 'encode'), $var)) . ']';
+				return '[' . join(',', array_map(array(self::class, 'encode'), $var)) . ']';
 			case 'object':
 				if ($var instanceof \Traversable) {
 					$vars = array();
@@ -149,7 +149,7 @@ class DiscuzXGBKJsonResponse
 					$vars = get_object_vars($var);
 				return '{' .
 					join(',', array_map(
-						array(GJson::class, 'nameValue'),
+						array(self::class, 'nameValue'),
 						array_keys($vars),
 						array_values($vars)
 					))

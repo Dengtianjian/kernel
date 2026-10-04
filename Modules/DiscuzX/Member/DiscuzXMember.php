@@ -9,7 +9,7 @@ use kernel\Foundation\HTTP\Response\ResponseError;
 use kernel\Foundation\Response;
 use kernel\Foundation\Result;
 use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
-
+use kernel\Modules\DiscuzX\Model\System\CommonMemberModel;
 
 class DiscuzXMember
 {
@@ -261,7 +261,7 @@ class DiscuzXMember
 
     //* 新用户注册验证 查询是否在 注册验证限制的地区列表 和 注册验证限制的 IP 列表
     $registerVerify = $_G['setting']['regverify'];
-    $areaVerifyWhite = null;
+    $areaVerifyWhite = "";
     if ($registerVerify) {
       if ($areaVerifyWhite) {
         $location = $whitearea = '';
@@ -598,26 +598,23 @@ class DiscuzXMember
 
     return is_array($memberId) ? $members : $members[0];
   }
+
   public static function getAll($page = 1, $limit = 15, $query = null, $accurateQuery = false)
   {
-    $CM = new DiscuzXModel("common_member");
+    $builder = CommonMemberModel::page($page, $limit)->map(function ($item) {
+      $item['avatar'] = self::avatar($item['uid']);
+      return $item;
+    });
     if ($query) {
       $userQueryValue = "%" . $query . "%";
       if ($accurateQuery) {
         $userQueryValue = $query;
       }
-      $CM->where("username", $userQueryValue, $accurateQuery ? '=' : "LIKE");
+      $builder->where("username", $accurateQuery ? '=' : "LIKE", $userQueryValue);
     }
-    $CMT = clone $CM;
-    $CM->page($page, $limit);
-    $Members = $CM->getAll();
-    foreach ($Members as &$MemberItem) {
-      $MemberItem['avatar'] = self::avatar($MemberItem['uid']);
-    }
-    return [
-      "list" => $Members,
-      "total" => $CMT->count()
-    ];
+    $list = $builder->paginate();
+
+    return $list;
   }
   /**
    * 查看用户是否存在

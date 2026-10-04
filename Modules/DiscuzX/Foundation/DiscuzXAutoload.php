@@ -11,7 +11,20 @@ function loader($className)
     include_once($filePath);
   } else {
     if (strpos($filePath, "gstudio") !== false && \kernel\Foundation\App::mode() === "development") {
-      debug(["autoload 文件不存在", $className, $filePath]);
+      $targetFile = null;
+      $targetFileLine = null;
+      $backtrace = debug_backtrace();
+      foreach ($backtrace as $item) {
+        if (array_key_exists("function", $item) && $item['function'] === 'spl_autoload_call') {
+          $targetFile = $item['file'];
+          $targetFileLine = $item['line'];
+          break;
+        }
+      }
+      debug(["autoload 文件不存在", $className, $filePath, [
+        "file" => $targetFile,
+        "line" => $targetFileLine
+      ]]);
     }
   }
 }

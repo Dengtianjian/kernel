@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Model\DiscuzX;
+namespace kernel\Modules\DiscuzX\Model;
 
 use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
 
