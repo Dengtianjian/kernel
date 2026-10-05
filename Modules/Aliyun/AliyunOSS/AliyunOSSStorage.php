@@ -197,7 +197,7 @@ class AliyunOSSStorage extends AbstractOSSStroage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo =  pathinfo($saveFileName);
     $tempFileName = join("", [uniqid("temp_"), ".", $pathInfo['extension']]);
-    $tempFileInfo = FileSystem::upload($file, "oss_temp", $tempFileName);
+    $tempFileInfo = FileSystem::upload($file, Path::join(Path::storage(), "oss_temp"), $tempFileName);
     if (!$tempFileInfo || !FileSystem::exists($tempFileInfo['filePath'])) {
       return $this->break(500, 500, "上传文件失败", "临时文件存储失败");
     }

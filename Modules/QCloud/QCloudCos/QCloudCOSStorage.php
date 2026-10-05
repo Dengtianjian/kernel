@@ -6,6 +6,7 @@ use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
 use kernel\Modules\QCloud\QCloudSTS;
 use Qcloud\Cos\Client as QCloudCOSClient;
@@ -116,7 +117,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo =  pathinfo($saveFileName);
     $tempFileName = join("", [uniqid("temp_"), ".", $pathInfo['extension']]);
-    $tempFileInfo = FileSystem::upload($file, "cos_temp", $tempFileName);
+    $tempFileInfo = FileSystem::upload($file, Path::join(Path::storage(), "cos_temp"), $tempFileName);
     if (!$tempFileInfo || !FileSystem::exists($tempFileInfo['filePath'])) {
       return $this->break(500, 500, "上传文件失败", "临时文件存储失败");
     }
@@ -263,7 +264,7 @@ class QCloudCOSStorage extends AbstractOSSStroage
    * @param string $httpMethod 参与的 HTTP 方法，默认 get
    * @param array $urlParams 参与签名的 URL 参数
    * @param array $headers 参与签名的请求头
-   * @return array 签名授权参数字典
+   * @return string 签名授权参数字典
    */
   public function createAuthorization($fileKey = null, $expires = 1800, $httpMethod = "get", $urlParams = [], $headers = [])
   {

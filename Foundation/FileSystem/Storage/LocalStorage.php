@@ -44,18 +44,20 @@ class LocalStorage extends AbstractStorage
     $fileInfo = FileSystem::getFileInfo($filePath);
     if ($fileInfo) {
       $fileInfo['disk'] = "local";
+
+      return new StorageFile([
+        "name" => $fileInfo['name'],
+        "source_file_name" => $fileInfo['sourceFileName'],
+        "path" => $fileInfo['path'],
+        "extension" => $fileInfo['extension'],
+        "size" => $fileInfo['size'],
+        "width" => $fileInfo['width'],
+        "height" => $fileInfo['height'],
+        "filePath" => $fileInfo['filePath'],
+      ]);
     }
 
-    return new StorageFile([
-      "name" => $fileInfo['name'],
-      "source_file_name" => $fileInfo['sourceFileName'],
-      "path" => $fileInfo['path'],
-      "extension" => $fileInfo['extension'],
-      "size" => $fileInfo['size'],
-      "width" => $fileInfo['width'],
-      "height" => $fileInfo['height'],
-      "filePath" => $fileInfo['filePath'],
-    ]);
+    return false;
   }
 
   /**
@@ -74,7 +76,7 @@ class LocalStorage extends AbstractStorage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo = pathinfo($saveFileName);
 
-    $fileInfo = FileSystem::upload($file, $pathInfo['dirname'], $pathInfo['basename']);
+    $fileInfo = FileSystem::upload($file, Path::join(Path::storage(), $pathInfo['dirname']), $pathInfo['basename']);
     if (!$fileInfo) {
       return $this->break(500, 500, "文件上传失败", TRUE);
     }

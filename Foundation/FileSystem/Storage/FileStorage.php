@@ -435,7 +435,7 @@ class FileStorage extends AbilityBaseObject
   public function get($fileKey)
   {
     $result = $this->useDisk->get($fileKey);
-    if ($this->useDisk->error) return $this->useDisk->return();
+    if ($this->useDisk->error) return $this->useDisk->forwardBreak();
 
     $file = $result->toArray();
     if (!$file) return $this->break(500, 500, "获取文件信息失败");
@@ -459,7 +459,7 @@ class FileStorage extends AbilityBaseObject
 
     if ($this->authEnabled) {
       if ($this->verifyRequestSignature($key) !== true) {
-        return $this->return();
+        return $this->forwardBreak();
       }
     }
     if ($this->accessControlEnabled) {
@@ -547,7 +547,7 @@ class FileStorage extends AbilityBaseObject
     }
 
     $fileInfo = $this->put($file, $fileKey);
-    if ($this->error) return $this->return();
+    if ($this->error) return $this->forwardBreak();
 
     $fileInfo->ref = $ref;
     $fileInfo->type = $type;
@@ -755,6 +755,7 @@ class FileStorage extends AbilityBaseObject
     }
     return $this->signature->createAuthorization($key, $urlParams, $headers, $expires, $httpMethod);
   }
+
   /**
    * 校验文件访问签名（核心签名算法）
    *
