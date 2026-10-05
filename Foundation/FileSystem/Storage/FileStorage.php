@@ -710,15 +710,15 @@ class FileStorage extends AbilityBaseObject
    * @param string $fileKey 文件键
    * @param array $urlParams 附加的 URL query 参数
    * @param int $expires 签名有效期（秒），默认 1800
-   * @param boolean $withSignature 是否附带签名授权参数，默认 true
+   * @param boolean $withSignature 是否附带签名授权参数，默认 false
    * @return string 完整文件访问 URL
    */
-  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = true)
+  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false)
   {
     $accessURL = new URL($this->baseURL);
     $accessURL->pathName = "{$this->prefix}/{$fileKey}";
 
-    if ($withSignature) {
+    if ($this->authEnabled() && $withSignature) {
       $urlParams = array_merge($urlParams, $this->createAuthParams($fileKey, $expires, $urlParams, []));
       if (array_key_exists("auth", $urlParams)) {
         unset($urlParams['auth']);
