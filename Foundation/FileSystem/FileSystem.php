@@ -133,11 +133,14 @@ final class FileSystem
       }
       $fileSourceName = basename($filePath);
     } else {
+      if (!isset($file['error']) && !isset($file['name']) && !isset($file['tmp_name'])) {
+        throw new Error("文件信息错误", 400, "FileUpload:400002");
+      }
       if (!isset($file['error']) || $file['error'] > 0) {
-        throw new Error("文件保存失败", 400, "FileUpload:400002:", $file['error'] ?? null);
+        throw new Error("文件保存失败", 400, "FileUpload:400003", $file['error'] ?? null);
       }
       if (!isset($file['tmp_name']) || !isset($file['name'])) {
-        throw new Error("文件保存失败", 400, "FileUpload:400003");
+        throw new Error("文件保存失败", 400, "FileUpload:400004");
       }
       $fileSourceName = basename($file['name']);
       $fileSize = $file['size'];

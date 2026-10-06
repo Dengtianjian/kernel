@@ -5,12 +5,10 @@ namespace kernel\Foundation\FileSystem\Storage;
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\FileSystem\FileHelper;
-
 /**
  * 本地磁盘存储
  *
- * {@see AbstractStorage} 的本地实现：文件存储在由 {@see Path::storage()} 指向的
+ * {@see AbstractStorage} 的本地实现
  * 本地存储目录下，路径经 {@see Path::join()} 安全拼接，避免
  * 目录穿越。
  *
@@ -26,20 +24,18 @@ class LocalStorage extends AbstractStorage
   public function __construct()
   {
     $this->name = "local";
+    $this->basePath = Path::storage();
   }
 
   /**
    * 获取本地文件信息
    *
-   * 基于 {@see Path::storage()} 拼接出完整路径后，委托 {@see FileSystem::getFileInfo()}
-   * 读取元信息，并补充 `disk = "local"` 字段。
-   *
-   * @param string $fileName 文件名称（相对 storage 根目录的路径）
+   * @param string $fileName 文件名称
    * @return false|StorageFile 文件信息数组，文件不存在时返回 false
    */
   public function get($fileName)
   {
-    $filePath = Path::join(Path::storage(), $fileName);
+    $filePath = Path::join($this->basePath(), $fileName);
 
     $fileInfo = FileSystem::getFileInfo($filePath);
     if ($fileInfo) {
@@ -76,7 +72,7 @@ class LocalStorage extends AbstractStorage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo = pathinfo($saveFileName);
 
-    $fileInfo = FileSystem::upload($file, Path::join(Path::storage(), $pathInfo['dirname']), $pathInfo['basename']);
+    $fileInfo = FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
     if (!$fileInfo) {
       return $this->break(500, 500, "文件上传失败", TRUE);
     }
@@ -116,14 +112,11 @@ class LocalStorage extends AbstractStorage
   /**
    * 获取本地文件的完整路径
    *
-   * 将 {@see Path::storage()} 与 `$fileName` 经
-   * {@see Path::join()} 安全拼接。
-   *
    * @param string $fileName 文件名称（相对 storage 根目录的路径）
    * @return string 文件在本地磁盘上的完整路径
    */
   public function url($fileName)
   {
-    return Path::join(Path::storage(), $fileName);
+    return Path::join($this->basePath(), $fileName);
   }
 }

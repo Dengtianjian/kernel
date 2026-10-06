@@ -79,7 +79,7 @@ class FileStorage extends AbilityBaseObject
    * 文件数据模型（启用数据存储后使用）
    *
    * 默认 {@see FilesModel}；也可传入同基类（kernel `Model`）的自定义模型，
-   * 例如 DiscuzX 侧走 Discuz `\DB` 的 `Modules\DiscuzX\Model\System\FilesModel`。
+   * 例如 DiscuzX 侧走 Discuz `\DB` 的 `Modules\DiscuzX\Model\DiscuzXFilesModel`。
    *
    * @var \kernel\Foundation\Database\PDO\Model|null
    */
@@ -521,7 +521,6 @@ class FileStorage extends AbilityBaseObject
       throw new Error("未启用文件数据存储功能，无法调用 save 方法", 500, 500);
     }
 
-    $savePath = null;
     $fileKey = null;
     $verifiedFileName = $file['name'];
 
@@ -529,19 +528,18 @@ class FileStorage extends AbilityBaseObject
       $pathInfo = pathinfo($file['name']);
 
       $verifiedFileName = $file['name'];
-      $savePath = $fileKeyOrSavePath;
-      $fileKey = Path::join($savePath, self::generateFileKey($pathInfo['extension']));
+      $fileKey = Path::join($fileKeyOrSavePath, self::generateFileKey($pathInfo['extension']));
     } else {
       $fileKey = $verifiedFileName = $fileKeyOrSavePath;
     }
 
     if ($this->authEnabled) {
-      if ($verifyErrorCode = $this->verifyRequestSignature($verifiedFileName) !== TRUE) {
+      if ($verifyErrorCode = $this->verifyRequestSignature($verifiedFileName) !== true) {
         return $this->break(403, "saveFile:403001", "抱歉，您没有上传该文件的权限", $verifyErrorCode);
       }
     }
     if ($this->accessControlEnabled) {
-      if ($this->checkAccessControl($verifiedFileName, $accessControl, $ownerId, "write") === FALSE) {
+      if ($this->checkAccessControl($verifiedFileName, $accessControl, $ownerId, "write") === false) {
         return $this->break(403, "saveFile:403002", "抱歉，您没有上传该文件的权限");
       }
     }
@@ -549,10 +547,10 @@ class FileStorage extends AbilityBaseObject
     $fileInfo = $this->put($file, $fileKey);
     if ($this->error) return $this->forwardBreak();
 
-    $fileInfo->ref = $ref;
-    $fileInfo->type = $type;
+    $fileInfo->ref = $ref ?? null;
+    $fileInfo->type = $type ?? null;
     $fileInfo->owner_id = $ownerId;
-    $fileInfo->owner_id = $accessControl;
+    $fileInfo->access_control = $accessControl;
 
     if ($this->model->where("key", $fileKey)->exists()) {
       $this->model->where("key", $fileKey)->forceDelete();
@@ -565,7 +563,7 @@ class FileStorage extends AbilityBaseObject
     $this->model->path = !$fileInfo->path || $fileInfo->path === "." ? null : $fileInfo->path;
     $this->model->size = $fileInfo->size;
     $this->model->extension = $fileInfo->extension;
-    $this->model->owner_id = $ownerId;
+    $this->model->owner_id = $ownerId ?? null;
     $this->model->access_control = $accessControl;
     $this->model->ref = $fileInfo->ref;
     $this->model->type = $fileInfo->type;

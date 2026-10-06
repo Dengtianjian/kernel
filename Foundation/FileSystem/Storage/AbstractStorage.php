@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\FileSystem\Storage;
 
+use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -34,15 +35,26 @@ abstract class AbstractStorage extends AbilityBaseObject
    * @var string|null
    */
   protected $name = null;
+  /**
+   * 本磁盘内 fileKey 的基准路径
+   *
+   * 本地磁盘为目录（所有 fileKey 相对它解析）。
+   * 读写查（get / put / exists / url）都以它为基准，不只是「保存」用。
+   *
+   * @var string
+   */
+  protected $basePath = "";
 
   /**
    * 构造存储实例
    *
    * @param string $name 磁盘名称，默认 `local`
+   * @param string $basePath 本磁盘内 fileKey 的基准路径
    */
-  public function __construct($name = "local")
+  public function __construct($name = "local", $basePath = "")
   {
     $this->name = $name;
+    $this->basePath = $basePath;
   }
 
   /**
@@ -53,6 +65,15 @@ abstract class AbstractStorage extends AbilityBaseObject
   public function name()
   {
     return $this->name;
+  }
+  /**
+   * 获取本磁盘内 fileKey 的基准路径
+   *
+   * @return string
+   */
+  public function basePath()
+  {
+    return $this->basePath;
   }
 
   /**
