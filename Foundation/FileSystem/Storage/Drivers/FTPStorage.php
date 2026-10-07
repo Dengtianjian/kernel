@@ -27,7 +27,11 @@ use kernel\Foundation\FileSystem\Storage\StorageFile;
  * - `exists()` 基于 `ftp_size()`：部分服务器对目录/无权限路径也返回 -1，故它只适合判断**文件**；
  * - `get()` 返回的 `width` / `height` 固定为 `null`（无法在远端算图片尺寸），
  *   `filePath` 是**远端绝对路径**（不是本地路径，不能直接交给 `ResponseFile`）；
- * - 连接按需建立并在实例内复用，可调用 {@see close()} 主动断开（析构时也会断开）。
+ * - 连接按需建立并在实例内复用，可调用 {@see close()} 主动断开（析构时也会断开）；
+ * - **失败排障**：FTP 扩展没有错误 API，失败原因只在它抛的 PHP 警告里，而 `error_get_last()` 只能拿
+ *   「最后一条」（可能被 `TYPE is now 8-bit binary` 这类信息性提示占位）。故 `put()` 会收集本次调用的
+ *   **全部警告**并过滤出有用部分，同时附上**只读取证**（`PWD`/`MLST`/`SIZE` 的服务端回复）与
+ *   `mkdirFailed`（哪几级目录没建成）—— 见失败时的 `errorDetails`。
  *
  * @package kernel\Foundation\FileSystem\Storage\Drivers
  */
@@ -174,20 +178,27 @@ class FTPStorage extends AbstractStorage
   /**
    * 上传文件到 FTP 服务器
    *
-   * 目标目录不存在会自动逐级创建；上传成功后**删除本地源文件**（搬运语义）。
+   * 流程：把源文件搬到本地临时目录（{@see tempDirectory()}）→ 建远端目录 → 预检被动数据端口
+   * → 上传 → 失败时收集全部警告 + 只读取证后返回错误态；成功后删除本地临时文件。
    *
-   * @param array $file 源文件（上传数组）
+   * 源文件支持两种入参：`$_FILES` 单文件数组（取 `tmp_name`），或本地文件路径字符串。
+   *
+   * 失败时 `errorDetails` 含：`remote` / `local` / `localReadable` / `remoteSize` / `passive` / `timeout`
+   * / `reason`（过滤掉信息性提示后的警告原文，可能为 null）/ `warnings`（本次调用全部警告）
+   * / `remoteFacts`（`PWD`、目录与目标文件的 `MLST`、`SIZE` 的服务端回复）/ `mkdirFailed`（没建成的目录段，仅在发生时报出）。
+   *
+   * @param array|string $file 源文件（上传数组或本地路径）
    * @param string|null $saveFileName 保存后的文件名称（含相对路径）；为 null 时用源文件名
    * @return false|StorageFile 成功返回文件信息；失败返回 break 错误态
    */
   public function put($file, $saveFileName = null)
   {
-    $saveFileName = $saveFileName ?: $file['name'];
-    $pathInfo =  pathinfo($saveFileName);
+    $saveFileName = $saveFileName ?: (is_array($file) ? $file['name'] : basename((string) $file));
+    $pathInfo = pathinfo($saveFileName);
     $tempFileName = join("", [uniqid("temp_"), ".", $pathInfo['extension']]);
-    $tempFileInfo = FileSystem::upload($file, Path::join(Path::storage(), "ftp_temp"), $tempFileName);
+    $tempFileInfo = FileSystem::upload($file, $this->tempDirectory(), $tempFileName);
     if (!$tempFileInfo || !FileSystem::exists($tempFileInfo['filePath'])) {
-      return $this->break(500, 500, "上传文件失败", "临时文件存储失败");
+      return $this->break(500, "ftpTempSaveFailed", "上传文件失败", "临时文件存储失败");
     }
 
     $width = 0;
@@ -205,25 +216,37 @@ class FTPStorage extends AbstractStorage
     if (!$this->checkPassiveDataPort($connection)) return $this->forwardBreak();
 
     $remotePath = $this->remotePath($saveFileName);
-    $this->ensureDirectory(dirname($remotePath), $connection);
+    $mkdirFailed = [];
+    $this->ensureDirectory(dirname($remotePath), $connection, $mkdirFailed);
 
-    error_clear_last();
-    $uploaded = @ftp_put($connection, $remotePath, $tempFileInfo['filePath'], FTP_BINARY);
+    //* 收集本次调用的**全部**警告（只取最后一条会被 "TYPE is now 8-bit binary" 这类信息性提示占位）
+    $uploaded = $this->callWithWarnings(function () use ($connection, $remotePath, $tempFileInfo) {
+      return @ftp_put($connection, $remotePath, $tempFileInfo['filePath'], FTP_BINARY);
+    }, $warnings);
 
     if (!$uploaded) {
-      $lastError = error_get_last();
+      $reasons = self::filterFtpWarnings($warnings);
       @unlink($tempFileInfo['filePath']);
 
-      return $this->break(500, "ftpPutFailed", "FTP 上传失败", [
+      $details = [
         "remote" => $remotePath,
         "local" => $tempFileInfo['filePath'],
         "localReadable" => is_readable($tempFileInfo['filePath']),
         "remoteSize" => @ftp_size($connection, $remotePath),
         "passive" => $this->passive,
         "timeout" => $this->timeout,
-        // 扩展抛出的警告原文（最常见如 "ftp_put(): Connection timed out"）
-        "reason" => is_array($lastError) ? $lastError['message'] : null
-      ]);
+        //* 过滤掉信息性提示后的警告原文（真正能说明失败原因的），拿不到就是 null
+        "reason" => $reasons ? implode(" | ", $reasons) : null,
+        //* 本次调用期间的全部原始警告（含信息性提示，便于对照）
+        "warnings" => $warnings,
+        //* 只读取证：服务端自己的回复（目录是否存在/权限、目标文件是否有半截）
+        "remoteFacts" => $this->collectRemoteFacts($connection, $remotePath),
+      ];
+      if ($mkdirFailed) {
+        $details["mkdirFailed"] = $mkdirFailed;
+      }
+
+      return $this->break(500, "ftpPutFailed", "FTP 上传失败", $details);
     }
 
     @unlink($tempFileInfo['filePath']);
@@ -328,6 +351,19 @@ class FTPStorage extends AbstractStorage
   }
 
   /**
+   * 上传中转用的本地临时目录（子类可覆写）
+   *
+   * FTP 需要先把源文件落到本地才谈得上 `ftp_put()`，这个目录决定它落在哪。
+   * DiscuzX 侧覆写为 `DiscuzXPath::storage()/ftp_temp`（落在 data/plugindata 下）。
+   *
+   * @return string
+   */
+  protected function tempDirectory()
+  {
+    return Path::join(Path::storage(), "ftp_temp");
+  }
+
+  /**
    * 把文件键拼成远端绝对路径（固定用 `/` 分隔）
    *
    * @param string $fileName 文件名称（含相对路径）
@@ -342,16 +378,18 @@ class FTPStorage extends AbstractStorage
   }
 
   /**
-   * 逐级创建远端目录（已存在则忽略）
+   * 逐级创建远端目录（已存在则忽略，建不成的段会被记录）
    *
-   * FTP 没有「递归创建目录」，只能从根开始逐段 `ftp_mkdir()`；已存在的段会失败，
-   * 这里静默忽略（用 `@` 抑制「目录已存在」的警告），不视为错误。
+   * FTP 没有「递归创建目录」，只能从根开始逐段 `ftp_mkdir()`。注意**目录已存在时 `ftp_mkdir()`
+   * 同样返回 false**，所以不能只看返回值：失败时再用 `MLST` 复核一次，确认真的不存在才计入
+   * `$failed`（这能把"目录没建成"和"目录本来就在"区分开 —— 前者是上传失败最常见的原因之一）。
    *
    * @param string $remoteDirectory 远端目录绝对路径
    * @param mixed $connection FTP 连接句柄
+   * @param array $failed 建不成的目录段（引用传出，调用方放进错误详情）
    * @return boolean 始终返回 true（无法创建时会在后续 put 上报错）
    */
-  protected function ensureDirectory($remoteDirectory, $connection)
+  protected function ensureDirectory($remoteDirectory, $connection, &$failed = null)
   {
     $remoteDirectory = trim((string) $remoteDirectory, "/");
     if ($remoteDirectory === "") {
@@ -364,10 +402,112 @@ class FTPStorage extends AbstractStorage
         continue;
       }
       $path .= "/" . $segment;
-      @ftp_mkdir($connection, $path);
+      if (!@ftp_mkdir($connection, $path) && !self::mlstExists(@ftp_raw($connection, "MLST " . $path))) {
+        $failed[] = $path;
+      }
     }
 
     return true;
+  }
+
+  /**
+   * 执行一次 FTP 调用并收集它抛出的**全部** PHP 警告
+   *
+   * FTP 扩展没有错误 API，失败原因只在它抛的 `E_WARNING` 里；而 `error_get_last()` 只能拿到
+   * 「最后一条」—— 若前面有信息性提示（如 `TYPE is now 8-bit binary`）而真正失败那一步没报错，
+   * 就会把提示当成原因。故这里把调用期间的警告全部收集，再由 {@see filterFtpWarnings()} 过滤。
+   *
+   * 用局部错误处理器（`return true` = 已处理、不打印）；`finally` 保证恢复，不污染全局。
+   *
+   * @param callable $callback 要执行的 FTP 调用
+   * @param array $warnings 收集到的警告文本（引用传出）
+   * @return mixed 回调的返回值
+   */
+  protected function callWithWarnings($callback, &$warnings)
+  {
+    $warnings = [];
+    set_error_handler(function ($code, $message) use (&$warnings) {
+      $warnings[] = $message;
+      return true;
+    });
+    try {
+      return $callback();
+    } finally {
+      restore_error_handler();
+    }
+  }
+
+  /**
+   * 从收集到的警告里挑出「能说明失败原因」的
+   *
+   * 过滤掉扩展在正常流程里也会打印的信息性提示（如切换二进制模式的 `TYPE is now ...`），
+   * 否则它们会冒充失败原因。
+   *
+   * @param array $warnings 全部警告
+   * @return array 过滤后的警告（可能为空数组）
+   */
+  protected static function filterFtpWarnings($warnings)
+  {
+    $informational = ["TYPE is now", "Type set to", "Entering Passive Mode", "Entering Extended Passive Mode"];
+
+    return array_values(array_filter((array) $warnings, function ($message) use ($informational) {
+      foreach ($informational as $needle) {
+        if (stripos($message, $needle) !== false) {
+          return false;
+        }
+      }
+      return true;
+    }));
+  }
+
+  /**
+   * 上传失败后向服务端只读取证
+   *
+   * 走**控制通道**，不建立数据连接，也不改动会话状态（因此不用 `CWD`，避免改变服务端工作目录）：
+   * - `PWD`：当前工作目录；
+   * - `MLST <目录>`：目录是否存在、权限位（回复里带 `UNIX.mode`）；
+   * - `MLST <目标文件>`：目标路径上有没有东西；
+   * - `SIZE <目标文件>`：是否落了半截文件。
+   *
+   * 这些是**服务端自己的说法**，比 PHP 警告准 —— 尤其当失败那一步根本没抛警告时。
+   *
+   * @param mixed $connection FTP 连接
+   * @param string $remotePath 远端目标文件绝对路径
+   * @return array 取证结果
+   */
+  protected function collectRemoteFacts($connection, $remotePath)
+  {
+    $directory = dirname($remotePath);
+    $directoryFacts = @ftp_raw($connection, "MLST " . $directory);
+
+    return [
+      "pwd" => @ftp_raw($connection, "PWD"),
+      "directory" => $directory,
+      "directoryMLST" => $directoryFacts,
+      "directoryExists" => self::mlstExists($directoryFacts),
+      "fileMLST" => @ftp_raw($connection, "MLST " . $remotePath),
+      "fileSIZE" => @ftp_raw($connection, "SIZE " . $remotePath),
+    ];
+  }
+
+  /**
+   * 判断 `MLST` 的回复是否表示路径存在
+   *
+   * 路径存在时服务端会回一行**以空格开头**、含 `type=` 的事实行；
+   * 不存在则由服务端回 `550`（不满足上述特征）。
+   *
+   * @param array|string|null $reply `ftp_raw()` 的回复
+   * @return boolean
+   */
+  protected static function mlstExists($reply)
+  {
+    foreach ((array) $reply as $line) {
+      if (is_string($line) && strpos($line, "type=") !== false) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

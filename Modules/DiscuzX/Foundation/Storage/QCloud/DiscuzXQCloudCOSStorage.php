@@ -42,7 +42,7 @@ class DiscuzXQCloudCOSStorage extends QCloudCOSStorage
     $BaseURL = F_BASE_URL,
     $PluginId = null
   ) {
-    $PluginId ??= App::id();
+    $PluginId = $PluginId ?? App::id();
     $this->pluginId = $PluginId;
 
     parent::__construct($secretId, $secretKey, $region, $bucket, $SignatureKey, $RoutePrefix, $BaseURL);
