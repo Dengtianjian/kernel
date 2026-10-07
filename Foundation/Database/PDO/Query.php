@@ -795,6 +795,8 @@ class Query extends AbilityBaseObject
    */
   function addSelect(...$column)
   {
+    $this->executeType = $this->executeType ?: "select";
+
     array_push($this->options['select']['fields'], ...array_map(function ($fieldItem) {
       if ($fieldItem instanceof Statement) {
         return [
