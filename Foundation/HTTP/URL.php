@@ -86,6 +86,26 @@ class URL
     return $url;
   }
   /**
+   * 判断是否为「远程地址」而非本地文件路径
+   *
+   * 只认 RFC 3986 的协议前缀，而不是子串包含：
+   * - `http://` / `https://` / `ftp://` / `ftps://` / `sftp://` / `oss://` … → true（任意协议都算远程）
+   * - `//host/path`（协议相对地址）→ true
+   * - `/data/http/a.png`（本地路径里恰好含 "http"）、`C:/data/a.png`（Windows 盘符）→ false
+   *
+   * @param string|null $url 待判断的地址
+   * @return boolean 远程地址返回 true；本地路径、空值返回 false
+   */
+  static function isRemoteURL($url)
+  {
+    if (!is_string($url) || $url === "") {
+      return false;
+    }
+
+    return (bool) preg_match('#^(?:[a-z][a-z0-9+.\-]*:)?//#i', $url);
+  }
+
+  /**
    * 解析 URL 为结构化数组
    *
    * 使用 PHP 内置 `parse_url()` 拆解 URL，并对缺失的组成部分统一返回 `null`。
