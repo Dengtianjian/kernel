@@ -5,6 +5,7 @@ namespace kernel\Foundation\FileSystem\Storage;
 use kernel\Facades\Storage as FacadesStorage;
 use kernel\Controller\Main\Files as FilesNamespace;
 use kernel\Foundation\App;
+use kernel\Foundation\Config;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage;
@@ -539,6 +540,9 @@ class FileStorage extends AbilityBaseObject
 
     $fileInfo = $this->useDisk->put($file, $key);
     if (!$fileInfo || $this->useDisk->error) {
+      if (Config::isDevelopment()) {
+        return $this->break($this->useDisk->return());
+      }
       return $this->break(500, "putFileFailed:500", "文件上传失败", $this->useDisk->errorDetails);
     }
 
