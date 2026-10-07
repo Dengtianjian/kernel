@@ -5,7 +5,7 @@ namespace kernel\Modules\Aliyun\AliyunOSS;
 use AlibabaCloud\Dara\Models\RuntimeOptions;
 use kernel\Foundation\FileSystem\FileSystem;
 
-use kernel\Foundation\FileSystem\Storage\Drivers\AbstractOSSStorage;
+use kernel\Foundation\FileSystem\Storage\Drivers\AbstractObjectStorage;
 use OSS\OssClient;
 use AlibabaCloud\Oss\V2 as Oss;
 use AlibabaCloud\Oss\V2\Credentials\Credentials;
@@ -20,14 +20,14 @@ use Darabonba\OpenApi\Models\Config;
 /**
  * 阿里云 OSS 存储磁盘
  *
- * 继承抽象的 OSS 存储骨架（AbstractOSSStorage），实现阿里云对象存储 OSS 的
+ * 继承抽象的对象存储骨架（AbstractObjectStorage），实现阿里云对象存储 OSS 的
  * 上传 / 读取 / 删除 / 存在性判断 / 访问 URL 等能力。内部同时使用 OSS V2 SDK
  * （{@see Oss\Client}，主操作）与 V1 SDK（{@see OssClient}，兼容接口），
  * 并借助 STS（{@see Sts}）申请临时访问凭证（{@see getSTSToken()}）。
  *
  * @package kernel\Modules\Aliyun\AliyunOSS
  */
-class AliyunOSSStorage extends AbstractOSSStorage
+class AliyunOSSStorage extends AbstractObjectStorage
 {
   /**
    * 获取的角色ARN

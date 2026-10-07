@@ -7,14 +7,15 @@ use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Foundation\FileSystem\Storage\Drivers\AbstractOSSStorage;
+use kernel\Foundation\FileSystem\Storage\Drivers\AbstractObjectStorage;
+use kernel\Foundation\FileSystem\Storage\StorageFile;
 use kernel\Modules\QCloud\QCloudSTS;
 use Qcloud\Cos\Client as QCloudCOSClient;
 
 /**
  * 腾讯云 COS 存储磁盘
  *
- * 继承抽象的 OSS 存储骨架（AbstractOSSStorage），实现腾讯云对象存储 COS 的
+ * 继承抽象的对象存储骨架（AbstractObjectStorage），实现腾讯云对象存储 COS 的
  * 上传 / 读取 / 删除 / 存在性判断 / 访问 URL 等能力。内部使用官方 SDK
  * {@see QCloudCOSClient} 操作对象，使用 {@see QCloudSTS} 申请临时凭证（UploadManager 等前端直传场景）。
  *
@@ -23,7 +24,7 @@ use Qcloud\Cos\Client as QCloudCOSClient;
  *
  * @package kernel\Modules\QCloud\QCloudCos
  */
-class QCloudCOSStorage extends AbstractOSSStorage
+class QCloudCOSStorage extends AbstractObjectStorage
 {
   /**
    * @var QCloudSTS|null STS 客户端（用于申请临时上传凭证）
@@ -68,7 +69,7 @@ class QCloudCOSStorage extends AbstractOSSStorage
    * 读取元信息，并补充 `disk = "cos"` 字段。
    *
    * @param string $fileName 文件名称（相对 storage 根目录的路径）
-   * @return false|array{name:string,disk:string,sourceFileName:string,path:string,extension:string,size:int,width:int|null,height:int|null,filePath:string} 文件信息数组，文件不存在时返回 false
+   * @return false|StorageFile 文件信息对象，文件不存在时返回 false
    */
   function get($fileName)
   {
@@ -99,7 +100,7 @@ class QCloudCOSStorage extends AbstractOSSStorage
       "filePath" => $fileName
     ];
 
-    return $file;
+    return new StorageFile($file);
   }
   /**
    * 上传文件到 COS
@@ -110,7 +111,7 @@ class QCloudCOSStorage extends AbstractOSSStorage
    *
    * @param array $file 上传文件数组（同 PHP $_FILES 单文件结构）
    * @param string|null $saveFileName 目标文件键；为 null 时使用 $file['name']
-   * @return array|false 成功返回文件信息数组（含 width/height），失败返回 break 错误态
+   * @return StorageFile|false 成功返回文件信息对象（含 width/height），失败返回 break 错误态
    */
   function put($file, $saveFileName = null)
   {
@@ -142,8 +143,8 @@ class QCloudCOSStorage extends AbstractOSSStorage
 
       $fileInfo = $this->get($saveFileName);
       if (!$fileInfo) return $this->break(500, 500, "获取上传的文件信息失败");
-      $fileInfo['width'] = $width;
-      $fileInfo['height'] = $height;
+      $fileInfo->width = $width;
+      $fileInfo->height = $height;
 
       return $fileInfo;
     } catch (\Exception $e) {

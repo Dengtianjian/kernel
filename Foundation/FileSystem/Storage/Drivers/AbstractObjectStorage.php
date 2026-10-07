@@ -3,7 +3,7 @@
 namespace kernel\Foundation\FileSystem\Storage\Drivers;
 
 /**
- * 对象存储（OSS 类）磁盘抽象基类
+ * 对象存储磁盘抽象基类
  *
  * 为所有对象存储型磁盘（腾讯云 COS、阿里云 OSS 等）提供统一骨架：
  * - 公共属性：客户端实例、桶名、地域、密钥；
@@ -14,10 +14,10 @@ namespace kernel\Foundation\FileSystem\Storage\Drivers;
  *
  * @package kernel\Foundation\FileSystem\Storage\Drivers
  */
-abstract class AbstractOSSStorage extends AbstractStorage
+abstract class AbstractObjectStorage extends AbstractStorage
 {
   /**
-   * @var mixed|null 存储服务客户端实例（由子类 boot() 初始化，如 OSS/V2 SDK 客户端）
+   * @var mixed|null 存储服务客户端实例（由子类 boot() 初始化，如 COS / OSS SDK 客户端）
    */
   protected $client = null;
   /**

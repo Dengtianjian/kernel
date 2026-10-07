@@ -66,7 +66,7 @@ class AbilityBaseObject extends BaseObject
    * 将实例置为错误态，并写入错误字段。仅供类内部调用（通常由 break()/forwardBreak() 触发），
    * 一般不建议在子类中直接调用——需要"记录错误并中断"时请使用 break()。
    *
-   * @param integer $statusCode HTTP状态码
+   * @param integer|mixed $statusCode HTTP状态码
    * @param integer|string $code 响应码
    * @param string $message 响应信息
    * @param mixed $details 错误详情
