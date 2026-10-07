@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation\FileSystem\Storage;
+namespace kernel\Foundation\FileSystem\Storage\Drivers;
 
 /**
  * 对象存储（OSS 类）磁盘抽象基类
@@ -12,9 +12,9 @@ namespace kernel\Foundation\FileSystem\Storage;
  *
  * 具体的上传/读取/删除/URL/鉴权等能力由各子类（QCloudCOSStorage、AliyunOSSStorage …）实现。
  *
- * @package kernel\Foundation\FileSystem\Storage
+ * @package kernel\Foundation\FileSystem\Storage\Drivers
  */
-abstract class AbstractOSSStroage extends AbstractStorage
+abstract class AbstractOSSStorage extends AbstractStorage
 {
   /**
    * @var mixed|null 存储服务客户端实例（由子类 boot() 初始化，如 OSS/V2 SDK 客户端）

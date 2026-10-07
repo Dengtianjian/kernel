@@ -1,9 +1,10 @@
 <?php
 
-namespace kernel\Foundation\FileSystem\Storage;
+namespace kernel\Foundation\FileSystem\Storage\Drivers;
 
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\FileSystem\Storage\StorageFile;
 
 /**
  * 本地磁盘存储

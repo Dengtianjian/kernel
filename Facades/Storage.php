@@ -4,7 +4,7 @@ namespace kernel\Facades;
 
 use kernel\Foundation\Facade;
 use kernel\Foundation\FileSystem\Storage\FileStorage as FileStorageAggregate;
-use kernel\Foundation\FileSystem\Storage\LocalStorage;
+use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
 
 /**
  * 文件存储门面
@@ -29,7 +29,7 @@ use kernel\Foundation\FileSystem\Storage\LocalStorage;
  * ```php
  * use kernel\Facades\Storage;
  * use kernel\Foundation\FileSystem\Storage\FileStorage as FileStorageAggregate;
- * use kernel\Foundation\FileSystem\Storage\LocalStorage;
+ * use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
  *
  * Storage::setInstance(
  *   (new FileStorageAggregate([
@@ -46,9 +46,9 @@ use kernel\Foundation\FileSystem\Storage\LocalStorage;
  * （此处别名为 FileStorageAggregate）。聚合类构造时会自动 `Storage::setInstance($this)`，
  * 因此装配阶段 `new FileStorage([...])` 即可让本门面就绪，无需手动注入。
  *
- * @method static array<string,\kernel\Foundation\FileSystem\Storage\AbstractStorage> disks() 获取全部磁盘（磁盘名 => 磁盘实例）
- * @method static \kernel\Foundation\FileSystem\Storage\AbstractStorage|null disk(string|null $name = null) 获取指定磁盘或当前使用磁盘
- * @method static \kernel\Foundation\FileSystem\Storage\AbstractStorage use(string|null $name = null) 切换当前使用磁盘
+ * @method static array<string,\kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage> disks() 获取全部磁盘（磁盘名 => 磁盘实例）
+ * @method static \kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage|null disk(string|null $name = null) 获取指定磁盘或当前使用磁盘
+ * @method static \kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage use(string|null $name = null) 切换当前使用磁盘
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage enableDataSave(\kernel\Model\FilesModel|null $model = null) 启用文件元信息落库（save/add/delete/exists 依赖）
  * @method static boolean dataSave() 读取文件数据存储是否启用
  * @method static \kernel\Foundation\FileSystem\Storage\FileStorage|\kernel\Model\FilesModel|null model(\kernel\Model\FilesModel|null $model = null) 读取/设置文件数据模型

@@ -7,14 +7,14 @@ use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Foundation\FileSystem\Storage\AbstractOSSStroage;
+use kernel\Foundation\FileSystem\Storage\Drivers\AbstractOSSStorage;
 use kernel\Modules\QCloud\QCloudSTS;
 use Qcloud\Cos\Client as QCloudCOSClient;
 
 /**
  * 腾讯云 COS 存储磁盘
  *
- * 继承抽象的 OSS 存储骨架（AbstractOSSStroage），实现腾讯云对象存储 COS 的
+ * 继承抽象的 OSS 存储骨架（AbstractOSSStorage），实现腾讯云对象存储 COS 的
  * 上传 / 读取 / 删除 / 存在性判断 / 访问 URL 等能力。内部使用官方 SDK
  * {@see QCloudCOSClient} 操作对象，使用 {@see QCloudSTS} 申请临时凭证（UploadManager 等前端直传场景）。
  *
@@ -23,7 +23,7 @@ use Qcloud\Cos\Client as QCloudCOSClient;
  *
  * @package kernel\Modules\QCloud\QCloudCos
  */
-class QCloudCOSStorage extends AbstractOSSStroage
+class QCloudCOSStorage extends AbstractOSSStorage
 {
   /**
    * @var QCloudSTS|null STS 客户端（用于申请临时上传凭证）

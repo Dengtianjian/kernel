@@ -1,8 +1,9 @@
 <?php
 
-namespace kernel\Foundation\FileSystem\Storage;
+namespace kernel\Foundation\FileSystem\Storage\Drivers;
 
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\FileSystem\Storage\StorageFile;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -24,6 +25,11 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * 继承 {@see AbilityBaseObject}，因此具备 `setError()` / `return()` / `break()`
  * 等错误与中断处理能力（如 put 失败可通过 `break()` 返回错误态）。
+ *
+ * 注：ACL 标签常量（{@see \kernel\Foundation\FileSystem\Storage\FileStorage::PRIVATE} 等）
+ * 定义在聚合门面 {@see \kernel\Foundation\FileSystem\Storage\FileStorage} 上，不在本基类。
+ *
+ * @package kernel\Foundation\FileSystem\Storage\Drivers
  */
 abstract class AbstractStorage extends AbilityBaseObject
 {
