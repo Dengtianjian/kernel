@@ -150,15 +150,6 @@ class DiscuzXModel extends Model
   protected $dryRun = false;
 
   /**
-   * 建表 SQL（由 createTable() 通过 Discuz 的 runquery 执行）
-   *
-   * 由子类以 heredoc 形式提供，通常包含 `DROP TABLE IF EXISTS` 与 `CREATE TABLE ...`。
-   *
-   * @var string
-   */
-  protected $tableStructureSQL = "";
-
-  /**
    * 构造模型
    *
    * 不调用 `parent::__construct()`：kernel 的父类构造会套用 kernel 的表前缀配置、
@@ -229,25 +220,6 @@ class DiscuzXModel extends Model
       $query->dryRun(true);
     }
     return $query;
-  }
-
-  /**
-   * 依据建表 SQL 创建数据表
-   *
-   * DiscuzX 环境用 Discuz 自带的 `runquery()` 执行（支持多语句 DDL）。
-   * 未定义 `$tableStructureSQL` 时直接返回 true（视为无需建表）。
-   *
-   * @return bool|mixed true 表示无需建表或建表成功；其余为 runquery 的返回值
-   */
-  function createTable()
-  {
-    if (empty($this->tableStructureSQL)) {
-      return true;
-    }
-    if (!function_exists("runquery")) {
-      include_once libfile("function/plugin");
-    }
-    return runquery($this->tableStructureSQL);
   }
 
   /**
