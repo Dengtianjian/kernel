@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Request;
 
@@ -19,6 +20,7 @@ class ResponseFile extends ResponseDownload
   private $cacheControl = "no-cache";
   /**
    * HTTP 资源过期时间，秒级时间戳
+   * @var string
    */
   private $httpExpires = null;
   /**
@@ -69,12 +71,12 @@ class ResponseFile extends ResponseDownload
     }
 
     if ($sourceImage === false) {
-      throw new \kernel\Foundation\Exception\Error("无法读取图片源文件 - " . $filePath, 500);
+      throw new Error("无法读取图片源文件 - " . $filePath, 500);
     }
 
     $imageInfo = getimagesize($filePath);
     if ($imageInfo === false) {
-      throw new \kernel\Foundation\Exception\Error("无法获取图片尺寸 - " . $filePath, 500);
+      throw new Error("无法获取图片尺寸 - " . $filePath, 500);
     }
     $sourceWidth = $imageInfo[0];
     $sourceHeight = $imageInfo[1];
@@ -188,7 +190,7 @@ class ResponseFile extends ResponseDownload
         header_remove("Content-Length");
         $imageInfo = getimagesize($this->filePath);
         if ($imageInfo === false) {
-          throw new \kernel\Foundation\Exception\Error("无法获取图片尺寸 - " . $this->filePath, 500);
+          throw new Error("无法获取图片尺寸 - " . $this->filePath, 500);
         }
         $sourceWidth = $imageInfo[0];
         $sourceHeight = $imageInfo[1];
