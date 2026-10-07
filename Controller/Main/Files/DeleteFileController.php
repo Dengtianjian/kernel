@@ -7,7 +7,7 @@ use kernel\Foundation\Controller\Controller;
 
 class DeleteFileController extends Controller
 {
-  public function data($fileKey)
+  public function data(string $fileKey)
   {
     if (!Storage::authorizeOperation($fileKey, "write")) return Storage::return();
     if (!Storage::exists($fileKey)) return true;
