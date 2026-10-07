@@ -7,6 +7,7 @@ use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseDownload;
 use kernel\Foundation\HTTP\Response\ResponseFile;
 use kernel\Foundation\HTTP\Response\ResponsePagination;
+use kernel\Foundation\HTTP\Response\ResponseProxy;
 use kernel\Foundation\HTTP\Response\ResponseRedirect;
 use kernel\Foundation\HTTP\Response\ResponseView;
 
@@ -18,7 +19,7 @@ use kernel\Foundation\HTTP\Response\ResponseView;
  * 控制器可通过 `success()`/`fail()` 复用该实例，也可在 `data()` 中调用以下工厂方法
  * 生成「独立响应对象」（如文件下载、分页、视图），由其作为最终结果输出。
  *
- * 所有工厂方法均自动注入当前请求（`getApp()->request()`）作为响应上下文，
+ * 除 `proxy()` 外，其余工厂方法均自动注入当前请求（`getApp()->request()`）作为响应上下文，
  * 因此无需手动传入 Request 即可直接使用。
  */
 class ControllerResponse extends Response
@@ -89,5 +90,20 @@ class ControllerResponse extends Response
   function redirect($to = null, $statusCode = 302)
   {
     return new ResponseRedirect($to, $statusCode);
+  }
+  /**
+   * 远程资源代理响应
+   *
+   * 由服务端取回远程资源并**流式转发**给客户端，用于浏览器自己取不了的协议（如 `ftp://`）。
+   * 只应传入存储磁盘产出的 URL；可代理的协议、超时与体积上限见 {@see ResponseProxy}。
+   *
+   * @param string $url 远程资源地址（**必须来自存储磁盘**）
+   * @param string|null $downloadFileName 输出文件名
+   * @param string $cacheControl HTTP 缓存控制值
+   * @return ResponseProxy
+   */
+  function proxy($url, $downloadFileName = null, $cacheControl = "no-cache")
+  {
+    return new ResponseProxy($url, $downloadFileName, $cacheControl);
   }
 }

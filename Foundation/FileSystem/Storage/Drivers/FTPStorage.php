@@ -306,7 +306,7 @@ class FTPStorage extends AbstractStorage
    */
   public function url($fileName)
   {
-    return $this->buildURL($fileName, false);
+    return $this->buildURL($fileName, true);
   }
 
   /**
