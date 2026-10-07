@@ -3,6 +3,7 @@
 namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Module\Module;
 
 /**
@@ -13,7 +14,7 @@ use kernel\Foundation\Module\Module;
  * 解析出的状态（token / user / logged 等）由中间件写入本模块实例，业务层可经门面 Auth 读取。
  *
  * @property-read string $name 模块标识
- * @property LoginsModel $loginsModel 登录凭证模型（延迟初始化）
+ * @property Model $loginsModel 登录凭证模型（延迟初始化）
  * @property string|null $token 当前请求的 token 值（中间件写入）
  * @property int|null $tokenExpiresAt token 的绝对过期时间戳（中间件写入）
  * @property mixed $user 当前登录用户数据（中间件写入，未登录为 null）
@@ -25,7 +26,7 @@ class AuthModule extends Module
   /** @var string 模块标识，用于注册与查找 */
   protected $name = "auth";
 
-  /** @var LoginsModel|null 登录凭证模型，首次访问时延迟初始化 */
+  /** @var string|null 登录凭证模型，首次访问时延迟初始化 */
   protected $loginsModel = null;
 
   /** @var string|null 当前请求的 token 值（由中间件写入） */

@@ -16,6 +16,9 @@ use kernel\Foundation\Config;
  *   - allowMethods/allowHeaders/exposeHeaders 同样支持 "*"、逗号分隔字符串、数组三种形态（"*" 即通配），
  *     配置为字符串时原样输出，不再要求必须是数组。
  *   - 命中白名单时精确回显请求 origin（便于配合 credentials）；未命中不输出 Allow-Origin 头。
+ *   - 同源判断：{@see originOf()} 取规范化 origin（丢 path/query、默认端口归一、host 小写），
+ *     {@see isSameOrigin()} 按 scheme+host+port 全等比较，{@see currentOrigin()} 推导本站 origin；
+ *     供「该请求是否本站发起」这类判定（如免 token 的同源 ajax）复用，与 CORS 白名单逻辑相互独立。
  *
  * 配置键（cors.*，未配置时用 DEFAULTS）：
  *   - allowOrigin   允许来源，默认 "*"
@@ -88,6 +91,119 @@ class Cors
     $port = isset($parts['port']) ? ":" . $parts['port'] : "";
     $path = $parts['path'] ?? "";
     return $scheme . $host . $port . $path;
+  }
+
+  /**
+   * 从 URL / origin 中取出「scheme://host[:port]」（同源比较用）
+   *
+   * 与 {@see normalizeOrigin()} 的区别：本方法**丢掉** path / query / fragment，并把默认端口归一化
+   * （`http://a.com:80` ≡ `http://a.com`、`https://a.com:443` ≡ `https://a.com`），host 转小写。
+   * 协议相对地址（`//a.com/x`）按当前请求的协议补全。
+   * 缺 scheme 或 host（相对地址、畸形地址）一律返回 null。
+   *
+   * @param string|null $url URL 或 origin
+   * @return string|null 归一化后的 origin，取不到返回 null
+   */
+  public static function originOf($url)
+  {
+    if (!is_string($url) || trim($url) === "") {
+      return null;
+    }
+    $url = trim($url);
+
+    //* 协议相对（//host/path）：按当前请求协议补全
+    if (strpos($url, "//") === 0) {
+      $current = self::originOf(URL::baseURL());
+      $url = ($current === null ? "http" : explode("://", $current)[0]) . ":" . $url;
+    }
+
+    $parts = parse_url($url);
+    if ($parts === false || !isset($parts['scheme']) || !isset($parts['host'])) {
+      return null;
+    }
+
+    $scheme = strtolower($parts['scheme']);
+    $host = strtolower($parts['host']);
+    $port = isset($parts['port']) ? (int) $parts['port'] : null;
+
+    //* 默认端口归一化：显式写出的 80/443 与省略写法等价
+    if (($scheme === "http" && $port === 80) || ($scheme === "https" && $port === 443)) {
+      $port = null;
+    }
+
+    return $scheme . "://" . $host . ($port === null ? "" : ":" . $port);
+  }
+
+  /**
+   * 取当前请求的来源（Origin 头，缺失时退化为 Referer）
+   *
+   * @return string|null 请求头原文；两者都没有时返回 null
+   */
+  public static function requestOrigin()
+  {
+    if (!empty($_SERVER['HTTP_ORIGIN']) && is_string($_SERVER['HTTP_ORIGIN'])) {
+      return $_SERVER['HTTP_ORIGIN'];
+    }
+    if (!empty($_SERVER['HTTP_REFERER']) && is_string($_SERVER['HTTP_REFERER'])) {
+      return $_SERVER['HTTP_REFERER'];
+    }
+    return null;
+  }
+
+  /**
+   * 当前站点的 origin（`scheme://host[:port]`）
+   *
+   * 优先用 {@see URL::baseURL()}（读 REQUEST_SCHEME + HTTPS + HTTP_HOST）；
+   * 该函数的 REQUEST_SCHEME 在某些 SAPI 下缺失，此时退化为按 `$_SERVER['HTTPS']` 判协议 + `HTTP_HOST`。
+   * 非 Web 上下文（HTTP_HOST 缺失，如 CLI）返回 null。
+   *
+   * @return string|null
+   */
+  public static function currentOrigin()
+  {
+    $baseURL = URL::baseURL();
+
+    if ($baseURL === "") {
+      $host = $_SERVER['HTTP_HOST'] ?? null;
+      if (!is_string($host) || $host === "") {
+        return null;
+      }
+      $https = $_SERVER['HTTPS'] ?? null;
+      $scheme = ($https && strtolower($https) !== "off") ? "https" : "http";
+      $baseURL = $scheme . "://" . $host;
+    }
+
+    return self::originOf($baseURL);
+  }
+
+  /**
+   * 判断给定来源与本站是否同源
+   *
+   * 同源 = scheme + host + port 三者全等（默认端口已归一化，host 大小写不敏感），
+   * 即浏览器同源策略的判定方式。
+   *
+   * 注意（保守策略）：来源缺失、相对地址、畸形地址、或取不到本站 origin 时一律返回 **false**。
+   * 若调用方希望「无 Origin/Referer 头视为非跨域」（如 {@see \kernel\Middleware\GlobalCorsMiddleware} 的约定），
+   * 请自行先用 {@see requestOrigin()} 判断头是否存在，再调用本方法。
+   *
+   * @param string|null $url 要判断的来源或 URL；不传/为空时取当前请求头 Origin（缺失时退化为 Referer）
+   * @param string|null $currentOrigin 本站 origin；不传时按当前请求推导（见 {@see currentOrigin()}）
+   * @return bool 同源返回 true，其余情况 false
+   */
+  public static function isSameOrigin($url = null, $currentOrigin = null)
+  {
+    if ($url === null || $url === "") {
+      $url = self::requestOrigin();
+    }
+
+    $target = self::originOf($url);
+    if ($target === null) {
+      return false;
+    }
+
+    $current = self::originOf($currentOrigin === null ? self::currentOrigin() : $currentOrigin);
+
+    return $current !== null && $target === $current;
   }
 
   /**

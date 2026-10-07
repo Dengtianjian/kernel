@@ -31,7 +31,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     // 仅从 Authorization 头取 token，避免 token 进入 URL/Body 被日志记录或泄露
 
     if ($strongCheck && (empty($token) || is_null($token))) {
-      return $RR->error(401, "Auth:401001", "请登录后重试", [
+      return $RR->error(401, "Auth:401001", "请先登录后再操作", [
         "strongCheck" => $strongCheck,
         "msg" => "未登录，缺少Token（verify）"
       ]);
@@ -44,7 +44,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     $authData = Auth::model()->where("token", $token)->where("app_id", App::id())->orWhere("app_id", null)->first();
     if (empty($authData)) {
       if ($strongCheck) {
-        return $RR->error(401, "Auth:401003", "请登录后重试", "无效的Token");
+        return $RR->error(401, "Auth:401003", "登录信息无效，请重新登录", "无效的Token");
       }
       return $RR;
     }
@@ -52,7 +52,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     $expiresAt = $authData['expires_at'];
     // 仅用绝对过期时间判定是否过期，不依赖 created_at
     if (time() > $expiresAt) {
-      return $RR->error(401, "Auth:401004", "登录已失效，请重新登录", "Token已过期");
+      return $RR->error(401, "Auth:401004", "登录已过期，请重新登录", "Token已过期");
     }
     $expirationDay = (int)($authData['expire_days'] ?? 0);
     $diffDay = round((time() - $authData['created_at']) / 86400);
