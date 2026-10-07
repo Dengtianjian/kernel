@@ -48,6 +48,8 @@ class GetFileAuthController extends AuthController
 
     "expires" => "int",
     "fileKey" => "string",
+    "headers",
+    "urlParams",
 
     //* 上传参数
     "name" => "string",
@@ -110,7 +112,7 @@ class GetFileAuthController extends AuthController
   {
     if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取修改文件授权");
 
-    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, [], [], "patch");
+    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", []), "patch");
   }
   /**
    * 签发「读取」授权（无需登录）
@@ -122,7 +124,7 @@ class GetFileAuthController extends AuthController
    */
   protected function get(string $fileKey)
   {
-    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, [], [], "get");
+    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", []), "get");
   }
   /**
    * 签发「上传」授权，并登记文件元信息（需登录）
@@ -190,7 +192,7 @@ class GetFileAuthController extends AuthController
     mkdir($savePath, 0755, true);
     chmod($savePath, 0755);
 
-    $auth = Storage::createAuthParams($fileKey, $expires, [], [], "post");
+    $auth = Storage::createAuthParams($fileKey, $expires, $this->body("urlParams", []),  $this->body("headers", []), "post");
 
     return $this->success([
       "key" => $this->fileKey,
@@ -211,6 +213,6 @@ class GetFileAuthController extends AuthController
   {
     if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取删除文件授权");
 
-    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, [], [], "delete");
+    return Storage::createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", []), "delete");
   }
 }
