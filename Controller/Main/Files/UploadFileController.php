@@ -14,6 +14,11 @@ class UploadFileController extends Controller
     if (!$files) {
       return $this->fail(400, "UploadFile:400001", "请上传文件", $_FILES);
     }
+
+    if (!Storage::authorizeOperation($fileKey, "write", "upload")) {
+      return Storage::return();
+    }
+
     $uploadFile = Arr::first($files);
 
     $file = Storage::put($uploadFile, $fileKey);

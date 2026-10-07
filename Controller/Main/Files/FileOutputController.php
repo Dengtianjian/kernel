@@ -60,7 +60,7 @@ class FileOutputController extends Controller
    */
   protected function output($fileKey = null)
   {
-    if (!Storage::authorizeOperation($fileKey, "read")) return Storage::return();
+    if (!Storage::authorizeOperation($fileKey, "read", ["preview", "download"])) return Storage::return();
 
     if (Storage::dataSave()) {
       $file = Storage::model()->where("key", $fileKey)->first();

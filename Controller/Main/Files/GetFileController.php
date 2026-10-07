@@ -21,9 +21,9 @@ class GetFileController extends Controller
     // "disk" => "string",
     "mime_type" => "string"
   ];
-  public function data($fileKey)
+  public function data(string $fileKey)
   {
-    if (!Storage::authorizeOperation($fileKey)) return Storage::return();
+    if (!Storage::authorizeOperation($fileKey, "read", "info")) return Storage::return();
 
     if (Storage::dataSave()) {
       $file = Storage::model()->where("key", $fileKey)->first();

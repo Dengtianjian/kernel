@@ -39,7 +39,7 @@ class UpdateFileController extends Controller
 
   public function data(string $fileKey)
   {
-    if (!Storage::authorizeOperation($fileKey, "write")) return Storage::return();
+    if (!Storage::authorizeOperation($fileKey, "write", "update")) return Storage::return();
     if (!Storage::dataSave()) return $this->fail(400, 400, "修改文件信息功能已关闭");
 
     if (!Storage::exists($fileKey)) return $this->fail(404, 404, "文件不存在");

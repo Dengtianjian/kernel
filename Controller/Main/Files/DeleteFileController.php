@@ -9,7 +9,7 @@ class DeleteFileController extends Controller
 {
   public function data(string $fileKey)
   {
-    if (!Storage::authorizeOperation($fileKey, "write")) return Storage::return();
+    if (!Storage::authorizeOperation($fileKey, "write", "delete")) return Storage::return();
     if (!Storage::exists($fileKey)) return true;
 
     return Storage::delete($fileKey);

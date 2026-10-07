@@ -10,11 +10,18 @@ use kernel\Foundation\Object\BaseObject;
  * 为私有文件 URL 提供「时效 + 防篡改」的授权能力，整体流程对齐 COS 的签名方案：
  * - 以密钥对 `KeyTime`（起始;结束）做 HMAC 得到 SignKey；
  * - 将 URL 参数 / 请求头按键名排序、编码后各自拼成字符串（url-param-list / header-list）；
- * - 以 `HTTP方法\n文件路径\n参数串\n头串` 做 SHA1 得到 HttpString，再组装 StringToSign 做最终 HMAC 得到 Signature。
+ * - 以 `HTTP方法\n文件路径\n参数串\n头串[\naction]` 做 SHA1 得到 HttpString，再组装 StringToSign 做最终 HMAC 得到 Signature。
  *
  * 对外暴露两个入口：
- * - {@see createAuthorization()}：签发方调用，生成授权参数字典（sign-algorithm / sign-time / key-time / header-list / signature / url-param-list），由 FileStorage 拼到 URL 上；
+ * - {@see createAuthorization()}：签发方调用，生成授权参数字典（sign-algorithm / sign-time / key-time / header-list / signature / url-param-list，**带 action 时额外多一个同级参数 action**），由 FileStorage 拼到 URL 上；
  * - {@see verifyAuthorization()}：验签方调用，用相同算法重算签名并比对。
+ *
+ * 关于 `action`（动作限定）：
+ * - 它是一个与 `sign-algorithm` **同级**的授权参数，用于把签名限定到具体动作（如 preview / download / info），
+ *   避免"同一文件、同一 HTTP 方法"的签名被拿到别的端点复用；
+ * - **只有签发与验签双方都带 action 时它才参与签名计算** —— 不带 action 时载荷与旧版逐字节一致，
+ *   历史签名继续有效；带上 action 的签名则会多一行，因此有/无 action 的签名互不通用；
+ * - 验签侧 {@see matchAction()} 支持传**字符串**（精确匹配，忽略大小写）或**数组**（允许集合，命中其一即可）。
  *
  * 注意：本类为通用 HMAC-SHA1 签名实现，本身不绑定具体云厂商；子类（如 QCloudCosSignture）可在其基础上补充 host / token 等字段。
  *
@@ -79,6 +86,42 @@ class StorageSignature extends BaseObject
   static function getSignAlgorithm()
   {
     return self::$signAlgorithm;
+  }
+
+  /**
+   * 判断「请求携带的 action」是否被允许
+   *
+   * 供验签方声明"本次请求允许哪些动作"，`$expected` 支持两种形态：
+   * - **字符串**：与请求里的 action 完全一致（**忽略大小写**，与入签时的处理保持一致）才通过；
+   * - **数组**（非关联数组）：请求里的 action 命中其一即通过；
+   * - `null` / `""` / 空数组：**不做限制**（用于兼容不带 action 的历史签名）。
+   *
+   * 注意：本方法只管"允许不允许"，action 是否**参与签名计算**由调用方把它传给
+   * {@see verifyAuthorization()} 决定（否则限定动作形同虚设）。
+   *
+   * @param string|array|null $expected 允许的 action（字符串或数组）
+   * @param string|null $actual 请求携带的 action
+   * @return boolean
+   */
+  static function matchAction($expected, $actual)
+  {
+    if ($expected === null || $expected === "" || $expected === []) {
+      return true;
+    }
+
+    $actual = $actual === null ? "" : strtolower((string) $actual);
+
+    if (is_array($expected)) {
+      foreach ($expected as $item) {
+        if (strtolower((string) $item) === $actual) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    return strtolower((string) $expected) === $actual;
   }
 
   /**
@@ -182,11 +225,14 @@ class StorageSignature extends BaseObject
   /**
    * 生成签名（核心算法）
    *
-   * 依据密钥、有效期、URL 参数、请求头、HTTP 方法计算最终 HMAC-SHA1 签名串：
+   * 依据密钥、有效期、URL 参数、请求头、HTTP 方法与 action 计算最终 HMAC-SHA1 签名串：
    * 1. KeyTime = "起始;结束"，SignKey = HMAC-SHA1(KeyTime, 密钥)；
    * 2. 将 URL 参数 / 请求头经 {@see object2List()} 排序编码为参数串 / 头串；
-   * 3. HttpString = "方法\n路径\n参数串\n头串"，StringToSign = "算法\nKeyTime\nSHA1(HttpString)"；
+   * 3. HttpString = "方法\n路径\n参数串\n头串[\naction]"，StringToSign = "算法\nKeyTime\nSHA1(HttpString)"；
    * 4. 返回 HMAC-SHA1(StringToSign, SignKey)。
+   *
+   * 其中 action 那一行**仅在 $action 非空时**追加 —— 保证不带 action 时的载荷与旧版逐字节一致
+   * （历史签名继续可用），而带 action 的签名与不带 action 的互不通用。
    *
    * @param string $fileKey 文件键（路径）
    * @param int $startTime 签名有效期起始时间（Unix 时间戳）
@@ -194,9 +240,10 @@ class StorageSignature extends BaseObject
    * @param array $urlParams 参与签名的 URL 参数
    * @param array $headers 参与签名的请求头
    * @param string $httpMethod 请求方法，默认 get
+   * @param string|null $action 动作标识（如 preview / download / info），默认 null（不限定动作）
    * @return string 最终 HMAC-SHA1 签名串
    */
-  protected function generateSignature($fileKey, $startTime, $endTime, $urlParams = [], $headers = [], $httpMethod = "get")
+  protected function generateSignature($fileKey, $startTime, $endTime, $urlParams = [], $headers = [], $httpMethod = "get", $action = null)
   {
     $httpMethod = strtolower($httpMethod);
 
@@ -213,13 +260,17 @@ class StorageSignature extends BaseObject
     $headerString = implode("&", array_values($headerList));
     $headerKeyString = implode(";", array_keys($headerList));
 
-    $httpString = implode("\n", [
+    $httpStringLines = [
       $httpMethod,
       urldecode($fileKey),
       strtolower($urlParameterString),
       strtolower($headerString),
-      ""
-    ]);
+    ];
+    if ($action !== null && $action !== "") {
+      $httpStringLines[] = strtolower($action);
+    }
+    $httpStringLines[] = "";
+    $httpString = implode("\n", $httpStringLines);
 
     $stringToSign = implode("\n", [
       self::getSignAlgorithm(),
@@ -234,7 +285,8 @@ class StorageSignature extends BaseObject
    * 制作授权信息（签发）
    *
    * 生成一组可直接拼到文件 URL 上的授权参数字典：
-   * `sign-algorithm` / `sign-time` / `key-time` / `header-list` / `signature` / `url-param-list`。
+   * `sign-algorithm` / `sign-time` / `key-time` / `header-list` / `signature` / `url-param-list`；
+   * **传了 $action 时额外返回一个同级参数 `action`**（不带则不返回，保持与旧版一致）。
    * 其中 sign-time 与 key-time 为 `起始;结束`（当前时间起 $expires 秒内有效），
    * signature 由 {@see generateSignature()} 计算，`url-param-list` 经 rawurlencode 编码。
    *
@@ -245,9 +297,10 @@ class StorageSignature extends BaseObject
    * @param array $headers 参与签名的请求头
    * @param integer $expires 有效期，秒级数值，默认 600
    * @param string $httpMethod 请求方法，默认 get
+   * @param string|null $action 动作标识，默认 null（不限定动作）；传入后写入授权参数并参与签名
    * @return array 授权参数字典
    */
-  function createAuthorization($fileKey, $urlParams = [], $headers = [], $expires = 600, $httpMethod = "get")
+  function createAuthorization($fileKey, $urlParams = [], $headers = [], $expires = 600, $httpMethod = "get", $action = null)
   {
     $httpMethod = strtolower($httpMethod);
 
@@ -269,7 +322,7 @@ class StorageSignature extends BaseObject
     $headerString = implode("&", array_values($headerList));
     $headerKeyString = implode(";", array_keys($headerList));
 
-    $signature = $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod);
+    $signature = $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod, $action);
 
     $queryStrings = [
       "sign-algorithm" => self::getSignAlgorithm(),
@@ -279,6 +332,9 @@ class StorageSignature extends BaseObject
       "signature" => $signature,
       "url-param-list" => rawurlencode($urlParameterKeyString)
     ];
+    if ($action !== null && $action !== "") {
+      $queryStrings["action"] = $action;
+    }
 
     return $queryStrings;
   }
@@ -286,7 +342,12 @@ class StorageSignature extends BaseObject
    * 验证签名是否正确（验签）
    *
    * 用与签发完全相同的参数与算法（{@see generateSignature()}）重算签名，
-   * 再与传入的 $signature 做严格相等比对。任何参数（文件键 / 有效期 / 参数 / 头 / 方法）不一致都会导致验证失败。
+   * 再与传入的 $signature 做严格相等比对。任何参数（文件键 / 有效期 / 参数 / 头 / 方法 / action）
+   * 不一致都会导致验证失败。
+   *
+   * 注意：这里的 `$action` 必须是**请求实际携带的那个值**（不是允许集合）——
+   * 它只参与签名计算；"这个值允不允许"由调用方用 {@see matchAction()} 自行判定
+   * （见 {@see \kernel\Foundation\FileSystem\Storage\FileStorage::verifySignature()}）。
    *
    * @param string $signature 待验证的签名串
    * @param string $fileKey 文件键（路径）
@@ -295,10 +356,11 @@ class StorageSignature extends BaseObject
    * @param array $urlParams 参与签名的 URL 参数
    * @param array $headers 参与签名的请求头
    * @param string $httpMethod 请求方法，默认 get
+   * @param string|null $action 请求实际携带的 action，默认 null
    * @return boolean 签名一致返回 true，否则 false
    */
-  function verifyAuthorization($signature, $fileKey, $startTime, $endTime, $urlParams = [], $headers = [], $httpMethod = "get")
+  function verifyAuthorization($signature, $fileKey, $startTime, $endTime, $urlParams = [], $headers = [], $httpMethod = "get", $action = null)
   {
-    return $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod) === $signature;
+    return $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod, $action) === $signature;
   }
 }

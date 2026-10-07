@@ -169,7 +169,7 @@ class DiscuzXQCloudCOSStorage extends QCloudCOSStorage
       if (!in_array($key, $DiscuzXPluginParamKeys)) {
         if (!in_array($key, $URLParamList)) {
           if (!in_array($key, $URLParamKeys)) {
-            return $this->break(400, "verifyAuth:400010", "URL 参数缺失");
+            return $this->break(400, "verifyAuth:DZX-COS:400010", "URL 参数缺失");
           }
         }
       }
