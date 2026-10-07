@@ -91,7 +91,10 @@ class ExceptionHandler
    * @param int|string $errorCode 业务错误码，默认 500
    * @param mixed $errorDetails 错误详情（`Error` 取其 errorDetails，其它异常取调用栈）
    * @param bool $directlyThrow 是否无视错误级别直接按致命处理（receive 默认 true，set_error_handler 默认 false）
-   * @return void 非致命时直接返回；致命时以 exit(1) 终止，不会把控制权交还给调用方
+   * @return bool|void 经 `set_error_handler` 调用、且该错误级别当前未开启（含被 `@` 抑制）时返回
+   *                   **false**，把错误交回 PHP 内部处理器（内部处理器仍会记录，故 `error_get_last()`
+   *                   拿得到原文；这是 PHP 官方推荐的处理方式）；非致命错误直接 return（null）；
+   *                   致命错误以 exit(1) 终止，不会把控制权交还给调用方
    */
   public static function handle(
     $code = 0,
@@ -107,6 +110,10 @@ class ExceptionHandler
     $directlyThrow = false
   ) {
     try {
+      if (!$directlyThrow && !(error_reporting() & $code)) {
+        return false;
+      }
+
       // 1. 判级：receive() 走 here 时强制致命；error_handler 走 here 时按 PHP 错误号判
       if ($directlyThrow) {
         $isFatal = true;
