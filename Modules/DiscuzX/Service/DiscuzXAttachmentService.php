@@ -142,6 +142,101 @@ class DiscuzXAttachmentService extends Service
     return true;
   }
   /**
+   * 获取附件的原始记录
+   *
+   * Discuz 的附件信息分散在两张表：
+   * - `forum_attachment`       附件索引（含 tableid）
+   * - `forum_attachment_{0..9}` 附件详情（按 aid 末位分表）
+   * 本方法按 aid 合并两表，返回合并后的原始行；不存在时返回 null。
+   *
+   * @param int|string $AttachmentId 附件 ID（aid）
+   * @return array|null
+   */
+  public static function getRawAttachment($AttachmentId)
+  {
+    if (!$AttachmentId) {
+      return null;
+    }
+
+    $AttachmentModel = new DiscuzXModel("forum_attachment");
+    $attachment = $AttachmentModel->where("aid", $AttachmentId)->getOne();
+    if (!$attachment) {
+      return null;
+    }
+
+    $TableId = intval($attachment['tableid']);
+    $DetailModel = new DiscuzXModel("forum_attachment_" . $TableId);
+    $detail = $DetailModel->where("aid", $AttachmentId)->getOne();
+    if (!$detail) {
+      return null;
+    }
+
+    return array_merge($attachment, $detail);
+  }
+
+  /**
+   * 附件在服务端的绝对路径
+   *
+   * 形如 {attachdir}/{type}/{attachment}，其中 attachment 为 Discuz 记录的相对路径。
+   *
+   * @param array  $attachment 附件记录
+   * @param string $type       附件类型（forum/common/... ），默认 forum
+   * @return string|null 记录缺少 attachment 字段时返回 null
+   */
+  public static function attachmentStoragePath(array $attachment, $type = "forum")
+  {
+    if (empty($attachment['attachment'])) {
+      return null;
+    }
+
+    $attachDir = rtrim(str_replace("\\", "/", (string) \getglobal("setting/attachdir")), "/");
+    $type = trim((string) $type, "/");
+    $relative = ltrim(str_replace("\\", "/", (string) $attachment['attachment']), "/");
+
+    return "{$attachDir}/{$type}/{$relative}";
+  }
+
+  /**
+   * 附件下载地址（站内转发）
+   *
+   * @param int|string $AttachmentId 附件 ID（aid）
+   * @param bool       $thumb        是否取缩略图
+   * @return string
+   */
+  public static function attachmentDownloadURL($AttachmentId, $thumb = false)
+  {
+    $params = [
+      "mod" => "attachment",
+      "aid" => aidencode($AttachmentId),
+    ];
+    if (!$thumb) {
+      $params['nothumb'] = "yes";
+    }
+
+    return "forum.php?" . http_build_query($params);
+  }
+
+  /**
+   * 附件缩略图地址（仅图片类附件有效）
+   *
+   * @param array      $attachment 附件记录
+   * @param int|null   $width      目标宽度，null 取原图宽度
+   * @param int|null   $height     目标高度，null 取原图高度
+   * @return string|null 非图片附件返回 null
+   */
+  public static function attachmentThumbURL(array $attachment, $width = null, $height = null)
+  {
+    if (empty($attachment['isimage'])) {
+      return null;
+    }
+
+    $width = is_null($width) ? intval($attachment['width']) : intval($width);
+    $height = is_null($height) ? intval($attachment['height']) : intval($height);
+
+    return getforumimg($attachment['aid'], 0, $width, $height, fileext($attachment['filename']));
+  }
+
+  /**
    * 注册附件相关路由
    *
    * @return void
