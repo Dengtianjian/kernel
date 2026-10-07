@@ -2,16 +2,12 @@
 
 namespace kernel\Modules\DiscuzX\Member;
 
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Response;
-use kernel\Modules\DiscuzX\Model\CommonUserGroupModel;
-
+use kernel\Modules\DiscuzX\Model\System\CommonUserGroupModel;
 
 class DiscuzXMemberGroup
 {
   public static function all()
   {
-    $CUGM = new CommonUserGroupModel();
-    return $CUGM->getAll();
+    return CommonUserGroupModel::get();
   }
 }
