@@ -18,7 +18,7 @@ class GetFileController extends Controller
     "size" => "int",
     "width" => "int",
     "height" => "int",
-    "disk" => "int",
+    // "disk" => "string",
     "mime_type" => "string"
   ];
   public function data($fileKey)

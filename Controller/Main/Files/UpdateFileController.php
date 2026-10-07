@@ -5,6 +5,7 @@ namespace kernel\Controller\Main\Files;
 use kernel\Facades\Storage;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\FileSystem\Storage\FileStorage;
+use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Validation\Rule;
 
 class UpdateFileController extends Controller
@@ -17,7 +18,7 @@ class UpdateFileController extends Controller
     "access_control" => "string",
   ];
 
-  public function __construct($R)
+  public function __construct(Request $R)
   {
     $this->requestBodyValidator = [
       "disk" => Rule::nullable()->type("string", "磁盘名称格式错误")->maxLength(32, "磁盘名称过长"),
@@ -36,7 +37,7 @@ class UpdateFileController extends Controller
     parent::__construct($R);
   }
 
-  public function data($fileKey)
+  public function data(string $fileKey)
   {
     if (!Storage::authorizeOperation($fileKey, "write")) return Storage::return();
     if (!Storage::dataSave()) return $this->fail(400, 400, "修改文件信息功能已关闭");
