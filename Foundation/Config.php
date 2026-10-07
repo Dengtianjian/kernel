@@ -307,4 +307,52 @@ class Config
   {
     self::$configs = [];
   }
+  /**
+   * 获取当前运行模式
+   *
+   * 读取配置的 `mode` 键（见 `Configs/Config.php`，常用取值 `production` / `development`，
+   * 也允许 `local` / `release` 等自定义值）。**未配置或配置未加载时默认 `production`** ——
+   * 保守取向：不能因为配置缺失就把调试详情、错误堆栈暴露出去。
+   *
+   * 与 {@see \kernel\Foundation\App::mode()} 等价（后者就是对本方法的包装）。
+   *
+   * 示例：
+   *   Config::mode();                 // "production"
+   *   Config::mode("otherApp");       // 指定应用
+   *
+   * @param string|null $appId 应用标识
+   * @return string 运行模式
+   */
+  static function mode($appId = null)
+  {
+    return self::get("mode", "production", $appId);
+  }
+  /**
+   * 是否处于开发模式（`mode === "development"`）
+   *
+   * 用于决定是否输出调试细节（异常详情、SQL、缓存开关等）。
+   * 判定是**字面量比较**：只有恰好等于 `development` 才为 true，`dev` / `local` 等自定义值不算，
+   * 避免配置里拼错的值被当成开发模式而放开调试输出。
+   *
+   * @param string|null $appId 应用标识
+   * @return boolean
+   */
+  static function isDevelopment($appId = null): bool
+  {
+    return self::mode($appId) === "development";
+  }
+  /**
+   * 是否处于生产模式（`mode === "production"`）
+   *
+   * 同样是字面量比较；由于 {@see mode()} 未配置时默认 `production`，「配置缺失」也算生产模式。
+   * 若需要「非开发即生产」的宽松判定（代码里另有 `Config::get("mode") !== "production"` 这种写法），
+   * 请显式写成 `!Config::isDevelopment()`。
+   *
+   * @param string|null $appId 应用标识
+   * @return boolean
+   */
+  static function isProduction($appId = null): bool
+  {
+    return self::mode($appId) === "production";
+  }
 }
