@@ -971,14 +971,14 @@ class FileStorage extends AbilityBaseObject
 
       if ($this->accessControlEnabled()) {
         if (!$this->accessControlAuthId() || !$file['owner_id'] || $this->accessControlAuthId() !== $file['owner_id']) {
-          if ($this->checkAccessControl($fileKey, $file['access_control'], $file['owner_id'], $operation) === FALSE) {
+          if ($this->checkAccessControl($fileKey, $file['access_control'], $file['owner_id'], $operation) === false) {
             return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
           }
         }
-      } else if ($this->verifyRequestSignature($fileKey) === FALSE) {
+      } else if ($this->verifyRequestSignature($fileKey) === false) {
         return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
       }
-    } else if ($this->verifyRequestSignature($fileKey) === FALSE) {
+    } else if ($this->verifyRequestSignature($fileKey) === false) {
       return $this->break(403, 403, "抱歉，您无权操作/获取该文件");
     }
 
@@ -1005,7 +1005,7 @@ class FileStorage extends AbilityBaseObject
     if (!$this->dataSave || !$this->accessControlEnabled) return true;
 
     //* 相同的 id 说明拥有人和当前登录的用户是同一个人，直接返回 true
-    if ($ownerId === $this->accessControlAuthId()) return true;
+    if ($ownerId == $this->accessControlAuthId()) return true;
 
     //* 后面就是不相同的 ID，说明拥有人和当前登录的用户不是同一个人
 
