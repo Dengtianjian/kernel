@@ -193,6 +193,12 @@ class FTPStorage extends AbstractStorage
    */
   public function put($file, $saveFileName = null)
   {
+    $connection = $this->connect();
+    if (!$connection) return $this->forwardBreak();
+
+    //* 上传前预检被动模式的数据端口：不通就立刻给出可操作的错误，而不是干等到 timeout（可能几百秒）
+    if (!$this->checkPassiveDataPort($connection)) return $this->forwardBreak();
+
     $saveFileName = $saveFileName ?: (is_array($file) ? $file['name'] : basename((string) $file));
     $pathInfo = pathinfo($saveFileName);
     $tempFileName = join("", [uniqid("temp_"), ".", $pathInfo['extension']]);
@@ -208,12 +214,6 @@ class FTPStorage extends AbstractStorage
       $width = $imageInfo[0];
       $height = $imageInfo[1];
     }
-
-    $connection = $this->connect();
-    if (!$connection) return $this->forwardBreak();
-
-    //* 上传前预检被动模式的数据端口：不通就立刻给出可操作的错误，而不是干等到 timeout（可能几百秒）
-    if (!$this->checkPassiveDataPort($connection)) return $this->forwardBreak();
 
     $remotePath = $this->remotePath($saveFileName);
     $mkdirFailed = [];
