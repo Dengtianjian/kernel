@@ -35,9 +35,9 @@ class DiscuzXApp extends App
     }
 
     //* 异常处理
-    \set_exception_handler("kernel\Modules\DiscuzX\Foundation\DiscuzXExceptionHandler::receive");
+    \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
-    \set_error_handler("kernel\Modules\DiscuzX\Foundation\DiscuzXExceptionHandler::handle", E_ALL);
+    \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
   }
   public function hook($uri)
   {
