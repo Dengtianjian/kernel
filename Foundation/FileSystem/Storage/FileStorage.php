@@ -19,12 +19,16 @@ use kernel\Model\FilesModel;
  * 这是存储层对外的统一入口，本身不直接读写磁盘，而是：
  * - 聚合一组 {@see AbstractStorage} 磁盘实例（本地 / 腾讯云 COS / 阿里云 OSS 等），通过 {@see disk()}/{@see use()} 切换当前磁盘；
  * - 借助 {@see StorageSignature} 对文件访问 URL 做签名鉴权（防篡改、限时效）；
- * - 借助 FilesModel（启用数据存储后）做文件元信息落库与基于 ACL 标签（PRIVATE / PUBLIC_READ …）的访问控制。
+ * - 借助 {@see FilesModel}（启用数据存储后）做文件元信息落库与基于 ACL 标签（{@see PRIVATE} / {@see PUBLIC_READ} …）的访问控制；
+ * - 按快捷名或自定义 URI 注册文件路由（{@see registerRoute()}）。
  *
- * 鉴权相关开关：
+ * 开关（其余方法的行为受它们影响）：
  * - $authEnabled / {@see auth()}：是否校验请求签名（verifyRequestSignature）；
  * - $accessControlEnabled / {@see accessControl()}：是否按 ACL 标签校验操作权限（checkAccessControl）；
- * - $dataSave / {@see enableDataSave()}：是否把文件元信息写入数据库（save/add/delete/exists 依赖）。
+ * - $dataSave / {@see enableDataSave()}：是否把文件元信息写入数据库（save/add/update/delete/exists 依赖）。
+ *
+ * 装配注意：**构造即顶替全局 Storage 门面**（构造内调用 `FacadesStorage::setInstance($this)`），
+ * 一次运行只应实例化一次，不要在运行期反复 new。
  *
  * @package kernel\Foundation\FileSystem\Storage
  */
@@ -70,7 +74,10 @@ class FileStorage extends AbilityBaseObject
    */
   protected $useDisk = null;
   /**
-   * 默认磁盘（磁盘池为空时的兜底磁盘）
+   * 默认磁盘兜底位（{@see disk()} 无参且无使用中磁盘时的回退目标）
+   *
+   * 注意：目前没有任何代码为它赋值，恒为 null —— 也就是说 `disk()` 的回退分支不会命中；
+   * 传入空磁盘池时，请自行处理 `disk()` 返回 null 的情况。
    *
    * @var AbstractStorage|null
    */
@@ -124,11 +131,15 @@ class FileStorage extends AbilityBaseObject
   /**
    * 构造文件存储门面
    *
-   * 初始化签名实例（以当前应用 ID 为作用域）、注入磁盘池与可选的文件模型，
-   * 并将第一块磁盘设为默认使用磁盘，基础访问地址取应用基础 URL。
+   * 依次：初始化签名实例（以当前应用 ID 为作用域）→ 记录文件模型与磁盘池 →
+   * 把磁盘池的**第一块**磁盘设为当前使用磁盘（$useDisk，不是 $defaultDisk）→
+   * 基础访问地址取应用基础 URL → 把本实例注册为全局 Storage 门面。
+   *
+   * 磁盘池为空时 $useDisk 保持 null，之后 get()/put() 等磁盘操作会失败。
    *
    * @param array<string,AbstractStorage> $disks 磁盘驱动表（磁盘名 => 磁盘实例）
    * @param \kernel\Foundation\Database\PDO\Model|null $model 文件数据模型（默认 {@see FilesModel}），传 null 表示暂不启用数据存储
+   * @return void
    */
   public function __construct($disks, $model = null)
   {
@@ -176,6 +187,13 @@ class FileStorage extends AbilityBaseObject
       return $item;
     }));
   }
+  /**
+   * 可注册路由的快捷名 => 默认控制器
+   *
+   * 键即 {@see registerRoute()} 第一参可用的快捷名。
+   *
+   * @var array<string,string>
+   */
   private $registrableRoutes = [
     "get" => FilesNamespace\GetFileController::class,
     "auth" => FilesNamespace\GetFileAuthController::class,
@@ -185,6 +203,11 @@ class FileStorage extends AbilityBaseObject
     "preview" => FilesNamespace\PrewiewFileController::class,
     "download" => FilesNamespace\DownloadFileController::class,
   ];
+  /**
+   * 可注册路由的快捷名 => HTTP 方法
+   *
+   * @var array<string,string>
+   */
   private $registrableRouteMethods = [
     "get" => "get",
     "auth" => "post",
@@ -194,6 +217,11 @@ class FileStorage extends AbilityBaseObject
     "preview" => "get",
     "download" => "get",
   ];
+  /**
+   * 可注册路由的快捷名 => URI 后缀（null 表示不加后缀，即 `{prefix}/{fileKey:...}` 本身）
+   *
+   * @var array<string,string|null>
+   */
   private $registrableRouteUriSuffixs = [
     "get" => null,
     "auth" => "auth/{method:(get|post|patch|delete)}",
@@ -203,6 +231,25 @@ class FileStorage extends AbilityBaseObject
     "preview" => "preview",
     "download" => "download",
   ];
+  /**
+   * 注册文件相关路由
+   *
+   * 两种用法：
+   * 1. **快捷名**（`get` / `auth` / `upload` / `update` / `delete` / `preview` / `download`）：
+   *    方法与 URI 分别取 `$registrableRouteMethods` / `$registrableRouteUriSuffixs`，
+   *    控制器默认取 `$registrableRoutes`、可用第二参覆盖；URI 形如 `{prefix}/{fileKey:...}[/后缀]`
+   *    （`auth` 特殊：不带 fileKey 占位符，而是 `{prefix}/auth/{method:(get|post|patch|delete)}`）；
+   * 2. **自定义 URI**：第一参当 URI、第二参当 HTTP 方法、第三参当控制器；
+   *    URI 中不含当前前缀时，自动拼成 `{prefix}/{fileKey:...}/{uri}`。
+   *
+   * 注意（当前实现细节）：快捷名模式下若传了第三参 `$controller`，会跳过快捷分支、按自定义 URI 处理；
+   * 自定义分支用 `strpos($uri, $this->prefix) === false` 判断，是**子串包含**而非前缀判断。
+   *
+   * @param string $nameOrUri 快捷名（见上）或自定义路由 URI
+   * @param string|null $methodOrController 快捷名模式：控制器类名（可空，为空时用默认控制器）；自定义模式：HTTP 方法
+   * @param string|null $controller 控制器类名（传值时会走自定义 URI 分支）
+   * @return $this
+   */
   function registerRoute($nameOrUri, $methodOrController = null, $controller = null)
   {
     if (array_key_exists($nameOrUri, $this->registrableRoutes)) {
@@ -371,20 +418,29 @@ class FileStorage extends AbilityBaseObject
     return $this->authEnabled;
   }
   /**
-   * 读取或开启基于 ACL 标签的访问控制
+   * 读取或开启文件访问控制（ACL）
    *
    * 读写一体：传 $val 时设置开关并返回 $this（链式）；不传时返回当前开关值。
-   * 开启后上传/操作会按文件 ACL 标签（PRIVATE / PUBLIC_READ …）校验权限。
+   * 开启（$val 为真）时同时记录当前认证 ID（$authId，用于判定文件归属者）；
+   * 第三参 $enableAuth 不为 null 时会联动 {@see auth()}，即「开 ACL 的同时顺带开/关签名鉴权」；
+   * 关闭时清空已记录的认证 ID。
    *
-   * @param boolean|null $val 是否启用
-   * @return static|boolean
+   * 注意：$authId 允许传**闭包**，取用时才调用（见 {@see accessControlAuthId()}）。
+   *
+   * @param boolean|null $val 是否启用访问控制
+   * @param mixed|null $authId 当前认证 ID（通常为用户 ID，可为闭包）
+   * @param boolean|null $enableAuth 是否同时设置签名鉴权开关；null 表示不改动
+   * @return static|boolean 设置时返回 $this，读取时返回开关值
    */
-  public function accessControl($val = null, $authId = null)
+  public function accessControl($val = null, $authId = null, $enableAuth = null)
   {
     if (!is_null($val)) {
       $this->accessControlEnabled = $val;
       if ($val) {
         $this->accessControlAuthIdValue = $authId;
+        if (!is_null($enableAuth)) {
+          $this->auth($enableAuth);
+        }
       } else {
         $this->accessControlAuthIdValue = null;
       }
@@ -426,8 +482,11 @@ class FileStorage extends AbilityBaseObject
   /**
    * 获取文件信息
    *
-   * 委托当前使用磁盘（{@see disk()}）获取文件元信息。获取失败时透传磁盘的错误态，
-   * 或统一返回 500「获取文件信息失败」（当磁盘未报错但结果为空时）。
+   * 委托当前使用磁盘（`$useDisk`）获取文件元信息：磁盘报错时透传其错误态；
+   * 未报错但结果为空时返回 500「获取文件信息失败」。
+   *
+   * 实现现状（改动前留意）：磁盘返回 **false**（文件不存在）时，这里会直接对 false 调
+   * `toArray()`，属致命错误 —— 上面的 break 兜底实际只覆盖「返回对象但内容为空」的情况。
    *
    * @param string $fileKey 文件键
    * @return array|false 成功返回文件信息数组，失败返回 break 错误态
@@ -448,6 +507,10 @@ class FileStorage extends AbilityBaseObject
    *
    * 将上传的文件写入当前使用磁盘，并返回包含元信息的 {@see StorageFile} 对象。
    * 启用签名鉴权 / 访问控制时，会先校验上传权限。
+   *
+   * 注意：本方法**只落盘、不写库**（元信息落库请用 {@see save()}）；返回对象上的
+   * `owner_id` / `ref` / `type` 被置为 null、`access_control` 固定为 {@see PUBLIC_READ}，
+   * 需要真实归属与 ACL 时同样交由 {@see save()} 覆盖后写库。
    *
    * @param array $file 上传文件数组（同 PHP $_FILES 单文件结构，含 name/type/size/tmp_name 等）
    * @param string|null $saveFileName 指定保存的文件键；为 null 时使用 $file['name']
@@ -507,6 +570,9 @@ class FileStorage extends AbilityBaseObject
    * 3. 写入当前磁盘（复用 put）；
    * 4. 将文件元信息写入数据库（同 key 先删后插，保证幂等）。
    *
+   * 实现现状：签名校验失败分支里，`$details` 传的是布尔结果（`verifyRequestSignature() !== true`
+   * 的返回值；变量名 `$verifyErrorCode` 与实参含义不符），并非错误码。
+   *
    * @param array $file 上传文件数组
    * @param string|null $fileKeyOrSavePath 目标保存路径（不含扩展名，自动生成键）或完整文件键（含扩展名）
    * @param mixed|null $ownerId 文件归属者 ID
@@ -514,6 +580,7 @@ class FileStorage extends AbilityBaseObject
    * @param mixed|null $type 业务类型标识（自定义）
    * @param string $accessControl 文件 ACL 标签，默认 AUTHENTICATED_READ
    * @return StorageFile|false 成功返回 StorageFile，失败返回错误态
+   * @throws Error 未启用数据存储（$model 为空）时抛出
    */
   public function save($file, $fileKeyOrSavePath = null, $ownerId = null, $ref = null, $type = null, $accessControl = self::AUTHENTICATED_READ)
   {
@@ -582,6 +649,9 @@ class FileStorage extends AbilityBaseObject
    * 需先启用数据存储。适用于文件内容已在外部落盘、仅需把元信息写库的场景。
    * 同 key 记录已存在时先物理删除再插入，保证幂等。
    *
+   * 实现现状：未启用数据存储时抛出的异常文案写的是「无法调用 save 方法」（从 save() 复制而来，
+   * 实际调用的是 add()）。
+   *
    * @param string $key 文件键（唯一标识）
    * @param string|null $sourceFileName 原始文件名
    * @param string|null $saveFileName 保存文件名
@@ -597,6 +667,7 @@ class FileStorage extends AbilityBaseObject
    * @param int|null $width 图片宽度
    * @param int|null $height 图片高度
    * @return int|false 成功返回插入记录 ID，失败返回 false
+   * @throws Error 未启用数据存储（$model 为空）时抛出
    */
   public function add($key, $sourceFileName = null, $saveFileName = null, $path = null, $size = null, $extension = null, $mimeType = null, $ownerId = null, $accessControl = self::AUTHENTICATED_READ, $disk = "local", $ref = null, $type = null, $width = null, $height = null)
   {
@@ -635,6 +706,7 @@ class FileStorage extends AbilityBaseObject
    * @param string $key 文件键
    * @param array $data 要更新的字段键值对（对应 FilesModel 字段）
    * @return mixed 模型 update 的返回结果；记录不存在时返回 break 错误态
+   * @throws Error 未启用数据存储（$model 为空）时抛出
    */
   public function update($key, $data)
   {
@@ -704,6 +776,8 @@ class FileStorage extends AbilityBaseObject
    * 生成文件访问 URL
    *
    * 以 {baseURL}/{prefix}/{fileKey} 为基准，按需追加签名授权参数（由 {@see createAuthParams()} 生成）。
+   * 仅当**已开启签名鉴权**（{@see auth()}）且 `$withSignature` 为 true 时才附带签名参数；
+   * 附带时会把 `createAuthParams()` 生成的参数并入 `$urlParams`，并剔除其中的 `auth` 键。
    *
    * @param string $fileKey 文件键
    * @param array $urlParams 附加的 URL query 参数
@@ -873,6 +947,10 @@ class FileStorage extends AbilityBaseObject
    * 授权编排入口：
    * - 启用数据存储时，从库中取文件归属者与 ACL 标签；若当前认证者即归属者则放行，否则交 {@see checkAccessControl()} 按 ACL 判定；
    * - 未启用数据存储时，退化为仅校验请求签名（verifyRequestSignature）。
+   *
+   * 取库中记录时用 `addSelect("owner_id", "access_control")` 只取这两列，随后按**数组下标**读取
+   * （`$file['owner_id']` / `$file['access_control']`）—— 因此要求文件模型返回数组形态的行
+   * （DiscuzX 侧模型满足）；记录不存在返回 404，ACL / 签名不通过返回 403。
    *
    * @param string $fileKey 文件键
    * @param string $operation 操作类型，read 或 write，默认 read
