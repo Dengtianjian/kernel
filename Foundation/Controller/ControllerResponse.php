@@ -100,10 +100,11 @@ class ControllerResponse extends Response
    * @param string $url 远程资源地址（**必须来自存储磁盘**）
    * @param string|null $downloadFileName 输出文件名
    * @param string $cacheControl HTTP 缓存控制值
+   * @param boolean $forceDownload 是否强制附件下载（下载端点用；默认按 MIME 决定 inline/attachment）
    * @return ResponseProxy
    */
-  function proxy($url, $downloadFileName = null, $cacheControl = "no-cache")
+  function proxy($url, $downloadFileName = null, $cacheControl = "no-cache", $forceDownload = false)
   {
-    return new ResponseProxy($url, $downloadFileName, $cacheControl);
+    return new ResponseProxy($url, $downloadFileName, $cacheControl, $forceDownload);
   }
 }

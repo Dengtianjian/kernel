@@ -86,17 +86,21 @@ class URL
     return $url;
   }
   /**
-   * 判断是否为「远程地址」而非本地文件路径
+   * 判断是否为「带 URL 前缀的绝对地址」，而非本地文件路径
    *
-   * 只认 RFC 3986 的协议前缀，而不是子串包含：
-   * - `http://` / `https://` / `ftp://` / `ftps://` / `sftp://` / `oss://` … → true（任意协议都算远程）
-   * - `//host/path`（协议相对地址）→ true
+   * 这是**纯语法**判断（只认 RFC 3986 的协议前缀，不是子串包含）：
+   * - `http://` / `https://` / `ftp://` / `ftps://` / `sftp://` / `oss://` … → true（任意协议都算）
+   * - `//host/path`（协议相对地址）→ true —— 它指向外部主机，同样不该按本地路径处理
    * - `/data/http/a.png`（本地路径里恰好含 "http"）、`C:/data/a.png`（Windows 盘符）→ false
    *
+   * 注意：本方法**不判可达性**、也不校验 URL 合法性 —— `file://`、自造协议同样返回 true。
+   * 名字用 absolute 而非 remote，正是为了避免让人误以为它会去连接主机（要判"能否取回"请用
+   * {@see \kernel\Foundation\HTTP\Response\ResponseProxy::canProxy()}）。
+   *
    * @param string|null $url 待判断的地址
-   * @return boolean 远程地址返回 true；本地路径、空值返回 false
+   * @return boolean 带 URL 前缀返回 true；本地路径、空值返回 false
    */
-  static function isRemoteURL($url)
+  static function isAbsoluteURL($url)
   {
     if (!is_string($url) || $url === "") {
       return false;

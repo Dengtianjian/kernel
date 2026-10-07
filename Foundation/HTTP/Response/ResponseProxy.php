@@ -83,6 +83,15 @@ class ResponseProxy extends Response
    * @var string
    */
   protected $cacheControl = "no-cache";
+  /**
+   * 是否强制以附件下载
+   *
+   * 为 true 时忽略 MIME 判断，一律输出 `Content-Disposition: attachment`。
+   * 供"下载"端点使用（代理回来的图片等本可内联，但下载语义要求落盘保存）。
+   *
+   * @var boolean
+   */
+  protected $forceDownload = false;
 
   /**
    * 构造代理响应
@@ -90,15 +99,17 @@ class ResponseProxy extends Response
    * @param string $url 远程资源地址（**必须来自存储磁盘**，见类注释的安全说明）
    * @param string|null $downloadFileName 输出文件名；不传时取 URL 路径的 basename
    * @param string $cacheControl HTTP 缓存控制值
+   * @param boolean $forceDownload 是否强制附件下载（默认 false = 按 MIME 决定 inline/attachment）
    * @return void
    */
-  public function __construct($url, $downloadFileName = null, $cacheControl = "no-cache")
+  public function __construct($url, $downloadFileName = null, $cacheControl = "no-cache", $forceDownload = false)
   {
     parent::__construct();
 
     $this->url = $url;
     $this->fileName = $downloadFileName ?: basename(parse_url((string) $url, PHP_URL_PATH) ?: "");
     $this->cacheControl = $cacheControl;
+    $this->forceDownload = (bool) $forceDownload;
   }
 
   /**
@@ -165,7 +176,8 @@ class ResponseProxy extends Response
     }
 
     $mimeType = self::detectMimeType($sample);
-    $inline = !in_array($mimeType, self::UNSAFE_INLINE_TYPES, true);
+    //* 下载端点($forceDownload)一律附件；否则按 MIME 判断（危险类型也强制附件，避免本站源下执行）
+    $inline = !$this->forceDownload && !in_array($mimeType, self::UNSAFE_INLINE_TYPES, true);
 
     header("Accept-Ranges: none");
     header("Content-Type: " . $mimeType);
