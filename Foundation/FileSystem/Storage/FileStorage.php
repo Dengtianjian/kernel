@@ -794,6 +794,42 @@ class FileStorage extends AbilityBaseObject
   }
 
   /**
+   * 获取文件的**直连地址**（非中转，由当前磁盘直接给出）
+   *
+   * 与 {@see url()} 的区别（关键）：
+   * - {@see url()} 返回 `{baseURL}/{prefix}/{fileKey}` —— 指向**本应用自己的路由**，请求会先落到本应用
+   *   （由控制器读取磁盘再输出），因此可叠加本应用的签名鉴权（{@see auth()}）与访问控制（{@see accessControl()}）；
+   * - 本方法把请求**直接交给磁盘**（委托 {@see AbstractStorage::url()}），拿到的是磁盘自己的地址：
+   *   远程磁盘（COS / OSS）返回**带签名的原生 URL**（可直连对象存储，不经过本应用），
+   *   本地磁盘返回**文件系统路径**，FTP 返回 FTP 地址。
+   *
+   * ⚠️ **安全提示**：直连地址**绕开了本应用的签名校验与 ACL 判定**，访问权限改由磁盘自身决定
+   * （远程磁盘 = 其 URL 签名与桶/对象 ACL，本地磁盘 = 文件系统权限）。所以它适合"内部/可信场景下
+   * 直接取用存储地址"，不适合替代 {@see url()} 来对外暴露受控文件。
+   *
+   * 注意：本地磁盘的 `url()` 返回的是**文件系统路径**而非可访问 URL（本方法**原样返回**，不做回退；
+   * 需要"总是能访问的 URL"请用 {@see url()}）。
+   *
+   * @param string $fileKey 文件键
+   * @param array $urlParams 附加 URL 参数（参与磁盘侧的签名，如 COS 的图片处理参数；本地/FTP 磁盘忽略）
+   * @param int $expires 磁盘签名的有效期（秒），默认 1800（仅远程磁盘生效）
+   * @param boolean $withSignature 是否带磁盘签名，默认 true（远程磁盘默认签名；传 false 得到公开地址，需桶为公共读）
+   * @return string|false 磁盘给出的地址；无可用磁盘时返回 break 错误态
+   */
+  public function direct($fileKey, $urlParams = [], $expires = 1800, $withSignature = true)
+  {
+    if (!$this->useDisk) {
+      return $this->break(500, 500, "当前没有可用的磁盘");
+    }
+
+    //* 各磁盘的 url() 形参个数不一（抽象契约只有 $fileName，远程磁盘额外支持
+    //* $urlParams/$expires/$withSignature）—— 故用动态调用统一传 4 个实参：
+    //* PHP 对用户函数**多余的实参会被忽略**，远程磁盘能收到后三个，本地/FTP 自动忽略。
+    //* （本文件 registerRoute() 等处也用 call_user_func* 做这类动态调用。）
+    return call_user_func_array([$this->useDisk, "url"], [$fileKey, $urlParams, $expires, $withSignature]);
+  }
+
+  /**
    * 生成文件签名的授权参数（URL query / header 形式）
    *
    * 委托 {@see StorageSignature::createAuthorization()} 生成签名，用于给私有文件 URL 附加上时效与防篡改的鉴权参数。
