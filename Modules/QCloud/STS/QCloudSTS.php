@@ -20,8 +20,8 @@ use QCloud\COSSTS\Sts;
  * HTTPS 请求由它完成。
  *
  * 被 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCOSStorage} 与其子类
- * {@see \kernel\Modules\DiscuzX\Foundation\Storage\QCloud\DiscuzXQCloudCOSStorage} 持有（各自的
- * `$stsClient` 属性），用于 COS 直传（前端拿临时密钥直传对象存储）。
+ * {@see \kernel\Modules\DiscuzX\Foundation\Storage\DiscuzXQCloudCOSStorage} 持有 —— 都挂在父类的
+ * `$stsClient` 属性上，用于 COS 直传（前端拿临时密钥直传对象存储）。
  *
  * 字段：$userId / $bucket / $region 为 public，可读；$secretId / $secretKey 为 private，
  * 只存实例内、不对外暴露（也没有 getter）。
