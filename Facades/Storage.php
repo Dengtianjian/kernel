@@ -70,7 +70,7 @@ use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
  * @method static bool exists(string $key) 判断文件是否存在（启用落库时先查库）
  *
  * 访问地址：
- * @method static string url(string $fileKey, array $urlParams = [], int $expires = 1800, bool $withSignature = false) 本站路由中转地址（**默认不带签名**；仅带签名请求才附带，且需已开启 `auth()`）
+ * @method static string url(string $fileKey, array $urlParams = [], int $expires = 1800, bool $withSignature = false, string|null $action = null) 本站路由中转地址（**默认不带签名**；仅带签名请求才附带，且需已开启 `auth()`）；给按动作校验的端点生成链接时**必须传 `$action`**（`info`/`preview`/`download`…，否则校验报「缺少参数」）
  * @method static string|false direct(string $fileKey, array $urlParams = [], int $expires = 1800, bool $withSignature = true) **直连（非中转）地址**：远程磁盘为带签名的原生 URL、本地为文件系统路径（**默认带磁盘签名**；绕过本门面鉴权/ACL；无可用磁盘时返回 false）
  *
  * 签名与授权：

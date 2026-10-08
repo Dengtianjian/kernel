@@ -770,19 +770,28 @@ class FileStorage extends AbilityBaseObject
    * 仅当**已开启签名鉴权**（{@see auth()}）且 `$withSignature` 为 true 时才附带签名参数；
    * 附带时会把 `createAuthParams()` 生成的参数并入 `$urlParams`，并剔除其中的 `auth` 键。
    *
+   * ⚠️ **动作绑定（`$action`）**：签名里是否带 `action` 决定了它能用在哪些端点。
+   * 各控制器按动作校验（`info` / `preview` / `download` / `delete` / `update` / `upload`，
+   * 见 {@see \kernel\Foundation\FileSystem\Storage\FileStorage::authorizeOperation()} 的调用处），
+   * 其校验要求签名里**必须含 `action`**；因此给这类端点生成链接时**必须传 `$action`**，
+   * 否则会被以「缺少参数」拒绝（`verifyAuth:403001`）。
+   *
    * @param string $fileKey 文件键
    * @param array $urlParams 附加的 URL query 参数
    * @param int $expires 签名有效期（秒），默认 1800
    * @param boolean $withSignature 是否附带签名授权参数，默认 false
+   * @param string|null $action 签名绑定的动作（如 `info` / `preview` / `download`）；不传则不绑定，
+   *                            只能用于**不限制动作**的端点（⚠️ 见上）
    * @return string 完整文件访问 URL
    */
-  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false)
+  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false, $action = null)
   {
     $accessURL = new URL($this->baseURL);
     $accessURL->pathName = "{$this->prefix}/{$fileKey}";
 
     if ($this->authEnabled() && $withSignature) {
-      $urlParams = array_merge($urlParams, $this->createAuthParams($fileKey, $expires, $urlParams, []));
+      //* 第 5 参固定 "get"（链接是 GET 访问），第 6 参把 $action 透传进去并参与签名
+      $urlParams = array_merge($urlParams, $this->createAuthParams($fileKey, $expires, $urlParams, [], "get", $action));
       if (array_key_exists("auth", $urlParams)) {
         unset($urlParams['auth']);
       }
