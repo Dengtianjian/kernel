@@ -5,181 +5,222 @@ namespace kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
- * 腾讯云STS安全凭证服务  
- * 基于腾讯云的STS类扩展
- * @inheritDoc STS实例文档 https://github.com/tencentyun/qcloud-cos-sts-sdk/tree/master/php
+ * 腾讯云 STS 安全凭证服务（DiscuzX 侧封装）
+ *
+ * 把腾讯云 STS 的临时密钥申请包装成"实例方法 + 实例字段"的形式：
+ * 构造时固定密钥、存储桶与地域，之后按需申请临时密钥或组装 CAM 策略。
+ *
+ * 与 {@see DiscuzXQCloudSTSClient} 是**组合**关系（不是继承）：本类持有其实例（$stsClient），
+ * 真正的签名计算与 HTTPS 请求由它完成；本类负责拼装它需要的 $config。
+ *
+ * 被 {@see \kernel\Modules\DiscuzX\Foundation\Storage\QCloud\DiscuzXQCloudCOSStorage} 持有（其
+ * $STSClient 属性），用于 COS 直传（前端拿临时密钥直传对象存储）。
+ *
+ * 字段：$userId / $bucket / $region 为 public，可读；$secretId / $secretKey 为 private，
+ * 只存实例内、不对外暴露（也没有 getter）。
+ *
+ * @link https://github.com/tencentyun/qcloud-cos-sts-sdk/tree/master/php 腾讯云 STS 官方 SDK/样例
+ * @package kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS
  */
 class DiscuzXQCloudSTS extends AbilityBaseObject
 {
   /**
-   * 腾讯云用户ID
+   * 腾讯云 APPID（用户维度的账号 ID）
    *
-   * @var int
-   */
-  public $UserId = null;
-  /**
-   * 云 API 密钥 Id
+   * 构造时从 $bucket 的尾部 `-appid` 段解析（`substr($bucket, 1 + strripos($bucket, "-"))`），
+   * 因此**不是**独立传入的，改 bucket 会连带改变它；解析失败时（bucket 不含 `-`）会是空串或异常截断值。
    *
-   * @var string
-   */
-  private $SecretId = null;
-  /**
-   * 云 API 密钥 key
+   * 参与 {@see generateResourceDescription()} 拼装的资源六段式（`uid/{appid}`）。
    *
    * @var string
    */
-  private $SecretKey = null;
+  public $userId = null;
   /**
-   * 存储桶名称：bucketName-appid, 如 test-125000000
+   * 云 API 密钥 SecretId
+   *
+   * 构造时传入，仅本类内部使用（请求临时密钥时作为 `secretId` 交给客户端），无 getter。
    *
    * @var string
    */
-  public $Bucket = null;
+  private $secretId = null;
   /**
-   * 存储桶所属地域，如 ap-guangzhou
+   * 云 API 密钥 SecretKey
+   *
+   * 构造时传入，仅本类内部使用（请求临时密钥时作为 `secretKey` 交给客户端），无 getter；**切勿输出到日志/响应**。
    *
    * @var string
    */
-  public $Region = null;
+  private $secretKey = null;
   /**
-   * STS类实例
+   * 存储桶名称，形如 `bucketName-appid`（如 `test-125000000`）
    *
-   * @var Sts
+   * 构造时传入；尾部 `-appid` 段会被解析成 {@see $userId}。
+   *
+   * @var string
    */
-  private $STSInstance = null;
+  public $bucket = null;
   /**
-   * 创建腾讯云STS服务实例
+   * 存储桶所属地域，如 `ap-guangzhou`
    *
-   * @param string $SecretId 云 API 密钥 Id
-   * @param string $SecretKey 云 API 密钥 key
-   * @param string $Region 存储桶所属地域，如 ap-guangzhou
-   * @param string $Bucket 存储桶所属地域，如 ap-guangzhou
+   * 构造时传入；既用于请求临时密钥，也参与 {@see generateResourceDescription()} 的资源六段式。
+   *
+   * @var string
    */
-  function __construct($SecretId, $SecretKey, $Region, $Bucket)
+  public $region = null;
+  /**
+   * STS 请求客户端
+   *
+   * 构造时创建（{@see DiscuzXQCloudSTSClient}），本类的所有实际请求都由它发出；
+   * 设为 private，避免外部绕过本类直接调用。
+   *
+   * @var DiscuzXQCloudSTSClient
+   */
+  private $stsClient = null;
+  /**
+   * 创建腾讯云 STS 服务实例
+   *
+   * 创建请求客户端并保存凭据/存储桶/地域；同时从 $bucket 的 `-appid` 段解析出 {@see $userId}。
+   *
+   * @param string $secretId 云 API 密钥 SecretId
+   * @param string $secretKey 云 API 密钥 SecretKey（**不要**输出到日志/响应）
+   * @param string $region 存储桶所属地域，如 ap-guangzhou
+   * @param string $bucket 存储桶名称，形如 bucketName-appid（如 test-125000000）；尾部 appid 会被解析为 $userId
+   * @return void
+   */
+  function __construct($secretId, $secretKey, $region, $bucket)
   {
-    $this->STSInstance = new DiscuzXQCloudStsBase();
+    $this->stsClient = new DiscuzXQCloudSTSClient();
 
-    $this->SecretId = $SecretId;
-    $this->SecretKey = $SecretKey;
-    $this->Bucket = $Bucket;
-    $this->Region = $Region;
-    $this->UserId = substr($Bucket, 1 + strripos($Bucket, '-'));
+    $this->secretId = $secretId;
+    $this->secretKey = $secretKey;
+    $this->bucket = $bucket;
+    $this->region = $region;
+    $this->userId = substr($bucket, 1 + strripos($bucket, '-'));
   }
   /**
-   * 处理sts请求的响应信息
+   * 把 STS 响应规整成数组
    *
-   * @param mixed $ResponseData 响应数据
-   * @return array
+   * 做一次 `json_decode(json_encode(...), true)` 往返：把 stdClass 之类的对象**深转**为关联数组，
+   * 便于调用方直接按数组取用；传入 null / 非法值时 json_decode 会返回 null。
+   *
+   * @param mixed $responseData STS 响应（对象或数组）
+   * @return array|null 关联数组；无法转换时返回 null
    */
-  protected function handleResponseData($ResponseData)
+  protected function handleResponseData($responseData)
   {
-    return  json_decode(json_encode($ResponseData), true);
+    return  json_decode(json_encode($responseData), true);
   }
   /**
-   * 获取临时密钥
+   * 获取临时密钥（按前缀 + 操作集合授权，GetFederationToken）
    *
-   * @param string|string[] $AllowPrefix 资源的前缀，如授予操作所有资源，则为*；如授予操作某个路径a下的所有资源,则为 a/*，如授予只能操作特定的文件a/test.jpg, 则为a/test.jpg
-   * @param array $AllowActions 授予 COS API 权限集合, 如简单上传操作：name/cos:PutObject。  
-   * 权限名称文档地址：https://cloud.tencent.com/document/product/436/31923#.E6.A6.82.E8.BF.B0，文档代码片段中的action值
-   * @param integer $DurationSeconds 要申请的临时密钥最长有效时间，单位秒，默认 1800，最大可设置 7200
-   * @return array
-   * 返回值说明
-    |字段|类型|描述|
-    | ---- | ---- | ---- |
-    |credentials | string | 临时密钥信息 |
-    |tmpSecretId | string | 临时密钥 Id，可用于计算签名 |
-    |tmpSecretKey | string | 临时密钥 Key，可用于计算签名 |
-    |sessionToken | string | 请求时需要用的 token 字符串，最终请求 COS API 时，需要放在 Header 的 x-cos-security-token 字段 |
-    |startTime | string | 密钥的起始时间，是 UNIX 时间戳 |
-    |expiredTime | string | 密钥的失效时间，是 UNIX 时间戳 |
+   * 把本实例的凭据与入参拼成 $config 交给 {@see DiscuzXQCloudSTSClient::getTempKeys()}，
+   * 由其申请临时密钥（返回键名已小写化）；本方法只做拼装与响应规整。
+   *
+   * @param string|string[] $allowPrefix 资源前缀：全部资源用 `*`；某目录下全部资源用 `a/*`；单个文件用 `a/test.jpg`
+   * @param array $allowActions 授予的 COS API 权限集合，如 `["name/cos:PutObject"]`；权限名见 https://cloud.tencent.com/document/product/436/31923
+   * @param integer $durationSeconds 临时密钥最长有效期（秒），默认 1800；由服务端限制，最大 7200
+   * 返回的键名已小写化，字段：
+   * - credentials：临时密钥信息（含 tmpSecretId / tmpSecretKey / sessionToken）
+   * - tmpSecretId / tmpSecretKey：用于计算签名
+   * - sessionToken：请求 COS 时放在 Header 的 x-cos-security-token 字段
+   * - startTime / expiredTime：密钥起始与失效时间（UNIX 时间戳）
+   *
+   * @return array 临时密钥
+   * @throws \Exception 底层客户端申请失败时抛出（消息可能被包装成文本，原始类型会丢失）
    */
-  function getTempKeys($AllowPrefix,  $AllowActions, $DurationSeconds = 1800)
+  function getTempKeys($allowPrefix,  $allowActions, $durationSeconds = 1800)
   {
-    $Config = [
-      'secretId' => $this->SecretId,
-      'secretKey' => $this->SecretKey,
-      'bucket' => $this->Bucket,
-      'region' => $this->Region,
-      'durationSeconds' => $DurationSeconds,
-      'allowPrefix' => $AllowPrefix,
-      "allowActions" => $AllowActions
+    $config = [
+      'secretId' => $this->secretId,
+      'secretKey' => $this->secretKey,
+      'bucket' => $this->bucket,
+      'region' => $this->region,
+      'durationSeconds' => $durationSeconds,
+      'allowPrefix' => $allowPrefix,
+      "allowActions" => $allowActions
     ];
 
-    $tempKeys = $this->STSInstance->getTempKeys($Config);
+    $tempKeys = $this->stsClient->getTempKeys($config);
     return $this->handleResponseData($tempKeys);
   }
   /**
-   * 基于策略来获取临时秘钥
-   * @inheritDoc 授权策略使用指引 https://cloud.tencent.com/document/product/436/31923#.E6.A6.82.E8.BF.B0
-   * @inheritDoc 策略语法 https://cloud.tencent.com/document/product/598/10603
+   * 基于自定义 CAM 策略获取临时密钥
    *
-   * @param array $Statement 授予该临时访问凭证权限的CAM策略语法。描述一条或多条权限的详细信息。该元素包括 principal、action、resource、condition、effect 等多个其他元素的权限或权限集合。一条策略有且仅有一个 statement 元素。  
-    示例值：[{"effect":"allow","action":"sts:AssumeRole","resource":"*"}]
-   * @param integer $DurationSeconds 要申请的临时密钥最长有效时间，单位秒，默认 1800，最大可设置 7200
-   * @param string $Version 描述策略语法版本
-   * @return array
-   * 返回值说明
-    |字段|类型|描述|
-    | ---- | ---- | ---- |
-    |credentials | string | 临时密钥信息 |
-    |tmpSecretId | string | 临时密钥 Id，可用于计算签名 |
-    |tmpSecretKey | string | 临时密钥 Key，可用于计算签名 |
-    |sessionToken | string | 请求时需要用的 token 字符串，最终请求 COS API 时，需要放在 Header 的 x-cos-security-token 字段 |
-    |startTime | string | 密钥的起始时间，是 UNIX 时间戳 |
-    |expiredTime | string | 密钥的失效时间，是 UNIX 时间戳 |
+   * 与 {@see getTempKeys()} 同构，区别是不用 allowPrefix/allowActions，而是直接传一条 CAM 策略语句
+   * （由 {@see generatePolicyStatement()} 生成、配合 {@see generateResourceDescription()} 使用）。
+   *
+   * ⚠️ **实现现状（重要）**：方法体在组装完 $config 后**先 `return $config;`**，
+   * 其后的 `$tempKeys = $this->stsClient->getTempKeys($config);` 与 `return $this->handleResponseData(...)`
+   * 是**死代码** —— 即本方法目前**并不会真的申请临时密钥**，只会把配置原样返回。
+   * 需要真正可用时，删掉那句 `return $config;` 即可（下方参数/返回值说明按"修好后"描述）。
+   *
+   * @link https://cloud.tencent.com/document/product/436/31923 授权策略使用指引
+   * @link https://cloud.tencent.com/document/product/598/10603 策略语法
+   *
+   * @param array $statement CAM 策略语句（statement 数组），示例：[{"effect":"allow","action":"sts:AssumeRole","resource":"*"}]
+   * @param integer $durationSeconds 临时密钥最长有效期（秒），默认 1800，最大 7200
+   * @param string $version 策略语法版本，默认 2.0
+   * @return array 当前实现返回的是组装好的 $config（见上方实现现状）；修好后返回临时密钥
+   * @throws \Exception 底层客户端申请失败时抛出
    */
-  function getTempKeysByPolicy($Statement, $DurationSeconds = 1800, $Version = "2.0")
+  function getTempKeysByPolicy($statement, $durationSeconds = 1800, $version = "2.0")
   {
-    $Config = [
-      'secretId' => $this->SecretId,
-      'secretKey' => $this->SecretKey,
-      'bucket' => $this->Bucket,
-      'region' => $this->Region,
-      'durationSeconds' => $DurationSeconds,
+    $config = [
+      'secretId' => $this->secretId,
+      'secretKey' => $this->secretKey,
+      'bucket' => $this->bucket,
+      'region' => $this->region,
+      'durationSeconds' => $durationSeconds,
       "policy" => [
-        "version" => $Version,
-        "statement" => $Statement
+        "version" => $version,
+        "statement" => $statement
       ]
     ];
-    return $Config;
-    $tempKeys = $this->STSInstance->getTempKeys($Config);
+    return $config;
+    $tempKeys = $this->stsClient->getTempKeys($config);
     return $this->handleResponseData($tempKeys);
   }
   /**
-   * 生成资源描述文本
-   * @inheritDoc 资源描述方式 https://cloud.tencent.com/document/product/598/10606
-   * 
-   * @param string $ResourceName 描述各产品的具体资源详情，目前支持两种方式描述资源信息，resource_type/${resourceid} 和 <resource_type>/<resource_path>。  
-    resource_type/${resourceid}：resourcetype 为资源前缀，描述资源类型，详细可查看 支持 CAM 的业务接口 中产品的资源六段式；${resourceid} 为具体的资源 ID，可前往各个产品控制台查看，值为 * 时代表该类型资源的所有资源。  
-    <resource_type>/<resource_path>：resourcetype 为资源前缀，描述资源类型；  
-    <resource_path> 为资源路径，该方式下，支持目录级的前缀匹配。详细可查看 支持 CAM 的业务接口 中产品的资源六段式。  
-    \*（星号） 为所有资源
-   * @param string $ServiceType 描述产品简称，详细可查看 支持 CAM 的产品 中的 “CAM 中简称”(https://cloud.tencent.com/document/product/598/67350)。值为空时表示所有产品。
-   * 
-   * @return string
+   * 生成 CAM 资源描述（资源六段式的简化拼装）
+   *
+   * 输出形如 `qcs::{serviceType}:{region}:uid/{userId}:{bucket}/{resourceName}`，
+   * 其中 region / userId / bucket 都取自当前实例；\`*\`（星号）代表该类型下的所有资源。
+   *
+   * 建议与 {@see generatePolicyStatement()} 搭配使用，避免手写资源串出错。
+   *
+   * @link https://cloud.tencent.com/document/product/598/10606 资源描述方式
+   *
+   * @param string $resourceName 具体资源：`resource_type/${resourceid}` 或 `<resource_type>/<resource_path>`（后者支持目录级前缀匹配）；`*` 表示所有资源
+   * @param string $serviceType 产品简称（CAM 中简称），默认 cos；为空表示所有产品
+   * @return string 形如 qcs::cos:ap-guangzhou:uid/125000000:test-125000000/a/*
    */
-  function generateResourceDescription($ResourceName, $ServiceType = "cos")
+  function generateResourceDescription($resourceName, $serviceType = "cos")
   {
-    return "qcs::{$ServiceType}:{$this->Region}:uid/{$this->UserId}:{$this->Bucket}/{$ResourceName}";
+    return "qcs::{$serviceType}:{$this->region}:uid/{$this->userId}:{$this->bucket}/{$resourceName}";
   }
   /**
-   * 生成策略描述语句
-   * @inheritDoc 语法结构 https://cloud.tencent.com/document/product/598/10604
+   * 生成一条 CAM 策略语句（statement）
    *
-   * @param array|string $Action 描述允许或拒绝的操作。操作可以是 API（以 name 前缀描述）或者功能集（一组特定的 API，以 actionName 前缀描述）  \*（星号） 为所有操作  
-   * @param array|string $Resource 描述授权的具体数据。资源是用六段式描述。每款产品的资源定义详情会有所区别，详情请参见 资源描述方式。   \*（星号） 为所有资源  
-   * **建议调用当前实例中的generateResourceDescription方法生成资源描述** 
-   * @param string $Effect 描述声明产生的结果是“允许”还是“显式拒绝”。包括 allow（允许）和 deny （显式拒绝）两种情况
-   * @param array $Condition 描述策略生效的约束条件。条件包括操作符、操作键和操作值组成。条件值可包括时间、IP 地址信息。有些服务允许您在条件中指定其他值。详情请参见 条件键和条件运算符(https://cloud.tencent.com/document/product/598/10608)。
-   * @return array
+   * 返回键名固定为 CAM 的小写格式：`action` / `resource` / `effect` / `condition`；
+   * `condition` 即使为空数组也会带上（等价于无额外约束）。本方法**只做拼装、不做任何校验**。
+   *
+   * 建议 resource 用 {@see generateResourceDescription()} 生成；多条语句可组成策略的 statement 数组。
+   *
+   * @link https://cloud.tencent.com/document/product/598/10604 语法结构
+   *
+   * @param array|string $action 允许或拒绝的操作（API 名或功能集）；`*` 为所有操作
+   * @param array|string $resource 授权的具体资源（六段式）；`*` 为所有资源
+   * @param string $effect 结果：allow（允许）或 deny（显式拒绝），默认 allow
+   * @param array $condition 生效约束条件（操作符/操作键/操作值），默认空数组
+   * @return array 形如 ["action" => ..., "resource" => ..., "effect" => "allow", "condition" => []]
    */
-  function generatePolicyStatement($Action, $Resource, $Effect = "allow", $Condition = [])
+  function generatePolicyStatement($action, $resource, $effect = "allow", $condition = [])
   {
     return [
-      "action" => $Action,
-      "resource" => $Resource,
-      "effect" => $Effect,
-      "condition" => $Condition
+      "action" => $action,
+      "resource" => $resource,
+      "effect" => $effect,
+      "condition" => $condition
     ];
   }
 }
