@@ -33,7 +33,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
   /**
    * @var QCloudCosClient|null COS 客户端（内部封装 SDK / 裸请求两种驱动）
    */
-  protected $cosClient = null;
+  protected $client = null;
   /**
    * @var string|null 访问域名（签名签发时使用）
    */
@@ -54,9 +54,34 @@ class QCloudCOSStorage extends AbstractObjectStorage
 
     //* 参数顺序：secretId, secretKey, region, bucket（与 QCloudCosSignture 保持一致）；
     //* 驱动（官方 SDK / 裸签名请求）由客户端自己检测，这里不需要关心。
-    $this->cosClient = new QCloudCosClient($this->secretId, $this->secretKey, $this->region, $this->bucket, null, QCloudCosClient::DRIVER_HTTP);
+    $this->client = new QCloudCosClient($this->secretId, $this->secretKey, $this->region, $this->bucket, null, QCloudCosClient::DRIVER_HTTP);
 
     return $this;
+  }
+
+  /**
+   * 读取或设置存储服务客户端实例
+   *
+   * 读写一体：传参时设置客户端并返回 `$this`（链式）；不传时返回当前客户端
+   * （未设置时为 null）。客户端由子类在自己的 {@see boot()} 里创建。
+   *
+   * ```php
+   * $storage->client($myClient);    // 注入
+   * $client = $storage->client();   // 读取
+   * ```
+   *
+   * ⚠️ 读分支必须访问**属性** `$this->client`；若写成 `$this->client()`，PHP 会把它当成
+   * **递归调用本方法**（本类同时有同名属性 `$client` 与同名方法 `client()`），从而无限递归。
+   *
+   * 💡 现状提示：子类 `QCloudCOSStorage` 目前用的是它**自己的** `$cosClient` 属性，
+   * 并未使用本属性/本方法；如需统一客户端入口，可改为走这里。
+   *
+   * @param mixed|null $client 客户端实例；不传（`func_num_args()` 为 0）则读取
+   * @return QCloudCosClient|QCloudCOSStorage|null 设置时返回 `$this`；读取时返回当前客户端
+   */
+  public function client($client = null)
+  {
+    return parent::client($client);
   }
   /**
    * 获取文件信息
@@ -71,13 +96,13 @@ class QCloudCOSStorage extends AbstractObjectStorage
     if (!$this->exists($fileName)) return $this->break(404, 404, "文件不存在");
 
     //* HEAD Object：成功返回响应头数组，失败（或不存在）返回 false
-    $headers = $this->cosClient->metadata($fileName);
+    $headers = $this->client->metadata($fileName);
     if (!$headers) {
-      return $this->break(500, 500, "获取文件信息失败", $this->cosClient->lastError() ?: "获取 COS 文件元信息失败");
+      return $this->break(500, 500, "获取文件信息失败", $this->client->lastError() ?: "获取 COS 文件元信息失败");
     }
 
     //* 把响应头回填成对象元信息（大小取 Content-Length，头名大小写不敏感）
-    $object = $this->cosClient->object($fileName)->fill($headers);
+    $object = $this->client->object($fileName)->fill($headers);
 
     $pathInfo = pathinfo($fileName);
     $file = [
@@ -127,7 +152,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
 
     try {
       //* PUT Object**必带 Content-Type**，这里按扩展名推断后一并交给客户端
-      $uploaded = $this->cosClient->upload(
+      $uploaded = $this->client->upload(
         $saveFileName,
         $tempFileInfo['filePath'],
         ["Content-Type" => FileHelper::getMimeType($tempFileInfo['filePath'])]
@@ -137,7 +162,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
           FileSystem::deleteFile($tempFileInfo['filePath']);
         }
 
-        return $this->break(500, 500, "上传文件失败", $this->cosClient->lastError() ?: "COS 上传失败");
+        return $this->break(500, 500, "上传文件失败", $this->client->lastError() ?: "COS 上传失败");
       }
 
       if (FileSystem::exists($tempFileInfo['filePath'])) {
@@ -169,8 +194,8 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   function delete($fileKey)
   {
-    if (!$this->cosClient->delete($fileKey)) {
-      $message = $this->cosClient->lastError() ?: "删除 COS 文件失败";
+    if (!$this->client->delete($fileKey)) {
+      $message = $this->client->lastError() ?: "删除 COS 文件失败";
 
       throw new Error($message, 500, 500, $message);
     }
@@ -190,13 +215,13 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   function exists($fileName)
   {
-    $exists = $this->cosClient->exists($fileName);
+    $exists = $this->client->exists($fileName);
 
     if (!$exists) {
-      $last = $this->cosClient->lastResult();
+      $last = $this->client->lastResult();
       $status = $last ? (int) $last["status"] : 0;
       if ($status === 0 || $status >= 500) {
-        $message = $this->cosClient->lastError() ?: "判断 COS 文件是否存在失败";
+        $message = $this->client->lastError() ?: "判断 COS 文件是否存在失败";
 
         throw new Error($message, 500, 500, $message);
       }
@@ -223,10 +248,10 @@ class QCloudCOSStorage extends AbstractObjectStorage
   function url($fileName, $urlParams = [], $expires = 1800, $withSignature = true)
   {
     if ($withSignature) {
-      return $this->cosClient->presignedUrl(trim($fileName), intval($expires), "get", $urlParams);
+      return $this->client->presignedUrl(trim($fileName), intval($expires), "get", $urlParams);
     }
 
-    return $this->cosClient->objectUrl(trim($fileName));
+    return $this->client->objectUrl(trim($fileName));
   }
 
   /**
