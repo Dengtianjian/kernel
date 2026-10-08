@@ -112,4 +112,34 @@ abstract class AbstractObjectStorage extends AbstractStorage
 
     return $this->region;
   }
+  /**
+   * 读取或设置存储服务客户端实例
+   *
+   * 读写一体：传参时设置客户端并返回 `$this`（链式）；不传时返回当前客户端
+   * （未设置时为 null）。客户端由子类在自己的 {@see boot()} 里创建。
+   *
+   * ```php
+   * $storage->client($myClient);    // 注入
+   * $client = $storage->client();   // 读取
+   * ```
+   *
+   * ⚠️ 读分支必须访问**属性** `$this->client`；若写成 `$this->client()`，PHP 会把它当成
+   * **递归调用本方法**（本类同时有同名属性 `$client` 与同名方法 `client()`），从而无限递归。
+   *
+   * 💡 现状提示：子类 `QCloudCOSStorage` 目前用的是它**自己的** `$cosClient` 属性，
+   * 并未使用本属性/本方法；如需统一客户端入口，可改为走这里。
+   *
+   * @param mixed|null $client 客户端实例；不传（`func_num_args()` 为 0）则读取
+   * @return static|mixed|null 设置时返回 `$this`；读取时返回当前客户端
+   */
+  public function client($client = null)
+  {
+    if (func_num_args()) {
+      $this->client = $client;
+
+      return $this;
+    };
+
+    return $this->client;
+  }
 }
