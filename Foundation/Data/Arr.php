@@ -176,7 +176,7 @@ class Arr
    * @param boolean $root 是否需要根标签
    * @return string
    */
-  static function toXML($target, $root = true, $rootName = "xml")
+  static function toXML($target, $root = true, $rootName = "xml", $contentWrap = true)
   {
     $res = "";
     if ($root) {
@@ -186,15 +186,15 @@ class Arr
     if (is_array($target)) {
       foreach ($target as $key => $value) {
         if (is_string($value)) {
-          $res .= "<$key><![CDATA[$value]]></$key>";
+          $res .= "<$key>" . ($contentWrap ? "<![CDATA[$value]]>" : $value) . "</$key>";
         } else if (is_array($value)) {
           if (self::isAssoc($value)) {
-            $res .= "<$key>" . self::toXML($value, false) . "</$key>";
+            $res .= "<$key>" . self::toXML($value, false, null, $contentWrap) . "</$key>";
           } else {
             $itemStr = "";
             foreach ($value as $item) {
               $itemStr .= "<$key>";
-              $itemStr .= self::toXML($item, false);
+              $itemStr .= self::toXML($item, false, null, $contentWrap);
               $itemStr .= "</$key>";
             }
             $res .= $itemStr;
