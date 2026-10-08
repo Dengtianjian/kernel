@@ -22,7 +22,7 @@ use kernel\Foundation\Data\Arr;
  *
  * ⚠️ 两个必须知道的点：
  * 1. **响应不是普通 XML**：COS 返回的是**事件流分块数据**（含 Records / Stats / End 等事件），
- *    需要按 event-stream 协议自己拆帧（仓内 `DiscuzXQCloudCOS::selectObjectContent()` 目前**原样返回**不解析）；
+ *    需要按 event-stream 协议自己拆帧（客户端侧尚未实现 SELECT，见 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCosClient}）；
  * 2. `?select` 是**子资源** ⇒ 必须**同时**参与签名（`q-url-param-list=select`）并出现在请求 URL 上。
  *
  * 文档核对状态：XML 结构（`SelectRequest` / `Expression` / `ExpressionType` / `InputSerialization` /
@@ -114,7 +114,7 @@ class QCloudCosSelectObjectContent extends AbstractQCloudCosObject
    * 产出请求体 XML（`<SelectRequest>…</SelectRequest>`）
    *
    * 用 {@see Arr::toXML()} 拼：`Expression` / `ExpressionType` 逐值转义后写入，
-   * 两个序列化配置按调用方给的数组原样递归展开（与本仓 `DiscuzXQCloudCOS::selectObjectContent()` 一致）。
+   * 两个序列化配置按调用方给的数组原样递归展开（与官方文档的 XML 结构一致）。
    * 未设置 `Expression` 时返回空串。
    *
    * @return string XML 请求体

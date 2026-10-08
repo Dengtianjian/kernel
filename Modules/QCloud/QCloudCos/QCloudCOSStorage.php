@@ -73,15 +73,14 @@ class QCloudCOSStorage extends AbstractObjectStorage
    * ⚠️ 读分支必须访问**属性** `$this->client`；若写成 `$this->client()`，PHP 会把它当成
    * **递归调用本方法**（本类同时有同名属性 `$client` 与同名方法 `client()`），从而无限递归。
    *
-   * 💡 现状提示：子类 `QCloudCOSStorage` 目前用的是它**自己的** `$cosClient` 属性，
-   * 并未使用本属性/本方法；如需统一客户端入口，可改为走这里。
+   * 💡 本子类用的就是父类的 `$client` 属性（在 {@see boot()} 里注入 {@see QCloudCosClient}）。
    *
    * @param mixed|null $client 客户端实例；不传（`func_num_args()` 为 0）则读取
    * @return QCloudCosClient|QCloudCOSStorage|null 设置时返回 `$this`；读取时返回当前客户端
    */
   public function client($client = null)
   {
-    return parent::client($client);
+    return func_num_args() ? parent::client($client) : parent::client();
   }
   /**
    * 获取文件信息

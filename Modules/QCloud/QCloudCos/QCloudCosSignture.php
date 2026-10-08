@@ -237,7 +237,7 @@ class QCloudCosSignture
    * - `$urlParamKeys` / `$headerKeys` 赋值后未被使用（见 {@see getObjectKeys()}）；
    * - 编码方式混用：键名 `urlencode`、值 `rawurlencode`、第 6 步的业务参数 `urlencode`。
    *
-   * 主要调用方：{@see QCloudCOSStorage::createAuthorization()}（经它再由 {@see DiscuzXQCloudCOS} 使用）。
+   * 主要调用方：{@see QCloudCOSStorage::createAuthorization()}（以及 {@see QCloudCosClient::presignedUrl()}）。
    *
    * @param string $objectName 对象路径，以 `/` 开头
    * @param array $urlParams 参与签名的 URL 参数（同时会并入返回值）

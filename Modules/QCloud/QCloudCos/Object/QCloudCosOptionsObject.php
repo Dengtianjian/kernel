@@ -19,7 +19,7 @@ namespace kernel\Modules\QCloud\QCloudCos\Object;
  * `-Expose-Headers` / `-Max-Age`。**没有这些响应头 ⇒ 桶未配置对应的跨域规则**（预检失败多半是桶规则问题）。
  *
  * 文档核对状态：本类的三个头即 COS `OPTIONS Object` 的标准 CORS 预检头，与仓内既有实现一致
- * （见 {@see \kernel\Modules\DiscuzX\Foundation\Storage\QCloud\DiscuzXQCloudCOS::optionsObject()}）。
+ * （客户端侧尚未实现 CORS 预检，见 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCosClient}）。
  *
  * @package kernel\Modules\QCloud\QCloudCos\Object
  */

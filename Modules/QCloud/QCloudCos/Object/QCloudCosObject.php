@@ -40,7 +40,7 @@ use kernel\Modules\QCloud\QCloudCos\Object\Tag\QCloudCosPutObjectTagging;
  * 它产出的是「每一步该发什么」（`method`/`path`/`params`/`headers`/`body`/`successStatuses`）。
  * 其中 `params` 是**参与签名的 URL 参数**（子资源如 `?restore`/`?select`/`?acl`/`?tagging`），
  * 与 `?delete` 同一套机制 —— 必须**同时**进签名与真实 URL。
- * 真正发送要等 `DiscuzXQCloudCOS` 的 `$options` 地基落地；接线即把每步交给它。
+ * 真正发送由 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCosClient::execute()} 负责；接线即把每步交给它。
  *
  * `bucket` / `region` 是**可选**的：只在需要自动拼 `x-cos-copy-source`（复制时指向本对象）时才用得上。
  *

@@ -42,7 +42,7 @@ use kernel\Modules\QCloud\QCloudCos\Object\QCloudCosObjects;
  *
  * ## ⚠️ 验证状态
  *
- * - **`http` 驱动**已按本仓 `DiscuzXQCloudCOS::request()` 的同款写法实现（签名 + URL + 头 + 错误态），
+ * - **`http` 驱动**已按"签名 + URL + 头 + 错误态"的同款写法实现（见 {@see sendByHttp()}），
  *   并用桩 `Curl` 做过请求形态验证；
  * - **`sdk` 驱动**的命令名已对照 vendor 里的 SDK 确认（`putObject`/`getObject`/`headObject`/
  *   `deleteObject`/`copyObject`/`listObjects`/`restoreObject`/`uploadPart`/`completeMultipartUpload`…），
@@ -641,7 +641,7 @@ class QCloudCosClient extends QCloud
   /**
    * 自己发签名 HTTP 请求（http 驱动）
    *
-   * 写法与本仓 `DiscuzXQCloudCOS::request()` 同款：签名参数与业务参数一起进 query、
+   * 写法：签名参数与业务参数一起进 query、
    * 头以 `CURLOPT_HTTPHEADER` 覆盖（避免被 `send()` 强制的 Content-Type 干扰）、进出各 `reset()`。
    *
    * @param array $step 步骤

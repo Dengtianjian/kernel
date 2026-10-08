@@ -26,7 +26,7 @@ namespace kernel\Modules\QCloud\QCloudCos\Object;
  * - **`Content-Type`**：作为 **HTTP 头**必须是 `multipart/form-data; boundary=…`（描述整个请求体，
  *   由 cURL 自动生成，**不要**手设）；作为**表单字段**才是**对象自身**的 MIME 类型 —— 本类管的是后者；
  * - **`Content-MD5`**：作为 HTTP 头校验整个请求体；作为表单字段校验**对象内容**（实践中通常只用后者）；
- * - **`policy` 与 `q-*` 签名字段**：由签名/上传逻辑生成（见 {@see \kernel\Modules\DiscuzX\Foundation\Storage\QCloud\DiscuzXQCloudCOS::postObject()}），
+ * - **`policy` 与 `q-*` 签名字段**：由签名/上传逻辑生成（客户端侧尚未实现 POST 表单直传，见 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCosClient}），
  *   本类虽提供 `policy()` 等方法，但正常流程不需要手动设。
  *
  * @package kernel\Modules\QCloud\QCloudCos\Object

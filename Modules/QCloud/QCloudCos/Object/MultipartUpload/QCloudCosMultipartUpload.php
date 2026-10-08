@@ -26,7 +26,7 @@ namespace kernel\Modules\QCloud\QCloudCos\Object\MultipartUpload;
  * **运行时的依赖**——`uploadId` 来自「初始化」的响应 XML，`ETag` 来自每个「上传块」的响应头，
  * 都必须回填给后续步骤（用 {@see uploadId()} / {@see etag()}）。因此流程无法在这一层一次性跑完，
  * 只能由持有客户端（能发请求、能读响应）的一方按计划逐步推进。
- * 等 `DiscuzXQCloudCOS` 补上分块上传的底层方法后，接线就是把每一步的
+ * 客户端（{@see \kernel\Modules\QCloud\QCloudCos\QCloudCosClient::execute()}）已能按计划推进，接线就是把每一步的
  * `method/path/params/headers/body` 交给它。
  *
  * 分块规则（官方）：
@@ -34,7 +34,7 @@ namespace kernel\Modules\QCloud\QCloudCos\Object\MultipartUpload;
  * - 「完成」时必须按 `PartNumber` **升序**提交各块的 `ETag`（{@see completeXml()} 会自动排序）；
  * - 小于 1MB 的文件其实用 `PUT Object` 一次传完更划算；**0 字节**文件本类仍会给出 1 个 0 字节的块。
  *
- * 依赖方向：本类**不引用**存储层（`DiscuzXQCloudCOS`）以免 QCloud → DiscuzX 逆向依赖；
+ * 依赖方向：本类**不引用**存储层以免 QCloud → DiscuzX 逆向依赖；
  * 对象键的编码方式与该类的 `encodeObjectName()` 一致（按段 `rawurlencode` + 前导 `/`）。
  *
  * 文档核对状态：**待核对**（分块规则与请求形态按官方分块上传通用写法整理；首次接入对真实桶复核）。
