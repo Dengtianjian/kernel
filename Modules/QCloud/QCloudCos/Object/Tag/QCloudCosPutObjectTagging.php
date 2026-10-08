@@ -53,17 +53,38 @@ class QCloudCosPutObjectTagging extends AbstractQCloudCosObject
   }
 
   /**
-   * 设置单个标签（可链式调用多次）
+   * 设置标签（**两种调用方式都支持**）
    *
-   * @param string $key 标签键
-   * @param string $value 标签值
+   * - `tag(["scene" => "avatar", "env" => "prod"])` —— 整批并入；
+   * - `tag("scene", "avatar")` —— 设单个标签，可链式多次。
+   *
+   * ⚠️ **为什么第二参必须可选**：基类 {@see AbstractQCloudCosObject} 通过
+   * {@see QCloudCosObjectTagTrait} 已经带了 `tag(array $tags)`。本类这个同名方法若把第二参
+   * 写成必填（或把参数类型收窄），就**与父类签名不兼容**（PHP 会报
+   * "Declaration … must be compatible with …"，且按父类约定调用 `tag([...])` 会直接
+   * `ArgumentCountError`）⇒ 所以这里**放宽类型 + 第二参可选**，保持兼容。
+   *
+   * ⚠️ **语义差异**：在**本类**里，上面两种写法都写进**请求体 TagSet**（见 {@see toXml()}）；
+   * 而基类 trait 的同名方法写的是 **`x-cos-tagging` 请求头**。本类专用于 `PUT Object tagging`
+   * （XML 体），故沿用"写 TagSet"的语义 —— 要用请求头那条路请显式调
+   * {@see QCloudCosObjectTagTrait::tagging()}（或 `tagging("a=b")`）。
+   *
+   * @param array|string $key 标签键值对，或单个标签的键
+   * @param string|null $value 单个标签的值（`$key` 传数组时忽略）
    * @return $this
    */
-  public function tag($key, $value)
+  public function tag($key, $value = null)
   {
     $tags = $this->item("Tags", []);
     $tags = is_array($tags) ? $tags : [];
-    $tags[$key] = $value;
+
+    if (is_array($key)) {
+      foreach ($key as $k => $v) {
+        $tags[$k] = $v;
+      }
+    } else {
+      $tags[$key] = $value;
+    }
 
     return $this->item("Tags", [$tags]);
   }
