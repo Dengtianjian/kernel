@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS;
+namespace kernel\Modules\QCloud\STS;
 
-class DiscuzXQCloudSTSScope
+class QCloudSTSScope
 {
 	var $action;
 	var $bucket;

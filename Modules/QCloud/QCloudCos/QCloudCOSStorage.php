@@ -9,15 +9,15 @@ use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Storage\Drivers\AbstractObjectStorage;
 use kernel\Foundation\FileSystem\Storage\StorageFile;
-use kernel\Modules\QCloud\QCloudSTS;
-use Qcloud\Cos\Client as QCloudCOSClient;
+use kernel\Modules\QCloud\STS\QCloudSTS;
 
 /**
  * 腾讯云 COS 存储磁盘
  *
  * 继承抽象的对象存储骨架（AbstractObjectStorage），实现腾讯云对象存储 COS 的
- * 上传 / 读取 / 删除 / 存在性判断 / 访问 URL 等能力。内部使用官方 SDK
- * {@see QCloudCOSClient} 操作对象，使用 {@see QCloudSTS} 申请临时凭证（UploadManager 等前端直传场景）。
+ * 上传 / 读取 / 删除 / 存在性判断 / 访问 URL 等能力。对象操作统一走 {@see QCloudCosClient}
+ * （它内部再决定**用官方 SDK 还是自己发签名请求**，以适配不同环境），
+ * 并用 {@see QCloudSTS} 申请临时凭证（前端直传场景）。
  *
  * 本磁盘同时承担「文件访问签名签发」职责：{@see createAuthorization()} 借助
  * {@see QCloudCosSignture} 生成 COS 风格的签名授权参数，供 FileStorage 统一鉴权流程调用。
@@ -31,9 +31,9 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   protected $stsClient = null;
   /**
-   * @var QCloudCOSClient|null COS 官方 SDK 客户端
+   * @var QCloudCosClient|null COS 客户端（内部封装 SDK / 裸请求两种驱动）
    */
-  protected $sdkClient = null;
+  protected $cosClient = null;
   /**
    * @var string|null 访问域名（签名签发时使用）
    */
@@ -41,8 +41,8 @@ class QCloudCOSStorage extends AbstractObjectStorage
   /**
    * 磁盘引导初始化（由 AbilityBaseObject 生命周期触发）
    *
-   * 设置磁盘名（cos）、固定密钥，并初始化 STS 客户端与 COS SDK 客户端。
-   * 其中 SDK 客户端以明文固定密钥构造（开发/演示用途），生产环境应改用 STS 临时凭证。
+   * 设置磁盘名（cos）、固定密钥，并初始化 STS 客户端与 COS 客户端。
+   * 其中 COS 客户端以明文固定密钥构造（开发/演示用途），生产环境应改用 STS 临时凭证。
    *
    * @return static
    */
@@ -52,14 +52,9 @@ class QCloudCOSStorage extends AbstractObjectStorage
 
     $this->stsClient = new QCloudSTS($this->secretId, $this->secretKey, $this->region, $this->bucket);
 
-    $this->sdkClient = new QCloudCOSClient([
-      'region' => $this->region(),
-      'scheme' => 'http',
-      'credentials' => [
-        'secretId'  => $this->secretId,
-        'secretKey' => $this->secretKey
-      ]
-    ]);
+    //* 参数顺序：secretId, secretKey, region, bucket（与 QCloudCosSignture 保持一致）；
+    //* 驱动（官方 SDK / 裸签名请求）由客户端自己检测，这里不需要关心。
+    $this->cosClient = new QCloudCosClient($this->secretId, $this->secretKey, $this->region, $this->bucket, null, QCloudCosClient::DRIVER_HTTP);
 
     return $this;
   }
@@ -75,16 +70,14 @@ class QCloudCOSStorage extends AbstractObjectStorage
   {
     if (!$this->exists($fileName)) return $this->break(404, 404, "文件不存在");
 
-    $fileInfo = null;
-    try {
-      $fileInfo = $this->sdkClient->headObject(array(
-        'Bucket' => $this->bucket(),
-        'Key' => $fileName,
-      ));
-    } catch (\Exception $e) {
-      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    //* HEAD Object：成功返回响应头数组，失败（或不存在）返回 false
+    $headers = $this->cosClient->metadata($fileName);
+    if (!$headers) {
+      return $this->break(500, 500, "获取文件信息失败", $this->cosClient->lastError() ?: "获取 COS 文件元信息失败");
     }
-    if (!$fileInfo) return $this->break(500, 500, "获取文件信息失败", "获取 COS 文件元信息失败");
+
+    //* 把响应头回填成对象元信息（大小取 Content-Length，头名大小写不敏感）
+    $object = $this->cosClient->object($fileName)->fill($headers);
 
     $pathInfo = pathinfo($fileName);
     $file = [
@@ -93,7 +86,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
       "sourceFileName" => $pathInfo['basename'],
       "path" => $pathInfo['dirname'],
       "extension" => $pathInfo['extension'] ?? '',
-      "size" => (int)$fileInfo['ContentLength'],
+      "size" => (int) $object->size(),
       "width" => null,
       "height" => null,
 
@@ -106,7 +99,8 @@ class QCloudCOSStorage extends AbstractObjectStorage
    * 上传文件到 COS
    *
    * 流程：先以临时文件名落到本地 `cos_temp` 目录，校验临时文件落盘成功后，
-   * 探测图片尺寸（若有），再经 SDK 上传至 COS；上传成功后清理临时文件并回填图片宽高，
+   * 探测图片尺寸（若有），再经 COS 客户端上传（按文件大小自动选简单/分块）；
+   * 上传成功后清理临时文件并回填图片宽高，
    * 最后复用 {@see get()} 取回完整元信息。任意环节失败均清理临时文件并抛出异常 / 错误态。
    *
    * @param array $file 上传文件数组（同 PHP $_FILES 单文件结构）
@@ -132,11 +126,20 @@ class QCloudCOSStorage extends AbstractObjectStorage
     }
 
     try {
-      $this->sdkClient->upload(
-        $this->bucket(),
+      //* PUT Object**必带 Content-Type**，这里按扩展名推断后一并交给客户端
+      $uploaded = $this->cosClient->upload(
         $saveFileName,
-        fopen($tempFileInfo['filePath'], 'rb')
+        $tempFileInfo['filePath'],
+        ["Content-Type" => FileHelper::getMimeType($tempFileInfo['filePath'])]
       );
+      if (!$uploaded) {
+        if (FileSystem::exists($tempFileInfo['filePath'])) {
+          FileSystem::deleteFile($tempFileInfo['filePath']);
+        }
+
+        return $this->break(500, 500, "上传文件失败", $this->cosClient->lastError() ?: "COS 上传失败");
+      }
+
       if (FileSystem::exists($tempFileInfo['filePath'])) {
         FileSystem::deleteFile($tempFileInfo['filePath']);
       }
@@ -158,71 +161,72 @@ class QCloudCOSStorage extends AbstractObjectStorage
   /**
    * 删除 COS 上的文件
    *
-   * 调用 SDK 删除对象
-   * SDK 调用异常会向上抛出。
+   * 调用 COS 客户端删除对象；**失败时向上抛 Error**。
    *
    * @param string $fileKey 文件键
    * @return boolean|mixed 无数据模型时返回 true；有数据模型时返回模型的删除结果
+   * @throws Error 删除失败（细节见客户端 {@see QCloudCosClient::lastError()}）
    */
   function delete($fileKey)
   {
-    try {
-      $this->sdkClient->deleteObject([
-        'Bucket' => $this->bucket(),
-        'Key' => $fileKey
-      ]);
-    } catch (\Exception $e) {
-      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    if (!$this->cosClient->delete($fileKey)) {
+      $message = $this->cosClient->lastError() ?: "删除 COS 文件失败";
+
+      throw new Error($message, 500, 500, $message);
     }
+
     return true;
   }
   /**
    * 判断 COS 上文件是否存在
    *
-   * 底层调用 SDK 的 doesObjectExist。注意：本方法在对象不存在时返回 false，
-   * 但 SDK 调用本身抛异常（如网络/鉴权错误）时会上抛 Error，不会静默返回 false。
+   * 底层调客户端的 {@see QCloudCosClient::exists()}。**只有 200 才算存在**，
+   * 所以「对象不存在（404）」与「没权限（403）」都会返回 false；而
+   * 「未建立连接（状态码 0）」或「服务端 5xx」视为**调用失败**，按原契约上抛 Error。
    *
    * @param string $fileName 文件键
    * @return boolean 存在返回 true，不存在返回 false
-   * @throws Error SDK 调用异常时抛出
+   * @throws Error 网络/服务端错误时抛出
    */
   function exists($fileName)
   {
-    try {
-      return $this->sdkClient->doesObjectExist(
-        $this->bucket(),
-        $fileName
-      );
-    } catch (\Exception $e) {
-      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    $exists = $this->cosClient->exists($fileName);
+
+    if (!$exists) {
+      $last = $this->cosClient->lastResult();
+      $status = $last ? (int) $last["status"] : 0;
+      if ($status === 0 || $status >= 500) {
+        $message = $this->cosClient->lastError() ?: "判断 COS 文件是否存在失败";
+
+        throw new Error($message, 500, 500, $message);
+      }
     }
+
+    return $exists;
   }
 
   /**
    * 获取 COS 文件的访问 URL
    *
    * 根据 $withSignature 决定生成带时效签名的 URL 或公开无签名 URL：
-   * - 带签名（默认）：调用 SDK `getObjectUrl`，生成的 URL 包含签名且 $expires 秒内有效；
-   * - 无签名：调用 SDK `getObjectUrlWithoutSign`，生成可直接访问的公开 URL（依赖桶的公开读策略）。
-   * 生成过程中 SDK 抛异常时返回 null（不向上抛），调用方需对 null 做判空处理。
+   * - 带签名（默认）：{@see QCloudCosClient::presignedUrl()} —— 拼上 `q-*` 签名参数，$expires 秒内有效；
+   * - 无签名：{@see QCloudCosClient::objectUrl()} —— 直接拼域名，可公开访问（依赖桶的公开读策略）。
+   *
+   * 两者都是**纯计算**（不发请求），域名形如 `https://{bucket}.cos.{region}.myqcloud.com`。
    *
    * @param string $fileName 文件键（内部会 trim 去掉首尾空白）
    * @param array $urlParams 附加的 URL 参数（当前实现未参与计算，保留以对齐父类签名）
    * @param int $expires 带签名时的有效时长（秒），默认 1800
    * @param boolean $withSignature 是否生成带时效签名的 URL，默认 true
-   * @return string|null 成功返回访问 URL，失败返回 null
+   * @return string 访问 URL
    */
   function url($fileName, $urlParams = [], $expires = 1800, $withSignature = true)
   {
-    try {
-      if ($withSignature) {
-        return $this->sdkClient->getObjectUrl($this->bucket(), trim($fileName), $expires);
-      } else {
-        return $this->sdkClient->getObjectUrlWithoutSign($this->bucket(), trim($fileName));
-      }
-    } catch (\Exception $e) {
-      return null;
+    if ($withSignature) {
+      return $this->cosClient->presignedUrl(trim($fileName), intval($expires), "get", $urlParams);
     }
+
+    return $this->cosClient->objectUrl(trim($fileName));
   }
 
   /**
@@ -269,7 +273,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   public function createAuthorization($fileKey = null, $expires = 1800, $httpMethod = "get", $urlParams = [], $headers = [])
   {
-    $cosSignature = new QCloudCosSignture($this->secretId, $this->secretKey, $this->region, $this->bucket, $this->host, $this->securityToken);
+    $cosSignature = new QCloudCosSignture($this->secretId, $this->secretKey, $this->host, $this->securityToken);
 
     if (strpos($fileKey, "/") !== 0) {
       $fileKey = "/" . $fileKey;

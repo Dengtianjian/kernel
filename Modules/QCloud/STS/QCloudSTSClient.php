@@ -1,18 +1,18 @@
 <?php
 
-namespace kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS;
+namespace kernel\Modules\QCloud\STS;
 
 /**
  * 腾讯云 STS 临时密钥申请（官方样例移植版）
  *
- * 向腾讯云 STS 申请临时密钥，供 COS 直传等场景使用；由 {@see DiscuzXQCloudSTS} 持有并调用
+ * 向腾讯云 STS 申请临时密钥，供 COS 直传等场景使用；由 {@see QCloudSTS} 持有并调用
  * （它的 $stsInstance 属性就是本类实例）。
  *
  * 本文件源自腾讯云官方「临时密钥计算样例」，只做了命名空间/类名移植，**内部逻辑未重写**，
  * 官方样例的取舍一并保留（见下方「注意」）。
  *
  * 两条主线：
- * - {@see getTempKeys()}：GetFederationToken，**目前仓内实际使用的入口**（{@see DiscuzXQCloudSTS::getTempKeys()} 调用它）；
+ * - {@see getTempKeys()}：GetFederationToken，**目前仓内实际使用的入口**（{@see QCloudSTS::getTempKeys()} 调用它）；
  * - {@see getRoleCredential()}：AssumeRole（需 roleArn），保留自样例，仓内暂未使用。
  *
  * 传入的 $config 常用键：
@@ -29,9 +29,9 @@ namespace kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS;
  * - durationSeconds 只做「存在则须为 int」的校验，**不是必填**；缺失时请求里的 DurationSeconds 为 null，由服务端报错；
  * - $ShortBucketName / $allow 等变量由官方样例保留，实际未被使用。
  *
- * @package kernel\Modules\DiscuzX\Foundation\Storage\QCloud\QCloudSTS
+ * @package kernel\Modules\QCloud\STS
  */
-class DiscuzXQCloudSTSClient
+class QCloudSTSClient
 {
 	/**
 	 * 十六进制字符串转二进制
@@ -556,11 +556,11 @@ class DiscuzXQCloudSTSClient
 	/**
 	 * 由 scope 对象数组组装 policy（version 2.0）
 	 *
-	 * 每个元素需是 {@see DiscuzXQCloudSTSScope}，逐一取其 get_action() / get_resource() / get_effect()
+	 * 每个元素需是 {@see QCloudSTSScope}，逐一取其 get_action() / get_resource() / get_effect()
 	 * 拼成一条 statement。注意：本方法**只判 $scopes 是否为数组**，元素类型不做校验，
 	 * 传入非 Scope 对象会在调用其方法时致命。
 	 *
-	 * @param array $scopes {@see DiscuzXQCloudSTSScope} 数组
+	 * @param array $scopes {@see QCloudSTSScope} 数组
 	 * @return array|null policy 数组；$scopes 不是数组时返回 null
 	 */
 	function getPolicy($scopes)
