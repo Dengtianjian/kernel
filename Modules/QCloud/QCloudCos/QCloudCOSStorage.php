@@ -174,7 +174,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
     } catch (\Exception $e) {
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
-    return TRUE;
+    return true;
   }
   /**
    * 判断 COS 上文件是否存在
@@ -239,7 +239,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
   public function getTempKeys($allowPrefix = null, $allowActions = null, $durationSeconds = 1800)
   {
     try {
-      return $this->STSClient->getTempKeys($allowPrefix, $allowActions, intval($durationSeconds));
+      return $this->stsClient->getTempKeys($allowPrefix, $allowActions, intval($durationSeconds));
     } catch (\Exception $e) {
       $rawMessage = $e->getMessage();
       $response = json_decode($rawMessage, true);
@@ -269,13 +269,13 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   public function createAuthorization($fileKey = null, $expires = 1800, $httpMethod = "get", $urlParams = [], $headers = [])
   {
-    $QCCS = new QCloudCosSignture($this->secretId, $this->secretKey, $this->region, $this->bucket, $this->host, $this->SecurityToken);
+    $cosSignature = new QCloudCosSignture($this->secretId, $this->secretKey, $this->region, $this->bucket, $this->host, $this->securityToken);
 
     if (strpos($fileKey, "/") !== 0) {
       $fileKey = "/" . $fileKey;
     }
 
-    return $QCCS->createAuthorization($fileKey, $urlParams, $headers, $expires, $httpMethod);
+    return $cosSignature->createAuthorization($fileKey, $urlParams, $headers, $expires, $httpMethod);
   }
   /**
    * 转换 URL 的 query 参数

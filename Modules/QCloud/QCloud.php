@@ -14,85 +14,85 @@ class QCloud extends AbilityBaseObject
    *
    * @var string
    */
-  protected $SecretId = null;
+  protected $secretId = null;
   /**
    * 临时的 SecretId  
    * 如果该值存在，优先使用该值
    *
    * @var string
    */
-  protected $TmpSecretId = null;
+  protected $tmpSecretId = null;
   /**
    * 原始的 SecretKey
    *
    * @var string
    */
-  protected $SecretKey = null;
+  protected $secretKey = null;
   /**
    * 临时的 SecretKey
    * 如果该值存在，优先使用该值
    *
    * @var string
    */
-  protected $TmpSecretKey = null;
+  protected $tmpSecretKey = null;
   /**
    * 安全令牌。使用临时SecretId、SecretKey时该值不可为空
    *
    * @var string
    */
-  protected $SecurityToken = null;
+  protected $securityToken = null;
   /**
    * 请求的主机，腾讯云的
    *
    * @var string
    */
-  protected $Host = "tencentcloudapi.com";
+  protected $host = "tencentcloudapi.com";
   /**
    * 加密算法
    *
    * @var string
    */
-  protected $ALgorithm = "TC3-HMAC-SHA256";
+  protected $algorithm = "TC3-HMAC-SHA256";
   /**
    * 操作的服务名称
    *
    * @var string
    */
-  private $Service = null;
+  private $service = null;
   /**
    * CURL实例
    *
    * @var Curl
    */
-  protected $Curl = null;
+  protected $curl = null;
   /**
    * 实例化腾讯云类
    *
-   * @param string $SecretId 密钥对中的 SecretId
-   * @param string $SecretKey 原始的 SecretKey
-   * @param string $Service 操作的服务名称
-   * @param string $Host 接口请求地址
-   * @param string $SecurityToken 安全令牌。使用临时SecretId、SecretKey时该值不可为空
-   * @param string $TmpSecretId 临时的 SecretId，优先使用该值
-   * @param string $TmpSecretKey 临时的 SecretKey，优先使用该值
+   * @param string $secretId 密钥对中的 SecretId
+   * @param string $secretKey 原始的 SecretKey
+   * @param string $service 操作的服务名称
+   * @param string $host 接口请求地址
+   * @param string $securityToken 安全令牌。使用临时SecretId、SecretKey时该值不可为空
+   * @param string $tmpSecretId 临时的 SecretId，优先使用该值
+   * @param string $tmpSecretKey 临时的 SecretKey，优先使用该值
    */
-  public function __construct($SecretId, $SecretKey, $Service = null, $Host = null, $SecurityToken = null, $TmpSecretId = null, $TmpSecretKey = null)
+  public function __construct($secretId, $secretKey, $service = null, $host = null, $securityToken = null, $tmpSecretId = null, $tmpSecretKey = null)
   {
-    $this->SecretId = $SecretId;
-    $this->SecretKey = $SecretKey;
-    $this->SecurityToken = $SecurityToken;
-    $this->TmpSecretId = $TmpSecretId;
-    $this->TmpSecretKey = $TmpSecretKey;
+    $this->secretId = $secretId;
+    $this->secretKey = $secretKey;
+    $this->securityToken = $securityToken;
+    $this->tmpSecretId = $tmpSecretId;
+    $this->tmpSecretKey = $tmpSecretKey;
 
-    if (!is_null($Host)) {
-      $this->Host = $Host;
+    if (!is_null($host)) {
+      $this->host = $host;
     }
-    if (!is_null($Service)) {
-      $this->Service = $Service;
-      $this->Host = $Service . "." . $this->Host;
+    if (!is_null($service)) {
+      $this->service = $service;
+      $this->host = $service . "." . $this->host;
     }
-    $this->Curl = new Curl();
-    $this->Curl->https(false)->url(strpos($this->Host, "http") === false ? "https://" . $this->Host : $this->Host);
+    $this->curl = new Curl();
+    $this->curl->https(false)->url(strpos($this->host, "http") === false ? "https://" . $this->host : $this->host);
   }
 
   /**
@@ -103,7 +103,7 @@ class QCloud extends AbilityBaseObject
    */
   function tmpSecretId($tmpSecretId = null)
   {
-    $this->TmpSecretId = $tmpSecretId;
+    $this->tmpSecretId = $tmpSecretId;
 
     return $this;
   }
@@ -115,7 +115,7 @@ class QCloud extends AbilityBaseObject
    */
   function tmpSecretKey($tmpSecretKey = null)
   {
-    $this->TmpSecretKey = $tmpSecretKey;
+    $this->tmpSecretKey = $tmpSecretKey;
 
     return $this;
   }
@@ -127,7 +127,7 @@ class QCloud extends AbilityBaseObject
    */
   function securityToken($securityToken = null)
   {
-    $this->SecurityToken = $securityToken;
+    $this->securityToken = $securityToken;
 
     return $this;
   }
@@ -141,9 +141,9 @@ class QCloud extends AbilityBaseObject
    */
   function tmpCredentials($tmpSecretId, $tmpSecretKey, $securityToken)
   {
-    $this->TmpSecretId = $tmpSecretId;
-    $this->TmpSecretKey = $tmpSecretKey;
-    $this->SecurityToken = $securityToken;
+    $this->tmpSecretId = $tmpSecretId;
+    $this->tmpSecretKey = $tmpSecretKey;
+    $this->securityToken = $securityToken;
 
     return $this;
   }
@@ -154,9 +154,9 @@ class QCloud extends AbilityBaseObject
    */
   function cancelTmpCredentials()
   {
-    $this->TmpSecretId = null;
-    $this->TmpSecretKey = null;
-    $this->SecurityToken = null;
+    $this->tmpSecretId = null;
+    $this->tmpSecretKey = null;
+    $this->securityToken = null;
 
     return $this;
   }
@@ -168,11 +168,11 @@ class QCloud extends AbilityBaseObject
    */
   protected function getSecretId()
   {
-    if ($this->TmpSecretId) {
-      return $this->TmpSecretId;
+    if ($this->tmpSecretId) {
+      return $this->tmpSecretId;
     }
 
-    return $this->SecretId;
+    return $this->secretId;
   }
   /**
    * 获取实际使用的SecretKey
@@ -182,11 +182,11 @@ class QCloud extends AbilityBaseObject
    */
   protected function getSecretKey()
   {
-    if ($this->TmpSecretKey) {
-      return $this->TmpSecretKey;
+    if ($this->tmpSecretKey) {
+      return $this->tmpSecretKey;
     }
 
-    return $this->SecretKey;
+    return $this->secretKey;
   }
   /**
    * 生成授权信息
@@ -201,14 +201,14 @@ class QCloud extends AbilityBaseObject
    */
   protected function generateAuthorizaion($timestamp, $action, $body = [], $query = [], $canonicalURI = "/", $httpRequestMethod = "POST")
   {
-    $CanonicalHeaders = implode("\n", [
+    $canonicalHeaders = implode("\n", [
       "content-type:application/json; charset=utf-8",
-      "host:" . $this->Host,
+      "host:" . $this->host,
       "x-tc-action:" . strtolower($action),
       ""
     ]);
 
-    $SignedHeaders = implode(";", [
+    $signedHeaders = implode(";", [
       "content-type",
       "host",
       "x-tc-action",
@@ -219,41 +219,41 @@ class QCloud extends AbilityBaseObject
       $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
     }
 
-    $QueryString = http_build_query($query);
+    $queryString = http_build_query($query);
 
-    $HashedRequestPayload = hash("SHA256", $payload);
-    $CanonicalRequest = implode("\n", [
+    $hashedRequestPayload = hash("SHA256", $payload);
+    $canonicalRequest = implode("\n", [
       $httpRequestMethod,
       $canonicalURI,
-      $QueryString,
-      $CanonicalHeaders,
-      $SignedHeaders,
-      $HashedRequestPayload
+      $queryString,
+      $canonicalHeaders,
+      $signedHeaders,
+      $hashedRequestPayload
     ]);
 
-    $Date = gmdate("Y-m-d", $timestamp);
-    $CredentialScope = $Date . "/" . $this->Service . "/tc3_request";
-    $HashedCanonicalRequest = hash("SHA256", $CanonicalRequest);
-    $StringToSign = $this->ALgorithm . "\n"
+    $date = gmdate("Y-m-d", $timestamp);
+    $credentialScope = $date . "/" . $this->service . "/tc3_request";
+    $hashedCanonicalRequest = hash("SHA256", $canonicalRequest);
+    $stringToSign = $this->algorithm . "\n"
       . $timestamp . "\n"
-      . $CredentialScope . "\n"
-      . $HashedCanonicalRequest;
+      . $credentialScope . "\n"
+      . $hashedCanonicalRequest;
 
-    $SecretDate = hash_hmac("SHA256", $Date, "TC3" . $this->SecretKey, true);
-    $SecretService = hash_hmac("SHA256", $this->Service, $SecretDate, true);
-    $SecretSigning = hash_hmac("SHA256", "tc3_request", $SecretService, true);
-    $Signature = hash_hmac("SHA256", $StringToSign, $SecretSigning);
+    $secretDate = hash_hmac("SHA256", $date, "TC3" . $this->secretKey, true);
+    $secretService = hash_hmac("SHA256", $this->service, $secretDate, true);
+    $secretSigning = hash_hmac("SHA256", "tc3_request", $secretService, true);
+    $signature = hash_hmac("SHA256", $stringToSign, $secretSigning);
 
     return implode("", [
-      $this->ALgorithm,
+      $this->algorithm,
       " Credential=",
-      $this->SecretId,
+      $this->secretId,
       "/",
-      $CredentialScope,
+      $credentialScope,
       ", SignedHeaders=",
-      $SignedHeaders,
+      $signedHeaders,
       ", Signature=",
-      $Signature
+      $signature
     ]);
   }
   /**
@@ -268,30 +268,30 @@ class QCloud extends AbilityBaseObject
   {
     $timestamp = time();
 
-    $this->Curl->headers([
+    $this->curl->headers([
       "Authorization" => $this->generateAuthorizaion($timestamp, $action, null, $query, "/", "POST"),
       "Content-Type" => "application/json; charset=utf-8",
-      "Host" => $this->Host,
+      "Host" => $this->host,
       "X-TC-Action" => $action,
       "X-TC-Timestamp" => $timestamp,
       "X-TC-Version" => $version,
     ]);
 
-    $Response = $this->Curl->get($query);
+    $response = $this->curl->get($query);
 
-    $R = new Result(true);
-    if ($Response->errorNo()) {
-      return $R->error(false, 500, $Response->errorNo(), "服务器错误", $Response->error());
+    $r = new Result(true);
+    if ($response->errorNo()) {
+      return $r->error(false, 500, $response->errorNo(), "服务器错误", $response->error());
     }
-    $ResponseData = $Response->getData()['Response'];
-    if (isset($ResponseData['Error'])) {
-      return $R->error(500, $ResponseData['Error']['Code'], "服务器错误", $ResponseData);
+    $responseData = $response->getData()['Response'];
+    if (isset($responseData['Error'])) {
+      return $r->error(500, $responseData['Error']['Code'], "服务器错误", $responseData);
     }
-    if ($ResponseData['Result'] < 0) {
-      return $R->error(400, "400-" . $ResponseData['Result'], $ResponseData['Description'], $ResponseData);
+    if ($responseData['Result'] < 0) {
+      return $r->error(400, "400-" . $responseData['Result'], $responseData['Description'], $responseData);
     }
 
-    return $R->success($ResponseData);
+    return $r->success($responseData);
   }
   /**
    * 发送POST请求
@@ -306,28 +306,28 @@ class QCloud extends AbilityBaseObject
   {
     $timestamp = time();
 
-    $this->Curl->headers([
+    $this->curl->headers([
       "Authorization" => $this->generateAuthorizaion($timestamp, $action, $body, $query, "/", "POST"),
       "Content-Type" => "application/json; charset=utf-8",
-      "Host" => $this->Host,
+      "Host" => $this->host,
       "X-TC-Action" => $action,
       "X-TC-Timestamp" => $timestamp,
       "X-TC-Version" => $version,
     ]);
 
-    $Response = $this->Curl->post($body);
-    $R = new Result(true);
-    if ($Response->errorNo()) {
-      return $R->error(false, 500, $Response->errorNo(), "服务器错误", $Response->error());
+    $response = $this->curl->post($body);
+    $r = new Result(true);
+    if ($response->errorNo()) {
+      return $r->error(false, 500, $response->errorNo(), "服务器错误", $response->error());
     }
-    $ResponseData = $Response->getData()['Response'];
-    if (isset($ResponseData['Error'])) {
-      return $R->error(500, $ResponseData['Error']['Code'], "服务器错误", $ResponseData);
+    $responseData = $response->getData()['Response'];
+    if (isset($responseData['Error'])) {
+      return $r->error(500, $responseData['Error']['Code'], "服务器错误", $responseData);
     }
-    if ($ResponseData['Result'] < 0) {
-      return $R->error(400, "400-" . $ResponseData['Result'], $ResponseData['Description'], $ResponseData);
+    if ($responseData['Result'] < 0) {
+      return $r->error(400, "400-" . $responseData['Result'], $responseData['Description'], $responseData);
     }
 
-    return $R->success($ResponseData);
+    return $r->success($responseData);
   }
 }

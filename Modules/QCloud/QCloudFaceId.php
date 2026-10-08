@@ -11,18 +11,18 @@ class QCloudFaceId extends QCloud
   /**
    * 银行卡二要素核验
    *
-   * @param string $Name 姓名
-   * @param string $BankCard 银行卡
+   * @param string $name 姓名
+   * @param string $bankCard 银行卡
    * @return Result
    */
-  public function BankCard2EVerification($Name, $BankCard)
+  public function BankCard2EVerification($name, $bankCard)
   {
-    $Action = "BankCard2EVerification";
-    $Version = "2018-03-01";
+    $action = "BankCard2EVerification";
+    $version = "2018-03-01";
 
-    return $this->post($Action, $Version, [
-      "Name" => $Name,
-      "BankCard" => $BankCard
+    return $this->post($action, $version, [
+      "Name" => $name,
+      "BankCard" => $bankCard
     ]);
   }
 }

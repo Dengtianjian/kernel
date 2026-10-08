@@ -833,7 +833,7 @@ class Curl
      */
     public function options($options)
     {
-        $this->curlOptions = Arr::merge($this->curlOptions, $options);
+        $this->curlOptions = array_replace($this->curlOptions, (array) $options);
         return $this;
     }
 

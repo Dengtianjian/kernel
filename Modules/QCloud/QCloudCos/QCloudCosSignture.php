@@ -11,14 +11,14 @@ class QCloudCosSignture extends QCloud
    *
    * @var boolean
    */
-  protected $SignHost = false;
+  protected $signHost = false;
 
   /**
    * 允许的头部键名
    *
    * @var array
    */
-  protected $SignHeader = [
+  protected $signHeader = [
     'cache-control',
     'content-disposition',
     'content-encoding',
@@ -44,12 +44,12 @@ class QCloudCosSignture extends QCloud
     'versionid',
   ];
 
-  public function __construct($SecretId, $SecretKey, $Region, $Bucket, $host = null, $SecurityToken = null)
+  public function __construct($secretId, $secretKey, $region, $bucket, $host = null, $securityToken = null)
   {
-    $this->SignHost = !is_null($host);
-    $this->SecurityToken = $SecurityToken;
+    $this->signHost = !is_null($host);
+    $this->securityToken = $securityToken;
 
-    parent::__construct($SecretId, $SecretKey, null, $host, $SecurityToken);
+    parent::__construct($secretId, $secretKey, null, $host, $securityToken);
   }
 
   protected function getObjectKeys($object)
@@ -70,46 +70,46 @@ class QCloudCosSignture extends QCloud
    * 对象转对象字符串，每个键值对用 & 连接  
    * ["a"=>1,"b"=>2] => a=1&b=2
    *
-   * @param array $Object 转换的对象数组
-   * @param array $SkipKeys 跳过的键名
-   * @param boolean $keyEnCode 是否对键名进行编码
+   * @param array $object 转换的对象数组
+   * @param array $skipKeys 跳过的键名
+   * @param boolean $keyEncode 是否对键名进行编码
    * @return string
    */
-  protected function object2String($Object, $SkipKeys = [], $keyEnCode = true)
+  protected function object2String($object, $skipKeys = [], $keyEncode = true)
   {
-    $List = [];
-    foreach ($Object as $key => $value) {
+    $list = [];
+    foreach ($object as $key => $value) {
       if (is_numeric($key)) {
         $key = $value;
         $value = "";
       }
 
-      if (in_array($key, $SkipKeys)) {
+      if (in_array($key, $skipKeys)) {
         continue;
       }
 
-      if ($keyEnCode) {
+      if ($keyEncode) {
         $key = rawurlencode(urlencode($key));
       }
 
-      $List[$key] = "{$key}={$value}";
+      $list[$key] = "{$key}={$value}";
     }
 
-    return implode("&", $List);
+    return implode("&", $list);
   }
   /**
    * 对象转列表，并且按键名排序，键值改成键与键值用=连接  
    * ["a"=>1,"b"=>2] => ["a"=>"a=1","b"=>"b=2"]
    *
-   * @param array $Object 对象数组
-   * @param array $SkipKeys 跳过的键名
+   * @param array $object 对象数组
+   * @param array $skipKeys 跳过的键名
    * @return array
    */
-  protected function object2List($Object, $SkipKeys = [])
+  protected function object2List($object, $skipKeys = [])
   {
-    $List = [];
-    foreach ($Object as $key => $value) {
-      if (in_array($key, $SkipKeys)) {
+    $list = [];
+    foreach ($object as $key => $value) {
+      if (in_array($key, $skipKeys)) {
         continue;
       }
       if (is_int($key)) {
@@ -125,92 +125,92 @@ class QCloudCosSignture extends QCloud
         $value = "";
       }
 
-      $List[$key] = "{$key}={$value}";
+      $list[$key] = "{$key}={$value}";
     }
-    ksort($List);
+    ksort($list);
 
-    return $List;
+    return $list;
   }
   /**
    * 制作授权信息
    *
    * @param string $objectName 路径名称，/开头
-   * @param array $URLParams  请求的URL参数
-   * @param array $Headers  请求头部
-   * @param int $Expires  签名有效期，多少秒
-   * @param string $HTTPMethod  请求方式
+   * @param array $urlParams  请求的URL参数
+   * @param array $headers  请求头部
+   * @param int $expires  签名有效期，多少秒
+   * @param string $httpMethod  请求方式
    * @return string 授权信息，k=v&v1=v1 字符串形式的结构
    */
-  function createAuthorization($objectName, $URLParams = [], $Headers = [], $Expires = 1800, $HTTPMethod = "get")
+  function createAuthorization($objectName, $urlParams = [], $headers = [], $expires = 1800, $httpMethod = "get")
   {
-    $HTTPMethod = strtolower($HTTPMethod);
+    $httpMethod = strtolower($httpMethod);
 
-    $StartTime = time();
-    $EndTime = $StartTime + $Expires;
+    $startTime = time();
+    $endTime = $startTime + $expires;
 
-    $KeyTime = implode(";", [$StartTime, $EndTime]);
-    $SignKey = hash_hmac("sha1", $KeyTime, $this->SecretKey);
+    $keyTime = implode(";", [$startTime, $endTime]);
+    $signKey = hash_hmac("sha1", $keyTime, $this->secretKey);
 
-    $SignAlgorithm = "sha1";
+    $signAlgorithm = "sha1";
 
-    if ($this->SignHost) {
-      if (!array_key_exists("host", $Headers)) {
-        $Headers['host'] = $this->Host;
+    if ($this->signHost) {
+      if (!array_key_exists("host", $headers)) {
+        $headers['host'] = $this->host;
       }
     }
 
-    $URLParamList = $this->object2List($URLParams);
-    $URLParamKeys = $this->getObjectKeys($URLParams);
-    $URLParameterString = implode("&", array_values($URLParamList));
-    $URLParameterKeyString = implode(";", array_keys($URLParamList));
+    $urlParamList = $this->object2List($urlParams);
+    $urlParamKeys = $this->getObjectKeys($urlParams);
+    $urlParameterString = implode("&", array_values($urlParamList));
+    $urlParameterKeyString = implode(";", array_keys($urlParamList));
 
-    $SkipHeaderKeys = [];
-    foreach ($Headers as $HeaderKey => $HeaderValue) {
-      if (strpos($HeaderKey, "x-cos-") === false || (strpos($HeaderKey, "x-cos-") !== false && strpos($HeaderKey, "x-cos-") !== 0)) {
-        if (!in_array($HeaderKey, $this->SignHeader)) {
-          array_push($SkipHeaderKeys, $HeaderKey);
+    $skipHeaderKeys = [];
+    foreach ($headers as $headerKey => $headerValue) {
+      if (strpos($headerKey, "x-cos-") === false || (strpos($headerKey, "x-cos-") !== false && strpos($headerKey, "x-cos-") !== 0)) {
+        if (!in_array($headerKey, $this->signHeader)) {
+          array_push($skipHeaderKeys, $headerKey);
         }
       }
     }
 
-    $HeaderList = $this->object2List($Headers, $SkipHeaderKeys, false);
-    $HeaderKeys = $this->getObjectKeys($HeaderList);
-    $HeaderString = implode("&", array_values($HeaderList));
-    $HeaderKeyString = implode(";", array_keys($HeaderList));
+    $headerList = $this->object2List($headers, $skipHeaderKeys, false);
+    $headerKeys = $this->getObjectKeys($headerList);
+    $headerString = implode("&", array_values($headerList));
+    $headerKeyString = implode(";", array_keys($headerList));
 
-    $HTTPString = implode("\n", [
-      $HTTPMethod,
+    $httpString = implode("\n", [
+      $httpMethod,
       urldecode($objectName),
-      strtolower($URLParameterString),
-      strtolower($HeaderString),
+      strtolower($urlParameterString),
+      strtolower($headerString),
       ""
     ]);
 
-    $StringToSign = implode("\n", [
-      $SignAlgorithm,
-      $KeyTime,
-      sha1($HTTPString),
+    $stringToSign = implode("\n", [
+      $signAlgorithm,
+      $keyTime,
+      sha1($httpString),
       ""
     ]);
 
-    $Signature = hash_hmac("sha1", $StringToSign, $SignKey);
+    $signature = hash_hmac("sha1", $stringToSign, $signKey);
 
-    $QueryStrings = [
-      "q-sign-algorithm" => $SignAlgorithm,
-      "q-ak" => $this->SecretId,
-      "q-sign-time" => $KeyTime,
-      "q-key-time" => $KeyTime,
-      "q-header-list" => $HeaderKeyString,
-      "q-signature" => $Signature,
-      "q-url-param-list" => rawurlencode($URLParameterKeyString)
+    $queryStrings = [
+      "q-sign-algorithm" => $signAlgorithm,
+      "q-ak" => $this->secretId,
+      "q-sign-time" => $keyTime,
+      "q-key-time" => $keyTime,
+      "q-header-list" => $headerKeyString,
+      "q-signature" => $signature,
+      "q-url-param-list" => rawurlencode($urlParameterKeyString)
     ];
 
-    if ($this->SecurityToken) {
-      $QueryStrings['x-cos-security-token'] = $this->SecurityToken;
+    if ($this->securityToken) {
+      $queryStrings['x-cos-security-token'] = $this->securityToken;
     }
 
-    return array_merge($QueryStrings, array_map(function ($item) {
+    return array_merge($queryStrings, array_map(function ($item) {
       return urlencode($item);
-    }, $URLParams));
+    }, $urlParams));
   }
 }
