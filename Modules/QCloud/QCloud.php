@@ -99,7 +99,7 @@ class QCloud extends AbilityBaseObject
    * 设置临时SecretId
    *
    * @param string $tmpSecretId 新的临时SecretId，如果传入null，即为使用永久的SecretId
-   * @return this
+   * @return QCloud
    */
   function tmpSecretId($tmpSecretId = null)
   {
@@ -111,7 +111,7 @@ class QCloud extends AbilityBaseObject
    * 设置临时SecretKey
    *
    * @param string $tmpSecretKey 新的临时SecretKey，如果传入null，即为使用永久的SecretKey
-   * @return this
+   * @return QCloud
    */
   function tmpSecretKey($tmpSecretKey = null)
   {
@@ -123,7 +123,7 @@ class QCloud extends AbilityBaseObject
    * 设置安全令牌
    *
    * @param string $securityToken 新的安全令牌，如果传入null，即为不使用安全令牌
-   * @return this
+   * @return QCloud
    */
   function securityToken($securityToken = null)
   {
@@ -137,7 +137,7 @@ class QCloud extends AbilityBaseObject
    * @param string $tmpSecretId  临时SecretId
    * @param string $tmpSecretKey 临时SecretKey
    * @param string $securityToken 安全令牌
-   * @return this
+   * @return QCloud
    */
   function tmpCredentials($tmpSecretId, $tmpSecretKey, $securityToken)
   {
@@ -150,7 +150,7 @@ class QCloud extends AbilityBaseObject
   /**
    * 取消使用临时凭证，使用会永久凭证
    *
-   * @return this
+   * @return QCloud
    */
   function cancelTmpCredentials()
   {
@@ -269,7 +269,7 @@ class QCloud extends AbilityBaseObject
     $timestamp = time();
 
     $this->curl->headers([
-      "Authorization" => $this->generateAuthorizaion($timestamp, $action, null, $query, "/", "POST"),
+      "Authorization" => $this->generateAuthorizaion($timestamp, $action, [], $query, "/", "POST"),
       "Content-Type" => "application/json; charset=utf-8",
       "Host" => $this->host,
       "X-TC-Action" => $action,
