@@ -1,11 +1,11 @@
 <?php
 
-namespace kernel\Platform\Wechat\WechatPay;
+namespace kernel\Modules\WechatPay;
 
 use kernel\Foundation\Data\Str;
-use kernel\Platform\Wechat\Wechat;
+use kernel\Foundation\Object\AbilityBaseObject;
 
-class WechatPay extends Wechat
+class WechatPay extends AbilityBaseObject
 {
   /**
    * 商户ID
