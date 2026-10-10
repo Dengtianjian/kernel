@@ -70,8 +70,8 @@ class ReplyMessage
    * @param string $toUserName 接收方帐号（收到的OpenID）
    * @param string $fromUserName 	开发者微信号
    * @param string $mediaId 通过素材管理中的接口上传多媒体文件，得到的id
-   * @param string? $title 视频消息的标题
-   * @param string? $description 视频消息的描述
+   * @param string $title 视频消息的标题
+   * @param string $description 视频消息的描述
    * @return string XML
    */
   static function video($toUserName, $fromUserName, $mediaId, $title = null, $description = null)

@@ -1,11 +1,13 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis;
+namespace kernel\Platform\Wechat\OfficialAccount\Apis\Message;
 
 use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
- * 微信公众号模板消息
+ * 模板消息
+ *
+ * 微信公众号模板消息相关接口。
  *
  * @link https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Template_Message_Interface.html
  */
