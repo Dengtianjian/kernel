@@ -7,6 +7,7 @@ use kernel\Foundation\HTTP\Curl;
 
 /**
  * AccessToken类
+ * @deprecated
  */
 class AccessToken extends Wechat
 {

@@ -2,7 +2,7 @@
 
 namespace kernel\Platform\Wechat\Miniprogram;
 
-class SecretCheck extends WechatMiniProgram
+class SecretCenter extends WechatMiniProgramApi
 {
   function getLabelText($label)
   {
