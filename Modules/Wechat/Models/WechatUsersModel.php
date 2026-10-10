@@ -13,7 +13,7 @@ class WechatUsersModel extends Model
   {
     $this->schema = [
       (new Schema("id"))->bigint(20)->nullable(false)->autoIncrement()->comment("ID")->primary(),
-      (new Schema("member_id"))->bigint(20)->nullable(true)->comment("被绑定的会员ID")->index("member_id"),
+      (new Schema("user_id"))->bigint(20)->nullable(true)->comment("被绑定的会员ID")->index("member_id"),
       (new Schema("open_id"))->varchar(64)->nullable(false)->comment("openId")->index("open_id"),
       (new Schema("union_id"))->varchar(64)->nullable(true)->comment("unionId")->index("union_id"),
       (new Schema("phone"))->varchar(12)->nullable(true)->comment("手机号码")->index("phone"),

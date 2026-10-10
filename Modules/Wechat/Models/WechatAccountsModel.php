@@ -7,7 +7,15 @@ use kernel\Foundation\Database\PDO\Schema;
 use Override;
 
 /**
- * AccessToken类
+ * 微信账号
+ *
+ * 存放微信公众号/小程序的账号信息（AppId/AppSecret）及账号级 access_token 缓存。
+ *
+ * 说明：
+ * - access_token 为账号级接口调用凭证，同一 appId 全局唯一，多进程/跨请求共用本表，
+ *   读写与刷新由 {@see \kernel\Platform\Wechat\WechatApi::accessToken()} 负责；
+ * - 用户级凭证（网页授权 access_token、refresh_token、session_key 等）不属于本表，
+ *   应存放在 WechatUsersModel 中。
  */
 class WechatAccountsModel extends Model
 {

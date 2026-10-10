@@ -10,12 +10,17 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * 承载单个微信账号（公众号/小程序等）的身份信息，即 AppId 与 AppSecret，
  * 作为各业务对象（公众号、小程序等）获取账号数据的来源。
  *
+ * 账号级 access_token 可直接通过 accessToken() 获取，内部委托 {@see WechatAccessToken}
+ * （实例缓存 → 进程内共享缓存 → wechat_accounts 表 → 回源微信），
+ * 因此与 WechatApi 取到的始终是同一份 token。
+ *
  * 使用示例：
  *
  * ```php
  * $account = new WechatAccount($appId, $appSecret);
  * $account->appId();        // 读取 AppId
  * $account->appSecret();    // 读取 AppSecret
+ * $account->accessToken();  // 获取（必要时自动刷新）access_token
  * ```
  */
 class WechatAccount extends AbilityBaseObject
@@ -32,6 +37,12 @@ class WechatAccount extends AbilityBaseObject
    * @var string|null
    */
   protected $appSecret = null;
+  /**
+   * access_token 提供者（惰性实例化，携带本账号的 AppId/AppSecret）
+   *
+   * @var WechatAccessToken|null
+   */
+  protected $accessTokenProvider = null;
   /**
    * 初始化微信账号
    *
@@ -90,5 +101,28 @@ class WechatAccount extends AbilityBaseObject
     }
 
     return $this->appSecret;
+  }
+  /**
+   * 获取本账号的 access_token
+   *
+   * 委托 {@see WechatAccessToken}：实例缓存 → 进程内共享缓存 →
+   * wechat_accounts 表 → 回源微信（稳定版接口），自动处理过期与写回。
+   *
+   * @param bool $forceRefresh 是否强制刷新（默认 false，命中有效缓存时直接返回）
+   * @return string|null 当前有效的 access_token；未配置 AppId/AppSecret 或获取失败时返回 null
+   */
+  public function accessToken($forceRefresh = false)
+  {
+    if ($this->accessTokenProvider === null) {
+      $this->accessTokenProvider = new WechatAccessToken($this->appId(), $this->appSecret());
+    }
+
+    if ($forceRefresh) {
+      $data = $this->accessTokenProvider->refresh();
+
+      return $data['access_token'] ?? null;
+    }
+
+    return $this->accessTokenProvider->token();
   }
 }

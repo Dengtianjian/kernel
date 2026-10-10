@@ -10,9 +10,7 @@ use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
  * 微信公众号网页授权相关接口。
  *
  * 注意：本类中的 access_token 指「网页授权 access_token」（sns/oauth2），
- * 与账号级的接口调用凭证 access_token 不同，因此方法名加了 WebPage 前缀，
- * 避免与父类 {@see \kernel\Platform\Wechat\WechatApi::getAccessToken()}、
- * {@see \kernel\Platform\Wechat\WechatApi::refreshAccessToken()} 冲突。
+ * 与账号级的接口调用凭证 access_token 不同，因此方法名加了 WebPage 前缀以示区分。
  *
  * @link https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html
  */
