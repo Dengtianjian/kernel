@@ -3,12 +3,19 @@
 namespace kernel\Platform\Wechat\Miniprogram;
 
 use kernel\Platform\Wechat\WechatAccount;
-use kernel\Platform\Wechat\Miniprogram\ImageAndText\ImageAndText;
-use kernel\Platform\Wechat\Miniprogram\Message\Message;
-use kernel\Platform\Wechat\Miniprogram\QrCodeAndLink\QrCodeAndLink;
-use kernel\Platform\Wechat\Miniprogram\Security\Security;
-use kernel\Platform\Wechat\Miniprogram\TradeManagement\TradeManagement;
-use kernel\Platform\Wechat\Miniprogram\XPay\XPay;
+use kernel\Platform\Wechat\Miniprogram\Apis\Employment;
+use kernel\Platform\Wechat\Miniprogram\Apis\ImageAndText\ImageAndText;
+use kernel\Platform\Wechat\Miniprogram\Apis\Message\Message;
+use kernel\Platform\Wechat\Miniprogram\Apis\Nearby;
+use kernel\Platform\Wechat\Miniprogram\Apis\QrCodeAndLink\QrCodeAndLink;
+use kernel\Platform\Wechat\Miniprogram\Apis\Search;
+use kernel\Platform\Wechat\Miniprogram\Apis\SecretCenter;
+use kernel\Platform\Wechat\Miniprogram\Apis\Security\Security;
+use kernel\Platform\Wechat\Miniprogram\Apis\StudentIdentity;
+use kernel\Platform\Wechat\Miniprogram\Apis\TradeManagement\TradeManagement;
+use kernel\Platform\Wechat\Miniprogram\Apis\User;
+use kernel\Platform\Wechat\Miniprogram\Apis\UserLogin;
+use kernel\Platform\Wechat\Miniprogram\Apis\XPay\XPay;
 
 /**
  * 微信小程序（接口聚合入口）
