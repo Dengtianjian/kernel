@@ -2,22 +2,16 @@
 
 namespace kernel\Modules\DiscuzX\Model;
 
-use kernel\Foundation\App;
 use kernel\Foundation\Database\PDO\Schema;
-use kernel\Modules\Setting\SettingsModel;
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXDB;
 use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXQuery;
 
 class DiscuzXSettingsModel extends DiscuzXModel
 {
   public function __construct($tableName = NULL)
   {
-    if (is_null($tableName)) {
-      $tableName = App::id() . "_settings";
-    }
+    $tableName = getApp()::id() . "_settings";
 
-    $this->tableName = $tableName;
+    $this->tableName = \DB::table($tableName);
 
     $this->schema = [
       (new Schema("name"))->varchar(66)->nullable(false)->comment("设置项名称")->primary(),

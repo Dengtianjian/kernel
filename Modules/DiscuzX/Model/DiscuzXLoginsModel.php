@@ -32,6 +32,10 @@ class DiscuzXLoginsModel extends DiscuzXModel
   ];
   function __construct()
   {
+    $tableName = getApp()::id() . "_logins";
+
+    $this->tableName = \DB::table($tableName);
+
     $this->schema = [
       (new Schema("id"))->bigint()->nullable(false)->autoIncrement()->comment("id")->primary(),
       (new Schema("token"))->varchar(260)->nullable(true)->index('token_value')->unsigned()->comment("token值"),

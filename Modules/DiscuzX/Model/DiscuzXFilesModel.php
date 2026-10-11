@@ -3,6 +3,7 @@
 namespace kernel\Modules\DiscuzX\Model;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Database\PDO\Schema;
 use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
 
 /**
@@ -84,52 +85,37 @@ class DiscuzXFilesModel extends DiscuzXModel
     "created_at" => "unixtime",
     "updated_at" => "unixtime",
   ];
-
-  /**
-   * 建表 SQL（DiscuzX 侧由安装/升级脚本交给 Discuz 的 `runquery()` 执行；空表示无需建表）
-   *
-   * @var string
-   */
-  protected $tableStructureSQL = "";
-
   /**
    * 构造模型
    *
-   * @param string|null $tableName 表名（不含 `pre_` 前缀）；不传时用 `{appId}_files`
    * @return void
    */
-  public function __construct($tableName = null)
+  public function __construct()
   {
-    $tableName = $tableName ?: App::id() . "_files";
+    $tableName = getApp()::id() . "_files";
 
-    $this->tableStructureSQL = <<<SQL
-CREATE TABLE IF NOT EXISTS `pre_{$tableName}`  (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `key` varchar(280) NOT NULL COMMENT '名称',
-  `disk` varchar(32) NOT NULL DEFAULT 'local' COMMENT '存储磁盘名称',
-  `ref` varchar(48) NULL COMMENT '引用的ID',
-  `type` varchar(128) NULL COMMENT '引用的业务',
-  `mime_type` varchar(64) NULL COMMENT 'mime类型',
-  `owner_id` varchar(32) NULL COMMENT '所属 ID',
-  `source_file_name` varchar(250) NOT NULL COMMENT '原文件名称',
-  `name` varchar(250) NOT NULL COMMENT '保存后文件名称',
-  `size` double NOT NULL COMMENT '文件尺寸',
-  `path` text NULL COMMENT '保存的文件路径',
-  `width` double NULL COMMENT '宽度（媒体文件才有该值）',
-  `height` double NULL COMMENT '高度（媒体文件才有该值）',
-  `extension` varchar(30) NOT NULL COMMENT '文件扩展名',
-  `access_control` varchar(60) NOT NULL DEFAULT 'private' COMMENT '访问控制权限',
-  `created_at` int(10) unsigned NOT NULL COMMENT '创建时间',
-  `updated_at` int(10) unsigned NOT NULL COMMENT '最后更新时间',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_key` (`key`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件' ROW_FORMAT = Dynamic;
-SQL;
+    $this->tableName = \DB::table($tableName);
+
+    $this->schema = [
+      (new Schema("id"))->bigint()->unsigned()->nullable(false)->autoIncrement()->comment("id"),
+      (new Schema("key"))->varchar(280)->nullable(false)->index("key")->unique()->comment("名称"),
+      (new Schema("disk"))->varchar(32)->nullable(false)->default("local")->comment("存储磁盘名称"),
+      (new Schema("ref"))->varchar(48)->comment("引用的ID"),
+      (new Schema("type"))->varchar(128)->comment("引用的业务"),
+      (new Schema("mime_type"))->varchar(64)->comment("mime类型"),
+      (new Schema("owner_id"))->varchar(32)->comment("所属 ID"),
+      (new Schema("source_file_name"))->varchar(250)->nullable(false)->comment("原文件名称"),
+      (new Schema("name"))->varchar(250)->nullable(false)->comment("保存后文件名称"),
+      (new Schema("size"))->double()->nullable(false)->comment("文件尺寸"),
+      (new Schema("path"))->text()->comment("保存的文件路径"),
+      (new Schema("width"))->double()->comment("宽度（媒体文件才有该值）"),
+      (new Schema("height"))->double()->comment("高度（媒体文件才有该值）"),
+      (new Schema("extension"))->varchar(30)->nullable(false)->comment("文件扩展名"),
+      (new Schema("access_control"))->varchar(60)->default("private")->nullable(false)->comment("访问控制权限"),
+      (new Schema("created_at"))->unixtime()->nullable(false)->comment("创建时间"),
+      (new Schema("updated_at"))->unixtime()->nullable(false)->comment("最后更新时间"),
+    ];
 
     parent::__construct($tableName);
-
-    //* kernel save() 以「主键值 === 默认值」判定 INSERT；DiscuzXModel 不走 kernel 父类构造，
-    //* $data 中没有主键默认值（null !== 0），会让新建记录误走 UPDATE，这里补上默认值。
-    $this->id = 0;
   }
 }
