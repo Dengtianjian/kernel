@@ -28,6 +28,6 @@ class Setting extends Facade
    */
   protected static function resolve()
   {
-    return new SettingModule(new SettingsModel());
+    return new SettingModule();
   }
 }
