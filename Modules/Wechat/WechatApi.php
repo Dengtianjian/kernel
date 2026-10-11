@@ -21,7 +21,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * ```php
  * $api = new WechatApi(new WechatAccount($appId, $appSecret));
- * // access_token 为空或过期时自动获取并缓存
+ * access_token 为空或过期时自动获取并缓存
  * $user = $api->get("cgi-bin/user/info", ["openid" => $openId])->getData();
  * ```
  */
