@@ -68,7 +68,7 @@ class Response
   /**
    * 响应输出的格式
    *
-   * @var "json"|"text"|"xml"|"html"
+   * @var "json"|"text"|"xml"|"html"|"buffer"
    */
   protected $outputType = NULL;
   /**
@@ -348,6 +348,20 @@ class Response
     return $this;
   }
   /**
+   * 输出为原始字节（buffer）格式的内容
+   * 不对数据做任何编码或格式化，直接原样输出，适用于二进制内容（如图片、文件流等）
+   *
+   * @param string $contentType 响应的 Content-Type
+   * @return Response
+   */
+  public function buffer($contentType = "application/octet-stream")
+  {
+    $this->header("Content-type", $contentType, true);
+    $this->outputType = "buffer";
+    return $this;
+  }
+
+  /**
    * 获取输出的主体
    *
    * @return array
@@ -468,7 +482,7 @@ class Response
         }
 
         echo $content;
-        
+
         break;
       case "text":
         if ($this->formatOutputTypeOfText) {
@@ -483,6 +497,9 @@ EOT;
           }
           Output::printContent($data);
         }
+        break;
+      case "buffer":
+        echo $data;
         break;
       default:
         Output::printContent(App::mode() === "development" ? $body : $data);

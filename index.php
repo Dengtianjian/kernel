@@ -3,7 +3,6 @@
 use kernel\Foundation\App;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Output;
-use kernel\Middleware\GlobalWechatOfficialAccountMiddleware;
 use kernel\Modules\DiscuzX\Foundation\DiscuzXApp;
 
 // include_once("./vendor/autoload.php");
