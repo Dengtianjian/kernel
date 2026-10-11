@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis\CustomMenu;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis\CustomMenu;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 自定义菜单 - 个性化菜单

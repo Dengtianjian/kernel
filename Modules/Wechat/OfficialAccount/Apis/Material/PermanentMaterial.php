@@ -1,9 +1,9 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis\Material;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis\Material;
 
 use kernel\Foundation\HTTP\Curl;
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 素材管理 - 永久素材

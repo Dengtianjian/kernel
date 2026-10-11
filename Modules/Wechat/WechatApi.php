@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\Wechat;
+namespace kernel\Modules\Wechat;
 
 use kernel\Foundation\HTTP\Curl;
 use kernel\Foundation\Object\AbilityBaseObject;

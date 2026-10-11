@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\QrCodeAndLink;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\QrCodeAndLink;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 小程序链接（URL Scheme / URL Link / Short Link）

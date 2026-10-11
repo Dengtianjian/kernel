@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 发布能力

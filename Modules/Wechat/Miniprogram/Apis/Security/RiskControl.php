@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\Security;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\Security;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 安全风控

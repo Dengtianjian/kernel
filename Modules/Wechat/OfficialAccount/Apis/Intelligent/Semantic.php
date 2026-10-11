@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis\Intelligent;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis\Intelligent;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 智能接口 - 语义理解

@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\XPay;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\XPay;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 虚拟支付 - 道具

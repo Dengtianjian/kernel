@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\Message;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\Message;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 订阅消息

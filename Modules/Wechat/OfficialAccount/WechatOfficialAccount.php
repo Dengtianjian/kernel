@@ -1,28 +1,28 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount;
+namespace kernel\Modules\Wechat\OfficialAccount;
 
-use kernel\Platform\Wechat\WechatAccount;
-use kernel\Platform\Wechat\OfficialAccount\Apis\AccountManagement;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Basic;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Comment;
-use kernel\Platform\Wechat\OfficialAccount\Apis\CustomMenu\CustomMenu;
-use kernel\Platform\Wechat\OfficialAccount\Apis\CustomMenu\Menu;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Draft;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Intelligent\Intelligent;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Material\Material;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Message\Message;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Message\TemplateMessage;
-use kernel\Platform\Wechat\OfficialAccount\Apis\Publish;
-use kernel\Platform\Wechat\OfficialAccount\Apis\UserManagement\UserManagement;
-use kernel\Platform\Wechat\OfficialAccount\Apis\WebApp;
+use kernel\Modules\Wechat\WechatAccount;
+use kernel\Modules\Wechat\OfficialAccount\Apis\AccountManagement;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Basic;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Comment;
+use kernel\Modules\Wechat\OfficialAccount\Apis\CustomMenu\CustomMenu;
+use kernel\Modules\Wechat\OfficialAccount\Apis\CustomMenu\Menu;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Draft;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Intelligent\Intelligent;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Material\Material;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Message\Message;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Message\TemplateMessage;
+use kernel\Modules\Wechat\OfficialAccount\Apis\Publish;
+use kernel\Modules\Wechat\OfficialAccount\Apis\UserManagement\UserManagement;
+use kernel\Modules\Wechat\OfficialAccount\Apis\WebApp;
 
 /**
  * 微信公众号（接口聚合入口）
  *
  * 自身即微信账号（AppId/AppSecret），作为所有公众号接口类的聚合入口：
  * 每个方法返回对应业务领域的接口对象（按需实例化，每次调用返回新实例），
- * 与小程序侧的 {@see \kernel\Platform\Wechat\Miniprogram\WechatMiniProgram} 结构对称。
+ * 与小程序侧的 {@see \kernel\Modules\Wechat\Miniprogram\WechatMiniProgram} 结构对称。
  *
  * 已聚合的领域（对应微信官方文档分类）：
  * - 基础接口：basic()
@@ -47,7 +47,7 @@ use kernel\Platform\Wechat\OfficialAccount\Apis\WebApp;
  * ```
  *
  * 说明：回复用户消息（文本/图片/图文等）不依赖账号与 access_token，为静态工具类，
- * 直接使用 {@see \kernel\Platform\Wechat\OfficialAccount\ReplyMessage}。
+ * 直接使用 {@see \kernel\Modules\Wechat\OfficialAccount\ReplyMessage}。
  */
 class WechatOfficialAccount extends WechatAccount
 {

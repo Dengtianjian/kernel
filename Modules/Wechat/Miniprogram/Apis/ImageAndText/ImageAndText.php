@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\ImageAndText;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\ImageAndText;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 图像处理与文字识别（聚合类）

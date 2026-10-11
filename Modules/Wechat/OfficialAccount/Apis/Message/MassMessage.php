@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis\Message;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis\Message;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 群发消息

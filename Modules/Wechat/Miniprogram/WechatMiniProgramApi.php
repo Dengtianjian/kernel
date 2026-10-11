@@ -1,7 +1,7 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram;
+namespace kernel\Modules\Wechat\Miniprogram;
 
-use kernel\Platform\Wechat\WechatApi;
+use kernel\Modules\Wechat\WechatApi;
 
 class WechatMiniProgramApi extends WechatApi {}

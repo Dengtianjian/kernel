@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis\Security;
+namespace kernel\Modules\Wechat\Miniprogram\Apis\Security;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
  * 小程序安全（聚合类）
@@ -17,9 +17,6 @@ use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
  * $mp->security()->contentSecurity()->msgSecCheck($content, $openid, 2);
  * $mp->security()->riskControl()->getUserRiskRank($openid, 1);
  * ```
- *
- * 说明：旧类 {@see \kernel\Platform\Wechat\Miniprogram\Apis\SecretCenter} 中已实现上述接口，
- * 二者功能重叠，建议后续统一到本聚合类下。
  */
 class Security extends WechatMiniProgramApi
 {

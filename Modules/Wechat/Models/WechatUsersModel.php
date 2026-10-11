@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\Wechat\Models;
+namespace kernel\Modules\Wechat\Models;
 
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;

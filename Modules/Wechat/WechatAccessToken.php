@@ -1,9 +1,9 @@
 <?php
 
-namespace kernel\Platform\Wechat;
+namespace kernel\Modules\Wechat;
 
 use kernel\Foundation\HTTP\Curl;
-use kernel\Platform\Wechat\Models\WechatAccountsModel;
+use kernel\Modules\Wechat\Models\WechatAccountsModel;
 
 /**
  * 微信账号级接口调用凭证（access_token）

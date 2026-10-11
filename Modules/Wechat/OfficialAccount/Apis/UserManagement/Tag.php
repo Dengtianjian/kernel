@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis\UserManagement;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis\UserManagement;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 用户管理 - 用户标签

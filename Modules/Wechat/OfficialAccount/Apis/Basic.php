@@ -1,8 +1,8 @@
 <?php
 
-namespace kernel\Platform\Wechat\OfficialAccount\Apis;
+namespace kernel\Modules\Wechat\OfficialAccount\Apis;
 
-use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
+use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccountApi;
 
 /**
  * 基础接口
@@ -10,7 +10,7 @@ use kernel\Platform\Wechat\OfficialAccount\WechatOfficialAccountApi;
  * 微信公众号基础接口：获取微信服务器 IP、jsapi_ticket，以及网络检测、
  * 接口调用频次（quota）与调用详情（rid）查询等。
  *
- * 说明：账号级接口调用凭证 access_token 由 {@see \kernel\Platform\Wechat\WechatAccessToken}
+ * 说明：账号级接口调用凭证 access_token 由 {@see \kernel\Modules\Wechat\WechatAccessToken}
  * 统一获取与缓存，各请求经 {@see WechatOfficialAccountApi::accessToken()} 自动注入，
  * 因此本类不再单独暴露 access_token 相关方法。
  *

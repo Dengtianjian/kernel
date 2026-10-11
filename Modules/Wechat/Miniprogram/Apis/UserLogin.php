@@ -1,13 +1,13 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram\Apis;
+namespace kernel\Modules\Wechat\Miniprogram\Apis;
 
 use kernel\Foundation\Result;
 use kernel\Foundation\Data\Arr;
 use kernel\Modules\Auth\Auth;
-use kernel\Platform\Wechat\Models\WechatUsersModel;
+use kernel\Modules\Wechat\Models\WechatUsersModel;
 
-use kernel\Platform\Wechat\Miniprogram\WechatMiniProgramApi;
+use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 class UserLogin extends WechatMiniProgramApi
 {

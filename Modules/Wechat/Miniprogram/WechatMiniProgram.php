@@ -1,21 +1,20 @@
 <?php
 
-namespace kernel\Platform\Wechat\Miniprogram;
+namespace kernel\Modules\Wechat\Miniprogram;
 
-use kernel\Platform\Wechat\WechatAccount;
-use kernel\Platform\Wechat\Miniprogram\Apis\Employment;
-use kernel\Platform\Wechat\Miniprogram\Apis\ImageAndText\ImageAndText;
-use kernel\Platform\Wechat\Miniprogram\Apis\Message\Message;
-use kernel\Platform\Wechat\Miniprogram\Apis\Nearby;
-use kernel\Platform\Wechat\Miniprogram\Apis\QrCodeAndLink\QrCodeAndLink;
-use kernel\Platform\Wechat\Miniprogram\Apis\Search;
-use kernel\Platform\Wechat\Miniprogram\Apis\SecretCenter;
-use kernel\Platform\Wechat\Miniprogram\Apis\Security\Security;
-use kernel\Platform\Wechat\Miniprogram\Apis\StudentIdentity;
-use kernel\Platform\Wechat\Miniprogram\Apis\TradeManagement\TradeManagement;
-use kernel\Platform\Wechat\Miniprogram\Apis\User;
-use kernel\Platform\Wechat\Miniprogram\Apis\UserLogin;
-use kernel\Platform\Wechat\Miniprogram\Apis\XPay\XPay;
+use kernel\Modules\Wechat\WechatAccount;
+use kernel\Modules\Wechat\Miniprogram\Apis\Employment;
+use kernel\Modules\Wechat\Miniprogram\Apis\ImageAndText\ImageAndText;
+use kernel\Modules\Wechat\Miniprogram\Apis\Message\Message;
+use kernel\Modules\Wechat\Miniprogram\Apis\Nearby;
+use kernel\Modules\Wechat\Miniprogram\Apis\QrCodeAndLink\QrCodeAndLink;
+use kernel\Modules\Wechat\Miniprogram\Apis\Search;
+use kernel\Modules\Wechat\Miniprogram\Apis\Security\Security;
+use kernel\Modules\Wechat\Miniprogram\Apis\StudentIdentity;
+use kernel\Modules\Wechat\Miniprogram\Apis\TradeManagement\TradeManagement;
+use kernel\Modules\Wechat\Miniprogram\Apis\User;
+use kernel\Modules\Wechat\Miniprogram\Apis\UserLogin;
+use kernel\Modules\Wechat\Miniprogram\Apis\XPay\XPay;
 
 /**
  * 微信小程序（接口聚合入口）
@@ -25,7 +24,6 @@ use kernel\Platform\Wechat\Miniprogram\Apis\XPay\XPay;
  *
  * 已聚合的领域：
  * - 用户与登录：user()、userLogin()
- * - 内容安全（旧）：SecretCenter()
  * - 小程序码和小程序链接：qrCodeAndLink()
  * - 消息相关：message()
  * - 用工关系：employment()
@@ -65,16 +63,6 @@ class WechatMiniProgram extends WechatAccount
   public function user()
   {
     return new User($this);
-  }
-  /**
-   * 内容安全（旧类，功能已被 security()->contentSecurity() 覆盖）
-   *
-   * @see Security
-   * @return SecretCenter
-   */
-  public function SecretCenter()
-  {
-    return new SecretCenter($this);
   }
   /**
    * 小程序码和小程序链接
