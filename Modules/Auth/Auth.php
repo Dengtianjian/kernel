@@ -3,7 +3,6 @@
 namespace kernel\Modules\Auth;
 
 use kernel\Foundation\Facade;
-use Override;
 
 /**
  * Auth 门面
