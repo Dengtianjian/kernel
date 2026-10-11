@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Platform\Wechat\WechatPay\V3;
+namespace kernel\Modules\WechatPay\V3;
 
 use kernel\Foundation\Result;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace kernel\Platform\Wechat\WechatPay\V3;
+namespace kernel\Modules\WechatPay\V3;
 
 use kernel\Foundation\Result;
-use kernel\Platform\Wechat\WechatPay\WechatPay;
+use kernel\Modules\WechatPay\WechatPay;
 
 class WechatPayV3 extends WechatPay
 {
