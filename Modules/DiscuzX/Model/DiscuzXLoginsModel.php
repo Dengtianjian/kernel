@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Modules\DiscuzX\Modules\Auth;
+namespace kernel\Modules\DiscuzX\Model;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Database\PDO\Schema;

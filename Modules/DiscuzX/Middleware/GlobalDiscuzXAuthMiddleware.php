@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Modules\DiscuzX\Modules\Auth;
+namespace kernel\Modules\DiscuzX\Middleware;
 
 use kernel\Foundation\HTTP\Cors;
 use kernel\Foundation\HTTP\Response;

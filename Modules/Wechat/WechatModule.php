@@ -2,7 +2,9 @@
 
 namespace kernel\Modules\Wechat;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Module\Module;
+use kernel\Modules\DiscuzX\Model\Wechat\DiscuzXWechatAccountsModel;
 use kernel\Modules\Wechat\Miniprogram\WechatMiniProgram;
 use kernel\Modules\Wechat\Models\WechatAccountsModel;
 use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccount;
@@ -90,14 +92,13 @@ class WechatModule extends Module
   /**
    * 初始化微信模块
    *
-   * @param WechatAccountsModel|null $accountsModel 账号模型，不传时使用默认实现
    */
-  public function __construct($accountsModel = null)
+  public function __construct()
   {
     // $name 是无默认值的 typed 属性，必须调用父类构造，否则注册时取 name() 会报错
     parent::__construct();
 
-    $this->accountsModel = $accountsModel ?: new WechatAccountsModel();
+    $this->accountsModel = Config::inDiscuzX() ? new DiscuzXWechatAccountsModel() : new WechatAccountsModel();
   }
 
   // ===================================================================

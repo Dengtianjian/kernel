@@ -356,15 +356,17 @@ class Config
     return self::mode($appId) === "production";
   }
   /**
-   * 是否运行在 Discuz! 环境中
+   * 是否运行在 DiscuzX 环境中
    *
-   * 通过检测常量 `IN_DISCUZ` 判断当前是否处于 Discuz! 的请求/执行上下文。
-   * 插件代码可用它区分「在 Discuz! 内运行」与「独立调用（如 CLI、单元测试）」，
+   * 通过检测 Discuz 常量 `IN_DISCUZ` 判断当前是否处于 DiscuzX 的请求/执行上下文。
+   * 内核 {@see \kernel\Foundation\Database\PDO\Table} / {@see \kernel\Foundation\Database\PDO\Model}
+   * 用它决定是否改走 Discuz 侧的查询与 DB 实现（不套内核表前缀，改用 DiscuzXQuery / DiscuzXDB）。
+   * 业务代码亦可用它区分「在 DiscuzX 内运行」与「独立调用（如 CLI、单元测试）」，
    * 进而决定是否可安全使用 `$_G`、`DB::` 等宿主提供的资源。
    *
    * @return boolean 常量 IN_DISCUZ 已定义返回 true，否则返回 false
    */
-  static function inDiscuz()
+  static function inDiscuzX()
   {
     return defined("IN_DISCUZ");
   }

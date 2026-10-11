@@ -2,7 +2,9 @@
 
 namespace kernel\Modules\Setting;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Module\Module;
+use kernel\Modules\DiscuzX\Model\DiscuzXSettingsModel;
 
 class SettingModule extends Module
 {
@@ -12,12 +14,12 @@ class SettingModule extends Module
    * @var SettingsModel
    */
   protected $model = null;
-  public function __construct($settingsModel = null)
+  public function __construct()
   {
     //* 必须调用父类构造：$name 是无默认值的 typed 属性，不初始化会在 Modules::register() 取 name() 时报错
     parent::__construct();
 
-    $this->model = $settingsModel ?: new SettingsModel();
+    $this->model = Config::inDiscuzX() ? new DiscuzXSettingsModel() : new SettingsModel();
   }
   /**
    * 反序列化设置值

@@ -3,8 +3,11 @@
 namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Module\Module;
+use kernel\Modules\DiscuzX\Model\DiscuzXLoginsModel;
+use kernel\Modules\DiscuzX\Middleware\GlobalDiscuzXAuthMiddleware;
 
 /**
  * 认证模块
@@ -49,8 +52,13 @@ class AuthModule extends Module
    */
   function onBoot()
   {
-    getApp()->middleware()->set(GlobalAuthMiddleware::class);
-    $this->loginsModel = new LoginsModel();
+    if (Config::inDiscuzX()) {
+      getApp()->middleware()->set(GlobalDiscuzXAuthMiddleware::class);
+      $this->loginsModel = new DiscuzXLoginsModel();
+    } else {
+      getApp()->middleware()->set(GlobalAuthMiddleware::class);
+      $this->loginsModel = new LoginsModel();
+    }
     // 启动期清理过期凭证，避免 logins 表无限增长
     $this->deleteExpiredTokens();
   }
