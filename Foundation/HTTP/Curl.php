@@ -547,6 +547,27 @@ class Curl
     }
 
     /**
+     * 清空已注册的上传文件
+     *
+     * upload()/file() 注册的文件在 send() 时会被并入请求体，并把该次请求强制为
+     * multipart/form-data，且**发送后不会自动移除**：复用同一实例继续发 JSON / 表单请求
+     * 前必须调用本方法，否则 CURLFile 会被带进下一次请求（请求体变成 multipart）。
+     *
+     * 与之配套的还需按需恢复 json(true)/json(false)——send() 遇到上传会把 isJson 置为 false。
+     *
+     * ```php
+     * $curl->clearUploadFiles()->json(true);   // 上传结束后回到 JSON 请求模式
+     * ```
+     *
+     * @return $this 便于继续链式调用
+     */
+    public function clearUploadFiles()
+    {
+        $this->uploadFile = [];
+        return $this;
+    }
+
+    /**
      * 设置请求体数据
      *
      * 为请求设置主体数据。序列化规则由 json() 决定：
