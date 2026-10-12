@@ -5,40 +5,40 @@ namespace kernel\Modules\WechatPay;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Result;
 
-class WechatPayV2 extends WechatPay
+class WechatPayV2 extends WechatPayApi
 {
-  protected $ApiUrl = "https://api.mch.weixin.qq.com/mmpaysptrans";
-  protected $MerchantId = null;
-  protected $ApiSecret = null;
-  protected $PublicKeyFilePath = null;
-  protected $SSLCertFilePath = null;
-  protected $SSLKeyFilePath = null;
+  protected $apiUrl = "https://api.mch.weixin.qq.com/mmpaysptrans";
+  protected $merchantId = null;
+  protected $apiSecret = null;
+  protected $publicKeyFilePath = null;
+  protected $sslCertFilePath = null;
+  protected $sslKeyFilePath = null;
   /**
    * 实例微信支付V2类
    * @link https://pay.weixin.qq.com/wiki/doc/api/index.html
    *
-   * @param string $AppId 公众平台的AppId
-   * @param string $MerchantId 微信支付平台的商户号
-   * @param string $ApiSecret 微信支付APIV2密钥
-   * @param string $PublicKeyFilePath 微信支付公钥 获取方式：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_7&index=4
-   * @param string $SSLCertFilePath 用于请求的SSL证书文件路径。从apiclient_cert.pem中导出证书部分的文件，为pem格式，请妥善保管不要泄露和被他人复制。说明：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=4_3
-   * @param string $SSLKeyFilePath 用于请求的SSL证书密钥文件路径。说明：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=4_3
+   * @param string $appId 公众平台的AppId
+   * @param string $merchantId 微信支付平台的商户号
+   * @param string $apiSecret 微信支付APIV2密钥
+   * @param string $publicKeyFilePath 微信支付公钥 获取方式：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_7&index=4
+   * @param string $sslCertFilePath 用于请求的SSL证书文件路径。从apiclient_cert.pem中导出证书部分的文件，为pem格式，请妥善保管不要泄露和被他人复制。说明：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=4_3
+   * @param string $sslKeyFilePath 用于请求的SSL证书密钥文件路径。说明：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=4_3
    */
-  public function __construct($AppId, $MerchantId, $ApiSecret, $PublicKeyFilePath, $SSLCertFilePath, $SSLKeyFilePath)
+  public function __construct($appId, $merchantId, $apiSecret, $publicKeyFilePath, $sslCertFilePath, $sslKeyFilePath)
   {
-    $this->appId = $AppId;
-    $this->MerchantId = $MerchantId;
-    $this->appSecret = $ApiSecret;
-    $this->PublicKeyFilePath = $PublicKeyFilePath;
-    $this->SSLCertFilePath = $SSLCertFilePath;
-    $this->SSLKeyFilePath = $SSLKeyFilePath;
+    $this->appId = $appId;
+    $this->merchantId = $merchantId;
+    $this->apiSecret = $apiSecret;
+    $this->publicKeyFilePath = $publicKeyFilePath;
+    $this->sslCertFilePath = $sslCertFilePath;
+    $this->sslKeyFilePath = $sslKeyFilePath;
 
-    parent::__construct($AppId, $MerchantId);
+    parent::__construct($appId, $merchantId);
     $this->CURL->json(false)->headers([
       "Content-Type" => " text/xml"
     ]);
-    $this->CURL->sslCert($SSLCertFilePath);
-    $this->CURL->sslKey($SSLKeyFilePath);
+    $this->CURL->sslCert($sslCertFilePath);
+    $this->CURL->sslKey($sslKeyFilePath);
   }
   /**
    * 生成签名
@@ -50,12 +50,12 @@ class WechatPayV2 extends WechatPay
   public function generateSign($data)
   {
     ksort($data);
-    $DataStrings = [];
+    $dataStrings = [];
     foreach ($data as $key => $item) {
-      array_push($DataStrings, $key . "=" . $item);
+      array_push($dataStrings, $key . "=" . $item);
     }
-    array_push($DataStrings, "key=" . $this->ApiSecret);
-    $dataString = implode("&", $DataStrings);
+    array_push($dataStrings, "key=" . $this->apiSecret);
+    $dataString = implode("&", $dataStrings);
     return strtoupper(md5($dataString));
   }
   /**
@@ -66,8 +66,8 @@ class WechatPayV2 extends WechatPay
    */
   protected function encryptByPublicKey($data)
   {
-    $PublicKey = file_get_contents($this->PublicKeyFilePath);
-    openssl_public_encrypt($data, $encryptedData, $PublicKey, OPENSSL_PKCS1_OAEP_PADDING);
+    $publicKey = file_get_contents($this->publicKeyFilePath);
+    openssl_public_encrypt($data, $encryptedData, $publicKey, OPENSSL_PKCS1_OAEP_PADDING);
 
     return base64_encode($encryptedData);
   }
@@ -80,30 +80,30 @@ class WechatPayV2 extends WechatPay
    */
   public function getPublicKey()
   {
-    $oldURL = $this->ApiUrl;
-    $this->ApiUrl = "https://fraud.mch.weixin.qq.com";
-    $Body = [
-      "mch_id" => $this->MerchantId,
-      "nonce_str" => $this->gererateNonceString(),
+    $oldUrl = $this->apiUrl;
+    $this->apiUrl = "https://fraud.mch.weixin.qq.com";
+    $body = [
+      "mch_id" => $this->merchantId,
+      "nonce_str" => $this->generateNonceString(),
       "sign_type" => "MD5"
     ];
-    $Body['sign'] = $this->generateSign($Body);
-    $response = $this->post("risk/getpublickey", Arr::toXML($Body), [], false);
-    $this->ApiUrl = $oldURL;
+    $body['sign'] = $this->generateSign($body);
+    $response = $this->post("risk/getpublickey", Arr::toXML($body), [], false);
+    $this->apiUrl = $oldUrl;
 
-    $R = new Result(true);
+    $result = new Result(true);
     if ($response->errorNo()) {
-      return $R->error(500, 500, "服务器错误", $response->error());
+      return $result->error(500, 500, "服务器错误", $response->error());
     }
-    $ResponseData = $response->getData();
+    $responseData = $response->getData();
     if ($response->statusCode() > 299) {
-      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+      return $result->error(500, $response->statusCode() . ":" . $responseData['code'], "服务器错误", $responseData);
     }
-    if ($ResponseData['result_code'] === "FAIL") {
-      return $R->error(500, 500 . ":" . $ResponseData['FAIL'], "服务器错误", $ResponseData);
+    if ($responseData['result_code'] === "FAIL") {
+      return $result->error(500, 500 . ":" . $responseData['FAIL'], "服务器错误", $responseData);
     }
 
-    return $R->success($ResponseData['pub_key']);
+    return $result->success($responseData['pub_key']);
   }
   /**
    * RSA公钥PKCS#1格式转成PKCS#8格式
@@ -124,56 +124,56 @@ class WechatPayV2 extends WechatPay
    * 付款到银行卡
    * @link https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=25_2
    *
-   * @param string $TransactionId 交易单号
-   * @param int|string $BankCode 银行卡所在开户行编号,详见银行编号列表：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=24_4
-   * @param string $BankNo 收款方银行卡号（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的银行卡信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权。
-   * @param string $TrueName 收款方用户名（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的姓名信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权
-   * @param int $Amount 付款金额：RMB分（支付总额，不含手续费）注：大于0的整数
-   * @param string $Description 付款到银行卡付款说明,即订单备注（UTF8编码，允许100个字符以内）
+   * @param string $transactionId 交易单号
+   * @param int|string $bankCode 银行卡所在开户行编号,详见银行编号列表：https://pay.weixin.qq.com/wiki/doc/api/tools/mch_pay_yhk.php?chapter=24_4
+   * @param string $bankNo 收款方银行卡号（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的银行卡信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权。
+   * @param string $trueName 收款方用户名（采用标准RSA算法，公钥由微信侧提供）；商户需确保收集用户的姓名信息，以及向微信支付传输用户姓名和账号标识信息做一致性校验已合法征得用户授权
+   * @param int $amount 付款金额：RMB分（支付总额，不含手续费）注：大于0的整数
+   * @param string $description 付款到银行卡付款说明,即订单备注（UTF8编码，允许100个字符以内）
    * @return Result
    */
-  public function payBank($TransactionId, $BankCode, $BankNo, $TrueName, $Amount, $Description)
+  public function payBank($transactionId, $bankCode, $bankNo, $trueName, $amount, $description)
   {
-    $NonceStr = $this->gererateNonceString();
-    $Body = [
-      "mch_id" => $this->MerchantId,
-      "partner_trade_no" => $TransactionId,
-      "nonce_str" => $NonceStr,
-      "enc_bank_no" => $this->encryptByPublicKey($BankNo),
-      "enc_true_name" => $this->encryptByPublicKey($TrueName),
-      "bank_code" => $BankCode,
-      "amount" => $Amount,
-      "desc" => $Description,
+    $nonceStr = $this->generateNonceString();
+    $body = [
+      "mch_id" => $this->merchantId,
+      "partner_trade_no" => $transactionId,
+      "nonce_str" => $nonceStr,
+      "enc_bank_no" => $this->encryptByPublicKey($bankNo),
+      "enc_true_name" => $this->encryptByPublicKey($trueName),
+      "bank_code" => $bankCode,
+      "amount" => $amount,
+      "desc" => $description,
     ];
-    $Body['sign'] = $this->generateSign($Body);
-    $response = $this->post("pay_bank", Arr::toXML($Body));
-    $R = new Result(true);
+    $body['sign'] = $this->generateSign($body);
+    $response = $this->post("pay_bank", Arr::toXML($body));
+    $result = new Result(true);
     if ($response->errorNo()) {
-      return $R->error(500, 500, "服务器错误", $response->error());
+      return $result->error(500, 500, "服务器错误", $response->error());
     }
-    $ResponseData = $response->getData();
+    $responseData = $response->getData();
     if ($response->statusCode() > 299) {
-      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+      return $result->error(500, $response->statusCode() . ":" . $responseData['code'], "服务器错误", $responseData);
     }
-    if ($ResponseData['result_code'] === "FAIL") {
-      if ($ResponseData['err_code'] === "PARAM_ERROR") {
-        return $R->error(400, 400 . ":" . $ResponseData['err_code'], $ResponseData['err_code_des'], $ResponseData);
+    if ($responseData['result_code'] === "FAIL") {
+      if ($responseData['err_code'] === "PARAM_ERROR") {
+        return $result->error(400, 400 . ":" . $responseData['err_code'], $responseData['err_code_des'], $responseData);
       }
-      return $R->error(500, 500 . ":" . $ResponseData['err_code'], "服务器错误", $ResponseData);
+      return $result->error(500, 500 . ":" . $responseData['err_code'], "服务器错误", $responseData);
     }
-    return $R->success([
-      "appId" => $this->AppId,
-      "merchantId" => $ResponseData['mch_id'],
-      "transactionId" => $TransactionId,
-      "tradeNo" => $TransactionId,
-      "returnCode" => $ResponseData['return_code'],
-      "returnMsg" => $ResponseData['return_msg'],
-      "resultCode" => $ResponseData['return_code'],
-      "errCode" => $ResponseData['err_code'],
-      "errCodeDes" => $ResponseData['err_code_des'],
-      "paymentNo" => $ResponseData['payment_no'],
-      "amount" => $ResponseData['amount'],
-      "cmmsAmt" => $ResponseData['cmms_amt'],
+    return $result->success([
+      "appId" => $this->appId,
+      "merchantId" => $responseData['mch_id'],
+      "transactionId" => $transactionId,
+      "tradeNo" => $transactionId,
+      "returnCode" => $responseData['return_code'],
+      "returnMsg" => $responseData['return_msg'],
+      "resultCode" => $responseData['return_code'],
+      "errCode" => $responseData['err_code'],
+      "errCodeDes" => $responseData['err_code_des'],
+      "paymentNo" => $responseData['payment_no'],
+      "amount" => $responseData['amount'],
+      "cmmsAmt" => $responseData['cmms_amt'],
     ]);
   }
   /**
@@ -186,39 +186,39 @@ class WechatPayV2 extends WechatPay
    */
   public function queryBank($tradeNo)
   {
-    $NonceStr = $this->gererateNonceString();
-    $Body = [
-      "mch_id" => $this->MerchantId,
+    $nonceStr = $this->generateNonceString();
+    $body = [
+      "mch_id" => $this->merchantId,
       "partner_trade_no" => $tradeNo,
-      "nonce_str" => $NonceStr
+      "nonce_str" => $nonceStr
     ];
-    $Body['sign'] = $this->generateSign($Body);
-    $response = $this->post("query_bank", Arr::toXML($Body));
-    $R = new Result(true);
+    $body['sign'] = $this->generateSign($body);
+    $response = $this->post("query_bank", Arr::toXML($body));
+    $result = new Result(true);
     if ($response->errorNo()) {
-      return $R->error(500, 500, "服务器错误", $response->error());
+      return $result->error(500, 500, "服务器错误", $response->error());
     }
-    $ResponseData = $response->getData();
+    $responseData = $response->getData();
     if ($response->statusCode() > 299) {
-      return $R->error(500, $response->statusCode() . ":" . $ResponseData['code'], "服务器错误", $ResponseData);
+      return $result->error(500, $response->statusCode() . ":" . $responseData['code'], "服务器错误", $responseData);
     }
-    if ($ResponseData['result_code'] === "FAIL") {
-      return $R->error(500, 500 . ":" . $ResponseData['FAIL'], "服务器错误", $ResponseData);
+    if ($responseData['result_code'] === "FAIL") {
+      return $result->error(500, 500 . ":" . $responseData['FAIL'], "服务器错误", $responseData);
     }
-    return $R->success([
-      "returnCode" => $ResponseData['return_code'],
-      "returnMsg" => $ResponseData['return_msg'],
-      "resultCode" => $ResponseData['return_code'],
-      "errCode" => $ResponseData['err_code'],
-      "errCodeDes" => $ResponseData['err_code_des'],
-      "tradeNo" => $ResponseData['partner_trade_no'],
-      "paymentNo" => $ResponseData['payment_no'],
-      "amount" => $ResponseData['amount'],
-      "cmmsAmt" => $ResponseData['cmms_amt'],
-      "status" => $ResponseData['status'],
-      "createTime" => $ResponseData['create_time'],
-      "paySuccessTime" => $ResponseData['pay_succ_time'],
-      "reason" => $ResponseData['reason'],
+    return $result->success([
+      "returnCode" => $responseData['return_code'],
+      "returnMsg" => $responseData['return_msg'],
+      "resultCode" => $responseData['return_code'],
+      "errCode" => $responseData['err_code'],
+      "errCodeDes" => $responseData['err_code_des'],
+      "tradeNo" => $responseData['partner_trade_no'],
+      "paymentNo" => $responseData['payment_no'],
+      "amount" => $responseData['amount'],
+      "cmmsAmt" => $responseData['cmms_amt'],
+      "status" => $responseData['status'],
+      "createTime" => $responseData['create_time'],
+      "paySuccessTime" => $responseData['pay_succ_time'],
+      "reason" => $responseData['reason'],
     ]);
   }
 }
