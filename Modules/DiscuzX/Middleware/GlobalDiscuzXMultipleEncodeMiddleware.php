@@ -2,11 +2,8 @@
 
 namespace kernel\Modules\DiscuzX\Middleware;
 
-
 use kernel\Foundation\Config;
 use kernel\Foundation\Middleware\MiddlewareBase;
-use kernel\Foundation\Data\Arr;
-use kernel\Foundation\View;
 
 class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 {
@@ -16,7 +13,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
     if (Config::get("multipleEncode")) {
       $multipleEncodeJSScript = "";
       if (CHARSET === "gbk") {
-        $langJson = \serialize(Arr::get($GLOBALS['_STORE'], '__App.langs'));
+        $langJson = \serialize(Config::has("langes") ? Config::set("langs", []) : []);
         if ($langJson === false) {
           $langJson = \serialize([]);
         }
@@ -27,7 +24,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 </script>
     ";
       } else {
-        $langJson = \json_encode(Arr::get($GLOBALS['_STORE'], '__App.langs'));
+        $langJson = \json_encode(Config::has("langes") ? Config::set("langs", []) : []);
         if ($langJson === false) {
           $langJson = \json_encode([]);
         }
@@ -37,7 +34,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 </script>
     ";
       }
-      if (Config::get("mode") === "development") {
+      if (Config::isDevelopment()) {
         $multipleEncodeJSScript .= "
 <script>
   console.log(GLANG);
