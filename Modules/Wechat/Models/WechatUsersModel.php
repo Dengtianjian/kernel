@@ -2,13 +2,12 @@
 
 namespace kernel\Modules\Wechat\Models;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;
 
 class WechatUsersModel extends Model
 {
-  public $tableName = "wechat_users";
-
   public function __construct()
   {
     $this->schema = [
@@ -21,6 +20,11 @@ class WechatUsersModel extends Model
       (new Schema("updated_at"))->varchar(12)->nullable(false)->comment("最后更新时间"),
       (new Schema("deleted_at"))->varchar(12)->nullable(true)->comment("软删除时间")->index("deleted_at"),
     ];
+
+    $this->tableName = "wechat_users";
+    if (Config::inDiscuzX()) {
+      $this->tableName = $this->discuzTableName($this->tableName);
+    }
 
     parent::__construct();
   }

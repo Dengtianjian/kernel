@@ -12,7 +12,6 @@ use kernel\Foundation\Facade;
  *
  * @method static string name() 获取模块名称
  * @method static bool booted() 模块是否已启动
- * @method static \kernel\Modules\Auth\LoginsModel|static model(mixed $val = null) 获取或设置登录模型（传参时为设置并返回自身，不传时返回当前模型）
  * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} generateToken(int $expireDays = 30) 生成 token（不落库），返回凭证数据（含 salt）
  * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} createToken(string|int $userId, int $expireDays = 30) 生成并持久化登录 Token 到 logins 表（id 自增、salt/expire_days 一并落库），返回 generateToken 同款凭证数据
  * @method static void deleteToken(string $token) 按 token 值删除登录凭证（软删除）

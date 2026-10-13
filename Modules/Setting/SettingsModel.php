@@ -2,6 +2,7 @@
 
 namespace kernel\Modules\Setting;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;
 
@@ -33,6 +34,11 @@ class SettingsModel extends Model
       (new Schema("value"))->text()->nullable(true)->comment("设置项值"),
       (new Schema("updated_at"))->varchar(12)->nullable(false)->comment("设置项最后更新时间"),
     ];
+
+    $this->tableName = "settings";
+    if (Config::inDiscuzX()) {
+      $this->tableName = $this->discuzTableName($this->tableName);
+    }
 
     parent::__construct();
   }

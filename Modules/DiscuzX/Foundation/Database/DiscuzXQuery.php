@@ -27,13 +27,6 @@ use kernel\Foundation\Database\PDO\Statement;
 class DiscuzXQuery extends Query
 {
   /**
-   * 调试模式：为 true 时执行方法只返回 SQL 字符串，不真正执行
-   *
-   * @var bool
-   */
-  protected $dryRun = false;
-
-  /**
    * 是否已显式设置过 SELECT 字段
    *
    * kernel `Query` 的 select 字段是私有属性、且 `addSelect()` 空参调用会报错，
@@ -57,21 +50,6 @@ class DiscuzXQuery extends Query
     if ($tableName) {
       $this->from(self::realTableName($tableName));
     }
-  }
-
-  /**
-   * 读取或设置 dryRun（调试用：只出 SQL 不执行）
-   *
-   * @param bool|null $val
-   * @return bool|static
-   */
-  function dryRun($val = null)
-  {
-    if (!is_null($val)) {
-      $this->dryRun = (bool) $val;
-      return $this;
-    }
-    return $this->dryRun;
   }
 
   /* ==================== SELECT 字段（记录状态） ==================== */
@@ -149,15 +127,12 @@ class DiscuzXQuery extends Query
    * 查询多行
    *
    * @param array $params 预留（Discuz 无预处理）
-   * @return array|string dryRun 时返回 SQL
+   * @return array
    */
   function get($params = [])
   {
     $sql = $this->selectSQL();
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
     return DiscuzXDB::fetchAll($sql);
   }
 
@@ -165,7 +140,7 @@ class DiscuzXQuery extends Query
    * 查询多行（DiscuzX 别名）
    *
    * @param array $params
-   * @return array|string
+   * @return array
    */
   function getAll($params = [])
   {
@@ -176,16 +151,13 @@ class DiscuzXQuery extends Query
    * 查询第一行
    *
    * @param array $params
-   * @return array|null|string 无结果返回 null
+   * @return array|null 无结果返回 null
    */
   function first($params = [])
   {
     $this->limit(1);
     $sql = $this->selectSQL();
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
     return DiscuzXDB::fetchFirst($sql);
   }
 
@@ -193,7 +165,7 @@ class DiscuzXQuery extends Query
    * 查询第一行（DiscuzX 别名）
    *
    * @param array $params
-   * @return array|null|string
+   * @return array|null
    */
   function getOne($params = [])
   {
@@ -246,7 +218,7 @@ class DiscuzXQuery extends Query
    *
    * @param string $column 列名，支持 "*"、"DISTINCT xxx"
    * @param array  $params
-   * @return int|string dryRun 时返回 SQL
+   * @return int
    */
   function count($column = "*", $params = [])
   {
@@ -317,15 +289,12 @@ class DiscuzXQuery extends Query
    * @param bool  $isIgnore
    * @param bool  $returnId 是否返回自增 ID
    * @param array $params
-   * @return bool|int|string dryRun 时返回 SQL
+   * @return bool|int
    */
   function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false, $params = [])
   {
     $sql = $this->writeSql($isReplaceInto ? "replace" : "insert", $data, ["insertIsIgnore" => $isIgnore]);
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
 
     \DB::query($sql);
     return $returnId ? DiscuzXDB::insertId() : true;
@@ -346,15 +315,12 @@ class DiscuzXQuery extends Query
    *
    * @param array $data
    * @param array $params
-   * @return bool|string dryRun 时返回 SQL
+   * @return bool
    */
   function update($data, $params = [])
   {
     $sql = $this->writeSql("update", $data);
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
 
     \DB::query($sql);
     return true;
@@ -364,15 +330,12 @@ class DiscuzXQuery extends Query
    * 删除（需先通过 where() 指定条件，否则会清空全表）
    *
    * @param array $params
-   * @return bool|string dryRun 时返回 SQL
+   * @return bool
    */
   function delete($params = [])
   {
     $sql = $this->writeSql("delete");
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
 
     \DB::query($sql);
     return true;
@@ -386,15 +349,12 @@ class DiscuzXQuery extends Query
    *
    * @param array $fieldNames 字段名列表
    * @param array $values     二维数组，每行按 $fieldNames 顺序排列
-   * @return bool|string
+   * @return bool
    */
   function batchUpdate($fieldNames, $values)
   {
     $sql = Statement::batchUpdate($this->getTableName(), $fieldNames, $values);
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
 
     \DB::query($sql);
     return true;
@@ -405,7 +365,7 @@ class DiscuzXQuery extends Query
    *
    * @param string $field
    * @param int    $value
-   * @return bool|string
+   * @return bool
    */
   function increment($field, $value = 1)
   {
@@ -419,7 +379,7 @@ class DiscuzXQuery extends Query
    *
    * @param string $field
    * @param int    $value
-   * @return bool|string
+   * @return bool
    */
   function decrement($field, $value = 1)
   {
@@ -450,7 +410,7 @@ class DiscuzXQuery extends Query
    *
    * @param string $func
    * @param string $column
-   * @return mixed|string
+   * @return mixed
    */
   protected function aggregate($func, $column)
   {
@@ -460,9 +420,6 @@ class DiscuzXQuery extends Query
 
     $sql = $this->resolveSQL($query->getSQL());
     $this->afterExecute();
-    if ($this->dryRun) {
-      return $sql;
-    }
 
     $value = DiscuzXDB::resultFirst($sql);
     return $value === null ? 0 : $value;

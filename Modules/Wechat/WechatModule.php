@@ -2,9 +2,7 @@
 
 namespace kernel\Modules\Wechat;
 
-use kernel\Foundation\Config;
 use kernel\Foundation\Module\Module;
-use kernel\Modules\DiscuzX\Model\Wechat\DiscuzXWechatAccountsModel;
 use kernel\Modules\Wechat\Miniprogram\WechatMiniProgram;
 use kernel\Modules\Wechat\Models\WechatAccountsModel;
 use kernel\Modules\Wechat\OfficialAccount\WechatOfficialAccount;
@@ -59,12 +57,6 @@ class WechatModule extends Module
    */
   protected $name = "wechat";
   /**
-   * 账号模型
-   *
-   * @var WechatAccountsModel|null
-   */
-  protected $accountsModel = null;
-  /**
    * 已登记的账号（appId => WechatAccount）
    *
    * @var array<string, WechatAccount>
@@ -88,18 +80,6 @@ class WechatModule extends Module
    * @var bool
    */
   protected $loaded = false;
-
-  /**
-   * 初始化微信模块
-   *
-   */
-  public function __construct()
-  {
-    // $name 是无默认值的 typed 属性，必须调用父类构造，否则注册时取 name() 会报错
-    parent::__construct();
-
-    $this->accountsModel = Config::inDiscuzX() ? new DiscuzXWechatAccountsModel() : new WechatAccountsModel();
-  }
 
   // ===================================================================
   // 注册表
@@ -333,7 +313,7 @@ class WechatModule extends Module
     $this->loaded = true;
 
     try {
-      $rows = $this->accountsModel->get();
+      $rows = WechatAccountsModel::get();
       foreach ($rows as $row) {
         $row = $this->normalizeRow($row);
         $account = $this->makeAccount($row);

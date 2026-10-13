@@ -1,10 +1,10 @@
 <?php
 
-namespace kernel\Modules\DiscuzX\Model\System;
+namespace kernel\Modules\DiscuzX\Model\System\Thread;
 
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Foundation\Database\PDO\Model;
 
-class ForumThreadModel extends DiscuzXModel
+class ForumThreadModel extends Model
 {
   public $tableName = "forum_thread";
   public function items($tids = null, $subjectKeywords = null, $authorIds = null, $page = 1, $perPage = 10)

@@ -9,19 +9,6 @@ use kernel\Modules\DiscuzX\Model\DiscuzXSettingsModel;
 class SettingModule extends Module
 {
   /**
-   * 设置项模型实例
-   *
-   * @var SettingsModel
-   */
-  protected $model = null;
-  public function __construct()
-  {
-    //* 必须调用父类构造：$name 是无默认值的 typed 属性，不初始化会在 Modules::register() 取 name() 时报错
-    parent::__construct();
-
-    $this->model = Config::inDiscuzX() ? new DiscuzXSettingsModel() : new SettingsModel();
-  }
-  /**
    * 反序列化设置值
    *
    * 存储时统一 serialize()，读取时还原；兼容「字符串 false」与「布尔 false」区分：
@@ -50,7 +37,7 @@ class SettingModule extends Module
    */
   public function items(...$names)
   {
-    $settingsData = $this->model->where("name", $names)->get();
+    $settingsData = SettingsModel::where("name", $names)->get();
     $settings = [];
     foreach ($settingsData as $item) {
       $settings[$item['name']] = $item['value'] ? $this->decodeValue($item['value']) : null;
@@ -65,7 +52,7 @@ class SettingModule extends Module
    */
   public function item($name)
   {
-    $setting = $this->model->where("name", $name)->first();
+    $setting = SettingsModel::where("name", $name)->first();
     if (!$setting) {
       return null;
     }
@@ -79,7 +66,7 @@ class SettingModule extends Module
    */
   public function exists($name)
   {
-    return $this->model->where("name", $name)->exists();
+    return SettingsModel::where("name", $name)->exists();
   }
   /**
    * 添加设置项
@@ -91,7 +78,7 @@ class SettingModule extends Module
    */
   public function add($name, $value = null, $serialization = true)
   {
-    return $this->model->insert([
+    return SettingsModel::insert([
       "name" => $name,
       "value" => $serialization ? serialize($value) : $value,
       "updated_at" => time(),
@@ -107,7 +94,7 @@ class SettingModule extends Module
    */
   public function save($name, $value, $serialization = true)
   {
-    return $this->model->where("name", $name)->update([
+    return SettingsModel::where("name", $name)->update([
       "value" => $serialization ? serialize($value) : $value,
       "updated_at" => time(),
     ]);
@@ -121,7 +108,7 @@ class SettingModule extends Module
   public function saveItems($settings)
   {
     foreach ($settings as $name => $value) {
-      $this->model->where("name", $name)->update([
+      SettingsModel::where("name", $name)->update([
         "value" => serialize($value),
         "updated_at" => time(),
       ]);

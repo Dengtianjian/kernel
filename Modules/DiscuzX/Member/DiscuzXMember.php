@@ -262,7 +262,7 @@ class DiscuzXMember
     if ($registerVerify) {
       if ($areaVerifyWhite) {
         $location = $whitearea = '';
-        $location = trim(convertip($_G['clientip'], "./"));
+        $location = trim(convertip($_G['clientip']));
         if ($location) {
           $whitearea = preg_quote(trim($areaVerifyWhite), '/');
           $whitearea = str_replace(array("\\*"), array('.*'), $whitearea);

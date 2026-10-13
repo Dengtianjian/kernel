@@ -2,6 +2,7 @@
 
 namespace kernel\Model;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;
 
@@ -28,8 +29,6 @@ use kernel\Foundation\Database\PDO\Schema;
  */
 class FilesModel extends Model
 {
-  public $tableName = "files";
-
   /**
    * 字段类型映射（字段名 → PHP 类型）
    *
@@ -80,6 +79,11 @@ class FilesModel extends Model
       (new Schema("created_at"))->unixtime()->nullable(false)->comment("创建时间"),
       (new Schema("updated_at"))->unixtime()->nullable(false)->comment("最后更新时间"),
     ];
+
+    $this->tableName = "files";
+    if (Config::inDiscuzX()) {
+      $this->tableName = $this->discuzTableName($this->tableName);
+    }
 
     parent::__construct();
   }

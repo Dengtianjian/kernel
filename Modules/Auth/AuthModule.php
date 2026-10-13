@@ -6,7 +6,6 @@ use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Module\Module;
-use kernel\Modules\DiscuzX\Model\DiscuzXLoginsModel;
 use kernel\Modules\DiscuzX\Middleware\GlobalDiscuzXAuthMiddleware;
 
 /**
@@ -28,9 +27,6 @@ class AuthModule extends Module
 {
   /** @var string 模块标识，用于注册与查找 */
   protected $name = "auth";
-
-  /** @var string|null 登录凭证模型，首次访问时延迟初始化 */
-  protected $loginsModel = null;
 
   /** @var string|null 当前请求的 token 值（由中间件写入） */
   protected $token = null;
@@ -54,10 +50,8 @@ class AuthModule extends Module
   {
     if (Config::inDiscuzX()) {
       getApp()->middleware()->set(GlobalDiscuzXAuthMiddleware::class);
-      $this->loginsModel = new DiscuzXLoginsModel();
     } else {
       getApp()->middleware()->set(GlobalAuthMiddleware::class);
-      $this->loginsModel = new LoginsModel();
     }
     // 启动期清理过期凭证，避免 logins 表无限增长
     $this->deleteExpiredTokens();
@@ -98,7 +92,7 @@ class AuthModule extends Module
     $tokenData = $this->generateToken($expireDays);
     $now = time();
     // id 为自增主键（bigint autoIncrement），无需手动生成
-    $this->model()->insert([
+    LoginsModel::insert([
       "token" => $tokenData["value"],
       "salt" => $tokenData["salt"],
       "expires_at" => $tokenData["expiresAt"],
@@ -118,7 +112,7 @@ class AuthModule extends Module
    */
   function deleteToken($token)
   {
-    $this->model()->where("token", $token)->delete();
+    LoginsModel::where("token", $token)->delete();
   }
   /**
    * 清理已过期的登录凭证（物理删除，含已软删除的）
@@ -127,7 +121,7 @@ class AuthModule extends Module
    */
   function deleteExpiredTokens()
   {
-    $this->model()->where("expires_at", "<", time())->forceDelete();
+    LoginsModel::where("expires_at", "<", time())->forceDelete();
   }
   /**
    * 吊销某用户的所有登录凭证（软删除，常用于改密码后全平台下线）
@@ -137,28 +131,7 @@ class AuthModule extends Module
    */
   function deleteTokensByUser($userId)
   {
-    $this->model()->where("user_id", $userId)->delete();
-  }
-  /**
-   * 获取或替换登录凭证模型（读写一体）
-   *
-   * 无参调用返回当前模型（延迟初始化：CLI 等未走 onBoot 的场景首次访问时自动 new LoginsModel）；
-   * 传入实例则替换并返回自身，便于测试注入。
-   *
-   * @param \kernel\Modules\Auth\LoginsModel|null $val
-   * @return \kernel\Modules\Auth\LoginsModel|static
-   */
-  function model($val = null)
-  {
-    if (!is_null($val)) {
-      $this->loginsModel = $val;
-      return $this;
-    }
-    // 延迟初始化：CLI（schedule:run）等未走 onBoot 的场景也能直接使用
-    if ($this->loginsModel === null) {
-      $this->loginsModel = new LoginsModel();
-    }
-    return $this->loginsModel;
+    LoginsModel::where("user_id", $userId)->delete();
   }
   /**
    * 读取或设置当前 token（读写一体）

@@ -5,7 +5,6 @@ namespace kernel\Modules\DiscuzX\Foundation\Storage;
 use kernel\Foundation\FileSystem\Storage\FileStorage;
 use kernel\Foundation\FileSystem\Storage\StorageSignature;
 use kernel\Modules\DiscuzX\DiscuzXURL;
-use kernel\Modules\DiscuzX\Model\DiscuzXFilesModel;
 
 class DiscuzXStorage extends FileStorage
 {
@@ -14,11 +13,6 @@ class DiscuzXStorage extends FileStorage
   {
     parent::__construct($disks);
     $this->baseURL = DiscuzXURL::baseURL();
-  }
-
-  public function enableDataSave($model = null)
-  {
-    return parent::enableDataSave($model ?: $this->model ?: new DiscuzXFilesModel());
   }
 
   /**

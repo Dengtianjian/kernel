@@ -2,9 +2,9 @@
 
 namespace kernel\Modules\DiscuzX\Model\System;
 
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Foundation\Database\PDO\Model;
 
-class CommonUserGroupModel extends DiscuzXModel
+class CommonUserGroupModel extends Model
 {
   public $tableName = "common_usergroup";
 }

@@ -2,6 +2,7 @@
 
 namespace kernel\Modules\Wechat\Models;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;
 
@@ -31,6 +32,11 @@ class WechatAccountsModel extends Model
       (new Schema("updated_at"))->unixtime()->nullable(false)->comment("最后更新时间")
     ];
 
-    parent::__construct("wechat_accounts");
+    $this->tableName = "wechat_accounts";
+    if (Config::inDiscuzX()) {
+      $this->tableName = $this->discuzTableName($this->tableName);
+    }
+
+    parent::__construct();
   }
 }

@@ -3,6 +3,7 @@
 namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Config;
 use kernel\Foundation\Database\PDO\Model;
 use kernel\Foundation\Database\PDO\Schema;
 
@@ -64,6 +65,11 @@ class LoginsModel extends Model
       (new Schema("updated_at"))->unixtime()->nullable(true)->comment("最后更新时间"),
       (new Schema("deleted_at"))->unixtime()->nullable(true)->comment("删除时间"),
     ];
+
+    $this->tableName = "logins";
+    if (Config::inDiscuzX()) {
+      $this->tableName = $this->discuzTableName($this->tableName);
+    }
 
     parent::__construct();
   }
