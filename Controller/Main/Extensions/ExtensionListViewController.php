@@ -20,14 +20,14 @@ class ExtensionListViewController extends AuthController
   public $admin = true;
   public function data($request)
   {
-    $extensions = Extensions::scanDir("source/plugin/" . Arr::get($GLOBALS['_STORE'], '__App.id'));
+    $extensions = Extensions::scanDir("source/plugin/" . getApp()::id());
     $extensionIds = array_keys($extensions);
     $EM = new ExtensionsModel();
     $DBExtensions = $EM->getByExtensionId($extensionIds);
     $DBExtensions = Arr::indexToAssoc($DBExtensions, "extension_id");
     $insertNewData = [];
     $now = time();
-    $pluginId = Arr::get($GLOBALS['_STORE'], '__App.id');
+    $pluginId = getApp()::id();
     foreach ($extensions as $id => &$extension) {
       if ($DBExtensions[$id]) {
         unset($extension['id']);
@@ -54,8 +54,7 @@ class ExtensionListViewController extends AuthController
       $EM->insert($insertNewData);
     }
 
-    View::title(DiscuzXLang::value("kernel/extension_list"));
-    Response::success([
+    return $this->response->view("kernel/extension_list", [
       "extensions" => $extensions,
       "extensionCount" => count($extensions)
     ]);

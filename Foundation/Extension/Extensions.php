@@ -65,7 +65,7 @@ class Extensions
     if ($extensionRootPath) {
       $configFilePath = \DISCUZ_ROOT . $extensionRootPath . "/extension.json";
     } else {
-      $configFilePath = DISCUZ_ROOT . "source/plugin/" . Arr::get($GLOBALS['_STORE'], '__App.id') . "/Extensions/$extensionId/extension.json";
+      $configFilePath = DISCUZ_ROOT . "source/plugin/" .getApp()::id() . "/Extensions/$extensionId/extension.json";
     }
     if (!\file_exists($configFilePath)) {
       return false;

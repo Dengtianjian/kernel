@@ -4,6 +4,7 @@ namespace kernel\Modules\DiscuzX\Middleware;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Middleware\MiddlewareBase;
+use kernel\Modules\DiscuzX\Foundation\DiscuzXLang;
 
 class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 {
@@ -13,7 +14,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
     if (Config::get("multipleEncode")) {
       $multipleEncodeJSScript = "";
       if (CHARSET === "gbk") {
-        $langJson = \serialize(Config::has("langes") ? Config::set("langs", []) : []);
+        $langJson = \serialize(DiscuzXLang::all());
         if ($langJson === false) {
           $langJson = \serialize([]);
         }
@@ -24,7 +25,7 @@ class GlobalDiscuzXMultipleEncodeMiddleware extends MiddlewareBase
 </script>
     ";
       } else {
-        $langJson = \json_encode(Config::has("langes") ? Config::set("langs", []) : []);
+        $langJson = \json_encode(DiscuzXLang::all());
         if ($langJson === false) {
           $langJson = \json_encode([]);
         }
