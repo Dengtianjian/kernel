@@ -148,42 +148,4 @@ class DiscuzXProvisioner extends Provisioner
     parent::uninstall();
     FileSystem::deleteDirectory(DiscuzXPath::pluginData());
   }
-  /**
-   * 清理安装 / 升级脚本目录
-   *
-   * 等价于 `cleanInstall()` + `cleanUpgrade()`，随后再删除 `{appRoot}/Provisioner` 目录本身
-   * （安装或升级完成后释放脚本占用的目录）。
-   *
-   * @return bool 删除 `{appRoot}/Provisioner` 的结果（目录不存在时以底层删除结果为准）
-   */
-  public function clean()
-  {
-    $this->cleanInstall();
-    $this->cleanUpgrade();
-    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner"));
-  }
-  /**
-   * 清理安装脚本目录
-   *
-   * 删除 `{appRoot}/Provisioner/Install`。
-   *
-   * @return bool 是否删除成功
-   */
-  public function cleanInstall()
-  {
-    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner", "Install"));
-  }
-  /**
-   * 清理升级脚本目录
-   *
-   * 删除 `{appRoot}/Provisioner/Upgrade`。
-   * 注意该目录并非本类实际使用的升级脚本目录（构造时用的是 `{appRoot}/Upgrades`，
-   * 而现有脚本又在 `Iuu/Upgrade(s)` 下），因此升级后调用本方法不会清掉刚执行过的脚本。
-   *
-   * @return bool 是否删除成功
-   */
-  public function cleanUpgrade()
-  {
-    return FileSystem::deleteDirectory(Path::join(Path::root(), "Provisioner", "Upgrades"));
-  }
 }
