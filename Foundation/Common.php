@@ -159,12 +159,12 @@ if (!function_exists("path")) {
    *
    * 委托 Path::{$name}()，白名单限定，避免任意方法调用。
    *
-   * @param string $name 路径 getter 名：projectRoot|kernelRoot|root|data|storage|kernelDir|dir
+   * @param string $name 路径 getter 名：project|kernel|root|data|storage|kernelDir|dir
    * @return string|null
    */
   function path($name = "root")
   {
-    $getters = ["projectRoot", "kernelRoot", "root", "data", "storage", "kernelDir", "dir"];
+    $getters = ["project", "kernel", "root", "data", "storage", "kernelDir", "dir"];
     if (!in_array($name, $getters, true)) {
       throw new Error("未知路径名称「{$name}」", 500, 500);
     }

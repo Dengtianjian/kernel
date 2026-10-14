@@ -114,7 +114,7 @@ class App
   {
     $this->register($id, $kernelId);
 
-    include_once(Path::join(Path::kernelRoot() . "/Foundation/Common.php"));
+    include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");

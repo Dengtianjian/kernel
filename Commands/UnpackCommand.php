@@ -37,8 +37,8 @@ class UnpackCommand
    */
   public function handle($console, $args, $options): int
   {
-    $projectRoot = Path::projectRoot();
-    if ($projectRoot === null) {
+    $project = Path::project();
+    if ($project === null) {
       $console->error("Cannot resolve project root.");
       return 1;
     }
@@ -66,8 +66,8 @@ class UnpackCommand
 
     $failed = false;
     foreach ($targets as $file => $dir) {
-      $source = $projectRoot . "/" . $file;
-      $dest = $projectRoot . "/" . $dir;
+      $source = $project . "/" . $file;
+      $dest = $project . "/" . $dir;
 
       if (!is_file($source)) {
         $console->warning("Skip: archive not found: {$source}");

@@ -18,8 +18,8 @@ use kernel\Foundation\FileSystem\Path;
  *
  * 用法：
  * ```php
- * // 内核自带语言包在 kernelRoot 下；第二个参数为基路径，默认 Path::root()（应用根）
- * DiscuzXLang::load("Modules/DiscuzX/Langs/utf-8", Path::kernelRoot());
+ * // 内核自带语言包在 kernel 下；第二个参数为基路径，默认 Path::root()（应用根）
+ * DiscuzXLang::load("Modules/DiscuzX/Langs/utf-8", Path::kernel());
  *
  * DiscuzXLang::value("kernel/extension_list");              // 单个文案
  * DiscuzXLang::value("common/save", "common/cancel");       // ["保存", "取消"]
@@ -71,13 +71,13 @@ class DiscuzXLang
    * 第 2 步的类型判断既兼容「`return` 数组」的新写法，也避免 `include` 对
    * 「没有 return 的文件」返回 `1` 而被当成值写入一个键为空的噪音项。
    *
-   * 由 `DiscuzXApp::__construct()` 在应用启动时调用（内核自带语言包 → `$basePath = Path::kernelRoot()`）。
+   * 由 `DiscuzXApp::__construct()` 在应用启动时调用（内核自带语言包 → `$basePath = Path::kernel()`）。
    *
    * @param string $filePath 语言包路径，**相对于 `$basePath`**（可省略 `.php` 扩展名）。
    *                         注意 `Path::join` 只是朴素拼接、不识别绝对路径：传绝对路径会被拼到
    *                         `$basePath` 之后导致找不到文件并抛错，请传相对路径或用 `$basePath` 指定基准目录
    * @param string|null $basePath 基路径，默认 `Path::root()`（应用根）；内核自带语言包位于
-   *                              `Path::kernelRoot()/Modules/DiscuzX/Langs/`，需显式传入 `Path::kernelRoot()`
+   *                              `Path::kernel()/Modules/DiscuzX/Langs/`，需显式传入 `Path::kernel()`
    * @return void
    *
    * @throws Error 解析后的文件不存在时抛出（statusCode = 500、errorCode = `DiscuzXLang:500001`、

@@ -366,7 +366,7 @@ class ExceptionHandler
     $previous
   ) {
     $appViewDir = Path::root() . "/Views";
-    $kernelViewDir = Path::kernelRoot() . "/Views";
+    $kernelViewDir = Path::kernel() . "/Views";
 
     // 1. 优先应用层视图
     try {
@@ -387,7 +387,7 @@ class ExceptionHandler
           "traceString" => $traceString,
           "previous" => $previous,
           "details" => $errorDetails,
-        ], "Views", "kernel_page", Path::kernelRoot());
+        ], "Views", "kernel_page", Path::kernel());
         $viewResponse->statusCode($statusCode);
         $viewResponse->output();
         return;

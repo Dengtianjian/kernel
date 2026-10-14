@@ -475,10 +475,10 @@ class Response
         $content = $data;
 
         if ($this->responseStatusCode > 399 && $this->responseStatusCode < 499) {
-          $content = ResponseView::render(Path::join(Path::kernelRoot(), "Views", "4xx.php"), $body);
+          $content = ResponseView::render(Path::join(Path::kernel(), "Views", "4xx.php"), $body);
         }
         if ($this->responseStatusCode > 499) {
-          $content = ResponseView::render(Path::join(Path::kernelRoot(), "Views", "5xx.php"), $body);
+          $content = ResponseView::render(Path::join(Path::kernel(), "Views", "5xx.php"), $body);
         }
 
         echo $content;

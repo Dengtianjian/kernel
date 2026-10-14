@@ -88,15 +88,15 @@ $App->run();
 | `F_KERNEL` | 内核加载标识，各文件通过此常量防止直接访问 |
 | `App::id()` | 当前 App 标识（静态方法，从当前实例读取，未实例化返回 null） |
 | `App::kernelId()` | 内核标识（静态方法，从当前实例读取，未实例化返回 null） |
-| `Path::projectRoot()` | 项目根目录路径（自动计算的静态 getter） |
-| `Path::kernelRoot()` | 内核根目录路径（自动计算的静态 getter） |
+| `Path::project()` | 项目根目录路径（自动计算的静态 getter） |
+| `Path::kernel()` | 内核根目录路径（自动计算的静态 getter） |
 | `Path::root()` | App 根目录路径（自动计算的静态 getter） |
 | `Path::data()` | App 数据目录路径（自动计算的静态 getter） |
 | `Path::storage()` | App 存储目录路径（自动计算的静态 getter） |
 | `Path::kernelDir()` | 内核目录相对路径（自动计算的静态 getter） |
 | `Path::dir()` | App 目录相对路径（自动计算的静态 getter） |
 
-> 路径体系已抽离到 `Path` 类（`kernel\Foundation\FileSystem\Path`，纯静态、无副作用），FileSystem 只保留文件操作。Path 无任何静态属性，7 个路径 getter 在每次静态方法调用时自动计算：`kernelRoot` 为本类所在内核目录（永远正确）；`projectRoot` 在 DiscuzX 平台取 `DISCUZ_ROOT`（去尾斜杠）、普通项目为内核上级目录；`root`/`data`/`storage` 由内核同级目录与 `App::id()` 推导；`kernelDir`/`dir` 为对应绝对路径相对 `projectRoot` 的相对路径。`App` 构造在 `defineConstants()` 之后执行 `new FileSystem`（无参构造，构造时通过 `Path::root()` 确保 `data`/`storage` 目录存在；未实例化 App 时跳过目录创建）。依赖 `App::id()` 的 getter（`root`/`data`/`storage`/`dir`）在未实例化 App 时返回 null；DiscuzX 平台无需任何额外配置。FileSystem 承担文件操作：13 个方法（upload/createFile/deleteDirectory/clearFolder/copyFolder/getFileInfo/deleteFile/readFile/copyFile/moveFile/ensureDirectory/fileSize/cloneDirectory）已并入本类，原 FileManager 类已删除。
+> 路径体系已抽离到 `Path` 类（`kernel\Foundation\FileSystem\Path`，纯静态、无副作用），FileSystem 只保留文件操作。Path 无任何静态属性，7 个路径 getter 在每次静态方法调用时自动计算：`kernel` 为本类所在内核目录（永远正确）；`project` 在 DiscuzX 平台取 `DISCUZ_ROOT`（去尾斜杠）、普通项目为内核上级目录；`root`/`data`/`storage` 由内核同级目录与 `App::id()` 推导；`kernelDir`/`dir` 为对应绝对路径相对 `project` 的相对路径。`App` 构造在 `defineConstants()` 之后执行 `new FileSystem`（无参构造，构造时通过 `Path::root()` 确保 `data`/`storage` 目录存在；未实例化 App 时跳过目录创建）。依赖 `App::id()` 的 getter（`root`/`data`/`storage`/`dir`）在未实例化 App 时返回 null；DiscuzX 平台无需任何额外配置。FileSystem 承担文件操作：13 个方法（upload/createFile/deleteDirectory/clearFolder/copyFolder/getFileInfo/deleteFile/readFile/copyFile/moveFile/ensureDirectory/fileSize/cloneDirectory）已并入本类，原 FileManager 类已删除。
 
 ## 版本管理
 

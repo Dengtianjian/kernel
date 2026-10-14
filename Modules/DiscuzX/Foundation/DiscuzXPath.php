@@ -16,11 +16,11 @@ use kernel\Foundation\FileSystem\Path;
  *
  * | 父类方法 | 是否覆盖 | DiscuzX 取值 |
  * |---|---|---|
- * | `projectRoot()` | 否（父类已含 DiscuzX 分支） | `DISCUZ_ROOT` 去尾斜杠 |
- * | `kernelRoot()` | 否（与部署位置无关，永远正确） | `{projectRoot}/source/plugin/gstudio_kernel` |
- * | `root()` | 否（父类推导在插件布局下恰好正确） | `{projectRoot}/source/plugin/{appId}` |
+ * | `project()` | 否（父类已含 DiscuzX 分支） | `DISCUZ_ROOT` 去尾斜杠 |
+ * | `kernel()` | 否（与部署位置无关，永远正确） | `{project}/source/plugin/gstudio_kernel` |
+ * | `root()` | 否（父类推导在插件布局下恰好正确） | `{project}/source/plugin/{appId}` |
  * | `kernelDir()` | 否（父类推导正确） | `source/plugin/gstudio_kernel` |
- * | `data()` | **是** | `{projectRoot}/data/plugindata/{appId}`（Discuz 插件数据惯例） |
+ * | `data()` | **是** | `{project}/data/plugindata/{appId}`（Discuz 插件数据惯例） |
  * | `storage()` | **是** | `{data()}/Storage`（用户文件放 Discuz data 下，不写进插件目录） |
  * | `dir()` | **是**（并修正父类"两个变量同值"的笔误） | `source/plugin/{appId}` |
  * | `join()` / `optimizedPath()` | 否（与平台无关） | — |
@@ -30,9 +30,9 @@ use kernel\Foundation\FileSystem\Path;
  *
  * | 方法 | 含义 | 示例 |
  * |---|---|---|
- * | `pluginRoot()` | 插件目录（绝对路径） | `{projectRoot}/source/plugin` |
+ * | `pluginRoot()` | 插件目录（绝对路径） | `{project}/source/plugin` |
  * | `plugin()` | 插件目录（相对路径） | `source/plugin` |
- * | `dataRoot()` | Discuz data 目录（绝对路径） | `{projectRoot}/data` |
+ * | `dataRoot()` | Discuz data 目录（绝对路径） | `{project}/data` |
  *
  * ## 使用前提（重要）
  *
@@ -52,33 +52,22 @@ use kernel\Foundation\FileSystem\Path;
  */
 class DiscuzXPath extends Path
 {
-  /**
-   * 应用数据目录（绝对路径）—— 覆盖父类
-   *
-   * DiscuzX 惯例是把插件数据放在站点 `data/plugindata/{appId}` 下，
-   * 而不是插件自身目录内（插件目录可能在升级/覆盖时被整体替换）。
-   *
-   * @return string|null 形如 `{projectRoot}/data/plugindata/{appId}`；未实例化 App 时返回 null
-   */
   public static function data()
   {
-    $appId = App::id();
+    return self::join(self::root(), "Data");
+  }
+  public static function pluginData()
+  {
+    $appId = getApp()::id();
     if ($appId === null) {
       return null;
     }
-    return self::join(self::projectRoot(), "data", "plugindata", $appId);
+    return self::join(self::project(), "data", "plugindata", $appId);
   }
 
-  /**
-   * 应用存储目录（绝对路径）—— 覆盖父类
-   *
-   * 与 {@see data()} 保持一致，落在 Discuz data 目录下（而非插件目录内的 `Storage`）。
-   *
-   * @return string|null 形如 `{projectRoot}/data/plugindata/{appId}/Storage`
-   */
   public static function storage()
   {
-    $data = self::data();
+    $data = self::pluginData();
     return $data === null ? null : self::join($data, "Storage");
   }
 
@@ -96,33 +85,17 @@ class DiscuzXPath extends Path
     if ($appRoot === null) {
       return null;
     }
-    return self::relativePath($appRoot, (string) self::projectRoot());
-  }
-
-  /**
-   * 求 $path 相对 $base（绝对路径前缀）的路径
-   *
-   * 父类同名方法为 `private`，不参与继承、无法覆盖，这里提供 public 版本供本模块使用
-   * （逻辑与父类一致：截掉前缀并把分隔符规范化为当前系统的 DIRECTORY_SEPARATOR）。
-   *
-   * @param string $path 绝对路径
-   * @param string $base 绝对路径前缀
-   * @return string 相对路径（已去掉前导分隔符）
-   */
-  public static function relativePath(string $path, string $base): string
-  {
-    $relative = substr($path, strlen($base));
-    return ltrim(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $relative), DIRECTORY_SEPARATOR);
+    return self::relativePath($appRoot, (string) self::project());
   }
 
   /**
    * 插件目录（绝对路径）
    *
-   * @return string 形如 `{projectRoot}/source/plugin`
+   * @return string 形如 `{project}/source/plugin`
    */
-  public static function pluginRoot(): string
+  public static function plugin(): string
   {
-    return (string) self::join(self::projectRoot(), "source", "plugin");
+    return (string) self::join(self::project(), "source", "plugin");
   }
 
   /**
@@ -130,21 +103,8 @@ class DiscuzXPath extends Path
    *
    * @return string 固定为 `source/plugin`
    */
-  public static function plugin(): string
+  public static function pluginDir(): string
   {
     return "source/plugin";
-  }
-
-  /**
-   * Discuz data 目录（绝对路径）
-   *
-   * 注意：与覆盖后的 {@see data()} 不同——`data()` 是**当前插件**的数据目录，
-   * 本方法返回的是站点 `data` 根目录。
-   *
-   * @return string 形如 `{projectRoot}/data`
-   */
-  public static function dataRoot(): string
-  {
-    return (string) self::join(self::projectRoot(), "data");
   }
 }

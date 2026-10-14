@@ -11,12 +11,12 @@ use kernel\Foundation\App;
  * 每次调用自动计算，无任何静态属性、无缓存。
  *
  * 7 个路径 getter：
- *   kernelRoot  = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
- *   projectRoot = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernelRoot 的上级目录
- *   root        = kernelRoot 同级目录下的 {App::id()}
- *   data        = root/Data
- *   storage     = root/Storage
- *   kernelDir/dir = kernelRoot/root 相对 projectRoot 的路径
+ *   kernel        = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
+ *   project       = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernel 的上级目录
+ *   root          = kernel 同级目录下的 {App::id()}
+ *   data          = root/Data
+ *   storage       = root/Storage
+ *   kernelDir/dir = kernel/root 相对 project 的路径
  *
  * 依赖 App::id() 的 getter（root/data/storage/dir）在未实例化 App（App::id() 为 null）
  * 时返回 null。
@@ -32,13 +32,13 @@ class Path
    *
    * @return string|null
    */
-  public static function projectRoot()
+  public static function project()
   {
     if (defined("\\DISCUZ_ROOT")) {
       return rtrim(\DISCUZ_ROOT, "/\\");
     }
-    $kernelRoot = self::kernelRoot();
-    return $kernelRoot === null ? null : dirname($kernelRoot);
+    $kernel = self::kernel();
+    return $kernel === null ? null : dirname($kernel);
   }
 
   /**
@@ -48,13 +48,13 @@ class Path
    *
    * @return string
    */
-  public static function kernelRoot()
+  public static function kernel()
   {
     return dirname(__DIR__, 2);
   }
 
   /**
-   * 当前应用根目录（绝对路径），默认 {kernelRoot 同级目录}/{App::id()}
+   * 当前应用根目录（绝对路径），默认 {kernel 同级目录}/{App::id()}
    *
    * @return string|null
    */
@@ -63,7 +63,7 @@ class Path
     if (App::id() === null) {
       return null;
     }
-    return self::join(dirname(self::kernelRoot()), App::id());
+    return self::join(dirname(self::kernel()), App::id());
   }
 
   /**
@@ -89,18 +89,18 @@ class Path
   }
 
   /**
-   * 内核目录（相对路径），即 kernelRoot 相对 root 的路径
+   * 内核目录（相对路径），即 kernel 相对 project 的路径
    *
    * @return string|null
    */
   public static function kernelDir()
   {
-    $root = self::projectRoot();
-    $kernelRoot = self::kernelRoot();
-    if ($root === null || $kernelRoot === null) {
+    $project = self::project();
+    $kernel = self::kernel();
+    if ($project === null || $kernel === null) {
       return null;
     }
-    return self::relativePath($kernelRoot, $root);
+    return self::relativePath($kernel, $project);
   }
 
   /**
@@ -125,7 +125,7 @@ class Path
    * @param string $base 绝对路径前缀
    * @return string
    */
-  private static function relativePath(string $path, string $base): string
+  protected static function relativePath(string $path, string $base): string
   {
     $relative = substr($path, strlen($base));
     return ltrim(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $relative), DIRECTORY_SEPARATOR);

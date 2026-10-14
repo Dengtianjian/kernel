@@ -42,7 +42,7 @@ class MakeAppCommand
     }
 
     $root = Path::root();
-    $kernelRoot = Path::kernelRoot();
+    $kernel = Path::kernel();
     $targetDirectory = $root . "/" . $AppId;
     if (is_dir($targetDirectory)) {
       $console->error("Directory already exists: {$targetDirectory}");
@@ -126,7 +126,7 @@ PHP
       $targetDirectory . "/index.php",
       <<<PHP
 <?php
-include_once("{$kernelRoot}/vendor/autoload.php");
+include_once("{$kernel}/vendor/autoload.php");
 
 use kernel\\Foundation\\App;
 
@@ -197,7 +197,7 @@ PHP
       <<<PHP
 #!/usr/bin/env php
 <?php
-include_once("{$kernelRoot}/vendor/autoload.php");
+include_once("{$kernel}/vendor/autoload.php");
 
 use kernel\\Foundation\\Console\\Console;
 

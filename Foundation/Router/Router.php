@@ -42,7 +42,7 @@ class Router
   protected function load()
   {
     $localRouteFiles = [];
-    $kernelRoutesDir = Path::join(Path::kernelRoot(), "Routes");
+    $kernelRoutesDir = Path::join(Path::kernel(), "Routes");
     if (is_dir($kernelRoutesDir)) {
       $kernelRouteFiles = FileHelper::recursionScanDir($kernelRoutesDir, null, true);
       if (count($kernelRouteFiles)) {

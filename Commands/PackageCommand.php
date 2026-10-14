@@ -56,8 +56,8 @@ class PackageCommand
    */
   public function handle($console, $args, $options): int
   {
-    $projectRoot = Path::projectRoot();
-    if ($projectRoot === null) {
+    $project = Path::project();
+    if ($project === null) {
       $console->error("Cannot resolve project root.");
       return 1;
     }
@@ -86,8 +86,8 @@ class PackageCommand
 
     $failed = false;
     foreach ($targets as $dir => $out) {
-      $source = $projectRoot . "/" . $dir;
-      $output = $projectRoot . "/" . $out;
+      $source = $project . "/" . $dir;
+      $output = $project . "/" . $out;
 
       if (!is_dir($source)) {
         $console->warning("Skip: directory not found: {$source}");
