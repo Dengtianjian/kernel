@@ -3,8 +3,8 @@
 namespace kernel\Model;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Database\PDO\Schema;
+use kernel\Foundation\Database\RDB\Model;
+use kernel\Foundation\Database\RDB\Schema;
 
 /**
  * 文件模型

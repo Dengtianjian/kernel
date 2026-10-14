@@ -4,8 +4,8 @@ namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Database\PDO\Schema;
+use kernel\Foundation\Database\RDB\Model;
+use kernel\Foundation\Database\RDB\Schema;
 
 /**
  * 登录凭证模型（Auth 模块）

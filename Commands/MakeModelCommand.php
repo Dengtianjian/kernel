@@ -16,7 +16,7 @@ use kernel\Foundation\App;
  *   php kernel/console make:model User --table=xx   // 指定数据表
  *   php kernel/console make:model User --force      // 覆盖已存在文件
  *
- * 骨架参照 kernel\Foundation\Model 基类约定。
+ * 骨架参照 kernel\Foundation\Database\RDB\Model 基类约定。
  */
 class MakeModelCommand extends MakeCommand
 {
@@ -44,7 +44,7 @@ class MakeModelCommand extends MakeCommand
     $table = $options["table"] ?? $this->tableName($shortName);
 
     $body = <<<PHP
-use kernel\\Foundation\\Model;
+use kernel\\Foundation\\Database\\RDB\\Model;
 
 /**
  * {$shortName} 模型
@@ -58,14 +58,14 @@ class {$className} extends Model
    *
    * @var string
    */
-  public static \$tableName = "{$table}";
+  public \$tableName = "{$table}";
 
   /**
    * 是否自动维护 created_at / updated_at
    *
    * @var bool
    */
-  public static \$timestamps = false;
+  public \$timestamps = false;
 }
 PHP;
 

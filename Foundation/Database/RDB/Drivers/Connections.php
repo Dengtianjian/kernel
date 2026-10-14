@@ -1,32 +1,32 @@
 <?php
-namespace kernel\Foundation\Database\PDO;
+namespace kernel\Foundation\Database\RDB\Drivers;
 
+use kernel\Foundation\Database\RDB\Drivers\PDO\PdoDriver;
 use kernel\Foundation\Data\Arr;
-use kernel\Foundation\Database\PDO\Driver;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
- * 多数据库连接管理器
+ * 关系型数据库连接管理器
  *
- * Connections 是数据库连接池的全局管理中心，通过静态属性维护所有 Driver 实例，
+ * Connections 是关系型数据库连接池的全局管理中心，通过静态属性维护所有 {@see AbstractDriver} 实例，
  * 支持在运行时动态注册和切换活跃数据库连接。所有方法均为静态方法，全局共享状态。
  *
  * ## 核心概念
  *
  * ```
- * drivers:     default → Driver(主库)
- *              slave   → Driver(只读从库)
- *              log     → Driver(日志库)
- * useDriver:   → Driver(主库)  ← 当前活跃连接
+ * drivers:     default → AbstractDriver(主库)
+ *              slave   → AbstractDriver(只读从库)
+ *              log     → AbstractDriver(日志库)
+ * useDriver:   → AbstractDriver(主库)  ← 当前活跃连接
  * ```
  *
  * ## 典型用法
  *
  * ```php
  * // 初始化阶段注册连接
- * Connections::addDriver(new Driver(...), 'master', true);
- * Connections::addDriver(new Driver(...), 'slave');
+ * Connections::addDriver((new PdoDriver())->mysql(...), 'master', true);
+ * Connections::addDriver((new PdoDriver())->mysql(...), 'slave');
  *
  * // 运行时切到从库读
  * Connections::useDriver('slave');
@@ -42,8 +42,8 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * `getUseDriver()` 在无活跃连接时自动调用 `switchToDefaultDriver()`，
  * 回退优先级：`$defaultDriver` → 名为 "default" 的驱动 → 第一个注册的驱动。
  *
- * @see Driver PDO 驱动封装
- * @see DB    数据库门面（通过 connection() 间接使用 Connections）
+ * @see AbstractDriver 驱动抽象基类
+ * @see \kernel\Foundation\Database\RDB\DB 数据库门面（通过 connection() 间接使用 Connections）
  */
 class Connections extends AbilityBaseObject
 {
@@ -54,19 +54,19 @@ class Connections extends AbilityBaseObject
   private static $drivers = [];
   /**
    * 当前使用的数据库驱动
-   * @var Driver
+   * @var AbstractDriver
    */
   private static $useDriver = null;
   /**
    * 默认数据库驱动
-   * @var Driver
+   * @var AbstractDriver
    */
   private static $defaultDriver = null;
   /**
    * 添加驱动
-   * @param Driver  $driver    驱动实例
-   * @param string  $name      驱动在驱动列表中的键名
-   * @param boolean $isDefault 是否是默认使用的驱动
+   * @param AbstractDriver $driver    驱动实例
+   * @param string         $name      驱动在驱动列表中的键名
+   * @param boolean        $isDefault 是否是默认使用的驱动
    */
   static function addDriver($driver, $name = "default", $isDefault = false)
   {
@@ -92,7 +92,7 @@ class Connections extends AbilityBaseObject
   }
   /**
    * 获取当前正在使用的数据库驱动
-   * @return Driver
+   * @return AbstractDriver
    */
   static function getUseDriver()
   {
@@ -110,6 +110,24 @@ class Connections extends AbilityBaseObject
     return self::$drivers;
   }
   /**
+   * 按名获取单个数据库驱动，**不改变**当前连接
+   *
+   * 与 {@see useDriver()} 的区别：后者会切换全局当前连接，本方法只取驱动。
+   * 供「某个模型 / 某张表固定使用某个驱动」这类按名解析的声明式场景使用。
+   *
+   * @param string $name 驱动在数据库驱动列表中的键名
+   * @throws \kernel\Foundation\Exception\Error
+   * @return AbstractDriver
+   */
+  static function getDriver($name)
+  {
+    if (!array_key_exists($name, self::$drivers)) {
+      throw new Error("获取的数据库驱动不存在", 500, "getDatabaseDriverNotExist:500");
+    }
+
+    return self::$drivers[$name];
+  }
+  /**
    * 设置默认数据库驱动
    * @param mixed $name 驱动在数据库驱动列表中的键名
    * @throws \kernel\Foundation\Exception\Error
@@ -123,7 +141,7 @@ class Connections extends AbilityBaseObject
   }
   /**
    * 获取当前设置的默认驱动
-   * @return Driver
+   * @return AbstractDriver
    */
   static function getDefaultDriver()
   {
@@ -139,10 +157,12 @@ class Connections extends AbilityBaseObject
     if (count(self::$drivers) === 0) {
       throw new Error("切换回默认数据库失败", 500, "switchToDefaultDatabaseDriverError:500");
     }
-    if (!$defaultDriver && array_key_exists("default", self::$drivers)) {
-      $defaultDriver = self::$drivers['default'];
-    } else {
-      $defaultDriver = Arr::first(self::$drivers);
+    // 回退优先级（见类注释）：已注册的默认驱动 → 名为 "default" 的驱动 → 第一个注册的驱动。
+    // 已设默认驱动时不得再回退，否则显式指定的默认会被"第一个注册的"覆盖。
+    if (!$defaultDriver) {
+      $defaultDriver = array_key_exists("default", self::$drivers)
+        ? self::$drivers['default']
+        : Arr::first(self::$drivers);
     }
     self::$useDriver = $defaultDriver;
   }

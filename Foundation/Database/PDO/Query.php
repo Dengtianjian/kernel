@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Database\RDB\Drivers\AbstractDriver;
+use kernel\Foundation\Database\RDB\Drivers\Connections;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\AbilityBaseObject;
 
@@ -42,7 +44,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *   → WHERE 条件 → OR WHERE 条件 → 条件过滤
  *   → 结果获取 → 聚合函数 → 存在性判断 → 写操作
  *
- * @method static Query table(string|null $tableName = null, Driver|null $databaseDriver = null) 创建 Query 实例并指定表名
+ * @method static Query table(string|null $tableName = null, AbstractDriver|null $databaseDriver = null) 创建 Query 实例并指定表名
  *
  * @see Model        在 Query 之上提供 ActiveRecord 与类型转换
  * @see ModelBuilder 每次查询创建全新 Query，无状态残留
@@ -58,7 +60,7 @@ class Query extends AbilityBaseObject
    * 
    * 负责实际执行 SQL 查询、参数绑定、结果获取等底层操作
    * 
-   * @var Driver
+   * @var AbstractDriver
    */
   protected $databaseDriver = null;
 
@@ -174,7 +176,7 @@ class Query extends AbilityBaseObject
    * 构造查询构建器实例
    *
    * @param string|null $tableName 表名（可选，也可通过 from() 链式设置）
-   * @param Driver|null $databaseDriver 数据库驱动，默认使用当前连接
+   * @param AbstractDriver|null $databaseDriver 数据库驱动，默认使用当前连接
    *
    * @example
    * new Query('users');                     // 自动绑定默认驱动
@@ -205,7 +207,7 @@ class Query extends AbilityBaseObject
    * 
    * 允许动态切换数据库连接，适用于多数据库或读写分离场景
    * 
-   * @param Driver $driver 数据库驱动实例，需实现 Driver 接口
+   * @param AbstractDriver $driver 数据库驱动实例，继承自 {@see AbstractDriver}
    * @return $this 返回当前实例以支持链式调用
    * 
    * @example
@@ -225,7 +227,7 @@ class Query extends AbilityBaseObject
    * 
    * 返回当前查询构建器绑定的数据库驱动实例，可用于执行原生的 PDO 操作
    * 
-   * @return Driver 数据库驱动实例
+   * @return AbstractDriver 数据库驱动实例
    * 
    * @example
    * $driver = $query->getDatabaseDriver();
@@ -251,7 +253,7 @@ class Query extends AbilityBaseObject
    * 命名更符合直觉，是 new Query($tableName) 的快捷方式
    *
    * @param string|null $tableName 表名
-   * @param Driver|null $databaseDriver 数据库驱动
+   * @param AbstractDriver|null $databaseDriver 数据库驱动
    * @return static
    *
    * @example

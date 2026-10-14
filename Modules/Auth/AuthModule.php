@@ -4,7 +4,7 @@ namespace kernel\Modules\Auth;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\RDB\Model;
 use kernel\Foundation\Module\Module;
 use kernel\Modules\DiscuzX\Middleware\GlobalDiscuzXAuthMiddleware;
 

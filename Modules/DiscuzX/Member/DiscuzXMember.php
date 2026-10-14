@@ -5,7 +5,7 @@ namespace kernel\Modules\DiscuzX\Member;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Result;
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Foundation\Database\RDB\Model;
 use kernel\Modules\DiscuzX\Model\System\CommonMemberModel;
 
 class DiscuzXMember
@@ -462,7 +462,7 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $CMCM = new DiscuzXModel("common_member_count");
+    $CMCM = new Model("common_member_count");
     $memberCredits = $CMCM->where([
       "uid" => $memberId
     ])->getAll();
@@ -470,7 +470,7 @@ class DiscuzXMember
     if (
       isset($_G['setting']['membersplit'])
     ) {
-      $CMCAM = new DiscuzXModel("common_member_count_archive");
+      $CMCAM = new Model("common_member_count_archive");
       $archiveMemberArchive = $CMCAM->where([
         "uid" => $memberId
       ])->getAll();
@@ -487,7 +487,7 @@ class DiscuzXMember
     if ($groupId === null) {
       $groupId = \getglobal("member")['groupid'];
     }
-    $CUGM = new DiscuzXModel("common_usergroup");
+    $CUGM = new Model("common_usergroup");
     if ($simple) {
       $CUGM->field("groupid", "grouptitle", "icon", "color");
     }
@@ -509,7 +509,7 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $CMNP = new DiscuzXModel("common_member_newprompt");
+    $CMNP = new Model("common_member_newprompt");
     $prompts = $CMNP->where([
       "uid" => $memberId
     ])->getAll();
@@ -532,14 +532,14 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $MM = new DiscuzXModel("common_member");
+    $MM = new Model("common_member");
     $members = $MM->where([
       "uid" => $memberId
     ])->getAll();
     if (
       isset($_G['setting']['membersplit'])
     ) {
-      $MMR = new DiscuzXModel("common_member_archive");
+      $MMR = new Model("common_member_archive");
       $archiveMembers = $MMR->where([
         "uid" => $memberId
       ])->getAll();
@@ -620,7 +620,7 @@ class DiscuzXMember
    */
   public static function exist($UserId)
   {
-    $CM = new DiscuzXModel("common_member");
+    $CM = new Model("common_member");
 
     return (bool)$CM->where("uid", $UserId)->exist();
   }

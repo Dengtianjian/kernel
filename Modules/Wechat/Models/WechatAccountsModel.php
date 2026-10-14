@@ -3,8 +3,8 @@
 namespace kernel\Modules\Wechat\Models;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Database\PDO\Schema;
+use kernel\Foundation\Database\RDB\Model;
+use kernel\Foundation\Database\RDB\Schema;
 
 /**
  * 微信账号

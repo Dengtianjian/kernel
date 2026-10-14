@@ -359,8 +359,8 @@ class Config
    * 是否运行在 DiscuzX 环境中
    *
    * 通过检测 Discuz 常量 `IN_DISCUZ` 判断当前是否处于 DiscuzX 的请求/执行上下文。
-   * 内核 {@see \kernel\Foundation\Database\PDO\Table} / {@see \kernel\Foundation\Database\PDO\Model}
-   * 用它决定是否改走 Discuz 侧的查询与 DB 实现（不套内核表前缀，改用 DiscuzXQuery / DiscuzXDB）。
+   * 内核目前用它做两件事：决定表名是否按 Discuz 规则拼接（各模型构造里的 `discuzTableName()`），
+   * 以及切换认证中间件（{@see \kernel\Modules\Auth\AuthModule::onBoot()}）。
    * 业务代码亦可用它区分「在 DiscuzX 内运行」与「独立调用（如 CLI、单元测试）」，
    * 进而决定是否可安全使用 `$_G`、`DB::` 等宿主提供的资源。
    *

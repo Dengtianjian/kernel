@@ -2,7 +2,7 @@
 
 namespace kernel\Model;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\RDB\Model;
 
 
 

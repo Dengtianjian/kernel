@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Database\RDB\Drivers\AbstractDriver;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Output;
@@ -41,7 +42,7 @@ use kernel\Foundation\Output;
  * `rangeTesting` | `patternMatching` | `columnComparsion` | `func` | `boolean`
  *
  * @see Query::addWhere()   查询构建器 — 条件数组的组装层
- * @see Driver  PDO 驱动 — SQL 执行层
+ * @see AbstractDriver  关系型数据库驱动 — SQL 执行层
  */
 class Statement
 {
@@ -173,7 +174,7 @@ class Statement
         $from = Statement::format($from);
       }
     } else if (isSafeCallable($from)) {
-      $subQuery = new Query();
+      $subQuery = self::newSubQuery();
       $from($subQuery);
       $from = "({$subQuery->getSQL()})";
     } else if ($from instanceof Query) {
@@ -266,7 +267,7 @@ class Statement
 
             if (isSafeCallable($value) || $value instanceof Query) {
               if (isSafeCallable($value)) {
-                $subQuery = new Query();
+                $subQuery = self::newSubQuery();
                 $value($subQuery);
                 $value = $subQuery->getSQL();
               } else {
@@ -298,7 +299,7 @@ class Statement
           case "sub":
             $value = $ConditionItem['value'];
             if (isSafeCallable($value)) {
-              $subQuery = new Query();
+              $subQuery = self::newSubQuery();
               $value($subQuery);
               $value = $subQuery->getSQL();
             } else if ($value instanceof Query) {
@@ -335,7 +336,7 @@ class Statement
                 if (is_array($value)) {
                   $value = join(", ", self::batchFormat($ConditionItem['value'], "'"));
                 } else if (isSafeCallable($value)) {
-                  $subQuery = new Query();
+                  $subQuery = self::newSubQuery();
                   $value($subQuery);
                   $value = $subQuery->getSQL();
                 } else if ($value instanceof Query) {
@@ -371,7 +372,7 @@ class Statement
             } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"])) {
               $value = $ConditionItem['value'];
               if (isSafeCallable($value)) {
-                $subQuery = new Query();
+                $subQuery = self::newSubQuery();
                 $value($subQuery);
                 $value = $subQuery->getSQL();
               } else if ($value instanceof Query) {
@@ -608,7 +609,7 @@ class Statement
             if ($item['value'] instanceof Query) {
               $item['value'] = $item['value']->getSQL();
             } else if (isSafeCallable($item['value'])) {
-              $query = new Query();
+              $query = self::newSubQuery();
               $item['value']($query);
               $item['value'] = $query->getSQL();
             }
@@ -704,5 +705,20 @@ class Statement
       $sqls[] = "{$join['type']} JOIN {$table} ON {$first} {$join['operator']} {$second}";
     }
     return implode(" ", $sqls);
+  }
+
+  /**
+   * 创建子查询构建器实例
+   *
+   * 闭包形式的子查询（`from(闭包)` / `where(闭包)` / `whereIn(闭包)` / `whereExists(闭包)` /
+   * `select(闭包)`）需要就地 new 一个查询构建器交给闭包继续链式构建。
+   *
+   * 注意：传 **Query 实例**的子查询不走这里（直接取 `getSQL()`），只有传闭包才会用到。
+   *
+   * @return Query 子查询构建器实例
+   */
+  protected static function newSubQuery()
+  {
+    return new Query();
   }
 }

@@ -2,9 +2,19 @@
 
 namespace kernel\Modules\DiscuzX\Model\System;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Modules\DiscuzX\Model\DiscuzXSystemModel;
 
-class CommonMemberModel extends Model
+/**
+ * Discuz 用户主表模型
+ *
+ * 对应 Discuz 系统表 `common_member`（真实表名含站点 `tablepre` 前缀，由基类补全）。
+ *
+ * @see DiscuzXSystemModel 基类：补 Discuz 表前缀、关闭时间戳自动维护
+ */
+class CommonMemberModel extends DiscuzXSystemModel
 {
   public $tableName = "common_member";
+
+  /** @var string 主键字段名 */
+  protected $primaryKey = "uid";
 }

@@ -3,8 +3,8 @@
 namespace kernel\Modules\Setting;
 
 use kernel\Foundation\Config;
-use kernel\Foundation\Database\PDO\Model;
-use kernel\Foundation\Database\PDO\Schema;
+use kernel\Foundation\Database\RDB\Model;
+use kernel\Foundation\Database\RDB\Schema;
 
 /**
  * 系统设置模型（Setting）

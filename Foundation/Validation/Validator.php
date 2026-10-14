@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Validation;
 
-use kernel\Foundation\Database\PDO\Model;
+use kernel\Foundation\Database\RDB\Model;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Data\Str;

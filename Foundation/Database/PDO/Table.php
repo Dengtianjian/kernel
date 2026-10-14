@@ -2,7 +2,6 @@
 
 namespace kernel\Foundation\Database\PDO;
 
-use kernel\Foundation\Config;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -16,14 +15,14 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`（统一返回 bool）
  * - **建表 SQL 生成**：`buildCreateSQL()` 基于 $schema 生成 CREATE TABLE SQL（不执行）
  * - **信息查询**：`tableExists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
- * - **表名管理**：`prefix()` 自动添加配置前缀，`prefixReplaces` 支持前缀占位替换
+ * - **表名管理**：`prefix()` 设定全局前缀，`applyPrefix()` 为表名补前缀，`prefixReplaces` 支持前缀占位替换
  * - **Schema 映射**：`getPhpSchema()` 将 `$schema` 中的 Schema 定义转换为字段→PHP类型映射
  * - **SQL 执行**：`exec()` / `execQuery()` 底层执行；`select()` / `selectOne()` / `scalar()` 便捷查询
  *
  * ## 代码组织（自上而下）
  *
  *   属性（表基本信息 / 表前缀配置 / 表结构定义）
- *   → 构造与表名 → DDL → 信息查询 → Schema 类型映射 → SQL 执行 → 内部方法
+ *   → 构造与表名 → DDL → 信息查询 → Schema 类型映射 → SQL 执行
  *
  * ## exec 与 select 的分工
  *
@@ -37,8 +36,14 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * ## 表前缀机制
  *
- * Table 自动从 `Config::get('database/mysql/prefix')` 读取前缀并添加到表名前。
- * 子类可通过 `$prefixReplaces` 属性对前缀中的占位符做动态替换。
+ * 前缀是**实例属性**，由 `prefix()` 显式设定（不再读取配置）。未加前缀的表名保留在
+ * `$rawTableName`，设定前缀时据其重新推导带前缀的 `$tableName`：
+ *
+ *   $table = new UserModel();
+ *   $table->prefix('pre_');          // 设定并立即应用到 $tableName
+ *   $table->prefix();                // 读取当前前缀
+ *
+ * 表名拼接由 `applyPrefix()` 完成；子类可通过 `$prefixReplaces` 属性对前缀中的占位符做动态替换。
  *
  * ## 继承关系
  *
@@ -59,11 +64,20 @@ class Table extends AbilityBaseObject
   /**
    * 数据表名称（含前缀）
    *
-   * 构造时自动经 prefix() 补上配置前缀，后续所有 DDL / 信息查询都基于该值。
+   * 构造时自动经 applyPrefix() 补上前缀，后续所有 DDL / 信息查询都基于该值。
    *
    * @var string
    */
   protected $tableName = "";
+
+  /**
+   * 数据表名称（不含前缀）
+   *
+   * 构造时保存传入或声明的原始表名；设定前缀时据此重新推导 {@see $tableName}。
+   *
+   * @var string
+   */
+  protected $rawTableName = "";
 
   /**
    * DB 类名（子类可覆盖实现多态切换）
@@ -89,13 +103,14 @@ class Table extends AbilityBaseObject
   protected $prefixReplaces = [];
 
   /**
-   * 配置前缀缓存
+   * 表前缀
    *
-   * 首次调用 getPrefix() 时从配置读取并缓存，避免重复读取配置。
+   * 实例属性，由 {@see prefix()} 读取或设定；设定时会立即应用到 {@see $tableName}。
+   * 子类若需在构造前设定，可在 `parent::__construct()` 之前调用 `$this->prefix('pre_')`。
    *
-   * @var string|null
+   * @var string
    */
-  private static $prefixCache = null;
+  protected $prefix = "";
 
   // ===================================================================
   // 属性：表结构定义
@@ -130,21 +145,49 @@ class Table extends AbilityBaseObject
     if ($tableName) {
       $this->tableName = $tableName;
     }
-    $this->tableName = $this->prefix($this->tableName);
+    $this->rawTableName = $this->tableName;
 
+    // 前缀一般由构造后调用 prefix() 设定；这里为「子类在 parent::__construct() 之前
+    // 先调 $this->prefix()」的场景兜底，使构造期即完成拼接。
+    if ($this->prefix && $this->tableName) {
+      $this->tableName = $this->applyPrefix($this->tableName);
+    }
     $this->DB = DB::class;
   }
 
   /**
-   * 表名添加前缀
+   * 读取或设置表前缀
    *
-   * @param  string $tableName
+   * 读写一体：传 $val 时设定前缀，并据 `$rawTableName` 立即重算带前缀的 `$tableName`；
+   * 不传时返回当前前缀。例如：
+   *
+   *   $table->prefix("pre_");   // 设定并应用
+   *   $table->prefix();         // 读取
+   *
+   * @param  string|null $val 要设置的前缀；null 表示仅读取
+   * @return string|void 读取时返回当前前缀；设置时无返回值
+   */
+  public function prefix($val = null)
+  {
+    if (!is_null($val)) {
+      $this->prefix = (string) $val;
+      $this->tableName = $this->applyPrefix($this->rawTableName);
+      return;
+    }
+
+    return $this->prefix;
+  }
+
+  /**
+   * 为表名追加前缀（表名拼接）
+   *
+   * @param  string $tableName 不含前缀的表名；为空时原样返回
    * @return string
    */
-  public function prefix($tableName)
+  public function applyPrefix($tableName)
   {
-    $prefix = self::getPrefix();
-    if (!$prefix) {
+    $prefix = $this->prefix;
+    if (!$prefix || $tableName === "") {
       return $tableName;
     }
 
@@ -246,7 +289,7 @@ class Table extends AbilityBaseObject
    */
   public function rename($newName)
   {
-    $newName = $this->prefix($newName);
+    $newName = $this->applyPrefix($newName);
 
     return $this->exec("RENAME TABLE `{$this->tableName}` TO `{$newName}`") !== false;
   }
@@ -260,7 +303,7 @@ class Table extends AbilityBaseObject
    */
   public function copy($newName, $withData = false)
   {
-    $newName = $this->prefix($newName);
+    $newName = $this->applyPrefix($newName);
 
     // 建表失败时直接返回 false，不必再尝试复制数据
     if ($this->exec("CREATE TABLE `{$newName}` LIKE `{$this->tableName}`") === false) {
@@ -492,29 +535,5 @@ class Table extends AbilityBaseObject
   public function insertId()
   {
     return $this->DB::insertId();
-  }
-
-  // ===================================================================
-  // 内部
-  // ===================================================================
-
-  /**
-   * 获取配置中的表前缀（静态缓存）
-   *
-   * @return string
-   */
-  protected static function getPrefix()
-  {
-    if (self::$prefixCache !== null) {
-      return self::$prefixCache;
-    }
-
-    $prefix = Config::get("database/mysql/prefix");
-    if (is_array($prefix)) {
-      $prefix = join("_", $prefix);
-    }
-
-    self::$prefixCache = (string) $prefix;
-    return self::$prefixCache;
   }
 }

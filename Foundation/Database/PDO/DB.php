@@ -2,6 +2,9 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Database\RDB\Drivers\AbstractDriver;
+use kernel\Foundation\Database\RDB\Drivers\Connections;
+
 /**
  * 数据库操作门面 — 参考 Laravel DB 风格
  *
@@ -66,13 +69,13 @@ class DB
   }
 
   /**
-   * 获取当前连接的底层 PDO 实例
+   * 获取当前连接的原生句柄
    *
-   * @return \PDO
+   * @return \PDO|\mysqli PDO 后端返回 \PDO，mysqli 后端返回 \mysqli
    */
-  public static function getPdo()
+  public static function getConnection()
   {
-    return Connections::getUseDriver()->getPDO();
+    return Connections::getUseDriver()->getConnection();
   }
 
   // ===================================================================
@@ -83,7 +86,7 @@ class DB
    * 创建 Query 实例（Query Builder 入口）
    *
    * @param string|null $tableName 表名
-   * @param Driver|null $databaseDriver 指定驱动，默认使用当前连接
+   * @param AbstractDriver|null $databaseDriver 指定驱动，默认使用当前连接
    * @return Query
    *
    * @example
@@ -421,7 +424,7 @@ class DB
   /**
    * 事务闭包执行（支持重试）
    *
-   * @param callable $callback  事务闭包，接收 Driver 实例
+   * @param callable $callback  事务闭包，接收 {@see AbstractDriver} 实例
    * @param int      $attempts  死锁重试次数，默认 1
    * @return mixed
    * @throws \Exception

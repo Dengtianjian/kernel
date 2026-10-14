@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\PDO;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\PDO\Relation\HasOne;
 use kernel\Foundation\Database\PDO\Relation\HasMany;
@@ -143,7 +144,8 @@ use kernel\Foundation\Database\PDO\Relation\Relation;
  * ------------------------------------------------------------------
  * === 父类 Table 方法（继承自 DDL / 表管理基类，实例与静态均可调用）===
  * @method string tableName() 获取当前（含前缀）表名
- * @method string prefix(string $tableName) 为表名追加配置前缀
+ * @method string prefix(string|null $val = null) 读取或设置表前缀
+ * @method string applyPrefix(string $tableName) 为表名追加前缀
  * @method bool create() 依据 $schema 建表
  * @method bool drop() 删表
  * @method bool truncate() 清空表（保留结构）
@@ -288,7 +290,6 @@ class Model extends Table
   /**
    * 子类自定义的 Query 原型（可选）
    *
-   * 仅供需要替换 Query 实现的子类在构造中赋值（如 DiscuzX 平台的 DiscuzXQuery）。
    * **不要直接复用此实例做查询**——它只用于让 query() 得知该用哪个类；
    * 每次查询都会用当前的 $tableName 新建一个该类的实例，从而避免状态累积。
    *
@@ -338,11 +339,9 @@ class Model extends Table
   {
     if ($tableName) {
       $this->tableName = $tableName;
-    }
-    if (empty($this->tableName)) {
+    } else if (empty($this->tableName)) {
       $this->tableName = static::getDefaultTableName();
     }
-    $this->tableName = $this->prefix($this->tableName);
 
     // 1. 从 $schema 列定义推导字段类型 → $schemaCasts
     if (!empty($this->schema)) {
@@ -421,6 +420,7 @@ class Model extends Table
       return;
     }
     $this->timestamps = false;
+    $this->queryTimestamps = false;
   }
 
   /**
@@ -463,7 +463,7 @@ class Model extends Table
    */
   public function getTableBaseName(): string
   {
-    $prefix = Table::getPrefix();
+    $prefix = $this->prefix();
     if ($prefix && Str::startsWith($this->tableName, $prefix)) {
       return substr($this->tableName, strlen($prefix));
     }
@@ -720,7 +720,7 @@ class Model extends Table
    * @param int|null $ts     Unix 秒级时间戳，null 时返回 null
    * @param float    $micro  亚秒小数部分（0.0 ~ 0.999999）
    */
-  private function formatTimestamp(string $format,$ts, float $micro = 0.0)
+  private function formatTimestamp(string $format, $ts, float $micro = 0.0)
   {
     if ($ts === null) {
       return null;
@@ -796,9 +796,8 @@ class Model extends Table
    * 每次调用都是独立实例。供 ModelBuilder 构造、内部写操作、
    * 以及需要绕过软删除的作用域的组件使用。
    *
-   * 子类若在构造中为 $query 赋了自定义 Query 实例（如 DiscuzXQuery），
-   * 这里会沿用同一个类，但用**当前**的 $tableName 新建，
-   * 既保留了自定义实现，又不会复用任何查询状态。
+   * 子类若在构造中为 $query 赋了自定义 Query 实例，这里会沿用同一个类，
+   * 但用**当前**的 $tableName 新建，既保留了自定义实现，又不会复用任何查询状态。
    *
    * 需要带作用域时请用 scopedQuery()。
    *
@@ -952,8 +951,10 @@ class Model extends Table
       $keys = array_unique($keys);
 
       // 创建新的关联 Query，批量查询
-      $query = (new Query($rel->getQuery()->getTableName()))
-        ->whereIn($queryKey, $keys);
+      // 经 related model 的 query() 取构建器，而非直接 new Query()：
+      // DiscuzX 环境下内核未注册 PDO 驱动，构造内核 Query 会抛「切换回默认数据库失败」。
+      $relatedClass = $rel->getRelatedClass();
+      $query = (new $relatedClass)->query()->whereIn($queryKey, $keys);
 
       $rows = $query->get();
 
@@ -970,7 +971,6 @@ class Model extends Table
       // BelongsTo: 用 parent.FK 匹配 related.PK 分组
       // HasOne/HasMany: 用 parent.PK 匹配 related.FK 分组
       $matchKey = $isBelongsTo ? $foreignKey : $localKey;
-      $relatedClass = $rel->getRelatedClass();
       foreach ($models as $model) {
         $key = $model->{$matchKey};
         if ($key === null || !isset($grouped[$key])) {
@@ -1069,6 +1069,15 @@ class Model extends Table
   {
     $type = $this->casts[$name] ?? $this->schemaCasts[$name] ?? null;
     $this->data[$name] = $type ? $this->castToDb($type, $value) : $value;
+  }
+
+  // ===================================================================
+  // discuz 适配
+  // ===================================================================
+
+  public function discuzTableName($tableName)
+  {
+    return implode("_", [getApp()::id(), $tableName]);
   }
 
   // ===================================================================
@@ -1501,6 +1510,4 @@ class Model extends Table
   {
     return json_encode($this->toArray(), $flags);
   }
-
 }
-

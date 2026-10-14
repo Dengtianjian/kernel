@@ -37,8 +37,8 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  *      因此要求 App 已启动，`Path::root()` / `Path::data()` 才会指向本插件（详见构造函数的「前置条件」）；
  *   2. **升级基线可由 Discuz 的 `?fromversion=` 提供**：从 `$app->request()->query` 读取该参数，
  *      传入后覆盖父类从 `.version` 推导的基线（见构造函数）；
- *   3. **数据目录落到 Discuz 惯例位置**：`{projectRoot}/data/plugindata/{appId}`
- *      （见 {@see DiscuzXPath::data()}、{@see DiscuzXPath::storage()}）。
+ *   3. **数据目录落到 Discuz 惯例位置**：`{project}/data/plugindata/{appId}`
+ *      （见 {@see DiscuzXPath::pluginData()}、{@see DiscuzXPath::storage()}）。
  *
  * 生命周期：
  * - `install()`   ：先调父类（创建内核侧 Data / Storage 目录），再补建 Discuz 侧 plugindata 目录；
@@ -118,7 +118,7 @@ class DiscuzXProvisioner extends Provisioner
    * 安装
    *
    * 父类负责创建内核侧目录（`Path::data()`、`Path::storage()`），
-   * 这里再补建 Discuz 惯例的数据目录 `{projectRoot}/data/plugindata/{appId}`
+   * 这里再补建 Discuz 惯例的数据目录 `{project}/data/plugindata/{appId}`
    * （已存在则跳过，0777 递归创建）。
    *
    * @return static $this，便于链式调用
@@ -126,7 +126,7 @@ class DiscuzXProvisioner extends Provisioner
   public function install()
   {
     parent::install();
-    $dataPluginDir = DiscuzXPath::data();
+    $dataPluginDir = DiscuzXPath::pluginData();
     if (!is_dir($dataPluginDir)) {
       mkdir($dataPluginDir, 0777, true);
     }
@@ -136,7 +136,7 @@ class DiscuzXProvisioner extends Provisioner
    * 卸载
    *
    * 父类负责删除版本记录（`Path::data()/.version`），
-   * 这里再删除 Discuz 侧数据目录 `{projectRoot}/data/plugindata/{appId}` 及其全部内容。
+   * 这里再删除 Discuz 侧数据目录 `{project}/data/plugindata/{appId}` 及其全部内容。
    *
    * 注意：不删除内核侧的 Data / Storage 目录（与 `install()` 不对称），
    * 需要彻底清理时请另行处理或调用 `clean()`。
@@ -146,7 +146,7 @@ class DiscuzXProvisioner extends Provisioner
   public function uninstall()
   {
     parent::uninstall();
-    FileSystem::deleteDirectory(DiscuzXPath::data());
+    FileSystem::deleteDirectory(DiscuzXPath::pluginData());
   }
   /**
    * 清理安装 / 升级脚本目录

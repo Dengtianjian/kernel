@@ -14,7 +14,7 @@ use kernel\Foundation\Router\Route;
 use kernel\Foundation\Router\RouteSame;
 use kernel\Foundation\Service;
 use kernel\Modules\DiscuzX\Controller\Attachment as AttachmentNamespace;
-use kernel\Modules\DiscuzX\Foundation\Database\DiscuzXModel;
+use kernel\Foundation\Database\RDB\Model;
 
 class DiscuzXAttachmentService extends Service
 {
@@ -79,13 +79,13 @@ class DiscuzXAttachmentService extends Service
    */
   public static function getAttachment($AttachmentId, $thumbWidth = null, $thumbHeight = null)
   {
-    $AM = new DiscuzXModel("forum_attachment");
+    $AM = new Model("forum_attachment");
     $attachment = $AM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
       return new Result(null, 404, 404001, "附件不存在");
     }
     $TableId = $attachment['tableid'];
-    $SAM = new DiscuzXModel("forum_attachment_$TableId");
+    $SAM = new Model("forum_attachment_$TableId");
     $attachment = $SAM->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
       return new Result(null, 404, 404001, "附件不存在");
@@ -158,14 +158,14 @@ class DiscuzXAttachmentService extends Service
       return null;
     }
 
-    $AttachmentModel = new DiscuzXModel("forum_attachment");
+    $AttachmentModel = new Model("forum_attachment");
     $attachment = $AttachmentModel->where("aid", $AttachmentId)->getOne();
     if (!$attachment) {
       return null;
     }
 
     $TableId = intval($attachment['tableid']);
-    $DetailModel = new DiscuzXModel("forum_attachment_" . $TableId);
+    $DetailModel = new Model("forum_attachment_" . $TableId);
     $detail = $DetailModel->where("aid", $AttachmentId)->getOne();
     if (!$detail) {
       return null;

@@ -1,0 +1,580 @@
+<?php
+
+namespace kernel\Foundation\Database\RDB;
+
+use kernel\Foundation\Database\RDB\Drivers\Connections;
+use kernel\Foundation\Object\AbilityBaseObject;
+
+/**
+ * DDL 与表管理基类
+ *
+ * Table 提供数据库表的 DDL 操作和表结构信息查询能力。它是 Model 的基类，
+ * Model 在其上扩展了 ActiveRecord 操作 + 类型转换 + 软删除等特性。
+ *
+ * ## 职责范围
+ *
+ * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`（统一返回 bool）
+ * - **建表 SQL 生成**：`buildCreateSQL()` 基于 $schema 生成 CREATE TABLE SQL（不执行）
+ * - **信息查询**：`tableExists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
+ * - **表名管理**：`prefix()` 设定全局前缀，`applyPrefix()` 为表名补前缀，`prefixReplaces` 支持前缀占位替换
+ * - **Schema 映射**：`getPhpSchema()` 将 `$schema` 中的 Schema 定义转换为字段→PHP类型映射
+ * - **SQL 执行**：`exec()` / `execQuery()` 底层执行；`select()` / `selectOne()` / `scalar()` 便捷查询
+ *
+ * ## 代码组织（自上而下）
+ *
+ *   属性（表基本信息 / 表前缀配置 / 表结构定义）
+ *   → 构造与表名 → DDL → 信息查询 → Schema 类型映射 → 驱动解析 → SQL 执行
+ *
+ * ## exec 与 select 的分工
+ *
+ * | 方法 | 底层 | 结果集 | 适用 |
+ * |------|------|--------|------|
+ * | `exec($sql)` | `PDO::exec` | 否，返回行数 | INSERT/UPDATE/DELETE/DDL |
+ * | `execQuery($sql)` | `PDO::query` | 是，PDOStatement | 需自行控制取数 |
+ * | `select($sql, $bindings)` | `PDO::query` + fetchAll | 是，array | 读多行（推荐） |
+ *
+ * `SHOW` / `OPTIMIZE TABLE` 返回的是结果集，故信息查询方法一律走 `select()`。
+ *
+ * ## 表前缀机制
+ *
+ * 前缀是**实例属性**，由 `prefix()` 显式设定（不再读取配置）。未加前缀的表名保留在
+ * `$rawTableName`，设定前缀时据其重新推导带前缀的 `$tableName`：
+ *
+ *   $table = new UserModel();
+ *   $table->prefix('pre_');          // 设定并立即应用到 $tableName
+ *   $table->prefix();                // 读取当前前缀
+ *
+ * 表名拼接由 `applyPrefix()` 完成；子类可通过 `$prefixReplaces` 属性对前缀中的占位符做动态替换。
+ *
+ * ## 继承关系
+ *
+ * ```
+ * Table (DDL + 信息查询)
+ *   └── Model (ActiveRecord + casts + 软删除)
+ * ```
+ *
+ * @see Model  子类，提供 ActiveRecord 能力
+ * @see Schema 字段定义类，配合 $this->schema 定义表结构
+ */
+class Table extends AbilityBaseObject
+{
+  // ===================================================================
+  // 属性：表基本信息
+  // ===================================================================
+
+  /**
+   * 数据表名称（含前缀）
+   *
+   * 构造时自动经 applyPrefix() 补上前缀，后续所有 DDL / 信息查询都基于该值。
+   *
+   * @var string
+   */
+  protected $tableName = "";
+
+  /**
+   * 数据表名称（不含前缀）
+   *
+   * 构造时保存传入或声明的原始表名；设定前缀时据此重新推导 {@see $tableName}。
+   *
+   * @var string
+   */
+  protected $rawTableName = "";
+
+  /**
+   * 该表固定使用的数据库驱动名
+   *
+   * 声明式配置：子类覆盖本属性，即可让本表的原生 SQL 固定走指定驱动，不随
+   * {@see \kernel\Foundation\Database\RDB\Drivers\Connections::useDriver()} 切换的当前连接而变。为空则跟随当前连接。
+   * {@see Model} 继承本类，因此模型也吃这同一个属性（模型侧由 `Model::query()` 下传给 Query，
+   * 表侧由 `Table::exec()/select()` 等取驱动实例后直接调用，见 {@see resolveDatabaseDriver()}）。
+   *
+   * ```php
+   * class LogTable extends Table
+   * {
+   *   protected $databaseDriver = 'log';
+   * }
+   *
+   * class LogModel extends Model
+   * {
+   *   protected $databaseDriver = 'log';
+   * }
+   * ```
+   *
+   * ⚠️ 值是**驱动名**（字符串）；名称由 {@see resolveDatabaseDriver()} 经 {@see \kernel\Foundation\Database\RDB\Drivers\Connections::getDriver()} 解析。
+   *
+   * @var string|null
+   */
+  protected $databaseDriver = null;
+
+  // ===================================================================
+  // 属性：表前缀配置
+  // ===================================================================
+
+  /**
+   * 表前缀占位替换
+   *
+   * 键为占位符，值为替换值。在表名拼接前对前缀进行替换。
+   *
+   * @var array<string, string>
+   */
+  protected $prefixReplaces = [];
+
+  /**
+   * 表前缀
+   *
+   * 实例属性，由 {@see prefix()} 读取或设定；设定时会立即应用到 {@see $tableName}。
+   * 子类若需在构造前设定，可在 `parent::__construct()` 之前调用 `$this->prefix('pre_')`。
+   *
+   * @var string
+   */
+  protected $prefix = "";
+
+  // ===================================================================
+  // 属性：表结构定义
+  // ===================================================================
+
+  /**
+   * 表结构定义（DDL 用）
+   *
+   * 存放 Schema 对象数组，用于 create() 生成建表 SQL。
+   * 子类覆盖示例：
+   *
+   *   public $schema = [
+   *       new Schema('id')->bigint()->unsigned()->autoIncrement()->comment('主键'),
+   *       new Schema('name')->varchar(100)->nullable(false)->comment('名称'),
+   *   ];
+   *
+   * 注意：CRUD 读写时的类型转换请使用 Model::$casts。
+   *
+   * @var Schema[]
+   */
+  public $schema = [];
+
+  // ===================================================================
+  // 构造与表名
+  // ===================================================================
+
+  /**
+   * @param string|null $tableName 数据表名称
+   */
+  public function __construct($tableName = null)
+  {
+    if ($tableName) {
+      $this->tableName = $tableName;
+    }
+    $this->rawTableName = $this->tableName;
+
+    // 前缀一般由构造后调用 prefix() 设定；这里为「子类在 parent::__construct() 之前
+    // 先调 $this->prefix()」的场景兜底，使构造期即完成拼接。
+    if ($this->prefix && $this->tableName) {
+      $this->tableName = $this->applyPrefix($this->tableName);
+    }
+  }
+
+  /**
+   * 读取或设置表前缀
+   *
+   * 读写一体：传 $val 时设定前缀，并据 `$rawTableName` 立即重算带前缀的 `$tableName`；
+   * 不传时返回当前前缀。例如：
+   *
+   *   $table->prefix("pre_");   // 设定并应用
+   *   $table->prefix();         // 读取
+   *
+   * @param  string|null $val 要设置的前缀；null 表示仅读取
+   * @return string|void 读取时返回当前前缀；设置时无返回值
+   */
+  public function prefix($val = null)
+  {
+    if (!is_null($val)) {
+      $this->prefix = (string) $val;
+      $this->tableName = $this->applyPrefix($this->rawTableName);
+      return;
+    }
+
+    return $this->prefix;
+  }
+
+  /**
+   * 为表名追加前缀（表名拼接）
+   *
+   * @param  string $tableName 不含前缀的表名；为空时原样返回
+   * @return string
+   */
+  public function applyPrefix($tableName)
+  {
+    $prefix = $this->prefix;
+    if (!$prefix || $tableName === "") {
+      return $tableName;
+    }
+
+    if ($this->prefixReplaces) {
+      $prefix = str_replace(
+        array_keys($this->prefixReplaces),
+        array_values($this->prefixReplaces),
+        $prefix
+      );
+    }
+
+    return "{$prefix}_{$tableName}";
+  }
+
+  /**
+   * 获取当前表名
+   *
+   * @return string
+   */
+  public function tableName()
+  {
+    return $this->tableName;
+  }
+
+  // ===================================================================
+  // DDL（表结构操作）
+  // ===================================================================
+  //
+  // 全部统一返回 bool。
+  //
+  // 注意：PDO::exec 对 DDL 成功时返回 0，而 PHP 中 0 为 falsy，
+  // 因此内部统一用 `!== false` 判定，调用方可直接 if ($table->drop())。
+  //
+
+  /**
+   * 创建表
+   *
+   * 根据 $this->schema 生成 CREATE TABLE SQL 并执行。
+   *
+   * @return bool
+   */
+  public function create()
+  {
+    $sql = $this->buildCreateSQL();
+    if ($sql === '') {
+      return true;
+    }
+
+    // 见本分区说明：DDL 成功返回 0，需与 false 严格比较
+    return $this->exec($sql) !== false;
+  }
+
+  /**
+   * 根据 $this->schema 生成建表 SQL（不执行）
+   *
+   * 与 getCreateSQL() 的区别：
+   * - getCreateSQL() 经 SHOW CREATE TABLE 返回数据库实际的建表语句；
+   * - 本方法基于 PHP 侧 $this->schema（Schema 定义）生成 SQL，不会触碰数据库，
+   *   适用于预览建表语句、调试、单元测试等场景。
+   *
+   * @return string 生成的 CREATE TABLE SQL；无 schema 定义时返回空串
+   *
+   * @see Schema::createTableSQL() 实际的 SQL 拼装逻辑
+   */
+  public function buildCreateSQL()
+  {
+    if (empty($this->schema)) {
+      return '';
+    }
+
+    return Schema::createTableSQL($this->tableName, $this->schema);
+  }
+
+  /**
+   * 删除表
+   *
+   * @return bool
+   */
+  public function drop()
+  {
+    return $this->exec("DROP TABLE IF EXISTS `{$this->tableName}`") !== false;
+  }
+
+  /**
+   * 清空表（保留结构，重置自增）
+   *
+   * @return bool
+   */
+  public function truncate()
+  {
+    return $this->exec("TRUNCATE TABLE `{$this->tableName}`") !== false;
+  }
+
+  /**
+   * 重命名表
+   *
+   * @param  string $newName 新表名（不含前缀，自动补充）
+   * @return bool
+   */
+  public function rename($newName)
+  {
+    $newName = $this->applyPrefix($newName);
+
+    return $this->exec("RENAME TABLE `{$this->tableName}` TO `{$newName}`") !== false;
+  }
+
+  /**
+   * 复制表
+   *
+   * @param  string $newName  新表名（不含前缀）
+   * @param  bool   $withData 是否连带数据，默认仅复制结构
+   * @return bool
+   */
+  public function copy($newName, $withData = false)
+  {
+    $newName = $this->applyPrefix($newName);
+
+    // 建表失败时直接返回 false，不必再尝试复制数据
+    if ($this->exec("CREATE TABLE `{$newName}` LIKE `{$this->tableName}`") === false) {
+      return false;
+    }
+
+    if ($withData) {
+      // INSERT 是写操作，PDO::exec 返回受影响行数（0 表示无数据可复制，仍属成功）
+      return $this->exec("INSERT INTO `{$newName}` SELECT * FROM `{$this->tableName}`") !== false;
+    }
+
+    return true;
+  }
+
+  // ===================================================================
+  // 信息查询（表元数据）
+  // ===================================================================
+  //
+  // 这些语句（SHOW / OPTIMIZE TABLE）返回的都是**结果集**，
+  // 因此内部统一走 select()，不能用 exec()（PDO::exec 不产生结果集）。
+  //
+
+  /**
+   * 表是否存在
+   *
+   * @return bool
+   */
+  public function tableExists()
+  {
+    $result = $this->select("SHOW TABLES LIKE '{$this->tableName}'");
+    return !empty($result);
+  }
+
+  /**
+   * 获取建表 DDL
+   *
+   * @return string
+   */
+  public function getCreateSQL()
+  {
+    $result = $this->select("SHOW CREATE TABLE `{$this->tableName}`");
+    return $result[0]['Create Table'] ?? '';
+  }
+
+  /**
+   * 获取表字段结构
+   *
+   * @return array 每个字段的类型、是否可空、默认值、注释
+   */
+  public function getColumns()
+  {
+    return $this->select("SHOW FULL COLUMNS FROM `{$this->tableName}`");
+  }
+
+  /**
+   * 获取表索引
+   *
+   * @return array 索引名称、字段、类型、基数
+   */
+  public function getIndexes()
+  {
+    return $this->select("SHOW INDEX FROM `{$this->tableName}`");
+  }
+
+  /**
+   * 获取表状态信息
+   *
+   * @return array|null 引擎、行数、数据大小、自增值、创建时间
+   */
+  public function getStatus()
+  {
+    $result = $this->select("SHOW TABLE STATUS LIKE '{$this->tableName}'");
+    return $result[0] ?? null;
+  }
+
+  /**
+   * 优化表（整理碎片，回收空间）
+   *
+   * MySQL 的 OPTIMIZE TABLE 会**返回结果集**（含 Table / Op / Msg_type / Msg_text 四列），
+   * 而不是受影响行数，因此这里用 select() 取回结果，并逐行检查 Msg_type 是否出错。
+   *
+   * @return bool 全部表均报告 status/ok/note 时返回 true；任一报 error/warning 返回 false
+   */
+  public function optimize()
+  {
+    $result = $this->select("OPTIMIZE TABLE `{$this->tableName}`");
+
+    // 结果集为空说明语句本身没跑起来
+    if (empty($result)) {
+      return false;
+    }
+
+    foreach ($result as $row) {
+      $msgType = strtolower($row['Msg_type'] ?? '');
+      if ($msgType === 'error' || $msgType === 'warning') {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // ===================================================================
+  // Schema 类型映射
+  // ===================================================================
+  //
+  // 将 $schema 中的 Schema 对象映射为「字段名 → PHP 类型」，
+  // 供 Model 推导出 $schemaCasts（CRUD 读写的类型转换依据）。
+  //
+
+  /**
+   * 将 $schema 中的 Schema 对象转换为字段 → PHP 类型映射
+   *
+   * @example
+   * // 返回 ['id' => 'int', 'name' => 'string']
+   *
+   * @return array<string, string>
+   */
+  public function getPhpSchema()
+  {
+    if (empty($this->schema)) {
+      return [];
+    }
+
+    $map = [];
+    foreach ($this->schema as $col) {
+      if ($col instanceof Schema) {
+        $map[$col->getName()] = $col->getPhpType();
+      }
+    }
+    return $map;
+  }
+
+  // ===================================================================
+  // 驱动解析
+  // ===================================================================
+
+  /**
+   * 解析本表要使用的数据库驱动
+   *
+   * 配置项是 `$databaseDriver`（**驱动名**，不是驱动实例 —— 与 {@see Query} 里同名的实例属性
+   * 语义不同）：配了就用该驱动，没配就跟随当前连接（{@see Connections::getUseDriver()}）。
+   *
+   * 原生 SQL 方法（{@see exec()} / {@see select()} 等）与 {@see Model::query()} 都经这里取驱动，
+   * 所以「让某张表固定走某个驱动」只需覆盖 `$databaseDriver`，不必去动全局当前连接。
+   *
+   * @throws \kernel\Foundation\Exception\Error 配置的驱动名未注册时抛出
+   * @return \kernel\Foundation\Database\RDB\Drivers\AbstractDriver 驱动实例
+   */
+  protected function resolveDatabaseDriver()
+  {
+    if (!$this->databaseDriver) {
+      return Connections::getUseDriver();
+    }
+
+    return Connections::getDriver($this->databaseDriver);
+  }
+
+  // ===================================================================
+  // SQL 执行
+  // ===================================================================
+  //
+  // 一律先经 resolveDatabaseDriver() 取得驱动实例，再由驱动直接执行 —— 表不经过 DB 门面，
+  // 于是「钉在某个驱动上的表」与「跟随当前连接的表」可以并存，互不影响。
+  //
+  // 两个底层方法：
+  //   exec($sql)      —— 驱动的 exec，**不产生结果集**，返回受影响行数。
+  //                      注意：DDL 成功时返回 0（PHP 中为 falsy），
+  //                      故 create/drop/truncate/rename/copy 均用 !== false 转为 bool。
+  //   execQuery($sql) —— 驱动的 query，**返回结果集对象**，需自行 fetch。
+  //
+  // 四个便捷方法（推荐日常使用，支持参数绑定）：
+  //   select($sql, $bindings)     读多行 → array
+  //   selectOne($sql, $bindings)  读单行 → array|null
+  //   scalar($sql, $bindings)     读标量 → mixed
+  //   insertId()                  取最后插入的自增 ID
+  //
+
+  /**
+   * 执行原生 SQL（写操作 / DDL）
+   *
+   * @param  string $sql 原生 SQL（不支持参数绑定，需自行转义）
+   * @return int 受影响行数；DDL 成功通常返回 0
+   *
+   * @see select() 读操作请用这个
+   */
+  public function exec($sql)
+  {
+    return $this->resolveDatabaseDriver()->exec($sql);
+  }
+
+  /**
+   * 执行原生 SQL（通用，返回结果集对象）
+   *
+   * 仅当需要自行控制取数方式时使用；绝大多数场景请用 select() / selectOne()。
+   *
+   * @param  string $sql 原生 SQL
+   * @return object 驱动返回的结果对象（PDOStatement / MysqliStatement）
+   */
+  public function execQuery($sql)
+  {
+    return $this->resolveDatabaseDriver()->query($sql);
+  }
+
+  /**
+   * 执行原生 SQL 并取回全部结果行
+   *
+   * @param  string $sql      原生 SQL，可用 `?` 或 `:name` 占位符
+   * @param  array  $bindings 绑定参数（预处理，防 SQL 注入）
+   * @return array 二维数组，每行一个关联数组；无结果返回 []
+   *
+   * @example
+   * $table->select('SELECT * FROM users WHERE uid = ?', [1]);
+   */
+  public function select($sql, $bindings = [])
+  {
+    return $this->resolveDatabaseDriver()->fetchAll($sql, $bindings);
+  }
+
+  /**
+   * 执行原生 SQL 并取回第一行
+   *
+   * @param  string $sql      原生 SQL
+   * @param  array  $bindings 绑定参数
+   * @return array|null 单行关联数组；无结果返回 null
+   */
+  public function selectOne($sql, $bindings = [])
+  {
+    return $this->resolveDatabaseDriver()->fetch($sql, $bindings) ?: null;
+  }
+
+  /**
+   * 执行原生 SQL 并取回单个标量值
+   *
+   * 适用于 COUNT / MAX / SUM 等单值查询。
+   *
+   * @param  string $sql      原生 SQL
+   * @param  array  $bindings 绑定参数
+   * @return mixed 首行首列的值；无结果返回 null
+   *
+   * @example
+   * $total = $table->scalar('SELECT COUNT(*) FROM users WHERE uid = ?', [1]);
+   */
+  public function scalar($sql, $bindings = [])
+  {
+    return $this->resolveDatabaseDriver()->fetchColumn($sql, $bindings);
+  }
+
+  /**
+   * 获取最后插入的自增 ID
+   *
+   * @return string|int
+   */
+  public function insertId()
+  {
+    return $this->resolveDatabaseDriver()->insertId();
+  }
+}

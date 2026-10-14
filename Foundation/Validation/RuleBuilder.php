@@ -275,7 +275,7 @@ class RuleBuilder implements RuleInterface
    *   exists($model, $message, $callback)              — 按主键查询 + 闭包拓展
    *   exists($model, $message, 'username', $callback)  — 按指定字段查询 + 闭包拓展
    *
-   * @param \kernel\Foundation\Database\PDO\Model $model            对应模型实例
+   * @param \kernel\Foundation\Database\RDB\Model $model            对应模型实例
    * @param string                                 $message          校验失败报错信息
    * @param string|\Closure|callable|null          $fieldOrCallback  第三个参数：字符串=查询字段名，闭包=拓展回调，null=默认主键
    * @param \Closure|callable|null                 $callback         第四个参数：拓展回调（仅在第三参数为字段名时传入）
