@@ -101,7 +101,6 @@ class Query extends AbilityBaseObject
    * - 'pagination'  => ['limit' => int|null, 'offset' => int|null]
    * - 'joins'       => array  // JOIN 定义列表，每项: ['type'=>'INNER','table'=>'profiles','alias'=>'p','first'=>'users.id','operator'=>'=','second'=>'p.user_id']
    * - 'groupBy'     => array|null
-   * - 'having'      => mixed|null
    * - 'data'        => mixed|null  // insert/update 数据
    * - 'insertData'  => array  // insert 专用数据
    * - 'updateData'  => array  // update 专用数据
@@ -114,22 +113,11 @@ class Query extends AbilityBaseObject
   /**
    * 可空过滤条件集合
    * 
-   * 通过 filterNullWhere() 添加的条件存储在此数组中，
-   * 在 generateSQL() 中生成 WHERE 子句之前会自动过滤值为空的条目
+   * 存入此数组的条件会在 generateSQL() 生成 WHERE 子句之前剔除值为空的条目
    * 
    * @var array
    */
   private $filterNullConditions = [];
-
-  /**
-   * 标识当前查询是否为子查询子句
-   * 
-   * 当为 true 时，generateSQL() 不拼接执行关键字（SELECT/INSERT/UPDATE/DELETE），
-   * 只生成 FROM / WHERE / ORDER BY 等子句部分
-   * 
-   * @var boolean
-   */
-  protected $clause = false;
 
   // ===================================================================
   // 属性：参数绑定
@@ -303,7 +291,7 @@ class Query extends AbilityBaseObject
    * 重置内容包括：
    * - executeType（操作类型）
    * - orders（排序）、select 字段、conditions（WHERE 条件）
-   * - pagination（分页）、groupBy、having、data
+   * - pagination（分页）、groupBy、data
    * - SQL 语句缓存、绑定参数、绑定计数器
    * 
    * @return $this 返回当前实例以支持链式调用
@@ -329,7 +317,6 @@ class Query extends AbilityBaseObject
           "offset" => null
         ],
         "groupBy" => null,
-        "having" => null,
         "data" => null
       ];
       $this->sql = '';
@@ -505,7 +492,7 @@ class Query extends AbilityBaseObject
    * 
    * @example
    * $sql = Query::table('users')->where('status', 'active')->getSQL();
-   * // SELECT * FROM `users` WHERE `status` = 'active'
+   * // SELECT * FROM `users` WHERE `status` = :__bind_0
    * 
    * @see generateSQL() 内部 SQL 生成逻辑
    */
@@ -981,10 +968,11 @@ class Query extends AbilityBaseObject
    * ->orderBy('price', 'DESC')
    * 
    * 字段名与排序方向都会直接拼进 SQL（字段名走反引号包裹、反引号本身无法转义），
-   * 因此两者都校验：字段名只接受纯标识符，方向只接受 `ASC` / `DESC`。
-   * 需要表达式 / 函数排序请改用 {@see orderByRaw()}。
+   * 因此两者都校验：字段名只接受纯标识符（可含 `表名.列名`），方向只接受 `ASC` / `DESC`。
+   * 支持逗号分隔的多字段写法（如 `'a, b DESC'`）与正整数列位（`ORDER BY 1`）；
+   * 表达式 / 函数排序请改用 {@see orderByRaw()}。
    *
-   * @param string|Statement $column 排序字段（纯标识符；表达式请用 {@see raw()} 包装后传入）
+   * @param string|int|Statement $column 排序字段：标识符、多字段串、正整数列位或 {@see raw()} 包装的表达式
    * @param string $by 排序方向，`ASC` 或 `DESC`（大小写不敏感）
    * @throws Error 方向不是 ASC / DESC，或字段名含标识符之外的字符
    * @return $this
@@ -995,15 +983,36 @@ class Query extends AbilityBaseObject
     if (!in_array($by, ["ASC", "DESC"], true)) {
       throw new Error("排序方式只能是 ASC 或 DESC", 500, "invalidOrderDirection:500", $by);
     }
-    if (!($column instanceof Statement) && (!is_string($column) || !preg_match('/^[A-Za-z0-9_$.]+$/', $column))) {
+
+    // Statement 或正整数列位（ORDER BY 1）直接入列
+    if ($column instanceof Statement || is_int($column)) {
+      if (is_int($column) && $column < 1) {
+        throw new Error("排序字段名不合法", 500, "invalidOrderField:500", $column);
+      }
+      $this->options['orders'][] = [
+        "field" => $column,
+        "by" => $by,
+        "type" => "general"
+      ];
+      return $this;
+    }
+
+    if (!is_string($column)) {
       throw new Error("排序字段名不合法", 500, "invalidOrderField:500", $column);
     }
 
-    $this->options['orders'][] = [
-      "field" => $column,
-      "by" => $by,
-      "type" => "general"
-    ];
+    // 支持 "a, b desc" 形式的多字段写法，逐段解析；表达式请改用 orderByRaw()
+    foreach (explode(",", $column) as $segment) {
+      $segment = trim($segment);
+      if (!preg_match('/^([A-Za-z0-9_$.]+)(?:\s+(ASC|DESC))?$/i', $segment, $matched)) {
+        throw new Error("排序字段名不合法，表达式请使用 orderByRaw()", 500, "invalidOrderField:500", $segment);
+      }
+      $this->options['orders'][] = [
+        "field" => $matched[1],
+        "by" => empty($matched[2]) ? $by : strtoupper($matched[2]),
+        "type" => "general"
+      ];
+    }
 
     return $this;
   }
@@ -1398,6 +1407,11 @@ class Query extends AbilityBaseObject
         // IN 的数组值已在上面转成占位符；这里兜住直接传字符串列表的写法
         $value = new Statement($this->generateBindingValue($value));
       }
+    } else if ($type === 'func' && in_array($funcName, ['DATE', 'YEAR', 'MONTH', 'DAY', 'TIME', 'HOUR', 'MINUTE', 'SECOND'], true)) {
+      // 日期 / 时间函数条件的值同样走占位符绑定；EXISTS / NOT EXISTS 传的是子查询，无需绑定
+      if (is_string($value)) {
+        $value = new Statement($this->generateBindingValue($value));
+      }
     }
 
     $this->options['conditions'][] = [
@@ -1704,7 +1718,7 @@ class Query extends AbilityBaseObject
    * 所有 whereDate/whereYear/... 及其 OR 变体均通过此方法实现。
    * 
    * @param string $func     日期/时间 SQL 函数名（DATE/YEAR/MONTH/DAY/TIME/HOUR/MINUTE/SECOND）
-   * @param string $column   数据库列名（会自动加上反引号）
+   * @param string $column   数据库列名，由 Statement 负责加反引号并套上函数名
    * @param string $operator 比较操作符（=、>、< 等）
    * @param mixed  $value    比较值
    * @param string $boolean  逻辑连接符（AND/OR），默认 AND
@@ -1714,7 +1728,7 @@ class Query extends AbilityBaseObject
    */
   private function addDateWhere($func, $column, $operator, $value, $boolean = "AND")
   {
-    return $this->addWhere("{$func}(`$column`)", $operator, $value, $boolean, $func, "func");
+    return $this->addWhere($column, $operator, $value, $boolean, $func, "func");
   }
 
   /**
@@ -2735,10 +2749,9 @@ class Query extends AbilityBaseObject
    * ->count('DISTINCT category')
    * 
    * @param string $column 要统计的列名，默认为 "*" 表示所有记录
-   * @return int|false 返回统计数量，查询失败返回 false
+   * @return int|string|false 返回统计数量；无匹配记录时返回 0，查询失败返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 COUNT 聚合函数
-   * @note 如果查询结果为空，返回 false
    * @see raw() 用于创建原始 SQL 表达式
    */
   function count($column = "*", $params = [])

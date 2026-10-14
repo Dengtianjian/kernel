@@ -4,6 +4,7 @@ namespace kernel\Foundation\Database\RDB;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Output;
 
 
@@ -27,6 +28,8 @@ use kernel\Foundation\Output;
  * - **值**（比较值、LIKE 模式、IN 列表、写入的字段值）由 {@see Query} 在组装时转成占位符
  *   （如 `:__bind_0`）并登记进 `Query::$bindings`，执行时经驱动的预处理绑定传入，
  *   值不参与 SQL 解析；
+ * - 直接调用本类的静态方法（如 Statement::where()）时没有绑定上下文，值只能内联进 SQL，
+ *   调用方须自行保证这些值来自可信来源；
  * - **标识符**（表名、列名、别名、排序 / 分组字段）与 DDL 片段无法参数化，仍由本类用反引号
  *   或引号包裹后拼接，需由调用方保证其来自代码而非用户输入（{@see Query::orderBy()} 已内置校验）。
  *
@@ -237,7 +240,8 @@ class Statement
    * | `boolean` | 纯连接符 | 仅 AND / OR，不产生条件 SQL |
    *
    * @param array $conditions 结构化条件数组，由 Query::addWhere() 组装
-   * @return string 完整的 WHERE SQL（不含 "WHERE" 关键字），如 `status` = 1 AND `name` LIKE '%John%'
+   * @return string 完整的 WHERE SQL（不含 "WHERE" 关键字）。经 {@see Query} 组装时值以
+   * `:__bind_N` 占位符出现（如 `` `status` = :__bind_0 ``）；直接调用本方法时值为内联字面量
    */
   static function where($conditions)
   {
@@ -252,14 +256,17 @@ class Statement
         if ($prevConditionItem) {
           $boolean = $ConditionItem['boolean'] ?: "AND";
 
-          if ($prevConditionItem['type'] === "raw" && !preg_match("/\s(or|and)\s?$/i", $prevConditionItem['value'])) {
-            $conditionSQLs[] = $boolean;
-          } else {
+          // raw 片段若已自带 AND / OR 结尾，则不再重复追加连接符
+          $rawEndsWithBoolean = $prevConditionItem['type'] === "raw"
+            && preg_match("/\s(or|and)\s?$/i", $prevConditionItem['value']);
+
+          if (!$rawEndsWithBoolean) {
             $conditionSQLs[] = $boolean;
           }
         }
 
-        if ($ConditionItem['column']) {
+        // func 类型的 column 是未经包装的列名，由下方 func 分支负责加引号并套上函数名
+        if ($ConditionItem['column'] && $ConditionItem['type'] !== 'func') {
           $ConditionItem['column'] = self::format($ConditionItem['column']);
         }
 
@@ -382,9 +389,14 @@ class Statement
             break;
           //* 函数
           case "func":
-            if (in_array($ConditionItem['funcName'], ["DATE", "YEAR", "MONTH", "DAY", "TIME", "HOUR", "MINUTE", "SECOND"])) {
-              $statement = join(" ", [$ConditionItem['column'], $ConditionItem['operator'], self::format($ConditionItem['value'])]);
-            } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"])) {
+            if (in_array($ConditionItem['funcName'], ["DATE", "YEAR", "MONTH", "DAY", "TIME", "HOUR", "MINUTE", "SECOND"], true)) {
+              // column 为裸列名，在这里加引号并套上函数名；值交由 Query 绑定时为占位符
+              $statement = join(" ", [
+                "{$ConditionItem['funcName']}(" . self::format($ConditionItem['column']) . ")",
+                $ConditionItem['operator'],
+                self::format($ConditionItem['value'], "'")
+              ]);
+            } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"], true)) {
               $value = $ConditionItem['value'];
               if (isSafeCallable($value)) {
                 $subQuery = new Query();
@@ -425,7 +437,8 @@ class Statement
         if ($orderItem['field'] instanceof Statement) {
           $OrderSQLs[] = $orderItem['field']->getSQL();
         } else {
-          $field = is_int($orderItem['field']) ? $orderItem['field'] : "`{$orderItem['field']}`";
+          // 整数按结果集列位排序（ORDER BY 1）；字符串走统一格式化，正确拆分 table.column
+          $field = is_int($orderItem['field']) ? $orderItem['field'] : self::format($orderItem['field']);
           $by = $orderItem['by'] ? strtoupper($orderItem['by']) : 'ASC';
           $OrderSQLs[] = join(" ", [$field, $by]);
         }
@@ -448,9 +461,14 @@ class Statement
     return "ORDER BY " . \implode(", ", $OrderSQLs);
   }
   /**
-   * 限制操作的条数
-   * @param int $limit 偏移值或者获取的条数
-   * @param int $offset 获取的条数
+   * 生成 LIMIT / OFFSET 子句
+   *
+   * 只给 offset 不给 limit 时，MySQL 不接受裸 `OFFSET`，
+   * 此时补上「不限制行数」的 LIMIT 上限值（MySQL / MariaDB 官方推荐写法）。
+   * 两个参数都为空时返回空字符串。
+   *
+   * @param int|Statement|null $limit  获取的条数
+   * @param int|Statement|null $offset 跳过的条数
    * @return string
    */
   static function pagination($limit = null, $offset = null)
@@ -466,16 +484,16 @@ class Statement
       $offset = (int) $offset;
     }
 
-    $sql = "";
-    if ($limit && $offset) {
-      $sql = "LIMIT {$limit} OFFSET {$offset}";
-    } else if ($offset) {
-      $sql = "OFFSET {$offset}";
-    } else {
-      $sql = "LIMIT {$limit}";
+    if (!$limit && !$offset) {
+      return "";
     }
 
-    return $sql;
+    if (!$limit) {
+      // 仅 offset：MySQL 要求 LIMIT 必须存在，取无符号 BIGINT 上限表示不限制条数
+      $limit = "18446744073709551615";
+    }
+
+    return $offset ? "LIMIT {$limit} OFFSET {$offset}" : "LIMIT {$limit}";
   }
   /**
    * 生成插入 SQL
@@ -490,6 +508,10 @@ class Statement
    */
   static function insert($tableName, $data, $isReplaceInto = false, $isIgnore = false)
   {
+    if (!$data) {
+      throw new Error("插入数据不能为空", 500, "emptyInsertData:500");
+    }
+
     // 归一化：单行也包装为行列表
     $isAssoc = Arr::isAssoc($data);
     $rows = $isAssoc ? [$data] : $data;
@@ -539,12 +561,12 @@ class Statement
    */
   static function update($tableName, $data, $extraStatement = "")
   {
+    // batchFormat 已把 null 转成 NULL 字面量，这里只需拼装 `field` = value
     $updateData = self::batchFormat($data, "'", 'json');
     foreach ($updateData as $field => &$value) {
-      if ($value === null)
-        $value = "NULL";
       $value = "`$field` = $value";
     }
+    unset($value);
     $updateData = implode(",", $updateData);
     $sql = "UPDATE $tableName SET {$updateData} $extraStatement";
     return $sql;
