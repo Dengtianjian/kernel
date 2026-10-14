@@ -44,7 +44,7 @@ use kernel\Foundation\Database\RDB\Relation\Relation;
  * @method        int|bool delete(array $params = [])          软删除（写 deleted_at）或真删；有主键按主键，否则走 Query 条件
  * ------------------------------------------------------------------
  * === Query 链式方法（返回值 $this，可继续链式调用）===
- * @method $this where(string $column, mixed $operatorOrValue = null, mixed $value = null)
+ * @method $this where(mixed $column, mixed $operatorOrValue = null, mixed $value = null)
  * @method $this whereRaw(string $sql)
  * @method $this whereBetween(string $column, mixed $min, mixed $max)
  * @method $this whereNotBetween(string $column, mixed $min, mixed $max)
@@ -65,7 +65,7 @@ use kernel\Foundation\Database\RDB\Relation\Relation;
  * @method $this whereSecond(string $column, string $operatorOrValue, mixed $value = null)
  * @method $this whereExists(\kernel\Foundation\Database\RDB\Query|callable $queryOrCallable)
  * @method $this whereNotExists(\kernel\Foundation\Database\RDB\Query|callable $queryOrCallable)
- * @method $this orWhere(string $column, mixed $operatorOrValue = null, mixed $value = null)
+ * @method $this orWhere(mixed $column, mixed $operatorOrValue = null, mixed $value = null)
  * @method $this orWhereRaw(string $sql)
  * @method $this orWhereBetween(string $column, mixed $min, mixed $max)
  * @method $this orWhereNotBetween(string $column, mixed $min, mixed $max)
