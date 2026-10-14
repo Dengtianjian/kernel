@@ -1079,7 +1079,7 @@ class Model extends Table
 
   public function discuzTableName($tableName)
   {
-    return implode("_", [getApp()::id(), $tableName]);
+    return \DB::table(implode("_", [getApp()::id(), $tableName]));
   }
 
   // ===================================================================
