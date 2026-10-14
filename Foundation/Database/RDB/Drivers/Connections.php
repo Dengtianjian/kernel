@@ -84,7 +84,7 @@ class Connections extends AbilityBaseObject
   static function useDriver($name)
   {
     if (!array_key_exists($name, self::$drivers)) {
-      throw new Error("使用的数据库驱动不存在", 500, "databaseStaticDriverNotExist:500");
+      throw new Error("使用的数据库驱动不存在", 500, "useDatabaseDriverNotExist:500");
     }
     self::$useDriver = self::$drivers[$name];
 

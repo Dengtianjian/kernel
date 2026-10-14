@@ -196,9 +196,12 @@ class Query extends AbilityBaseObject
   /**
    * 允许克隆查询实例
    *
-   * 父级 BaseObject 将 __clone 私有化以保证单例唯一性，但 Query 是
-   * 有状态的可变构建器，paginate()/chunk() 等方法需要基于当前实例克隆
-   * 出独立副本来执行 COUNT 等辅助查询，因此此处显式开放克隆。
+   * 上级 `BaseObject` 把 `__clone` 私有化以保证单例唯一性，而 Query 是**有状态的可变构建器**：
+   * {@see paginate()} / {@see chunk()} 需要克隆出独立副本来执行 COUNT 等辅助查询，
+   * 因此这里重新声明为 public 以便克隆。
+   *
+   * 克隆语义：**驱动实例有意共享** —— 连接对象不可复制，克隆出的辅助查询必须与原实例走同一条连接；
+   * 除此之外的构建状态（options / bindings / sql 等）都是值类型，克隆后两份互不影响。
    */
   public function __clone() {}
 

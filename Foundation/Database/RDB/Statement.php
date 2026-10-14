@@ -366,7 +366,7 @@ class Statement
             break;
           //* 函数
           case "func":
-            if (in_array($ConditionItem['funcName'], ["DATE", "YEAR", "MONTH", "DAY", "TUNE", "HOUR", "MINUTE", "SECOND"])) {
+            if (in_array($ConditionItem['funcName'], ["DATE", "YEAR", "MONTH", "DAY", "TIME", "HOUR", "MINUTE", "SECOND"])) {
               $statement = join(" ", [$ConditionItem['column'], $ConditionItem['operator'], self::format($ConditionItem['value'])]);
             } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"])) {
               $value = $ConditionItem['value'];
