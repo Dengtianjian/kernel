@@ -5,6 +5,7 @@ namespace kernel\Foundation\Database\RDB;
 use kernel\Foundation\Database\RDB\Drivers\AbstractDriver;
 use kernel\Foundation\Database\RDB\Drivers\Connections;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
 
 /**
@@ -137,9 +138,10 @@ class Query extends AbilityBaseObject
   /**
    * 参数绑定数组
    * 
-   * 存储预处理占位符与值的映射，键为占位符名称（如 ':id'、':__in_0'），值为实际绑定值。
-   * 在首次添加 WHERE IN 条件时自动生成，也可通过 bind()/addBindings() 手动添加。
-   * 执行时通过 mergeBindings() 与调用参数合并，内部绑定优先于外部调用参数。
+   * 存储预处理占位符与值的映射，键为占位符名称（如 ':id'、':__bind_0'），值为实际绑定值。
+   * 由 {@see generateBindingValue()} 在拼接条件与写入值时自动登记（WHERE IN、比较、LIKE、BETWEEN、INSERT/UPDATE 的值），
+   * 也可通过 {@see bind()} / {@see addBindings()} 手动添加。
+   * 执行时通过 {@see mergeBindings()} 与调用参数合并，内部绑定优先于外部调用参数。
    * 
    * @var array
    */
@@ -148,8 +150,8 @@ class Query extends AbilityBaseObject
   /**
    * 自增绑定计数器
    * 
-   * 用于 generateBindingKey() 生成唯一的内部占位符名称（格式 :__in_N），
-   * 每次调用 generateBindingKey() 自动递增，确保同一查询中的 IN 占位符不重名
+   * 用于 {@see generateBindingKey()} 生成唯一的内部占位符名称（格式 `:__bind_N`），
+   * 每次调用自动递增，确保同一查询中的占位符不重名
    * 
    * @var int
    */
@@ -400,17 +402,81 @@ class Query extends AbilityBaseObject
   /**
    * 生成唯一的内部占位符名称
    *
-   * @return string 如 ':__in_0', ':__in_1' 等
+   * @return string 如 `:__bind_0`、`:__bind_1` 等
    */
   private function generateBindingKey()
   {
-    return ':__in_' . ($this->bindingCounter++);
+    return ':__bind_' . ($this->bindingCounter++);
+  }
+
+  /**
+   * 为一个值生成占位符并登记绑定
+   *
+   * 与 WHERE IN 同一套机制：占位符写进 SQL，值存进 {@see $bindings}，执行时经
+   * {@see mergeBindings()} 交给驱动的预处理绑定 —— 值不参与 SQL 解析，因此不存在转义问题。
+   *
+   * 条件的值、写入的值都经它转成占位符；`raw()` 表达式与子查询不是值，不走这里。
+   *
+   * @param mixed $value 待绑定的值
+   * @return string 占位符名，如 `:__bind_0`
+   */
+  private function generateBindingValue($value)
+  {
+    $key = $this->generateBindingKey();
+    $this->bindings[$key] = $value;
+
+    return $key;
+  }
+
+  /**
+   * 把写入数据里的值换成占位符绑定
+   *
+   * 支持单行（`['col' => 'val']`）与批量（`[['col' => 'val'], ...]`）两种形态。
+   * 只处理有注入可能的字符串值（数组值按写入语义编码为 JSON 后同样绑定）；`null` / 数字 /
+   * 布尔交由 {@see Statement::insert()} / {@see Statement::update()} 内联 —— 它们本身
+   * 无注入风险，内联还能保持数字的原始类型。`Statement`（raw 表达式）、`Query`（子查询）
+   * 与回调原样保留。
+   *
+   * @param mixed $data 待写入的数据
+   * @return mixed 值已替换为占位符的数据
+   */
+  private function bindWriteValues($data)
+  {
+    if (!is_array($data)) {
+      return $data;
+    }
+    if (Arr::isAssoc($data)) {
+      return $this->bindWriteRowValues($data);
+    }
+
+    return array_map(function ($row) {
+      return is_array($row) ? $this->bindWriteRowValues($row) : $row;
+    }, $data);
+  }
+
+  /**
+   * 把单行写入数据里的值换成占位符绑定
+   *
+   * @param array $row 字段名 => 值
+   * @return array 字段名 => 占位符（或原值）
+   */
+  private function bindWriteRowValues($row)
+  {
+    foreach ($row as $field => $value) {
+      if (is_string($value)) {
+        $row[$field] = new Statement($this->generateBindingValue($value));
+      } else if (is_array($value)) {
+        $row[$field] = new Statement($this->generateBindingValue(json_encode($value)));
+      }
+    }
+
+    return $row;
   }
 
   /**
    * 合并累积的绑定参数与传入参数
    *
-   * 内部 IN 占位符绑定优先，外部 $params 可覆盖同名键
+   * 内部占位符绑定优先，外部 $params 可覆盖同名键
    *
    * @param array $params 调用时传入的参数
    * @return array 合并后的绑定参数
@@ -555,6 +621,10 @@ class Query extends AbilityBaseObject
 
   /**
    * 设置写操作状态并返回 SQL（不执行，供外层获取 SQL 后自行执行）
+   *
+   * 返回的是**纯 SQL 文本**（值内联在内、不带绑定），调用方自行执行时无法再做参数绑定，
+   * 因此 `$data` 只应放可信来源的值；能用 {@see insert()} / {@see update()} 直接执行的场景
+   * 请优先用它们 —— 那两个入口的写入值会走占位符绑定。
    *
    * @param  string      $type    操作类型: insert, replace, update, delete
    * @param  mixed       $data    数据（insert/replace/update 需要）
@@ -910,12 +980,25 @@ class Query extends AbilityBaseObject
    * ->orderBy('category', 'ASC')
    * ->orderBy('price', 'DESC')
    * 
-   * @param string $column 排序字段
-   * @param string $by 排序方向，'ASC' 或 'DESC'
+   * 字段名与排序方向都会直接拼进 SQL（字段名走反引号包裹、反引号本身无法转义），
+   * 因此两者都校验：字段名只接受纯标识符，方向只接受 `ASC` / `DESC`。
+   * 需要表达式 / 函数排序请改用 {@see orderByRaw()}。
+   *
+   * @param string|Statement $column 排序字段（纯标识符；表达式请用 {@see raw()} 包装后传入）
+   * @param string $by 排序方向，`ASC` 或 `DESC`（大小写不敏感）
+   * @throws Error 方向不是 ASC / DESC，或字段名含标识符之外的字符
    * @return $this
    */
   function orderBy($column, $by = "ASC")
   {
+    $by = is_string($by) ? strtoupper($by) : $by;
+    if (!in_array($by, ["ASC", "DESC"], true)) {
+      throw new Error("排序方式只能是 ASC 或 DESC", 500, "invalidOrderDirection:500", $by);
+    }
+    if (!($column instanceof Statement) && (!is_string($column) || !preg_match('/^[A-Za-z0-9_$.]+$/', $column))) {
+      throw new Error("排序字段名不合法", 500, "invalidOrderField:500", $column);
+    }
+
     $this->options['orders'][] = [
       "field" => $column,
       "by" => $by,
@@ -1294,11 +1377,26 @@ class Query extends AbilityBaseObject
       if ($type === 'rangeTesting' && in_array($operator, ['IN', 'NOT IN'], true)) {
         $placeholders = [];
         foreach ($value as $val) {
-          $key = $this->generateBindingKey();
-          $placeholders[] = $key;
-          $this->bindings[$key] = $val;
+          $placeholders[] = $this->generateBindingValue($val);
         }
         $value = new Statement(implode(', ', $placeholders));
+      }
+    }
+
+    // 条件里的字符串值 → 占位符绑定，防止 SQL 注入（与上面的 IN 同一套机制）
+    // 只绑定字符串：null 走 nullValue 分支生成 IS NULL，数字 / 布尔内联进 SQL 本身无注入风险
+    if ($type === 'comparsion' || $type === 'patternMatching') {
+      if (is_string($value)) {
+        $value = new Statement($this->generateBindingValue($value));
+      }
+    } else if ($type === 'rangeTesting') {
+      if (in_array($operator, ['BETWEEN', 'NOT BETWEEN'], true) && is_array($value)) {
+        $value = array_map(function ($item) {
+          return is_string($item) ? new Statement($this->generateBindingValue($item)) : $item;
+        }, $value);
+      } else if (in_array($operator, ['IN', 'NOT IN'], true) && is_string($value)) {
+        // IN 的数组值已在上面转成占位符；这里兜住直接传字符串列表的写法
+        $value = new Statement($this->generateBindingValue($value));
       }
     }
 
@@ -2886,7 +2984,8 @@ class Query extends AbilityBaseObject
   function insert($data, $isReplaceInto = false, $isIgnore = false, $returnId = false, $params = [])
   {
     $this->executeType = $isReplaceInto ? "replace" : "insert";
-    $this->options['insertData'] = $data;
+    //* 写入值转占位符：执行时经预处理绑定交给驱动，避免值被拼进 SQL
+    $this->options['insertData'] = $this->bindWriteValues($data);
     $this->options['insertIsIgnore'] = $isIgnore;
     $result = $this->executeWrite($params);
     return $returnId ? $this->databaseDriver->insertId() : $result;
@@ -2944,7 +3043,8 @@ class Query extends AbilityBaseObject
   function update($data, $params = [])
   {
     $this->executeType = "update";
-    $this->options['updateData'] = $data;
+    //* 写入值转占位符：执行时经预处理绑定交给驱动，避免值被拼进 SQL
+    $this->options['updateData'] = $this->bindWriteValues($data);
     return $this->executeWrite($params);
   }
 

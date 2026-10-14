@@ -22,7 +22,7 @@ use PDO;
  *
  * ## 命名占位符
  *
- * mysqli 只认问号（`?`）占位符，而内核 Query 的 IN 条件会生成命名占位符（如 `:__in_0`），
+ * mysqli 只认问号（`?`）占位符，而内核 Query 的 IN 条件会生成命名占位符（如 `:__bind_0`），
  * 因此预处理前必须改写；改写逻辑见 {@see normalizeNamedPlaceholders()}。
  *
  * ## 读取结果集的前置条件
@@ -102,7 +102,7 @@ class MysqliStatement
    * 键为整数时按问号占位符的 1 起位置处理。mysqli 的 `bind_param` 要求引用传值，因此这里只记录
    * 值，统一到 {@see execute()} 时再绑定。
    *
-   * @param string|int $param 命名占位符（如 `:__in_0`）或问号占位符的位置（1 起）
+   * @param string|int $param 命名占位符（如 `:__bind_0`）或问号占位符的位置（1 起）
    * @param mixed $value 绑定的值
    * @param int $type 参数类型，仅用于保持与 PDOStatement 一致的签名，mysqli 按值推断
    * @return bool

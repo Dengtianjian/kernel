@@ -17,8 +17,18 @@ use kernel\Foundation\Output;
  *
  * - **查询构建**：SELECT 字段、FROM 子句、WHERE 条件、ORDER BY、GROUP BY、LIMIT/OFFSET
  * - **数据操作**：INSERT、UPDATE、BATCH UPDATE、DELETE、INCREMENT/DECREMENT
- * - **数据格式化**：PHP 值 → SQL 安全字符串（`format`/`batchFormat`），自动处理
+ * - **字面量拼接**：PHP 值 → SQL 片段（`format`/`batchFormat`），自动处理
  *   NULL、布尔、数组（JSON/序列化）、Query 子查询、Statement 实例
+ *
+ * ## 值 vs 标识符
+ *
+ * 本类只做**字面量拼接**，不做转义 —— 转义能力在驱动层，不在这一层。因此：
+ *
+ * - **值**（比较值、LIKE 模式、IN 列表、写入的字段值）由 {@see Query} 在组装时转成占位符
+ *   （如 `:__bind_0`）并登记进 `Query::$bindings`，执行时经驱动的预处理绑定传入，
+ *   值不参与 SQL 解析；
+ * - **标识符**（表名、列名、别名、排序 / 分组字段）与 DDL 片段无法参数化，仍由本类用反引号
+ *   或引号包裹后拼接，需由调用方保证其来自代码而非用户输入（{@see Query::orderBy()} 已内置校验）。
  *
  * ## 使用方式
  *
@@ -95,7 +105,12 @@ class Statement
     return $this->baseSQL;
   }
   /**
-   * 格式化数据
+   * 格式化数据（拼接为 SQL 字面量，**不做转义**）
+   *
+   * 只负责拼接：字符串按 `$stringQuote` 左右包围、数组按 `$arrayFormatMethod` 编码、NULL 转
+   * `NULL`、Query / Statement 实例取其 SQL。因此它适用于标识符与 DDL 等无法参数化的位置；
+   * 查询中的**值**请交给 {@see Query} 的占位符绑定（见类注释「值 vs 标识符」）。
+   *
    * @param mixed $target 格式化的数据
    * @param string $stringQuote 字符串包围的符号；如果数据是字符串类型，会被该参数的值左右包围，传入 `false` 就不包围；例如 admin ，传入了 "`"符号，输出的数据就是 `admin`
    * @param 'json'|'serialize' $arrayFormatMethod 数组格式化的方法，json 就会被 json_encode 编码为字符串，serialize 就会被 serialize 函数格式化为字符串
@@ -325,8 +340,9 @@ class Statement
               case "BETWEEN":
               case "NOT BETWEEN":
                 $statement = join(" ", [
+                  $ConditionItem['column'],
                   $ConditionItem['operator'],
-                  join(" AND ", $ConditionItem['value'])
+                  join(" AND ", self::batchFormat($ConditionItem['value'], "'"))
                 ]);
                 break;
               case "IN":
@@ -441,9 +457,13 @@ class Statement
   {
     if (!is_null($limit) && $limit instanceof Statement) {
       $limit = $limit->getSQL();
+    } else if (!is_null($limit)) {
+      $limit = (int) $limit;
     }
     if (!is_null($offset) && $offset instanceof Statement) {
       $offset = $offset->getSQL();
+    } else if (!is_null($offset)) {
+      $offset = (int) $offset;
     }
 
     $sql = "";
