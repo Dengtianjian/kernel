@@ -1,12 +1,12 @@
 # Kernel
 
-天衍 PHP 框架，提供路由、数据库、HTTP、存储、事件等基础设施，App 基于此内核构建自己的业务逻辑。
+提供路由、数据库、HTTP、存储、事件等基础设施，App 基于此内核构建自己的业务逻辑。
 
 ## 目录结构
 
 ```
 kernel/
-├── Foundation/         # 框架核心（App、路由、数据库、HTTP 等）
+├── Foundation/         # 核心（App、路由、数据库、HTTP 等）
 ├── Platform/           # 平台适配层（DiscuzX：DiscuzXLang 语言包管理等）
 ├── Commands/           # 内核命令（make:app/make:model/make:controller/make:middleware/schedule:run）
 ├── Setup/              # 装配类（Console/Bootstrap 封装内核命令注册）
@@ -58,7 +58,7 @@ kernel/
 | `HTTP/` | HTTP 客户端、请求/响应处理 |
 | `Object/` | 基础对象模型 |
 | `Result.php` | 标准化返回结果（Result，继承 Response） |
-| `Validation/` | 数据验证框架 |
+| `Validation/` | 数据验证 |
 | `Facade.php` | [门面基类](ruyi-docs/docs/php/api/foundation/facade)：静态转发 + 单例/多例自动判定（`resolve()`/`accessor()`） |
 | `Crontab/` | [定时任务](ruyi-docs/docs/php/api/foundation/crontab/cron)（`Cron` 基类 + `Crons` 管理器），由 `schedule:run` 经门面驱动 |
 
