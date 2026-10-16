@@ -1,4 +1,5 @@
 <?php
+
 namespace kernel\Foundation\Database\RDB\Drivers;
 
 use kernel\Foundation\Database\RDB\Drivers\PDO\PdoDriver;
@@ -78,7 +79,7 @@ class Connections extends AbilityBaseObject
   /**
    * 使用数据库驱动
    * @param string $name 驱动列表键名
-   * @throws \kernel\Foundation\Exception\Error
+   * @throws Error
    * @return bool
    */
   static function useDriver($name)
@@ -116,7 +117,7 @@ class Connections extends AbilityBaseObject
    * 供「某个模型 / 某张表固定使用某个驱动」这类按名解析的声明式场景使用。
    *
    * @param string $name 驱动在数据库驱动列表中的键名
-   * @throws \kernel\Foundation\Exception\Error
+   * @throws Error
    * @return AbstractDriver
    */
   static function getDriver($name)
@@ -130,7 +131,7 @@ class Connections extends AbilityBaseObject
   /**
    * 设置默认数据库驱动
    * @param mixed $name 驱动在数据库驱动列表中的键名
-   * @throws \kernel\Foundation\Exception\Error
+   * @throws Error
    */
   static function setDefaultDriver($name = "default")
   {
@@ -149,7 +150,7 @@ class Connections extends AbilityBaseObject
   }
   /**
    * 切换回默认数据库驱动
-   * @throws \kernel\Foundation\Exception\Error
+   * @throws Error
    */
   static function switchToDefaultDriver()
   {
