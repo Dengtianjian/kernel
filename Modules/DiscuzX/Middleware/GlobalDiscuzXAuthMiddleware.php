@@ -104,7 +104,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   {
     $sameOrigin = Cors::isSameOrigin();
 
-    if ($sameOrigin && getglobal("uid")) {
+    if (getglobal("uid") && ($sameOrigin || !Cors::requestOrigin())) {
       Auth::userId(getglobal("uid"));
       $this->login();
     }

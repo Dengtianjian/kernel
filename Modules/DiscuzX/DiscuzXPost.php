@@ -5,6 +5,7 @@ namespace kernel\Modules\DiscuzX;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\Database\RDB\Model;
+use kernel\Modules\DiscuzX\Model\DiscuzXSystemModel;
 
 class DiscuzXPost extends BaseObject
 {
@@ -18,7 +19,7 @@ class DiscuzXPost extends BaseObject
   function getThreadPostAttachments($postId, $onlyImage = false)
   {
     global $_G;
-    $FAM = new Model("forum_attachment");
+    $FAM = new DiscuzXSystemModel("forum_attachment");
     $indexTablePostAttachs = $FAM->where("pid", $postId)->getAll();
     $attachGroups = Arr::group($indexTablePostAttachs, "tableid");
     $indexTablePostAttachs = Arr::indexToAssoc($indexTablePostAttachs, "aid");
@@ -28,7 +29,7 @@ class DiscuzXPost extends BaseObject
       if ($tableId === 127) {
         $tableId = "unused";
       }
-      $FANM = new Model("forum_attachment_" . $tableId);
+      $FANM = new DiscuzXSystemModel("forum_attachment_" . $tableId);
       if ($onlyImage) {
         $FANM->where("isimage", [1, -1]);
       }

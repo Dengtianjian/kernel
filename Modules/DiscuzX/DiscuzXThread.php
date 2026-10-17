@@ -5,7 +5,7 @@ namespace kernel\Modules\DiscuzX;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\Database\RDB\Model;
-
+use kernel\Modules\DiscuzX\Model\DiscuzXSystemModel;
 
 class DiscuzXThread extends BaseObject
 {
@@ -22,7 +22,7 @@ class DiscuzXThread extends BaseObject
    */
   function getThreadAttachments($threadId, $onlyImage = false)
   {
-    $FPM = new Model("forum_post");
+    $FPM = new DiscuzXSystemModel("forum_post");
     $posts = $FPM->field("pid", "tid")->where([
       "tid" => $threadId,
       "first" => 1

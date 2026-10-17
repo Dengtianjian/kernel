@@ -4,7 +4,8 @@ namespace kernel\Modules\QCloud\QCloudCos;
 
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\HTTP\Curl;
-use kernel\Modules\QCloud\QCloud;
+use kernel\Modules\QCloud\QCloudAccount;
+use kernel\Modules\QCloud\QCloudApi;
 use kernel\Modules\QCloud\QCloudCos\Object\MultipartUpload\QCloudCosCompleteMultipartUpload;
 use kernel\Modules\QCloud\QCloudCos\Object\MultipartUpload\QCloudCosMultipartUpload;
 use kernel\Modules\QCloud\QCloudCos\Object\QCloudCosObject;
@@ -18,7 +19,7 @@ use kernel\Modules\QCloud\QCloudCos\Object\QCloudCosObjects;
  * 「把计划发出去」：
  *
  * ```php
- * $client = new QCloudCosClient($secretId, $secretKey, "ap-guangzhou", "bkt-1250000000");
+ * $client = new QCloudCosClient($account, "ap-guangzhou", "bkt-1250000000");
  *
  * $client->upload("images/a.png", "/tmp/a.png");   // 真上传（自动按大小选简单/分块）
  * $client->exists("images/a.png");                 // true / false
@@ -50,7 +51,7 @@ use kernel\Modules\QCloud\QCloudCos\Object\QCloudCosObjects;
  *
  * @package kernel\Modules\QCloud\QCloudCos
  */
-class QCloudCosClient extends QCloud
+class QCloudCosClient extends QCloudApi
 {
   /** 驱动：走官方 SDK */
   const DRIVER_SDK = "sdk";
@@ -85,27 +86,28 @@ class QCloudCosClient extends QCloud
 
   /**
    * 参数顺序与 {@see QCloudCosSignture} 保持一致：**region 在前、bucket 在后**
-   * （`new QCloudCosClient($secretId, $secretKey, "ap-guangzhou", "bkt-1250000000")`）。
+   * （`new QCloudCosClient($account, "ap-guangzhou", "bkt-1250000000")`）。
    *
-   * @param string $secretId 密钥 ID
-   * @param string $secretKey 密钥 Key
+   * 凭据（SecretId / SecretKey / SecurityToken）一律取自 `$account`；
+   * {@see QCloudCosSignture} 是纯计算器、刻意不依赖账号类型，故由本类把凭据拆开传给它。
+   *
+   * @param QCloudAccount $account 腾讯云账号，提供 SecretId / SecretKey 等凭据
    * @param string $region 地域（如 `ap-guangzhou`）
    * @param string $bucket 桶名（含 APPID，如 `bkt-1250000000`）
    * @param string|null $host 桶域名；不传按 {@see HOST_PATTERN} 拼
    * @param string|null $driver 强制驱动（{@see DRIVER_SDK} / {@see DRIVER_HTTP}）；不传自动检测
-   * @param string|null $securityToken 临时密钥 token（STS 场景）
    */
-  public function __construct($secretId, $secretKey, $region, $bucket, $host = null, $driver = null, $securityToken = null)
+  public function __construct(QCloudAccount $account, $region, $bucket, $host = null, $driver = null)
   {
     //* 注意：**不要**给父类传 $service —— 父类会把 host 拼成 "{service}.{host}"（那是腾讯云 API 的域名规则），
-    //* 与 COS 的 "{bucket}.cos.{region}.myqcloud.com" 冲突。这里第 3 参传 null，第 4 参直接给完整域名。
-    parent::__construct($secretId, $secretKey, null, $host !== null ? $host : sprintf(self::HOST_PATTERN, $bucket, $region), $securityToken);
+    //* 与 COS 的 "{bucket}.cos.{region}.myqcloud.com" 冲突。这里第 2 参传 null，第 3 参直接给完整域名。
+    parent::__construct($account, null, $host !== null ? $host : sprintf(self::HOST_PATTERN, $bucket, $region));
 
     $this->bucket = $bucket;
     $this->region = $region;
     $this->driver = $driver !== null ? $driver : self::detectDriver();
     $this->driver = self::DRIVER_HTTP;
-    $this->signer = new QCloudCosSignture($secretId, $secretKey, null, $securityToken);
+    $this->signer = new QCloudCosSignture($account->secretId(), $account->secretKey(), null, $account->securityToken());
   }
 
   /**
@@ -151,7 +153,7 @@ class QCloudCosClient extends QCloud
   /**
    * 桶域名（不传=读取，传值=设置）
    *
-   * 注意：`QCloud` 基类只有 `protected $host` 属性、**没有** `host()` 方法，所以这里补一个。
+   * 注意：`QCloudApi` 基类只有 `protected $host` 属性、**没有** `host()` 方法，所以这里补一个。
    *
    * @param string|null $value 不传=读取
    * @return mixed
@@ -234,11 +236,12 @@ class QCloudCosClient extends QCloud
       "region" => $this->region,
       "scheme" => strpos($this->host, "https") === 0 ? "https" : "http",
       "credentials" => [
-        "secretId" => $this->secretId,
-        "secretKey" => $this->secretKey,
+        "secretId" => $this->getSecretId(),
+        "secretKey" => $this->getSecretKey(),
       ],
     ];
-    if ($this->securityToken) $config["credentials"]["token"] = $this->securityToken;
+    $securityToken = $this->getSecurityToken();
+    if ($securityToken) $config["credentials"]["token"] = $securityToken;
 
     $this->sdkClient = new $class($config);
 

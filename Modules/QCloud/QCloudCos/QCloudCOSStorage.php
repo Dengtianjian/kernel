@@ -9,6 +9,7 @@ use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Storage\Drivers\AbstractObjectStorage;
 use kernel\Foundation\FileSystem\Storage\StorageFile;
+use kernel\Modules\QCloud\QCloudAccount;
 use kernel\Modules\QCloud\STS\QCloudSTS;
 
 /**
@@ -19,6 +20,11 @@ use kernel\Modules\QCloud\STS\QCloudSTS;
  * （它内部再决定**用官方 SDK 还是自己发签名请求**，以适配不同环境），
  * 并用 {@see QCloudSTS} 申请临时凭证（前端直传场景）。
  *
+ * 凭据（SecretId / SecretKey / SecurityToken）取自构造传入的 {@see QCloudAccount}；
+ * 存储桶与地域仍属本磁盘自己的配置，由构造另行传入 —— 与「账号只管凭据」的分工一致。
+ * 父类 {@see AbstractObjectStorage} 是 COS / OSS 共用的骨架，保持裸密钥契约不变，
+ * 因此「账号 → 裸密钥」的拆包由本类完成。
+ *
  * 本磁盘同时承担「文件访问签名签发」职责：{@see createAuthorization()} 借助
  * {@see QCloudCosSignture} 生成 COS 风格的签名授权参数，供 FileStorage 统一鉴权流程调用。
  *
@@ -26,6 +32,10 @@ use kernel\Modules\QCloud\STS\QCloudSTS;
  */
 class QCloudCOSStorage extends AbstractObjectStorage
 {
+  /**
+   * @var QCloudAccount|null 腾讯云账号（凭据来源）
+   */
+  protected $account = null;
   /**
    * @var QCloudSTS|null STS 客户端（用于申请临时上传凭证）
    */
@@ -39,10 +49,25 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   protected $host = null;
   /**
+   * 实例化 COS 存储磁盘
+   *
+   * 账号必须在调用父类构造**之前**赋值：父类构造末尾会触发 {@see boot()}，
+   * 而 boot() 需要账号来初始化 STS 与 COS 客户端。
+   *
+   * @param QCloudAccount $account 腾讯云账号，提供 SecretId / SecretKey 等凭据
+   * @param string $region 存储桶所在地区，如 ap-guangzhou
+   * @param string $bucket 存储桶名称，形如 bucketName-appid
+   */
+  public function __construct(QCloudAccount $account, $region, $bucket)
+  {
+    $this->account = $account;
+
+    parent::__construct($account->secretId(), $account->secretKey(), $region, $bucket);
+  }
+  /**
    * 磁盘引导初始化（由 AbilityBaseObject 生命周期触发）
    *
-   * 设置磁盘名（cos）、固定密钥，并初始化 STS 客户端与 COS 客户端。
-   * 其中 COS 客户端以明文固定密钥构造（开发/演示用途），生产环境应改用 STS 临时凭证。
+   * 设置磁盘名（cos），并以账号凭据初始化 STS 客户端与 COS 客户端。
    *
    * @return static
    */
@@ -50,11 +75,11 @@ class QCloudCOSStorage extends AbstractObjectStorage
   {
     $this->name = "cos";
 
-    $this->stsClient = new QCloudSTS($this->secretId, $this->secretKey, $this->region, $this->bucket);
+    $this->stsClient = new QCloudSTS($this->account->secretId(), $this->account->secretKey(), $this->region, $this->bucket);
 
-    //* 参数顺序：secretId, secretKey, region, bucket（与 QCloudCosSignture 保持一致）；
+    //* 参数顺序：account, region, bucket；
     //* 驱动（官方 SDK / 裸签名请求）由客户端自己检测，这里不需要关心。
-    $this->client = new QCloudCosClient($this->secretId, $this->secretKey, $this->region, $this->bucket, null, QCloudCosClient::DRIVER_HTTP);
+    $this->client = new QCloudCosClient($this->account, $this->region, $this->bucket, null, QCloudCosClient::DRIVER_HTTP);
 
     return $this;
   }
@@ -297,7 +322,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
    */
   public function createAuthorization($fileKey = null, $expires = 1800, $httpMethod = "get", $urlParams = [], $headers = [])
   {
-    $cosSignature = new QCloudCosSignture($this->secretId, $this->secretKey, $this->host, $this->securityToken);
+    $cosSignature = new QCloudCosSignture($this->account->secretId(), $this->account->secretKey(), $this->host, $this->account->securityToken());
 
     if (strpos($fileKey, "/") !== 0) {
       $fileKey = "/" . $fileKey;

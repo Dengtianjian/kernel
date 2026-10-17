@@ -32,11 +32,17 @@ class SettingModule extends Module
   /**
    * 获取多个设置项
    *
+   * 未传入任何名称时返回空数组：空名称列表继续下传会拼出 `` `name` IN () `` 这种非法 SQL。
+   *
    * @param array ...$names 设置项名称数组
    * @return array 键是设置项名称，值是设置项值
    */
   public function items(...$names)
   {
+    if (!$names) {
+      return [];
+    }
+
     $settingsData = SettingsModel::where("name", $names)->get();
     $settings = [];
     foreach ($settingsData as $item) {

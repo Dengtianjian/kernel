@@ -2,332 +2,59 @@
 
 namespace kernel\Modules\QCloud;
 
-use kernel\Foundation\Object\BaseObject;
-use kernel\Foundation\HTTP\Curl;
-use kernel\Foundation\Object\AbilityBaseObject;
-use kernel\Foundation\Result;
+use kernel\Foundation\Facade;
 
-class QCloud extends AbilityBaseObject
+/**
+ * 腾讯云模块门面（Facade）
+ *
+ * 静态入口，将调用转发到 App 模块管理器中名为 "qCloud" 的 {@see QCloudModule} 实例；
+ * 模块未装载时自动装载并启动（load 会一并 boot，保证 onBoot 生效）。
+ *
+ * 注意：App 未实例化时 accessor() 返回 null，所有静态调用随之静默返回 null。
+ *
+ * 本类只是模块的静态入口，不承载任何请求逻辑：凭据与客户端取用入口（`api()` /
+ * `faceId()` / `cos()`）见 {@see QCloudAccount}，请求客户端与 TC3 签名见 {@see QCloudApi}。
+ *
+ * 使用示例：
+ *
+ * ```php
+ * QCloud::addAccount(new QCloudAccount($secretId, $secretKey, "main")); // 登记（应用侧）
+ *
+ * QCloud::account("main")->faceId()->bankCard2EVerification($name, $bankCard);
+ * QCloud::account("main")->cos("ap-guangzhou", "bkt-1250000000")->upload("a/b.png", "/tmp/a.png");
+ * QCloud::account("main")->api("faceid")->post("BankCard2EVerification", "2018-03-01", [...]);
+ * ```
+ *
+ * @method static string name() 获取模块名称
+ * @method static bool booted() 模块是否已启动
+ * @method static static addAccount(\kernel\Modules\QCloud\QCloudAccount $account) 登记账号（内存注册表，仅当前请求有效）
+ * @method static static removeAccount(string $accountName) 移除账号
+ * @method static bool hasAccount(string $accountName) 账号是否已登记
+ * @method static array getAccounts() 获取全部已登记账号（账号标识 => QCloudAccount）
+ * @method static \kernel\Modules\QCloud\QCloudAccount|null account(string $accountName) 按标识获取账号（客户端入口挂在账号上：api() / faceId() / cos()）
+ * @method static void boot() 启动模块（仅执行一次）
+ * @method static void shutdown() 停止模块（仅执行一次）
+ */
+class QCloud extends Facade
 {
   /**
-   * 密钥对中的 SecretId
+   * 解析腾讯云模块实例
    *
-   * @var string
-   */
-  protected $secretId = null;
-  /**
-   * 临时的 SecretId  
-   * 如果该值存在，优先使用该值
+   * 优先取 App 模块管理器中已装载的 "qCloud" 模块；未装载时自动装载（并启动）。
    *
-   * @var string
+   * @return QCloudModule|null App 未实例化时返回 null
    */
-  protected $tmpSecretId = null;
-  /**
-   * 原始的 SecretKey
-   *
-   * @var string
-   */
-  protected $secretKey = null;
-  /**
-   * 临时的 SecretKey
-   * 如果该值存在，优先使用该值
-   *
-   * @var string
-   */
-  protected $tmpSecretKey = null;
-  /**
-   * 安全令牌。使用临时SecretId、SecretKey时该值不可为空
-   *
-   * @var string
-   */
-  protected $securityToken = null;
-  /**
-   * 请求的主机，腾讯云的
-   *
-   * @var string
-   */
-  protected $host = "tencentcloudapi.com";
-  /**
-   * 加密算法
-   *
-   * @var string
-   */
-  protected $algorithm = "TC3-HMAC-SHA256";
-  /**
-   * 操作的服务名称
-   *
-   * @var string
-   */
-  private $service = null;
-  /**
-   * CURL实例
-   *
-   * @var Curl
-   */
-  protected $curl = null;
-  /**
-   * 实例化腾讯云类
-   *
-   * @param string $secretId 密钥对中的 SecretId
-   * @param string $secretKey 原始的 SecretKey
-   * @param string $service 操作的服务名称
-   * @param string $host 接口请求地址
-   * @param string $securityToken 安全令牌。使用临时SecretId、SecretKey时该值不可为空
-   * @param string $tmpSecretId 临时的 SecretId，优先使用该值
-   * @param string $tmpSecretKey 临时的 SecretKey，优先使用该值
-   */
-  public function __construct($secretId, $secretKey, $service = null, $host = null, $securityToken = null, $tmpSecretId = null, $tmpSecretKey = null)
+  protected static function accessor()
   {
-    $this->secretId = $secretId;
-    $this->secretKey = $secretKey;
-    $this->securityToken = $securityToken;
-    $this->tmpSecretId = $tmpSecretId;
-    $this->tmpSecretKey = $tmpSecretKey;
-
-    if (!is_null($host)) {
-      $this->host = $host;
+    $app = getApp();
+    if ($app === null) {
+      return null;
     }
-    if (!is_null($service)) {
-      $this->service = $service;
-      $this->host = $service . "." . $this->host;
-    }
-    $this->curl = new Curl();
-    $this->curl->https(false)->url(strpos($this->host, "http") === false ? "https://" . $this->host : $this->host);
-  }
-
-  /**
-   * 设置临时SecretId
-   *
-   * @param string $tmpSecretId 新的临时SecretId，如果传入null，即为使用永久的SecretId
-   * @return QCloud
-   */
-  function tmpSecretId($tmpSecretId = null)
-  {
-    $this->tmpSecretId = $tmpSecretId;
-
-    return $this;
-  }
-  /**
-   * 设置临时SecretKey
-   *
-   * @param string $tmpSecretKey 新的临时SecretKey，如果传入null，即为使用永久的SecretKey
-   * @return QCloud
-   */
-  function tmpSecretKey($tmpSecretKey = null)
-  {
-    $this->tmpSecretKey = $tmpSecretKey;
-
-    return $this;
-  }
-  /**
-   * 设置安全令牌
-   *
-   * @param string $securityToken 新的安全令牌，如果传入null，即为不使用安全令牌
-   * @return QCloud
-   */
-  function securityToken($securityToken = null)
-  {
-    $this->securityToken = $securityToken;
-
-    return $this;
-  }
-  /**
-   * 设置临时凭证
-   *
-   * @param string $tmpSecretId  临时SecretId
-   * @param string $tmpSecretKey 临时SecretKey
-   * @param string $securityToken 安全令牌
-   * @return QCloud
-   */
-  function tmpCredentials($tmpSecretId, $tmpSecretKey, $securityToken)
-  {
-    $this->tmpSecretId = $tmpSecretId;
-    $this->tmpSecretKey = $tmpSecretKey;
-    $this->securityToken = $securityToken;
-
-    return $this;
-  }
-  /**
-   * 取消使用临时凭证，使用会永久凭证
-   *
-   * @return QCloud
-   */
-  function cancelTmpCredentials()
-  {
-    $this->tmpSecretId = null;
-    $this->tmpSecretKey = null;
-    $this->securityToken = null;
-
-    return $this;
-  }
-  /**
-   * 获取实际使用的SecretId  
-   * 如果存在临时SecretId就返回临时的，否则返回默认的
-   *
-   * @return string
-   */
-  protected function getSecretId()
-  {
-    if ($this->tmpSecretId) {
-      return $this->tmpSecretId;
+    if (!$app->modules()->has("qCloud")) {
+      // 用 load 而非 register：register 只登记不启动，onBoot 将永远不会执行
+      $app->modules()->load(new QCloudModule());
     }
 
-    return $this->secretId;
-  }
-  /**
-   * 获取实际使用的SecretKey
-   * 如果存在临时SecretKey就返回临时的，否则返回默认的
-   *
-   * @return string
-   */
-  protected function getSecretKey()
-  {
-    if ($this->tmpSecretKey) {
-      return $this->tmpSecretKey;
-    }
-
-    return $this->secretKey;
-  }
-  /**
-   * 生成授权信息
-   *
-   * @param int $timestamp 用于生成签名时间戳：秒级
-   * @param string $action 操作的接口名称
-   * @param array $body 请求体
-   * @param array $query 查询信息
-   * @param string $canonicalURI URI参数
-   * @param string $httpRequestMethod 请求方法
-   * @return string 授权信息
-   */
-  protected function generateAuthorizaion($timestamp, $action, $body = [], $query = [], $canonicalURI = "/", $httpRequestMethod = "POST")
-  {
-    $canonicalHeaders = implode("\n", [
-      "content-type:application/json; charset=utf-8",
-      "host:" . $this->host,
-      "x-tc-action:" . strtolower($action),
-      ""
-    ]);
-
-    $signedHeaders = implode(";", [
-      "content-type",
-      "host",
-      "x-tc-action",
-    ]);
-
-    $payload = "";
-    if ($body) {
-      $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
-    }
-
-    $queryString = http_build_query($query);
-
-    $hashedRequestPayload = hash("SHA256", $payload);
-    $canonicalRequest = implode("\n", [
-      $httpRequestMethod,
-      $canonicalURI,
-      $queryString,
-      $canonicalHeaders,
-      $signedHeaders,
-      $hashedRequestPayload
-    ]);
-
-    $date = gmdate("Y-m-d", $timestamp);
-    $credentialScope = $date . "/" . $this->service . "/tc3_request";
-    $hashedCanonicalRequest = hash("SHA256", $canonicalRequest);
-    $stringToSign = $this->algorithm . "\n"
-      . $timestamp . "\n"
-      . $credentialScope . "\n"
-      . $hashedCanonicalRequest;
-
-    $secretDate = hash_hmac("SHA256", $date, "TC3" . $this->secretKey, true);
-    $secretService = hash_hmac("SHA256", $this->service, $secretDate, true);
-    $secretSigning = hash_hmac("SHA256", "tc3_request", $secretService, true);
-    $signature = hash_hmac("SHA256", $stringToSign, $secretSigning);
-
-    return implode("", [
-      $this->algorithm,
-      " Credential=",
-      $this->secretId,
-      "/",
-      $credentialScope,
-      ", SignedHeaders=",
-      $signedHeaders,
-      ", Signature=",
-      $signature
-    ]);
-  }
-  /**
-   * 发送GET请求
-   *
-   * @param string $action 操作的名称
-   * @param string $version 服务版本
-   * @param array $query 查询信息
-   * @return Result
-   */
-  public function get($action, $version, $query = [])
-  {
-    $timestamp = time();
-
-    $this->curl->headers([
-      "Authorization" => $this->generateAuthorizaion($timestamp, $action, [], $query, "/", "POST"),
-      "Content-Type" => "application/json; charset=utf-8",
-      "Host" => $this->host,
-      "X-TC-Action" => $action,
-      "X-TC-Timestamp" => $timestamp,
-      "X-TC-Version" => $version,
-    ]);
-
-    $response = $this->curl->get($query);
-
-    $r = new Result(true);
-    if ($response->errorNo()) {
-      return $r->error(false, 500, $response->errorNo(), "服务器错误", $response->error());
-    }
-    $responseData = $response->getData()['Response'];
-    if (isset($responseData['Error'])) {
-      return $r->error(500, $responseData['Error']['Code'], "服务器错误", $responseData);
-    }
-    if ($responseData['Result'] < 0) {
-      return $r->error(400, "400-" . $responseData['Result'], $responseData['Description'], $responseData);
-    }
-
-    return $r->success($responseData);
-  }
-  /**
-   * 发送POST请求
-   *
-   * @param string $action 操作的名称
-   * @param string $version 服务版本
-   * @param array $body 请求体
-   * @param array $query 查询信息
-   * @return Result
-   */
-  public function post($action, $version, $body = [], $query = [])
-  {
-    $timestamp = time();
-
-    $this->curl->headers([
-      "Authorization" => $this->generateAuthorizaion($timestamp, $action, $body, $query, "/", "POST"),
-      "Content-Type" => "application/json; charset=utf-8",
-      "Host" => $this->host,
-      "X-TC-Action" => $action,
-      "X-TC-Timestamp" => $timestamp,
-      "X-TC-Version" => $version,
-    ]);
-
-    $response = $this->curl->post($body);
-    $r = new Result(true);
-    if ($response->errorNo()) {
-      return $r->error(false, 500, $response->errorNo(), "服务器错误", $response->error());
-    }
-    $responseData = $response->getData()['Response'];
-    if (isset($responseData['Error'])) {
-      return $r->error(500, $responseData['Error']['Code'], "服务器错误", $responseData);
-    }
-    if ($responseData['Result'] < 0) {
-      return $r->error(400, "400-" . $responseData['Result'], $responseData['Description'], $responseData);
-    }
-
-    return $r->success($responseData);
+    return $app->modules()->get("qCloud");
   }
 }

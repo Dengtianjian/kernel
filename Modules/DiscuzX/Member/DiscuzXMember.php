@@ -6,6 +6,7 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Result;
 use kernel\Foundation\Database\RDB\Model;
+use kernel\Modules\DiscuzX\Model\DiscuzXSystemModel;
 use kernel\Modules\DiscuzX\Model\System\CommonMemberModel;
 
 class DiscuzXMember
@@ -462,18 +463,18 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $CMCM = new Model("common_member_count");
+    $CMCM = new DiscuzXSystemModel("common_member_count");
     $memberCredits = $CMCM->where([
       "uid" => $memberId
-    ])->getAll();
+    ])->get();
     global $_G;
     if (
       isset($_G['setting']['membersplit'])
     ) {
-      $CMCAM = new Model("common_member_count_archive");
+      $CMCAM = new DiscuzXSystemModel("common_member_count_archive");
       $archiveMemberArchive = $CMCAM->where([
         "uid" => $memberId
-      ])->getAll();
+      ])->get();
       $memberCredits = array_merge($memberCredits, $archiveMemberArchive);
     }
     if (!count($memberCredits) && !is_array($memberId))
@@ -487,14 +488,14 @@ class DiscuzXMember
     if ($groupId === null) {
       $groupId = \getglobal("member")['groupid'];
     }
-    $CUGM = new Model("common_usergroup");
+    $CUGM = new DiscuzXSystemModel("common_usergroup");
     if ($simple) {
       $CUGM->field("groupid", "grouptitle", "icon", "color");
     }
     include_once libfile("function/group");
     $memberGroups = $CUGM->where([
       "groupid" => $groupId
-    ])->getAll();
+    ])->get();
     foreach ($memberGroups as &$item) {
       $item['icon'] = get_groupimg($item['icon']);
     }
@@ -509,10 +510,10 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $CMNP = new Model("common_member_newprompt");
+    $CMNP = new DiscuzXSystemModel("common_member_newprompt");
     $prompts = $CMNP->where([
       "uid" => $memberId
-    ])->getAll();
+    ])->get();
     $prompts = Arr::group($prompts, "uid");
     foreach ($prompts as &$MemberPrompts) {
       foreach ($MemberPrompts as &$promptItem) {
@@ -532,17 +533,16 @@ class DiscuzXMember
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }
-    $MM = new Model("common_member");
-    $members = $MM->where([
+    $members = CommonMemberModel::where([
       "uid" => $memberId
-    ])->getAll();
+    ])->get();
     if (
       isset($_G['setting']['membersplit'])
     ) {
-      $MMR = new Model("common_member_archive");
+      $MMR = new DiscuzXSystemModel("common_member_archive");
       $archiveMembers = $MMR->where([
         "uid" => $memberId
-      ])->getAll();
+      ])->get();
       $members = array_merge($members, $archiveMembers);
     }
 
@@ -620,7 +620,7 @@ class DiscuzXMember
    */
   public static function exist($UserId)
   {
-    $CM = new Model("common_member");
+    $CM = new DiscuzXSystemModel("common_member");
 
     return (bool)$CM->where("uid", $UserId)->exist();
   }
