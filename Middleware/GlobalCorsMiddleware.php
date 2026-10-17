@@ -46,7 +46,7 @@ class GlobalCorsMiddleware extends MiddlewareBase
    * - 非开发模式：保持**后置**注入，先执行后续逻辑拿到 Response 再委托 Cors 注入。
    *
    * @param \Closure $next
-   * @return \kernel\Foundation\HTTP\Response
+   * @return Response
    */
   public function handle($next): Response
   {
