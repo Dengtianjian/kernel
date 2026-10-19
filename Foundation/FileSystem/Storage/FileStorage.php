@@ -363,6 +363,30 @@ class FileStorage extends AbilityBaseObject
   }
 
   /**
+   * 读取基础地址
+   *
+   * 生成文件访问 URL 的起点，构造时取自 {@see URL::baseURL()}；
+   * {@see StorageURL} 构建地址时从这里解析 host / protocol / port。
+   *
+   * @return string
+   */
+  public function baseURL()
+  {
+    return $this->baseURL;
+  }
+  /**
+   * 读取文件路由前缀
+   *
+   * 默认 "files"，同时是访问 URL 的路径前缀（`{baseURL}/{prefix}/{fileKey}`）。
+   *
+   * @return string
+   */
+  public function prefix()
+  {
+    return $this->prefix;
+  }
+
+  /**
    * 读取或设置请求签名鉴权开关
    *
    * 读写一体：传 $val 时设定开关并返回 $this（可链式），不传时返回当前开关值。
@@ -733,42 +757,41 @@ class FileStorage extends AbilityBaseObject
   }
 
   /**
-   * 生成文件访问 URL
+   * 生成文件访问地址
    *
-   * 以 `{baseURL}/{prefix}/{fileKey}` 为基准拼出指向本应用文件路由的地址；
-   * 仅当**已开启签名鉴权**（{@see auth()}）且 `$withSignature` 为 true 时，
-   * 才把 {@see createAuthParams()} 生成的签名参数并入 query（并剔除其中的 `auth` 键）。
+   * 返回 {@see StorageURL}（延迟构建）：此处**只记录参数、不拼字符串也不签发签名**，
+   * 直到 {@see StorageURL::toString()}（或把对象当字符串用）时才真正构建。
+   * 因而可以在拿到对象后继续用链式方法调整参数，最终签名会覆盖全部参数：
    *
-   * **动作绑定（`$action`）**：签名里是否带 `action` 决定它能用在哪些端点。
-   * 各控制器经 {@see authorizeOperation()} 按动作校验（`info` / `preview` / `download` /
-   * `delete` / `update` / `upload`），这类端点要求签名里**必须含 `action`**；
-   * 因此给它们生成链接时**必须传 `$action`**，否则会以「缺少参数」被拒（`verifyAuth:403001`）。
+   * ```php
+   * $url = Storage::url($fileKey)->expires(600)->withSignature(true)->action("preview");
+   * $url->urlParams(["v" => 2]);   // 构建前增改都安全
+   * echo $url;                     // 此时才签发
+   * ```
    *
-   * @param string $fileKey 文件键
-   * @param array $urlParams 附加的 URL query 参数
+   * 拼装规则为 `{baseURL}/{prefix}/{fileKey}`，指向**本应用文件路由**的中转地址
+   * （请求先落到本站控制器，可叠加快照鉴权与访问控制）；需要「不经本站」的地址请用 {@see direct()}。
+   *
+   * 签名与动作绑定的细节见 {@see StorageURL}：仅当**已开启签名鉴权**（{@see auth()}）且
+   * `$withSignature` 为真时才签发；按动作校验的端点（`info` / `preview` / `download` /
+   * `delete` / `update` / `upload`）必须传 `$action`，否则以「缺少参数」（`verifyAuth:403001`）被拒。
+   *
+   * @param string $fileKey 文件键（可含相对目录，如 "dir/a.jpg"）；**不做 urlencode**，特殊字符需调用方先行编码
+   * @param array $urlParams 附加的 URL query 参数；开启签名时会一并参与签名（不可传 `auth` 键）
    * @param int $expires 签名有效期（秒），默认 1800
    * @param boolean $withSignature 是否附带签名授权参数，默认 false
-   * @param string|null $action 签名绑定的动作（如 `info` / `preview` / `download`）；不传则不绑定，
-   *                            只能用于不限制动作的端点（见上）
-   * @return string 完整文件访问 URL
+   * @param string|null $action 签名绑定的动作（如 `info` / `preview` / `download`）；不传则不绑定
+   * @return StorageURL 地址对象，可继续链式调整参数；`toString()` / `__toString()` 输出字符串
    */
   public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false, $action = null)
   {
-    $accessURL = new URL($this->baseURL);
-    $accessURL->pathName = "{$this->prefix}/{$fileKey}";
-
-    if ($this->authEnabled() && $withSignature) {
-      //* 第 5 参固定 "get"（链接是 GET 访问），第 6 参把 $action 透传进去并参与签名
-      $urlParams = array_merge($urlParams, $this->createAuthParams($fileKey, $expires, $urlParams, [], "get", $action));
-      if (array_key_exists("auth", $urlParams)) {
-        unset($urlParams['auth']);
-      }
-    }
-
-    $accessURL->queryParam($urlParams);
-
-    return $accessURL->toString();
+    return (new StorageURL($this, $fileKey))
+      ->urlParams($urlParams)
+      ->expires($expires)
+      ->withSignature($withSignature)
+      ->action($action);
   }
+
 
   /**
    * 获取文件的直连地址（由当前磁盘直接给出，不经过本应用中转）
