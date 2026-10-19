@@ -37,7 +37,7 @@ class Cors
   const DEFAULTS = [
     "allowOrigin" => "*",
     "allowMethods" => ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    "allowHeaders" => ["Authorization"],
+    "allowHeaders" => ["authorization", "content-type", "x-requested-with"],
     "exposeHeaders" => ["x-auth-token", "x-auth-token-expires-at"],
     "maxAge" => 86400,
     "allowCredentials" => false,
@@ -338,7 +338,7 @@ class Cors
    * @param string|null $requestOrigin 请求头 Origin 值（可为 null）
    * @return \kernel\Foundation\HTTP\Response
    */
-  public static function applyTo(Response $response,$requestOrigin): Response
+  public static function applyTo(Response $response, $requestOrigin): Response
   {
     foreach (self::headers($requestOrigin) as $key => $value) {
       $response->header($key, $value);
