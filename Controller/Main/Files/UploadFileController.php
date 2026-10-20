@@ -5,6 +5,7 @@ namespace kernel\Controller\Main\Files;
 use kernel\Facades\Storage;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Arr;
+use kernel\Model\FilesModel;
 
 class UploadFileController extends Controller
 {
@@ -38,9 +39,9 @@ class UploadFileController extends Controller
     if (Storage::isError()) return Storage::return();
 
     if (Storage::dataSave()) {
-      $fileData = Storage::model()->where("key", $fileKey)->first();
+      $fileData = FilesModel::where("key", $fileKey)->first();
       if ($fileData) {
-        Storage::model()->where("key", $fileKey)->update([
+        FilesModel::where("key", $fileKey)->update([
           "width" => $file->width,
           "height" => $file->height,
           "source_file_name" => $file->source_file_name,
@@ -56,7 +57,7 @@ class UploadFileController extends Controller
       } else {
         Storage::add($fileKey, $file->source_file_name, $file->name, $file->path, $file->size, $file->extension, $file->mime_type, $file->owner_id, $file->access_control, $file->disk, $file->ref, $file->type, $file->width, $file->height);
 
-        $fileData = Storage::model()->where("key", $fileKey)->first();
+        $fileData =  FilesModel::where("key", $fileKey)->first();
       }
       return $fileData;
     }

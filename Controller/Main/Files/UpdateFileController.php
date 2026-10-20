@@ -7,6 +7,7 @@ use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\FileSystem\Storage\FileStorage;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Validation\Rule;
+use kernel\Model\FilesModel;
 
 class UpdateFileController extends Controller
 {
@@ -44,6 +45,6 @@ class UpdateFileController extends Controller
 
     if (!Storage::exists($fileKey)) return $this->fail(404, 404, "文件不存在");
 
-    return Storage::model()->where("key", $fileKey)->update($this->body());
+    return FilesModel::where("key", $fileKey)->update($this->body());
   }
 }

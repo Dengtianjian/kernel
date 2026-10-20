@@ -6,6 +6,7 @@ use kernel\Facades\Storage;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Response\ResponseProxy;
 use kernel\Foundation\HTTP\URL;
+use kernel\Model\FilesModel;
 
 /**
  * 文件输出控制器（预览 / 下载的公共实现）
@@ -63,7 +64,7 @@ class FileOutputController extends Controller
     if (!Storage::authorizeOperation($fileKey, "read", ["preview", "download"])) return Storage::return();
 
     if (Storage::dataSave()) {
-      $file = Storage::model()->where("key", $fileKey)->first();
+      $file = FilesModel::where("key", $fileKey)->first();
     } else {
       $file = Storage::get($fileKey);
       if (Storage::isError()) return Storage::return();
