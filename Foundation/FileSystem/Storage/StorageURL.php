@@ -17,12 +17,13 @@ use kernel\Foundation\HTTP\URL;
  *
  * 用法：
  * ```php
- * // 等价于 Storage::url("a/b.png", ["v" => 2], 600, true, "preview")
+ * // 近似等价于 Storage::url("a/b.png", ["v" => 2], 600, true, "preview")，另多加了路径后缀
  * $url = Storage::url("a/b.png")
  *   ->urlParams(["v" => 2])
  *   ->expires(600)
  *   ->withSignature(true)
- *   ->action("preview");
+ *   ->action("preview")
+ *   ->suffix("preview");   // 路径变成 files/a/b.png/preview
  *
  * echo $url;              // 触发构建并输出地址字符串
  * $str = $url->toString(); // 同上
@@ -30,8 +31,9 @@ use kernel\Foundation\HTTP\URL;
  * ```
  *
  * 结构：
- * - 路径：`{prefix}/{fileKey}` 在 {@see fileKey()} 时即写入 `$pathName`（无需构建即可读写，
- *   可自行追加路径段，如 `$url->pathName .= "/preview"`；构建时不会覆盖非空 pathName）；
+ * - 路径：`{prefix}/{fileKey}`，设置 {@see suffix()} 时追加为 `{prefix}/{fileKey}/{suffix}`；
+ *   路径在 {@see build()} 时重算，因此**不要**直接改 `$pathName`（会被覆盖），
+ *   需要额外路径段请用 {@see suffix()}；
  * - 主机：`protocol` / `host` / `port` / `user` / `password` 取自存储门面的基础地址（{@see FileStorage::baseURL()}）；
  * - 查询参数：`$urlParams`（{@see urlParams()}）+ 经 {@see URL::queryParam()} 追加的参数，开启签名时再并入签名参数；
  * - 签名：仅当存储门面已开启签名鉴权（{@see FileStorage::auth()}）且 {@see withSignature()} 为真时才签发，
@@ -85,6 +87,15 @@ class StorageURL extends URL
    * @var string|null
    */
   protected $action = null;
+  /**
+   * 路径后缀（追加在 `{prefix}/{fileKey}` 之后，如 "preview" / "download"）
+   *
+   * 用于指向按动作区分的文件端点（`files/{fileKey}/preview` 这类路由）；
+   * null 或空串表示不加后缀。由 {@see suffix()} 读写。
+   *
+   * @var string|null
+   */
+  protected $suffix = null;
 
   /**
    * 构造存储访问地址
@@ -108,10 +119,10 @@ class StorageURL extends URL
   /**
    * 读取或设置文件键
    *
-   * 设置时会同步把 `$pathName` 重置为 `{prefix}/{fileKey}`；
-   * 若此前手动改过 `$pathName`，设置文件键会覆盖它（如需保留请重设）。
+   * 文件键是访问路径的主体，但设置时**不会**立即写入 `$pathName`：
+   * 路径在 {@see build()} 时按「前缀 + 文件键 + 后缀」重算。
    *
-   * @param string|null $fileKey 文件键；不传表示仅读取
+   * @param string|null $fileKey 文件键（可含相对目录，如 "dir/a.jpg"）；不传表示仅读取
    * @return static|string|null 设置时返回 $this，读取时返回当前文件键
    */
   public function fileKey($fileKey = null)
@@ -121,7 +132,35 @@ class StorageURL extends URL
     }
 
     $this->fileKey = $fileKey;
-    $this->pathName = $this->storage->prefix() . "/" . $fileKey;
+
+    return $this;
+  }
+  /**
+   * 读取或设置路径后缀
+   *
+   * 构建时把后缀拼到 `{prefix}/{fileKey}` 之后，得到 `{prefix}/{fileKey}/{suffix}`，
+   * 用于指向按动作区分的文件端点，例如：
+   * - `->suffix("preview")` → `files/dir/a.png/preview`
+   * - `->suffix("download")` → `files/dir/a.png/download`
+   *
+   * 与直接改 `$pathName` 的区别：{@see build()} 每次都会按「前缀 + 文件键 + 后缀」重算 `$pathName`，
+   * 手动写入的路径段会被覆盖 —— 需要额外路径段请用本方法。
+   *
+   * 注意：
+   * - 值按**原样拼接**（中间固定补一个 `/`），因此**不要**带前导斜杠，否则会拼出 `//`；
+   * - 后缀只影响路径，**不参与签名**；需要限制地址用途时请配合 {@see action()}
+   *   （按动作校验的端点通常两者成对使用：`->suffix("preview")->action("preview")`）。
+   *
+   * @param string|null $suffix 路径后缀；不传表示仅读取（显式传 null / "" 表示清除后缀）
+   * @return static|string|null 设置时返回 $this，读取时返回当前后缀
+   */
+  public function suffix($value = null)
+  {
+    if (func_num_args() === 0) {
+      return $this->suffix;
+    }
+
+    $this->suffix = $value;
 
     return $this;
   }
@@ -206,11 +245,16 @@ class StorageURL extends URL
   }
 
   /**
-   * 构建地址（解析基础地址、合并参数、按需签发签名）
+   * 构建地址（解析基础地址、重算路径、合并参数、按需签发签名）
    *
-   * 可重复调用：每次都会按当前 `$urlParams` / `$expires` / `$withSignature` / `$action`
-   * 重新计算，签名时间戳随之刷新。构建结果写回父类的公开属性
-   * （`protocol` / `host` / `port` / `pathName` / `queryParams`），不返回字符串。
+   * 可重复调用：每次都会按当前 `$fileKey` / `$suffix` / `$urlParams` / `$expires` /
+   * `$withSignature` / `$action` 重新计算，签名时间戳随之刷新。
+   *
+   * `$pathName` 会被**重算**为 `{prefix}/{fileKey}[/{suffix}]` —— 直接改 `$pathName` 的路径段
+   * 会在构建时丢失，需要额外路径段请用 {@see suffix()}。
+   *
+   * 构建结果写回父类的公开属性（`protocol` / `host` / `port` / `pathName` / `queryParams`），
+   * 不返回字符串。
    *
    * @return $this
    */
@@ -223,9 +267,9 @@ class StorageURL extends URL
     $this->user = $baseURL->user;
     $this->password = $baseURL->password;
 
-    //* pathName 已在 fileKey() 时推导，这里仅在为空时兜底，避免覆盖调用方手动追加的路径段
-    if (!$this->pathName) {
-      $this->pathName = $this->storage->prefix() . "/" . $this->fileKey;
+    $this->pathName = $this->storage->prefix() . "/" . $this->fileKey;
+    if ($this->suffix) {
+      $this->pathName = $this->pathName . "/" . $this->suffix;
     }
 
     //* 剔除上一次构建写入的签名参数键，只保留业务参数，避免重复构建时把它们当成业务参数参与签名

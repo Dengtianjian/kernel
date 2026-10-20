@@ -8,6 +8,19 @@ use kernel\Foundation\Data\Arr;
 
 class UploadFileController extends Controller
 {
+  public $responseSerializes = [
+    "id" => "int",
+    "key" => "string",
+    "name" => "string",
+    "source_file_name" => "string",
+    // "path" => "string",
+    "extension" => "string",
+    "size" => "int",
+    "width" => "int",
+    "height" => "int",
+    // "disk" => "string",
+    "mime_type" => "string"
+  ];
   public function data(string $fileKey)
   {
     $files = $this->request->file();

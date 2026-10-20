@@ -13,7 +13,7 @@ class GetFileController extends Controller
     "key" => "string",
     "name" => "string",
     "source_file_name" => "string",
-    "path" => "string",
+    // "path" => "string",
     "extension" => "string",
     "size" => "int",
     "width" => "int",

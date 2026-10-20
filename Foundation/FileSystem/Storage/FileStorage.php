@@ -4,7 +4,6 @@ namespace kernel\Foundation\FileSystem\Storage;
 
 use kernel\Facades\Storage as FacadesStorage;
 use kernel\Controller\Main\Files as FilesNamespace;
-use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\Path;
@@ -138,7 +137,7 @@ class FileStorage extends AbilityBaseObject
    */
   public function __construct($disks)
   {
-    $this->signature = new StorageSignature(App::id());
+    $this->signature = new StorageSignature(getApp()::id());
     $this->disks = $disks;
 
     if ($disks) {
@@ -196,6 +195,7 @@ class FileStorage extends AbilityBaseObject
     "delete" => FilesNamespace\DeleteFileController::class,
     "preview" => FilesNamespace\PrewiewFileController::class,
     "download" => FilesNamespace\DownloadFileController::class,
+    "url" => FilesNamespace\GetFileURLController::class,
   ];
   /**
    * 快捷名 => HTTP 方法
@@ -210,6 +210,7 @@ class FileStorage extends AbilityBaseObject
     "delete" => "delete",
     "preview" => "get",
     "download" => "get",
+    "url" => "post",
   ];
   /**
    * 快捷名 => URI 后缀（null 表示不加后缀，即 `{prefix}/{fileKey:...}` 本身）
@@ -224,6 +225,7 @@ class FileStorage extends AbilityBaseObject
     "delete" => null,
     "preview" => "preview",
     "download" => "download",
+    "url" => "url",
   ];
   /**
    * 注册文件相关路由
@@ -252,7 +254,7 @@ class FileStorage extends AbilityBaseObject
         $controller = $methodOrController ?: $this->registrableRoutes[$nameOrUri];
 
         $uri = $this::buildFileKeyRouteUri($this->prefix, $this->registrableRouteUriSuffixs[$nameOrUri]);
-        if ($nameOrUri === 'auth') {
+        if (in_array($nameOrUri, ['auth', "url"])) {
           $uri = implode("/", [$this->prefix, $this->registrableRouteUriSuffixs[$nameOrUri]]);
         }
 
@@ -777,19 +779,11 @@ class FileStorage extends AbilityBaseObject
    * `delete` / `update` / `upload`）必须传 `$action`，否则以「缺少参数」（`verifyAuth:403001`）被拒。
    *
    * @param string $fileKey 文件键（可含相对目录，如 "dir/a.jpg"）；**不做 urlencode**，特殊字符需调用方先行编码
-   * @param array $urlParams 附加的 URL query 参数；开启签名时会一并参与签名（不可传 `auth` 键）
-   * @param int $expires 签名有效期（秒），默认 1800
-   * @param boolean $withSignature 是否附带签名授权参数，默认 false
-   * @param string|null $action 签名绑定的动作（如 `info` / `preview` / `download`）；不传则不绑定
    * @return StorageURL 地址对象，可继续链式调整参数；`toString()` / `__toString()` 输出字符串
    */
-  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false, $action = null)
+  public function url($fileKey)
   {
-    return (new StorageURL($this, $fileKey))
-      ->urlParams($urlParams)
-      ->expires($expires)
-      ->withSignature($withSignature)
-      ->action($action);
+    return (new StorageURL($this, $fileKey));
   }
 
 

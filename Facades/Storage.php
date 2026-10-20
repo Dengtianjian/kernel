@@ -76,8 +76,7 @@ use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
  * Storage::save($uploadFile, "a/b", $userId);   // 落盘 + 写库（需已 enableDataSave()）
  * Storage::exists("a/b.png");                   // 存在性（启用落库时先查库）
  *
- * Storage::url($fileKey);                       // 中转地址（默认不带签名）
- * Storage::url($fileKey, [], 1800, true, "download"); // 带签名且绑定 download 动作（需先 auth(true)）
+ * Storage::url($fileKey);                       // 中转地址
  *
  * // 链式：返回 StorageURL，参数可后调，签名在 toString() 时才签发
  * $url = Storage::url($fileKey)->withSignature()->action("preview")->expires(600);
@@ -128,7 +127,7 @@ use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
  * @method static bool exists(string $key) 判断文件是否存在：启用落库时先查库（库里没有直接 false），再问磁盘
  *
  * 访问地址：
- * @method static \kernel\Foundation\FileSystem\Storage\StorageURL url(string $fileKey, array $urlParams = [], int $expires = 1800, bool $withSignature = false, string|null $action = null) **中转地址**（**延迟构建**，返回 StorageURL 对象）：参数可继续用 `->urlParams()` / `->expires()` / `->withSignature()` / `->action()` 链式调整，`toString()` / 当字符串用时才拼装并签发签名；默认不带签名（需 `$withSignature=true` 且已开 `auth()`）；按动作校验的端点**必须传 `$action`**
+ * @method static \kernel\Foundation\FileSystem\Storage\StorageURL url(string $fileKey) **中转地址**（**延迟构建**，返回 StorageURL 对象）：参数可继续用 `->urlParams()` / `->expires()` / `->withSignature()` / `->action()` 链式调整，`toString()` / 当字符串用时才拼装并签发签名；默认不带签名（需 `$withSignature=true` 且已开 `auth()`）；按动作校验的端点**必须传 `$action`**
  * @method static string|false direct(string $fileKey, array $urlParams = [], int $expires = 1800, bool $withSignature = true) **直连（非中转）地址**：远程磁盘为带签名的原生 URL、本地磁盘为文件系统路径（**默认带磁盘签名**；绕过本应用的鉴权与 ACL；无可用磁盘时返回错误态）
  *
  * 签名与授权：
