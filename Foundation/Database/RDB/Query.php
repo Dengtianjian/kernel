@@ -1271,6 +1271,7 @@ class Query extends AbilityBaseObject
   function paginate($params = [])
   {
     $TotalQuery = clone $this;
+    $TotalQuery->reset();
     $Total = $TotalQuery->count("*", $params);
 
     $perPage = $this->options['pagination']['limit'] ?: 10;
