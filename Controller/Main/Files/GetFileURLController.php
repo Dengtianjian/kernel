@@ -13,7 +13,8 @@ class GetFileURLController extends Controller
     "urlParams",
     "expires" => "int",
     "withSignature" => "boolean",
-    "suffix" => "string"
+    "suffix" => "string",
+    "action" => "string",
   ];
   protected function buildURL(string $key)
   {
@@ -29,6 +30,9 @@ class GetFileURLController extends Controller
     }
     if ($this->requestBody->has("suffix")) {
       $fileURL->suffix($this->body("suffix"));
+    }
+    if ($this->requestBody->has("action")) {
+      $fileURL->action($this->body("action"));
     }
 
     if (!$fileURL) return null;
