@@ -5,6 +5,7 @@ namespace kernel\Foundation\Exception;
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\HTTP\Cors;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Log;

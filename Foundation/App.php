@@ -332,9 +332,9 @@ class App
    * 1. ensureInstances() 兜底实例化未注入的组件；
    * 2. fireBootUp() 触发启动钩子；
    * 4. 直接调用 App 持有的 Router 实例匹配当前请求（match()），命中参数与 append 隐式参数合并经 $request->params->fill() 注入，未命中抛 404 Error；
-   * 5. 命中后构建控制器（含 before()）或闭包路由（闭包预建默认 Controller 承载响应）；
-   * 6. 通过 middleware->execute() 执行中间件链，回调内 executeController() 执行业务；
-   * 7. controller->after() 后处理
+   * 5. 命中后构建控制器实例（构造期异常属代码/装配错误，交由全局异常处理器兜底）或闭包路由（预建默认 Controller 承载响应）；
+   * 6. 通过 middleware->execute() 执行中间件链，内层依次执行 before()（参数校验失败在此短路）→ executeController() 业务 → after() 后处理；
+   * 7. 中间件短路未进入内层时，兜底执行一次 after()
    * 8. fireShutdown() 触发结束钩子，输出响应并 exit。
    *
    * 异常路径：fireError() 触发错误钩子 → fireShutdown() 触发结束钩子 → 交由全局异常处理器输出。
@@ -393,7 +393,7 @@ class App
           ]);
         }
         $controller = new $controllerClass($this->request, ...$routeInstantiateParams);
-        $controller->before();
+        //* before() 已移入中间件内层执行：参数校验失败时同样需要经过中间件（CORS / 日志 / 耗时）
         $controllerHandleMethodName = is_null($route['methodName']) ? 'data' : $route['methodName'];
         if (!method_exists($controller, $controllerHandleMethodName)) {
           throw new Error("控制器缺少 $controllerHandleMethodName 方法");
@@ -407,20 +407,29 @@ class App
         $callParams = $this->bindParamsByName($method->getParameters(), $route['params']);
       }
 
-      if (!$controller->response->error) {
-        //* 执行中间件（全局中间件 + 路由级中间件）
-        $app = $this;
-        $middlewareExecutedResult = $this->middleware->execute($route['middlewares'], $controller, function () use ($app, $callTarget, $callParams, &$controller) {
+      //* 中间件链始终执行：控制器构造期异常属于代码/装配错误（由全局异常处理器兜底），
+      //* 而 before() 的参数校验失败在内层短路，保证这类响应仍带上中间件设置的头部（如 CORS）
+      $app = $this;
+      $afterExecuted = false;
+      $middlewareExecutedResult = $this->middleware->execute($route['middlewares'], $controller, function () use ($app, $callTarget, $callParams, &$controller, &$afterExecuted) {
+        //* 洋葱内核：控制器生命周期 before → data → after
+        $controller->before();
+        if (!$controller->response->error) {
           $app->executeController($callTarget, $callParams, $controller);
-
-          return $controller->response;
-        });
-        if ($middlewareExecutedResult->error) {
-          $controller->response = $middlewareExecutedResult;
+          $controller->after();
         }
+        $afterExecuted = true;
+
+        return $controller->response;
+      });
+      if ($middlewareExecutedResult->error) {
+        $controller->response = $middlewareExecutedResult;
       }
 
-      $controller->after();
+      //* 兜底后处理：中间件短路（未进入内层，如鉴权直接返回）时补执行一次 after()
+      if (!$afterExecuted) {
+        $controller->after();
+      }
 
       $endTime = Date::milliseconds();
       // 控制器未显式设置输出类型，且请求头（Content-Type/Accept）期望 JSON 时，兜底按 JSON 输出并附带耗时
