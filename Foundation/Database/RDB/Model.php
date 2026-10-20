@@ -413,7 +413,9 @@ class Model extends Table
       || array_key_exists($this->createTime, $this->schemaCasts);
     $hasUpdate = array_key_exists($this->updateTime, $this->casts)
       || array_key_exists($this->updateTime, $this->schemaCasts);
-    if ($hasCreate && $hasUpdate) {
+    //* 任一列存在即保留时间戳维护：历史表可能只有 created_at（如 push_articles），
+    //* 或只有 updated_at，缺失的列由写入逻辑逐列跳过
+    if ($hasCreate || $hasUpdate) {
       return;
     }
     if (empty($this->schema) && empty($this->casts)) {
@@ -1103,7 +1105,9 @@ class Model extends Table
     $pkValue  = $this->data[$pk] ?? null;
     $default  = $this->castDefault($this->schemaCasts[$pk] ?? $this->casts[$pk] ?? 'int');
 
-    if ($pkValue !== $default) {
+    //* 主键「未赋值」（null）也必须走 INSERT：新建实例时 $data 里通常没有主键键，
+    //* 若用 `$pkValue !== $default` 判断，null !== 0 为真会误入 UPDATE，最终 where(id, null) 更新 0 行且不报错
+    if (!is_null($pkValue) && $pkValue !== $default) {
       // UPDATE
       $this->touchTimestamps();
       $this->query()->where($pk, $pkValue)->update($this->data);
@@ -1140,12 +1144,26 @@ class Model extends Table
     if (!$this->usesTimestamps()) {
       return;
     }
+
+    $declared = !empty($this->casts) || !empty($this->schemaCasts);
+    $hasCreate = !$declared
+      || array_key_exists($this->createTime, $this->casts)
+      || array_key_exists($this->createTime, $this->schemaCasts);
+    $hasUpdate = !$declared
+      || array_key_exists($this->updateTime, $this->casts)
+      || array_key_exists($this->updateTime, $this->schemaCasts);
+    if (!$hasCreate && !$hasUpdate) {
+      return;
+    }
+
     $createType = $this->schemaCasts[$this->createTime] ?? $this->casts[$this->createTime] ?? 'timestamp';
     $updateType = $this->schemaCasts[$this->updateTime] ?? $this->casts[$this->updateTime] ?? 'timestamp';
     $nowMs = $this->freshTimestamp();
 
-    $this->data[$this->updateTime] = $this->castToDb($updateType, $nowMs);
-    if ($isInsert) {
+    if ($hasUpdate) {
+      $this->data[$this->updateTime] = $this->castToDb($updateType, $nowMs);
+    }
+    if ($isInsert && $hasCreate) {
       $this->data[$this->createTime] = $this->castToDb($createType, $nowMs);
     }
   }
@@ -1170,8 +1188,14 @@ class Model extends Table
     $nowMs = $this->freshTimestamp();
     $createType = $this->schemaCasts[$this->createTime] ?? $this->casts[$this->createTime] ?? 'timestamp';
     $updateType = $this->schemaCasts[$this->updateTime] ?? $this->casts[$this->updateTime] ?? 'timestamp';
-    $hasCreate = array_key_exists($this->createTime, $this->casts) || array_key_exists($this->createTime, $this->schemaCasts);
-    $hasUpdate = array_key_exists($this->updateTime, $this->casts) || array_key_exists($this->updateTime, $this->schemaCasts);
+
+    $declared = !empty($this->casts) || !empty($this->schemaCasts);
+    $hasCreate = !$declared
+      || array_key_exists($this->createTime, $this->casts)
+      || array_key_exists($this->createTime, $this->schemaCasts);
+    $hasUpdate = !$declared
+      || array_key_exists($this->updateTime, $this->casts)
+      || array_key_exists($this->updateTime, $this->schemaCasts);
 
     $fillRow = function (array $row) use ($nowMs, $createType, $updateType, $hasCreate, $hasUpdate, $isInsert): array {
       if ($isInsert && $hasCreate && !array_key_exists($this->createTime, $row)) {

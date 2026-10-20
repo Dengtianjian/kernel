@@ -273,6 +273,29 @@ abstract class AbstractDriver
   }
 
   /**
+   * 读取预处理语句自身的错误三元组
+   *
+   * PDO 的 `errorInfo()` 在**连接**上记录的是「整条连接最近一次非预处理操作」的错误：
+   * 预处理语句执行失败时连接级仍返回 `["00000", null, null]`，真正的错误只挂在语句对象上。
+   * 因此这里优先取语句的 `errorInfo()`，仅在语句对象不提供该方法（如 mysqli 的语句包装，
+   * 其错误由连接句柄的 errno/error 反映）或语句报的仍是 00000 时回退到连接级错误。
+   *
+   * @param mixed $statement 预处理语句对象
+   * @return array `[SQLSTATE, 错误码, 错误信息]`
+   */
+  protected function statementError($statement)
+  {
+    if (is_object($statement) && method_exists($statement, "errorInfo")) {
+      $error = $statement->errorInfo();
+      if (is_array($error) && isset($error[0]) && $error[0] !== "00000") {
+        return $error;
+      }
+    }
+
+    return $this->error();
+  }
+
+  /**
    * 执行预处理 SQL，完成 prepare → bind → execute 流程
    *
    * 查询类语句返回语句对象供遍历，其余返回受影响行数。
@@ -292,7 +315,10 @@ abstract class AbstractDriver
 
     $result = $statement->execute();
     if ($result === false) {
-      throw new Error("数据库错误", 500, "DatabaseError:500:" . $this->errno(), $this->error());
+      //* 预处理语句的错误挂在语句对象上：PDO 连接级 errorInfo() 此时仍是 00000，
+      //* 直接用连接错误会让所有预处理语句的报错都退化成「00000 / 空错误信息」
+      $error = $this->statementError($statement);
+      throw new Error("数据库错误", 500, "DatabaseError:500:" . ($error[0] ?? $this->errno()), $error);
     }
 
     if ($this->isSelectStatement($query)) {
