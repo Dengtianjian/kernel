@@ -67,14 +67,6 @@ class App
    */
   protected $router = null;
   /**
-   * 应用开始时间戳（毫秒）
-   *
-   * 构造时取 Date::milliseconds()，用于计算请求耗时
-   *
-   * @var int|null
-   */
-  protected $startTime = null;
-  /**
    * 生命周期管理器（Lifecycle），委托管理引导/结束/错误钩子
    *
    * 延迟实例化：setup() 未注入时由 ensureInstances() / lifeCycle() 自动 new 默认实例。
@@ -106,23 +98,25 @@ class App
    */
   function __construct($id, $kernelId = "kernel")
   {
-    //* 初始化应用身份：写入 id / kernelId、记录起始时间，并登记到应用管理器。
-    //* 注册须在安装全局异常/错误处理器之前完成，否则处理器里 getApp() 拿不到实例；
-    //* 是否为「默认应用」由 {@see Applications} 决定（首个注册者自动成为默认）。
-    //* 注意：DiscuzXApp / DiscuzXHookApp 因不调用父构造，各自复刻了这段逻辑，改动时需同步。
-    $this->id = $id;
-    $this->kernelId = $kernelId;
-    $this->startTime = Date::milliseconds();
-
-    //* 登记到应用管理器：首个注册者自动成为默认应用
-    Applications::register($this, $id);
-
-    include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
+    $this->boot($id, $kernelId);
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
+  }
+  public function boot($id, $kernelId = "kernel")
+  {
+    //* 登记到应用管理器：首个注册者自动成为默认应用
+    Applications::register($this, $id);
+
+    include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
+
+    $this->id = $id;
+    $this->kernelId = $kernelId;
+    Config::set([
+      "startTime" => Date::milliseconds()
+    ]);
   }
 
   /**
@@ -276,6 +270,80 @@ class App
     return $bound;
   }
 
+  /**
+   * 按参数名绑定闭包路由参数（反射，保持声明顺序）
+   *
+   * 与 bindParamsByName() 的差异：闭包参数支持框架注入与隐式参数，逐个参数按其声明位置绑定：
+   * 1. 参数名为 request 或类型声明为 Request 派生类型：注入当前请求实例
+   * 2. 参数名存在于路由参数（URL 路由参数 + append 隐式参数）：取对应值
+   * 3. 参数名存在于路由实例化参数（->parameters() 关联数组）：取对应值
+   * 4. 路由实例化参数中的顺序值（数字下标）：依次补位
+   * 5. 参数有默认值：使用默认值
+   * 6. 参数必选且缺失：抛 InvalidArgumentException
+   *
+   * @param \ReflectionParameter[] $parameters 闭包参数列表
+   * @param array $routeParams 路由参数（参数名 => 值，含 append 隐式参数）
+   * @param array $instantiateParams 路由实例化参数（->parameters()）
+   * @param Request $request 当前请求实例
+   * @return array 按参数顺序排列的值数组
+   */
+  protected function bindClosureParams($parameters, $routeParams, $instantiateParams, $request)
+  {
+    //* 数字下标的实例化参数按声明顺序补位
+    $orderedExtras = [];
+    foreach ((array) $instantiateParams as $key => $value) {
+      if (is_int($key)) {
+        $orderedExtras[] = $value;
+      }
+    }
+
+    $bound = [];
+    foreach ($parameters as $param) {
+      $name = $param->getName();
+      if ($param->isVariadic()) {
+        break;
+      }
+      if ($name === "request" || $this->isRequestParameter($param, $request)) {
+        $bound[] = $request;
+      } elseif (array_key_exists($name, $routeParams)) {
+        $bound[] = $routeParams[$name];
+      } elseif (is_array($instantiateParams) && array_key_exists($name, $instantiateParams)) {
+        $bound[] = $instantiateParams[$name];
+      } elseif (count($orderedExtras)) {
+        $bound[] = array_shift($orderedExtras);
+      } elseif ($param->isDefaultValueAvailable()) {
+        $bound[] = $param->getDefaultValue();
+      } else {
+        throw new \InvalidArgumentException(
+          "闭包路由缺少必选参数 \"{$name}\"，无法按名绑定。"
+        );
+      }
+    }
+
+    return $bound;
+  }
+
+  /**
+   * 判断闭包参数是否应注入当前请求实例（按类型声明）
+   *
+   * @param \ReflectionParameter $param 闭包参数
+   * @param Request $request 当前请求实例
+   * @return bool
+   */
+  protected function isRequestParameter($param, $request)
+  {
+    $type = $param->getType();
+    if (!($type instanceof \ReflectionNamedType) || $type->isBuiltin()) {
+      return false;
+    }
+    $typeName = $type->getName();
+    if ($typeName === "self" || $typeName === "static" || $typeName === "parent") {
+      return false;
+    }
+
+    return is_a($request, $typeName);
+  }
+
   public function executeController($callTarget, $callParams, &$controller)
   {
     try {
@@ -359,10 +427,9 @@ class App
       $controller = null;
       if (isSafeCallable($route['controller'])) {
         $callTarget = $route['controller'];
-        //* 闭包路由：按名绑定参数（反射获取参数名，从 $route['params'] 中按名取值）
+        //* 闭包路由：逐参数按名绑定（保持声明顺序；$request 由框架注入，append 隐式参数可按名取值）
         $closure = new \ReflectionFunction($callTarget);
-        $callParams = $this->bindParamsByName($closure->getParameters(), $route['params']);
-        array_unshift($callParams, $this->request, ...$routeInstantiateParams);
+        $callParams = $this->bindClosureParams($closure->getParameters(), $routeParams, $routeInstantiateParams, $this->request);
         //* 预建默认 Controller 承载响应（中间件链 / after() / 输出均依赖它）
         $controller = new Controller($this->request);
       } else {
@@ -404,7 +471,9 @@ class App
 
         return $controller->response;
       });
-      if ($middlewareExecutedResult->error) {
+      //* 中间件链的最终返回即本次响应：无论成功/失败都以链的返回值为准
+      //  （中间件短路时返回的是自建响应；正常穿透时返回的即内层的 $controller->response）
+      if ($middlewareExecutedResult instanceof \kernel\Foundation\HTTP\Response) {
         $controller->response = $middlewareExecutedResult;
       }
 
@@ -417,20 +486,13 @@ class App
       $isServerSentEvent = $controller->response instanceof ServerSentEvent;
 
       $endTime = Date::milliseconds();
-      // 控制器未显式设置输出类型，且请求头（Content-Type/Accept）期望 JSON 时，兜底按 JSON 输出并附带耗时
-      // （SSE 已有自己的 Content-Type 与分帧逻辑，不能套用该兜底，否则会覆盖 text/event-stream）
-      if (!$isServerSentEvent && $this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
-        $controller->response->json();
-        $controller->response->addBody([
-          "requiredTime" => $endTime - $this->startTime . "ms"
-        ]);
-      }
 
-      //* SSE 长连接：进入推流循环，直到回调 close() 或客户端断开。
-      //* 不能走 output()（那样只输出一帧就 exit，表现为「响应一次就断开」）
-      if ($isServerSentEvent) {
-        $controller->response->run();
-      }
+      // if ($this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
+      //   $controller->response->json();
+      //   $controller->response->addBody([
+      //     "requiredTime" => $endTime - $this->startTime . "ms"
+      //   ]);
+      // }
 
       //* 调用生命周期"结束"钩子
       $this->lifeCycle->fireShutdown($controller->response, [
@@ -441,15 +503,14 @@ class App
       //* 停止已装载模块（模块随应用结束而停止，释放资源）
       $this->shutdownModules();
 
-      //* 非 SSE 响应：一次性输出后结束
-      if (!$isServerSentEvent) {
-        if (is_callable($controller->response->getData())) {
-          call_user_func_array($controller->response->getData(), []);
-        } else {
-          $controller->response->output();
-        }
+      if (is_callable($controller->response->getData())) {
+        call_user_func_array($controller->response->getData(), []);
+      } else {
+        $controller->response->output();
       }
-      exit;
+
+      //* 响应已输出，正常结束：按约定 run() 不返回（终止执行，避免入口后续代码再次输出）
+      exit(0);
     } catch (\Throwable $e) {
       //* 异常路径：先触发错误钩子（onError，统一上报/记录），再执行结束钩子（记录已执行到的步骤、释放资源），最后交由全局异常处理器输出
       $this->lifeCycle->fireError($e);

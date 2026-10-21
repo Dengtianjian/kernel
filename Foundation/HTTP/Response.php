@@ -122,21 +122,22 @@ class Response
     $errorCode = null,
     $responseType = null
   ) {
-    if ($statusCode && $errorCode) {
-      if (!self::$interactions['mixCodes'][$statusCode]) {
+    if (!is_null($statusCode) && !is_null($errorCode)) {
+      //* 未定义的键先由 isset 判定再初始化，避免 PHP 8 下访问未定义下标的 warning
+      if (!isset(self::$interactions['mixCodes'][$statusCode])) {
         self::$interactions['mixCodes'][$statusCode] = [];
       }
-      if (!self::$interactions['mixCodes'][$statusCode][$errorCode]) {
+      if (!isset(self::$interactions['mixCodes'][$statusCode][$errorCode])) {
         self::$interactions['mixCodes'][$statusCode][$errorCode] = [];
       }
       array_push(self::$interactions['mixCodes'][$statusCode][$errorCode], $callback);
-    } else if ($statusCode) {
-      if (!self::$interactions['statusCodes'][$statusCode]) {
+    } else if (!is_null($statusCode)) {
+      if (!isset(self::$interactions['statusCodes'][$statusCode])) {
         self::$interactions['statusCodes'][$statusCode] = [];
       }
       array_push(self::$interactions['statusCodes'][$statusCode], $callback);
-    } else if ($errorCode) {
-      if (!self::$interactions['errorCodes'][$errorCode]) {
+    } else if (!is_null($errorCode)) {
+      if (!isset(self::$interactions['errorCodes'][$errorCode])) {
         self::$interactions['errorCodes'][$errorCode] = [];
       }
       array_push(self::$interactions['errorCodes'][$errorCode], $callback);
@@ -417,9 +418,9 @@ class Response
       }
     }
 
-    //* 只匹配错误码
-    if (isset(self::$interactions['errorCodes'][$this->responseStatusCode])) {
-      foreach (self::$interactions['errorCodes'][$this->responseStatusCode] as $item) {
+    //* 只匹配错误码（按响应码匹配，而非 HTTP 状态码）
+    if (isset(self::$interactions['errorCodes'][$this->responseCode])) {
+      foreach (self::$interactions['errorCodes'][$this->responseCode] as $item) {
         call_user_func_array($item, [$this]);
       }
     }
