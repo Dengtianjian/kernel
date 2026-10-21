@@ -20,15 +20,7 @@ class DiscuzXApp extends App
       define("CHARSET", "utf-8");
     }
 
-    //* 初始化应用身份：复刻 App::__construct() 开头的身份初始化（本类不调用父构造，
-    //* 以便自行控制语言包加载、请求 URI 与全局处理器的安装时机）—— 改动时需与 App::__construct() 同步。
-    //* 第三个参数 true：插件 App 接管默认应用位置（同一请求里若先创建过内核 App，后续 getApp() 仍应取本实例）
-    $this->id = $appId;
-    $this->kernelId = "gstudio_kernel";
-    $this->startTime = Date::milliseconds();
-    Applications::register($this, $appId, true);
-
-    include_once(Path::join(Path::kernel(), "Foundation", "Common.php"));
+    $this->boot($appId, "gstudio_kernel");
 
     DiscuzXLang::load("Modules/DiscuzX/Langs/" . (strtolower(CHARSET) === "gbk" ? "gbk" : "utf-8"), Path::kernel());
 

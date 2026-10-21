@@ -5,6 +5,7 @@ namespace kernel\Foundation\HTTP;
 use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\Response\ResponseView;
 use kernel\Foundation\Output;
@@ -457,13 +458,15 @@ class Response
       $outputType = getApp()->request()->preferredOutputType();
     }
 
-    if ($outputType === "json") {
-      $body['version'] = Config::get("version");
-    }
-
     switch ($outputType) {
       case "json":
         header("Content-type:application/json", true);
+
+        $body['version'] = Config::get("version");
+
+        $endTime = Date::milliseconds();
+        $body['requiredTime'] = $endTime - Config::get("startTime", $endTime);
+
         echo json_encode($body, JSON_UNESCAPED_UNICODE);
         break;
       case "xml":

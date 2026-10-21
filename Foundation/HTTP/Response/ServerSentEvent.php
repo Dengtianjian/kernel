@@ -4,6 +4,7 @@ namespace kernel\Foundation\HTTP\Response;
 
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Log;
 
@@ -65,6 +66,8 @@ class ServerSentEvent extends Response
     $this->outputType = $outputType;
     $this->callback = $callback;
     $this->intervalTime = $intervalTime;
+
+    $this->run();
   }
   /**
    * 启动 SSE 推送循环
@@ -190,6 +193,12 @@ class ServerSentEvent extends Response
     $content = null;
     switch ($this->outputType) {
       case "json":
+
+        $body['version'] = Config::get("version");
+
+        $endTime = Date::milliseconds();
+        $body['requiredTime'] = $endTime - Config::get("startTime", $endTime);
+
         $content = json_encode($body, JSON_UNESCAPED_UNICODE);
         break;
       case "xml":

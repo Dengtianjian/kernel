@@ -145,7 +145,7 @@ class Config
    */
   static function set($keyOrValue, $value = null, $appId = null)
   {
-    $appId = $appId ?? App::id();
+    $appId = $appId ?? getApp()::id();
     if (!isset(self::$configs[$appId])) {
       self::$configs[$appId] = [];
     }
