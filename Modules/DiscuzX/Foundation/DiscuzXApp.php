@@ -19,7 +19,7 @@ class DiscuzXApp extends App
     }
 
     //* 注册当前应用实例（等价 parent::__construct 的注册部分，但不安装内核的全局异常/错误处理器）
-    $this->register($appId, "gstudio_kernel");
+    $this->registerIdentity($appId, "gstudio_kernel");
 
     include_once(Path::join(Path::kernel(), "Foundation", "Common.php"));
 

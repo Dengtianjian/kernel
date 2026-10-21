@@ -12,7 +12,7 @@ use kernel\Foundation\Config;
  * 命令完全由本类实例管理，不再依赖 Router（Router 只负责 HTTP 路由）。
  *
  * 命令注册方式：
- * 1. 业务方在自己入口（如 kernel/console、App 的 CLI 入口）手动 Console::register() 注册
+ * 1. 业务方在自己入口（如 kernel/console、App 的 CLI 入口）手动 $console->register() 注册
  * 2. discover() 自动扫描命令类目录注册（命令类自带 $name 属性）
  *
  * 命令处理器支持三种形式：
