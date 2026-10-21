@@ -3,12 +3,14 @@
 namespace kernel\Foundation;
 
 use Exception as GlobalException;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Exception\ErrorCode;
+use kernel\Foundation\HTTP\Response\ServerSentEvent;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Lifecycle;
@@ -82,14 +84,6 @@ class App
    */
   protected $lifeCycle = null;
   /**
-   * 当前（最近实例化）的 App 实例
-   *
-   * 实例化 App 时自动注册（构造即注册），getApp() / App::getInstance() 从该存储获取当前实例。
-   *
-   * @var App|null
-   */
-  protected static $currentApp = null;
-  /**
    * ensureInstances() 进行中标记（防止 Lifecycle 构造触发钩子回调时递归）
    *
    * @var bool
@@ -112,7 +106,16 @@ class App
    */
   function __construct($id, $kernelId = "kernel")
   {
-    $this->register($id, $kernelId);
+    //* 初始化应用身份：写入 id / kernelId、记录起始时间，并登记到应用管理器。
+    //* 注册须在安装全局异常/错误处理器之前完成，否则处理器里 getApp() 拿不到实例；
+    //* 是否为「默认应用」由 {@see Applications} 决定（首个注册者自动成为默认）。
+    //* 注意：DiscuzXApp / DiscuzXHookApp 因不调用父构造，各自复刻了这段逻辑，改动时需同步。
+    $this->id = $id;
+    $this->kernelId = $kernelId;
+    $this->startTime = Date::milliseconds();
+
+    //* 登记到应用管理器：首个注册者自动成为默认应用
+    Applications::register($this, $id);
 
     include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
 
@@ -121,28 +124,7 @@ class App
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
   }
-  /**
-   * 注册为「当前应用」并初始化标识
-   *
-   * 构造即注册（后实例化者覆盖前者），getApp() / App::getInstance() 从静态存储读取当前实例，
-   * 同时写入 id / kernelId / startTime。
-   *
-   * 与安装全局异常/错误处理器解耦：子类覆写构造函数时可安全复用本方法，
-   * 以保留注册与标识初始化，同时自行决定是否安装内核的全局处理器。
-   *
-   * @param string $id 应用ID（与项目目录同名）
-   * @param string $kernelId 内核ID（内核目录名，默认 kernel）
-   * @return void
-   */
-  protected function register($id, $kernelId = "kernel")
-  {
-    self::$currentApp = $this;
 
-    $this->id = $id;
-    $this->kernelId = $kernelId;
-
-    $this->startTime = Date::milliseconds();
-  }
   /**
    * 应用装配：手动实例化组件（配置、缓存、文件系统、自定义 Request 等）
    *
@@ -431,13 +413,23 @@ class App
         $controller->after();
       }
 
+      //* SSE 识别：长连接的推流必须在结束钩子/模块停止之前完成（推流期间仍会反复访问数据库 / Redis）
+      $isServerSentEvent = $controller->response instanceof ServerSentEvent;
+
       $endTime = Date::milliseconds();
       // 控制器未显式设置输出类型，且请求头（Content-Type/Accept）期望 JSON 时，兜底按 JSON 输出并附带耗时
-      if ($this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
+      // （SSE 已有自己的 Content-Type 与分帧逻辑，不能套用该兜底，否则会覆盖 text/event-stream）
+      if (!$isServerSentEvent && $this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
         $controller->response->json();
         $controller->response->addBody([
           "requiredTime" => $endTime - $this->startTime . "ms"
         ]);
+      }
+
+      //* SSE 长连接：进入推流循环，直到回调 close() 或客户端断开。
+      //* 不能走 output()（那样只输出一帧就 exit，表现为「响应一次就断开」）
+      if ($isServerSentEvent) {
+        $controller->response->run();
       }
 
       //* 调用生命周期"结束"钩子
@@ -449,10 +441,13 @@ class App
       //* 停止已装载模块（模块随应用结束而停止，释放资源）
       $this->shutdownModules();
 
-      if (is_callable($controller->response->getData())) {
-        call_user_func_array($controller->response->getData(), []);
-      } else {
-        $controller->response->output();
+      //* 非 SSE 响应：一次性输出后结束
+      if (!$isServerSentEvent) {
+        if (is_callable($controller->response->getData())) {
+          call_user_func_array($controller->response->getData(), []);
+        } else {
+          $controller->response->output();
+        }
       }
       exit;
     } catch (\Throwable $e) {
@@ -552,38 +547,44 @@ class App
     }
   }
   /**
-   * 获取当前（最近实例化）的 App 实例
+   * 获取默认的 App 实例
    *
-   * 实例化 App（new App($id)）时即自动注册到静态存储（后实例化者覆盖前者）。
+   * 实例化 App（new App($id)）时自动登记到 {@see Applications}：
+   * **首个注册（或显式指定）的应用为默认应用**，多个实例共存时可用
+   * {@see Applications::setDefault()} 切换。
    * 全局函数 getApp() 等价于本方法。
    *
-   * @return App|null 尚未实例化任何 App 时返回 null
+   * @return App|null 尚未登记任何 App 时返回 null
    */
   public static function getInstance()
   {
-    return self::$currentApp;
+    return Applications::default();
   }
   /**
-   * 获取当前应用的ID（id），即项目文件夹名称
+   * 获取默认应用的ID（id），即项目文件夹名称
    *
-   * 取自已实例化 App 的第一个构造参数（后实例化者覆盖）。
+   * 取默认应用实例的第一个构造参数。
    *
-   * @return string|null 尚未实例化任何 App 时返回 null
+   * @return string|null 尚未登记任何 App 时返回 null
    */
   public static function id()
   {
-    return self::$currentApp === null ? null : self::$currentApp->id;
+    $app = Applications::default();
+
+    return $app === null ? null : $app->id;
   }
   /**
    * 获取内核的ID（KernelId），即内核目录文件夹名称，默认 "kernel"
    *
-   * 取自已实例化 App 的第二个构造参数（后实例化者覆盖）。
+   * 取默认应用实例的第二个构造参数。
    *
-   * @return string|null 尚未实例化任何 App 时返回 null
+   * @return string|null 尚未登记任何 App 时返回 null
    */
   public static function kernelId()
   {
-    return self::$currentApp === null ? null : self::$currentApp->kernelId;
+    $app = Applications::default();
+
+    return $app === null ? null : $app->kernelId;
   }
   /**
    * 获取当前运行模式（mode）

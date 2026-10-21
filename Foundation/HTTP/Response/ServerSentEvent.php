@@ -5,6 +5,7 @@ namespace kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\Log;
 
 class ServerSentEvent extends Response
 {
@@ -15,6 +16,15 @@ class ServerSentEvent extends Response
    */
   protected $responseEventName = "message";
   protected $closed = false;
+  /**
+   * 响应头是否已发送
+   *
+   * SSE 是长连接，每帧都会调用 {@see output()}；header() 只在推流开始时发送一次，
+   * 重复发送会触发「headers already sent」告警，故用该标记保证仅发送一次。
+   *
+   * @var boolean
+   */
+  protected $headersSent = false;
   /**
    * 推流回调
    *
@@ -65,15 +75,28 @@ class ServerSentEvent extends Response
    */
   public function run()
   {
+    //* 长连接不允许被脚本超时打断
+    @set_time_limit(0);
+
+    //* 清空输出缓冲：否则帧数据会被 PHP/Nginx 缓冲成一大块，前端迟迟收不到
+    while (ob_get_level() > 0) {
+      ob_end_flush();
+    }
+    ob_implicit_flush(true);
+
+    //* 响应头只发一次；之后每帧仅写 body
+    $this->sendHeaders();
+    flush();
+
     while (!$this->closed) {
       call_user_func($this->callback, $this);
 
-      while (ob_get_level() > 0) {
-        ob_end_flush();
-      }
       flush();
 
-      if (connection_aborted()) break;
+      //* 回调里 close() 之后立即结束，不再多睡一个间隔
+      if ($this->closed || connection_aborted()) {
+        break;
+      }
 
       sleep($this->intervalTime);
     }
@@ -126,11 +149,33 @@ class ServerSentEvent extends Response
   {
     return $this->success(time(), "ping", 200, 200, "ok");
   }
-  public function output()
+  /**
+   * 发送 SSE 响应头（仅发送一次）
+   *
+   * @return void
+   */
+  protected function sendHeaders()
   {
+    if ($this->headersSent) {
+      return;
+    }
     foreach ($this->responseHeaders as $Header) {
       header($Header['key'] . ":" . $Header['value'], $Header['replace']);
     }
+    $this->headersSent = true;
+  }
+
+  /**
+   * 输出一帧事件（不结束连接）
+   *
+   * 由 {@see run()} 的循环调用（{@see success()} / {@see error()} / {@see ping()} 内部会触发），
+   * 只负责写这一帧的 body；连接的生命周期由 {@see run()} 控制。
+   *
+   * @return void
+   */
+  public function output()
+  {
+    $this->sendHeaders();
 
     $body = $this->getBody();
     if ($this->responseResetBody) {

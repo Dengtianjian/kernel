@@ -32,7 +32,6 @@ class Cache
    * 当前（最近实例化）的 Cache 实例
    *
    * 实例化 Cache 时自动注册（构造即注册），Cache::key() 从该实例读取 key。
-   * 后实例化者覆盖前者，与 App::$currentApp 模式一致。
    *
    * @var Cache|null
    */

@@ -1,6 +1,7 @@
 <?php
 
 use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Error;
@@ -47,16 +48,45 @@ function import($fileName, $args = [], $basePath = null)
 }
 
 /**
- * 获取当前应用实例
+ * 获取应用实例
  *
- * 实例化 App（new App($id)）时自动注册为当前实例（后实例化者覆盖前者），
- * 本函数返回该当前实例。未实例化任何 App 时返回 null。
+ * 应用实例统一由 {@see \kernel\Foundation\Application\Applications} 管理：
+ * 首个注册（或显式指定）的应用为**默认应用**，未登记任何 App 时返回 null。
  *
- * @return App|null 当前应用实例；尚未实例化任何 App 时返回 null
+ * 取值规则（两个参数都是应用ID）：
+ * - 不传参数：返回默认应用；
+ * - 传 `$id` 且已登记：返回该应用；
+ * - 传 `$id` 但未登记：**未传第二个参数**时回落到默认应用；
+ *   传了 `$fallbackId` 则改取该 ID 对应的应用（该 ID 也未登记时返回 null）。
+ *
+ * ```php
+ * getApp();                    // 默认应用
+ * getApp("app");               // id 为 app 的实例；没登记则回落到默认应用
+ * getApp("app", "appBackup");  // id 为 app 的实例；没登记则取 appBackup 的实例
+ * ```
+ *
+ * @param string|null $id 应用ID；不传表示取默认应用
+ * @param string|null $fallbackId 备用应用ID：`$id` 未登记时改取该应用（不传则回落默认应用）
+ * @return App|null 应用实例；无可用实例（未登记且无默认应用）时返回 null
  */
-function getApp()
+function getApp($id = null, $fallbackId = null)
 {
-  return App::getInstance();
+  //* 未指定应用：直接返回默认应用
+  if ($id === null) {
+    return Applications::default();
+  }
+
+  $app = Applications::get($id);
+  if ($app !== null) {
+    return $app;
+  }
+
+  //* 未传备用 ID：回落默认应用；传了则取备用 ID 对应的实例（同样未登记时为 null）
+  if (func_num_args() < 2) {
+    return Applications::default();
+  }
+
+  return Applications::get($fallbackId);
 }
 
 if (!function_exists("debug")) {

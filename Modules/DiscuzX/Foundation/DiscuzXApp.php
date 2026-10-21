@@ -3,7 +3,9 @@
 namespace kernel\Modules\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\FileSystem\Path;
 
 class DiscuzXApp extends App
@@ -18,8 +20,13 @@ class DiscuzXApp extends App
       define("CHARSET", "utf-8");
     }
 
-    //* 注册当前应用实例（等价 parent::__construct 的注册部分，但不安装内核的全局异常/错误处理器）
-    $this->registerIdentity($appId, "gstudio_kernel");
+    //* 初始化应用身份：复刻 App::__construct() 开头的身份初始化（本类不调用父构造，
+    //* 以便自行控制语言包加载、请求 URI 与全局处理器的安装时机）—— 改动时需与 App::__construct() 同步。
+    //* 第三个参数 true：插件 App 接管默认应用位置（同一请求里若先创建过内核 App，后续 getApp() 仍应取本实例）
+    $this->id = $appId;
+    $this->kernelId = "gstudio_kernel";
+    $this->startTime = Date::milliseconds();
+    Applications::register($this, $appId, true);
 
     include_once(Path::join(Path::kernel(), "Foundation", "Common.php"));
 
