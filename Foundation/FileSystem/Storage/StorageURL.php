@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\FileSystem\Storage;
 
+use kernel\Foundation\Config;
 use kernel\Foundation\HTTP\URL;
 
 /**
@@ -267,9 +268,9 @@ class StorageURL extends URL
     $this->user = $baseURL->user;
     $this->password = $baseURL->password;
 
-    $this->pathName = $this->storage->prefix() . "/" . $this->fileKey;
+    $pathName = $this->storage->prefix() . "/" . $this->fileKey;
     if ($this->suffix) {
-      $this->pathName = $this->pathName . "/" . $this->suffix;
+      $pathName = $pathName . "/" . $this->suffix;
     }
 
     //* 剔除上一次构建写入的签名参数键，只保留业务参数，避免重复构建时把它们当成业务参数参与签名
@@ -288,6 +289,14 @@ class StorageURL extends URL
       );
       //* `auth` 键已被计入签名，保留会造成「签名含 auth 但地址里没有」→ 验签必然失败
       unset($queryParams['auth']);
+    }
+
+    if (Config::inDiscuzX()) {
+      $this->pathName = "plugin.php";
+      $queryParams["id"] = getApp()::id();
+      $queryParams["uri"] = $pathName;
+    } else {
+      $this->pathName = $pathName;
     }
 
     $this->queryParams = $queryParams;

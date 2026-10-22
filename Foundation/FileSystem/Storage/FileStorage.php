@@ -783,7 +783,7 @@ class FileStorage extends AbilityBaseObject
    */
   public function url($fileKey)
   {
-    return (new StorageURL($this, $fileKey));
+    return new StorageURL($this, $fileKey);
   }
 
 

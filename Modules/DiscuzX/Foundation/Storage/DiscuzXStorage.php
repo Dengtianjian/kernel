@@ -4,6 +4,7 @@ namespace kernel\Modules\DiscuzX\Foundation\Storage;
 
 use kernel\Foundation\FileSystem\Storage\FileStorage;
 use kernel\Foundation\FileSystem\Storage\StorageSignature;
+use kernel\Foundation\FileSystem\Storage\StorageURL;
 use kernel\Modules\DiscuzX\DiscuzXURL;
 
 class DiscuzXStorage extends FileStorage
@@ -13,42 +14,6 @@ class DiscuzXStorage extends FileStorage
   {
     parent::__construct($disks);
     $this->baseURL = DiscuzXURL::baseURL();
-  }
-
-  /**
-   * 生成文件访问 URL（DiscuzX 形态：走 `plugin.php?id=...&uri=...` 路由）
-   *
-   * 与父类 {@see FileStorage::url()} 同义，只是 URL 形态不同（多了 `id` / `uri` 两个查询参数）。
-   *
-   * ⚠️ 同样支持**动作绑定**：给「按动作校验」的端点（`info` / `preview` / `download` / `delete` /
-   * `update` / `upload`）生成链接时**必须传 `$action`**，否则签名里不含 `action`，
-   * 校验会以「缺少参数」拒绝（`verifyAuth:403001`）。
-   *
-   * @param string $fileKey 文件键
-   * @param array $urlParams 附加的 URL query 参数
-   * @param int $expires 签名有效期（秒），默认 1800
-   * @param boolean $withSignature 是否附带签名授权参数，默认 false
-   * @param string|null $action 签名绑定的动作；不传则不绑定（只能用于不限制动作的端点）
-   * @return string 完整文件访问 URL
-   */
-  public function url($fileKey, $urlParams = [], $expires = 1800, $withSignature = false, $action = null)
-  {
-    $accessURL = new DiscuzXURL($this->baseURL);
-    $accessURL->pathName = "plugin.php";
-    $accessURL->queryParam("gstudio_super_app", "id");
-    $accessURL->queryParam($this->prefix . "/" . $fileKey, "uri");
-
-    if ($this->authEnabled() && $withSignature) {
-      //* 第 5 参固定 "get"，第 6 参透传 $action（参与签名，并因此出现在 URL 上）
-      $urlParams = array_merge($urlParams, $this->createAuthParams($fileKey, $expires, $urlParams, [], "get", $action));
-      if (array_key_exists("auth", $urlParams)) {
-        unset($urlParams['auth']);
-      }
-    }
-
-    $accessURL->queryParam($urlParams);
-
-    return $accessURL->toString();
   }
 
   public function verifySignature($fileKey, $rawURLParams, $rawHeaders = [], $httpMethod = "get", $action = null)
