@@ -9,8 +9,8 @@ class DiscuzXHookApp extends DiscuzXApp
 {
   public function __construct($appId)
   {
-    //* 注册当前 App 实例（App::id()/App::kernelId() 从该实例读取）
-    $this->register($appId, "gstudio_kernel");
+    $this->boot($appId, "gstudio_kernel");
+
     //* 实例化 FileSystem（无参构造，不计算路径；路径在每次静态方法调用时自动计算）
     new FileSystem;
     //* 初始化配置

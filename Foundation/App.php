@@ -3,12 +3,14 @@
 namespace kernel\Foundation;
 
 use Exception as GlobalException;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Config;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Exception\ErrorCode;
+use kernel\Foundation\HTTP\Response\ServerSentEvent;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Lifecycle;
@@ -65,14 +67,6 @@ class App
    */
   protected $router = null;
   /**
-   * 应用开始时间戳（毫秒）
-   *
-   * 构造时取 Date::milliseconds()，用于计算请求耗时
-   *
-   * @var int|null
-   */
-  protected $startTime = null;
-  /**
    * 生命周期管理器（Lifecycle），委托管理引导/结束/错误钩子
    *
    * 延迟实例化：setup() 未注入时由 ensureInstances() / lifeCycle() 自动 new 默认实例。
@@ -81,14 +75,6 @@ class App
    * @var Lifecycle|null
    */
   protected $lifeCycle = null;
-  /**
-   * 当前（最近实例化）的 App 实例
-   *
-   * 实例化 App 时自动注册（构造即注册），getApp() / App::getInstance() 从该存储获取当前实例。
-   *
-   * @var App|null
-   */
-  protected static $currentApp = null;
   /**
    * ensureInstances() 进行中标记（防止 Lifecycle 构造触发钩子回调时递归）
    *
@@ -112,37 +98,27 @@ class App
    */
   function __construct($id, $kernelId = "kernel")
   {
-    $this->register($id, $kernelId);
-
-    include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
+    $this->boot($id, $kernelId);
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
     //* 错误处理
     \set_error_handler("kernel\Foundation\Exception\ExceptionHandler::handle", E_ALL);
   }
-  /**
-   * 注册为「当前应用」并初始化标识
-   *
-   * 构造即注册（后实例化者覆盖前者），getApp() / App::getInstance() 从静态存储读取当前实例，
-   * 同时写入 id / kernelId / startTime。
-   *
-   * 与安装全局异常/错误处理器解耦：子类覆写构造函数时可安全复用本方法，
-   * 以保留注册与标识初始化，同时自行决定是否安装内核的全局处理器。
-   *
-   * @param string $id 应用ID（与项目目录同名）
-   * @param string $kernelId 内核ID（内核目录名，默认 kernel）
-   * @return void
-   */
-  protected function register($id, $kernelId = "kernel")
+  public function boot($id, $kernelId = "kernel")
   {
-    self::$currentApp = $this;
+    //* 登记到应用管理器：首个注册者自动成为默认应用
+    Applications::register($this, $id);
+
+    include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
 
     $this->id = $id;
     $this->kernelId = $kernelId;
-
-    $this->startTime = Date::milliseconds();
+    Config::set([
+      "startTime" => Date::milliseconds()
+    ]);
   }
+
   /**
    * 应用装配：手动实例化组件（配置、缓存、文件系统、自定义 Request 等）
    *
@@ -294,6 +270,80 @@ class App
     return $bound;
   }
 
+  /**
+   * 按参数名绑定闭包路由参数（反射，保持声明顺序）
+   *
+   * 与 bindParamsByName() 的差异：闭包参数支持框架注入与隐式参数，逐个参数按其声明位置绑定：
+   * 1. 参数名为 request 或类型声明为 Request 派生类型：注入当前请求实例
+   * 2. 参数名存在于路由参数（URL 路由参数 + append 隐式参数）：取对应值
+   * 3. 参数名存在于路由实例化参数（->parameters() 关联数组）：取对应值
+   * 4. 路由实例化参数中的顺序值（数字下标）：依次补位
+   * 5. 参数有默认值：使用默认值
+   * 6. 参数必选且缺失：抛 InvalidArgumentException
+   *
+   * @param \ReflectionParameter[] $parameters 闭包参数列表
+   * @param array $routeParams 路由参数（参数名 => 值，含 append 隐式参数）
+   * @param array $instantiateParams 路由实例化参数（->parameters()）
+   * @param Request $request 当前请求实例
+   * @return array 按参数顺序排列的值数组
+   */
+  protected function bindClosureParams($parameters, $routeParams, $instantiateParams, $request)
+  {
+    //* 数字下标的实例化参数按声明顺序补位
+    $orderedExtras = [];
+    foreach ((array) $instantiateParams as $key => $value) {
+      if (is_int($key)) {
+        $orderedExtras[] = $value;
+      }
+    }
+
+    $bound = [];
+    foreach ($parameters as $param) {
+      $name = $param->getName();
+      if ($param->isVariadic()) {
+        break;
+      }
+      if ($name === "request" || $this->isRequestParameter($param, $request)) {
+        $bound[] = $request;
+      } elseif (array_key_exists($name, $routeParams)) {
+        $bound[] = $routeParams[$name];
+      } elseif (is_array($instantiateParams) && array_key_exists($name, $instantiateParams)) {
+        $bound[] = $instantiateParams[$name];
+      } elseif (count($orderedExtras)) {
+        $bound[] = array_shift($orderedExtras);
+      } elseif ($param->isDefaultValueAvailable()) {
+        $bound[] = $param->getDefaultValue();
+      } else {
+        throw new \InvalidArgumentException(
+          "闭包路由缺少必选参数 \"{$name}\"，无法按名绑定。"
+        );
+      }
+    }
+
+    return $bound;
+  }
+
+  /**
+   * 判断闭包参数是否应注入当前请求实例（按类型声明）
+   *
+   * @param \ReflectionParameter $param 闭包参数
+   * @param Request $request 当前请求实例
+   * @return bool
+   */
+  protected function isRequestParameter($param, $request)
+  {
+    $type = $param->getType();
+    if (!($type instanceof \ReflectionNamedType) || $type->isBuiltin()) {
+      return false;
+    }
+    $typeName = $type->getName();
+    if ($typeName === "self" || $typeName === "static" || $typeName === "parent") {
+      return false;
+    }
+
+    return is_a($request, $typeName);
+  }
+
   public function executeController($callTarget, $callParams, &$controller)
   {
     try {
@@ -377,10 +427,9 @@ class App
       $controller = null;
       if (isSafeCallable($route['controller'])) {
         $callTarget = $route['controller'];
-        //* 闭包路由：按名绑定参数（反射获取参数名，从 $route['params'] 中按名取值）
+        //* 闭包路由：逐参数按名绑定（保持声明顺序；$request 由框架注入，append 隐式参数可按名取值）
         $closure = new \ReflectionFunction($callTarget);
-        $callParams = $this->bindParamsByName($closure->getParameters(), $route['params']);
-        array_unshift($callParams, $this->request, ...$routeInstantiateParams);
+        $callParams = $this->bindClosureParams($closure->getParameters(), $routeParams, $routeInstantiateParams, $this->request);
         //* 预建默认 Controller 承载响应（中间件链 / after() / 输出均依赖它）
         $controller = new Controller($this->request);
       } else {
@@ -422,7 +471,9 @@ class App
 
         return $controller->response;
       });
-      if ($middlewareExecutedResult->error) {
+      //* 中间件链的最终返回即本次响应：无论成功/失败都以链的返回值为准
+      //  （中间件短路时返回的是自建响应；正常穿透时返回的即内层的 $controller->response）
+      if ($middlewareExecutedResult instanceof \kernel\Foundation\HTTP\Response) {
         $controller->response = $middlewareExecutedResult;
       }
 
@@ -431,14 +482,17 @@ class App
         $controller->after();
       }
 
+      //* SSE 识别：长连接的推流必须在结束钩子/模块停止之前完成（推流期间仍会反复访问数据库 / Redis）
+      $isServerSentEvent = $controller->response instanceof ServerSentEvent;
+
       $endTime = Date::milliseconds();
-      // 控制器未显式设置输出类型，且请求头（Content-Type/Accept）期望 JSON 时，兜底按 JSON 输出并附带耗时
-      if ($this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
-        $controller->response->json();
-        $controller->response->addBody([
-          "requiredTime" => $endTime - $this->startTime . "ms"
-        ]);
-      }
+
+      // if ($this->request->preferredOutputType() === "json" && !$controller->response->OutputType()) {
+      //   $controller->response->json();
+      //   $controller->response->addBody([
+      //     "requiredTime" => $endTime - $this->startTime . "ms"
+      //   ]);
+      // }
 
       //* 调用生命周期"结束"钩子
       $this->lifeCycle->fireShutdown($controller->response, [
@@ -454,7 +508,9 @@ class App
       } else {
         $controller->response->output();
       }
-      exit;
+
+      //* 响应已输出，正常结束：按约定 run() 不返回（终止执行，避免入口后续代码再次输出）
+      exit(0);
     } catch (\Throwable $e) {
       //* 异常路径：先触发错误钩子（onError，统一上报/记录），再执行结束钩子（记录已执行到的步骤、释放资源），最后交由全局异常处理器输出
       $this->lifeCycle->fireError($e);
@@ -552,38 +608,44 @@ class App
     }
   }
   /**
-   * 获取当前（最近实例化）的 App 实例
+   * 获取默认的 App 实例
    *
-   * 实例化 App（new App($id)）时即自动注册到静态存储（后实例化者覆盖前者）。
+   * 实例化 App（new App($id)）时自动登记到 {@see Applications}：
+   * **首个注册（或显式指定）的应用为默认应用**，多个实例共存时可用
+   * {@see Applications::setDefault()} 切换。
    * 全局函数 getApp() 等价于本方法。
    *
-   * @return App|null 尚未实例化任何 App 时返回 null
+   * @return App|null 尚未登记任何 App 时返回 null
    */
   public static function getInstance()
   {
-    return self::$currentApp;
+    return Applications::default();
   }
   /**
-   * 获取当前应用的ID（id），即项目文件夹名称
+   * 获取默认应用的ID（id），即项目文件夹名称
    *
-   * 取自已实例化 App 的第一个构造参数（后实例化者覆盖）。
+   * 取默认应用实例的第一个构造参数。
    *
-   * @return string|null 尚未实例化任何 App 时返回 null
+   * @return string|null 尚未登记任何 App 时返回 null
    */
   public static function id()
   {
-    return self::$currentApp === null ? null : self::$currentApp->id;
+    $app = Applications::default();
+
+    return $app === null ? null : $app->id;
   }
   /**
    * 获取内核的ID（KernelId），即内核目录文件夹名称，默认 "kernel"
    *
-   * 取自已实例化 App 的第二个构造参数（后实例化者覆盖）。
+   * 取默认应用实例的第二个构造参数。
    *
-   * @return string|null 尚未实例化任何 App 时返回 null
+   * @return string|null 尚未登记任何 App 时返回 null
    */
   public static function kernelId()
   {
-    return self::$currentApp === null ? null : self::$currentApp->kernelId;
+    $app = Applications::default();
+
+    return $app === null ? null : $app->kernelId;
   }
   /**
    * 获取当前运行模式（mode）

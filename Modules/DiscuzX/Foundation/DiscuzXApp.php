@@ -3,7 +3,9 @@
 namespace kernel\Modules\DiscuzX\Foundation;
 
 use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Date;
 use kernel\Foundation\FileSystem\Path;
 
 class DiscuzXApp extends App
@@ -18,10 +20,7 @@ class DiscuzXApp extends App
       define("CHARSET", "utf-8");
     }
 
-    //* 注册当前应用实例（等价 parent::__construct 的注册部分，但不安装内核的全局异常/错误处理器）
-    $this->register($appId, "gstudio_kernel");
-
-    include_once(Path::join(Path::kernel(), "Foundation", "Common.php"));
+    $this->boot($appId, "gstudio_kernel");
 
     DiscuzXLang::load("Modules/DiscuzX/Langs/" . (strtolower(CHARSET) === "gbk" ? "gbk" : "utf-8"), Path::kernel());
 

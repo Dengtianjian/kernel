@@ -13,7 +13,7 @@ class RedisService
   /**
    * 连接池
    *
-   * @var array
+   * @var array<\Redis>
    */
   protected static $connects = [];
   /**
