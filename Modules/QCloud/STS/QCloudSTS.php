@@ -128,8 +128,10 @@ class QCloudSTS extends AbilityBaseObject
    *
    * 把本实例的凭据与入参拼成 $config 交给 {@see QCloudSTSClient::getTempKeys()}，
    * 由其申请临时密钥（返回键名已小写化）；本方法只做拼装与响应规整。
+   * 
+   * @link STS策略生成工具 https://cos.cloud.tencent.com/tools/cos?tab=calculate
    *
-   * @param string|string[] $allowPrefix 资源前缀：全部资源用 `*`；某目录下全部资源用 `a/*`；单个文件用 `a/test.jpg`
+   * @param array|string $allowPrefix 资源前缀：全部资源用 `*`；某目录下全部资源用 `a/*`；单个文件用 `a/test.jpg`
    * @param array $allowActions 授予的 COS API 权限集合，如 `["name/cos:PutObject"]`；权限名见 https://cloud.tencent.com/document/product/436/31923
    * @param integer $durationSeconds 临时密钥最长有效期（秒），默认 1800；由服务端限制，最大 7200
    * 返回的键名已小写化，字段：
@@ -149,7 +151,7 @@ class QCloudSTS extends AbilityBaseObject
       'bucket' => $this->bucket,
       'region' => $this->region,
       'durationSeconds' => $durationSeconds,
-      'allowPrefix' => $allowPrefix,
+      'allowPrefix' => is_string($allowPrefix) ? [$allowPrefix] : $allowPrefix,
       "allowActions" => $allowActions
     ];
 

@@ -247,6 +247,7 @@ class QCloudSTSClient
 			if (array_key_exists('endpoint', $config)) {
 				$url = 'https://sts.' . $config['endpoint'];
 			}
+			// debug($policy);
 
 			$ch = curl_init($url);
 			if (array_key_exists('proxy', $config)) {

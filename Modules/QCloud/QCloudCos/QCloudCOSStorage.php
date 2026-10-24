@@ -284,8 +284,8 @@ class QCloudCOSStorage extends AbstractObjectStorage
    * 委托 {@see QCloudSTS} 获取临时密钥，供前端/客户端直传 COS 使用。
    * 失败时解析 STS 返回的错误结构，归一化为本框架的 break 错误态。
    *
-   * @param string|null $allowPrefix 允许操作的对象前缀（路径白名单），null 时使用默认
-   * @param array|null $allowActions 允许的操作动作列表，null 时使用默认
+   * @param string|array $allowPrefix 允许操作的对象前缀（路径白名单），null 时使用默认
+   * @param array $allowActions 允许的操作动作列表，null 时使用默认
    * @param int $durationSeconds 凭证有效期（秒），默认 1800
    * @return array|false 成功返回临时凭证数组，失败返回 break 错误态
    */
