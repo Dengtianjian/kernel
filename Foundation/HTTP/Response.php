@@ -466,7 +466,7 @@ class Response
         $body['version'] = Config::get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = $endTime - Config::get("startTime", $endTime);
+        $body['requiredTime'] = ($endTime - Config::get("startTime", $endTime)) . " ms";
 
         echo json_encode($body, JSON_UNESCAPED_UNICODE);
         break;

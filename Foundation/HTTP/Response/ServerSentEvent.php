@@ -197,7 +197,7 @@ class ServerSentEvent extends Response
         $body['version'] = Config::get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = $endTime - Config::get("startTime", $endTime);
+        $body['requiredTime'] = ($endTime - Config::get("startTime", $endTime)) . " ms";
 
         $content = json_encode($body, JSON_UNESCAPED_UNICODE);
         break;
