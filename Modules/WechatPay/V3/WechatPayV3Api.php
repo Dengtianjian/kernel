@@ -171,11 +171,11 @@ class WechatPayV3Api extends WechatPayApi
   protected function signMessage($message)
   {
     if (!file_exists($this->merchant->apiV3PrivateKeyFilePath())) {
-      throw new Error("微信支付处理失败", 500, 500,  "密钥文件不存在");
+      throw new Error("微信支付处理失败", 500, 500, "密钥文件不存在");
     }
     $privateKeyFile = file_get_contents($this->merchant->apiV3PrivateKeyFilePath());
     if (!$privateKeyFile) {
-      throw new Error("微信支付处理失败", 500, 500,  "无法获取到密钥文件内容");
+      throw new Error("微信支付处理失败", 500, 500, "无法获取到密钥文件内容");
     }
     $merchantPrivateKey = openssl_pkey_get_private($privateKeyFile);
     openssl_sign($message, $rawSign, $merchantPrivateKey, 'sha256WithRSAEncryption');
