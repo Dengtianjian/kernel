@@ -40,6 +40,8 @@ use kernel\Foundation\Facade;
  * @method static bool hasMerchant(string $merchantIdOrAlias) 商户是否已登记
  * @method static array getMerchants() 获取全部已登记商户（merchantId => WechatPayMerchant）
  * @method static \kernel\Modules\WechatPay\WechatPayMerchant|null merchant(string $merchantIdOrAlias) 获取商户（按商户号或别名）
+ * @method static string encodeAttach(array $data) 编码 attach 数据为 `键=值&键=值` 字符串（空数据返回空串，超 128 字符抛出 500 错误）
+ * @method static array decodeAttach(string $str) 解码 attach 字符串为数组（与 encodeAttach 互逆）
  * @method static void boot() 启动模块（仅执行一次）
  * @method static void shutdown() 停止模块（仅执行一次）
  */

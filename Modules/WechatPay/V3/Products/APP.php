@@ -47,7 +47,7 @@ class APP extends WechatPayProductApi
 
     $prepay = $this->request("POST", "/v3/pay/transactions/" . $this->product, $body);
     if ($prepay === false) {
-      return false;
+      return $this->forwardBreak();
     }
 
     return $this->payParams($prepay['prepay_id']);

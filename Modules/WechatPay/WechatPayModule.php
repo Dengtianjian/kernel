@@ -2,6 +2,7 @@
 
 namespace kernel\Modules\WechatPay;
 
+use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Module\Module;
 
 /**
@@ -168,6 +169,68 @@ class WechatPayModule extends Module
     $merchantId = $this->aliases[$merchantIdOrAlias] ?? $merchantIdOrAlias;
 
     return $this->merchants[$merchantId] ?? null;
+  }
+
+  // ===================================================================
+  // attach 编解码
+  // ===================================================================
+
+  /**
+   * 编码 attach 数据
+   *
+   * 把数组编码成微信支付 `attach` 字段可接受的字符串：字符串键输出 `键=值`，数值键只输出值本身，
+   * 各片段用 `&` 连接；空数组与非数组一律返回空字符串。
+   *
+   * `attach` 由微信支付原样带回回调，是下单与回调之间唯一的自定义透传通道，通常用来携带业务
+   * 参数（如回调分发的键）。这里按字符数（mb_strlen）校验微信支付的 128 字符上限，超长抛出 500 错误。
+   * 编码不做 URL 转义，键与值按原样拼接。
+   *
+   * 与 {@see decodeAttach()} 互逆。
+   *
+   * @param array $data 待编码的键值数据
+   * @return string 编码结果；无数据时为空字符串
+   */
+  public static function encodeAttach($data)
+  {
+    if (!is_array($data) || empty($data)) return "";
+    $strs = [];
+    foreach ($data as $key => $value) {
+      if (is_numeric($key)) {
+        array_push($strs, $value);
+      } else {
+        array_push($strs, "$key=$value");
+      }
+    }
+    $str = implode("&", $strs);
+    if (mb_strlen($str) > 128) {
+      throw new Error("服务器错误", 500, 500, "微信支付Attach参数长度不允许超出128个字符");
+    }
+    return $str;
+  }
+  /**
+   * 解码 attach 字符串
+   *
+   * 把 {@see encodeAttach()} 产出的字符串还原为数组：片段之间用 `&` 分隔，含 `=` 的片段按
+   * `键 => 值` 归入关联项，不含 `=` 的片段按下标依次追加（对应编码时数值键的匿名项）。
+   *
+   * 输入即微信支付回调里的 `attach` 字段原值，未编码过该字段时为空字符串。
+   *
+   * @param string $str 微信支付回调返回的 attach 字段值
+   * @return array 解码结果
+   */
+  public static function decodeAttach($str)
+  {
+    $data = [];
+    $strs = explode("&", $str);
+    foreach ($strs as $str) {
+      if (strpos($str, "=") === false) {
+        array_push($data, $str);
+      } else {
+        list($key, $value) = explode("=", $str);
+        $data[$key] = $value;
+      }
+    }
+    return $data;
   }
 
   // ===================================================================
