@@ -490,7 +490,7 @@ class DiscuzXMember
     }
     $CUGM = new DiscuzXSystemModel("common_usergroup");
     if ($simple) {
-      $CUGM->field("groupid", "grouptitle", "icon", "color");
+      $CUGM->addSelect("groupid", "grouptitle", "icon", "color");
     }
     include_once libfile("function/group");
     $memberGroups = $CUGM->where([
