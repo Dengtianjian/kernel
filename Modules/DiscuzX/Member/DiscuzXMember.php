@@ -609,6 +609,7 @@ class DiscuzXMember
       }
       $builder->where("username", $accurateQuery ? '=' : "LIKE", $userQueryValue);
     }
+
     $list = $builder->paginate();
 
     return $list;

@@ -132,7 +132,7 @@ use kernel\Foundation\Database\RDB\Relation\Relation;
  * @method array                         pluck(string $column, string|null $indexKey = null, array $params = [])
  * @method \kernel\Foundation\Database\RDB\Paginator paginate(array $params = [])
  * @method \kernel\Foundation\Database\RDB\Statement raw(mixed $sql)
- * @method string                        getSQL()
+ * @method string                        getSql()
  * @method array                         getBindings()
  * @method string                        writeSql(string $type, array|null $data = null, array $options = [])
  * ------------------------------------------------------------------

@@ -69,7 +69,7 @@ class Query extends AbilityBaseObject
    * 当前 SQL 操作类型
    * 
    * 可选值: 'select' | 'insert' | 'replace' | 'update' | 'delete'
-   * 决定 generateSQL() 生成的 SQL 语句类型
+   * 决定 generateSql() 生成的 SQL 语句类型
    * 
    * @var string
    */
@@ -113,7 +113,7 @@ class Query extends AbilityBaseObject
   /**
    * 可空过滤条件集合
    * 
-   * 存入此数组的条件会在 generateSQL() 生成 WHERE 子句之前剔除值为空的条目
+   * 存入此数组的条件会在 generateSql() 生成 WHERE 子句之前剔除值为空的条目
    * 
    * @var array
    */
@@ -152,7 +152,7 @@ class Query extends AbilityBaseObject
   /**
    * 当前构建的 SQL 语句
    * 
-   * 由 generateSQL() 生成并缓存，供执行方法使用
+   * 由 generateSql() 生成并缓存，供执行方法使用
    * 
    * @var string
    */
@@ -479,26 +479,26 @@ class Query extends AbilityBaseObject
   // ===================================================================
   // SQL 生成
   // ===================================================================
-  // generateSQL() 根据 executeType 与 options 拼装完整 SQL；
-  // getSQL() 取其结果用于调试；writeSql() 供外部设置写操作状态后取 SQL 自行执行。
+  // generateSql() 根据 executeType 与 options 拼装完整 SQL；
+  // getSql() 取其结果用于调试；writeSql() 供外部设置写操作状态后取 SQL 自行执行。
 
   /**
    * 获取当前查询对应的 SQL 语句（调试用）
    * 
-   * 调用 generateSQL() 返回完整 SQL 字符串，可用于日志记录或调试。
+   * 调用 generateSql() 返回完整 SQL 字符串，可用于日志记录或调试。
    * 注意：返回的 SQL 中包含占位符，不会替换为实际值。
    * 
    * @return string 生成的 SQL 语句（含占位符）
    * 
    * @example
-   * $sql = Query::table('users')->where('status', 'active')->getSQL();
+   * $sql = Query::table('users')->where('status', 'active')->getSql();
    * // SELECT * FROM `users` WHERE `status` = :__bind_0
    * 
-   * @see generateSQL() 内部 SQL 生成逻辑
+   * @see generateSql() 内部 SQL 生成逻辑
    */
-  function getSQL()
+  function getSql()
   {
-    return $this->generateSQL();
+    return $this->generateSql();
   }
 
   /**
@@ -515,7 +515,7 @@ class Query extends AbilityBaseObject
    * 
    * @note DELETE 操作不使用 LIMIT/OFFSET，以防止误删超过预期数量的记录
    */
-  protected function generateSQL()
+  protected function generateSql()
   {
     $this->sql = "";
 
@@ -523,7 +523,7 @@ class Query extends AbilityBaseObject
       $this->executeType = "select";
     }
 
-    $SQLs = [
+    $sqls = [
       "execute" => null,
       "from" => null,
       "join" => null,
@@ -543,31 +543,31 @@ class Query extends AbilityBaseObject
     }
 
     if ($this->options['select']) {
-      $SQLs['field'] = Statement::selectField($this->options['select']['fields'], $this->options['select']['distinct']);
+      $sqls['field'] = Statement::selectField($this->options['select']['fields'], $this->options['select']['distinct']);
     }
 
     switch ($this->executeType) {
       case "select":
-        $SQLs['from'] = "FROM {$from}";
+        $sqls['from'] = "FROM {$from}";
 
-        $SQLs['field'] = $SQLs['field'] ?: "*";
-        $SQLs['execute'] = "SELECT {$SQLs['field']}";
-        $SQLs['field'] = null;
+        $sqls['field'] = $sqls['field'] ?: "*";
+        $sqls['execute'] = "SELECT {$sqls['field']}";
+        $sqls['field'] = null;
         break;
       case "insert":
       case "replace":
-        $SQLs['execute'] = Statement::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
+        $sqls['execute'] = Statement::insert($from, $this->options['insertData'], $this->executeType === "replace", $this->options['insertIsIgnore'] ?? false);
         break;
       case "update":
-        $SQLs['execute'] = Statement::update($from, $this->options['updateData']);
+        $sqls['execute'] = Statement::update($from, $this->options['updateData']);
         break;
       case "delete":
-        $SQLs['execute'] = Statement::delete($from, $this->sql);
+        $sqls['execute'] = Statement::delete($from, $this->sql);
         break;
     }
 
     if (!empty($this->options['joins']) && $this->executeType === 'select') {
-      $SQLs['join'] = Statement::join($this->options['joins']);
+      $sqls['join'] = Statement::join($this->options['joins']);
     }
 
     // INSERT / REPLACE 不支持 WHERE 子句，忽略任何残留条件
@@ -581,29 +581,29 @@ class Query extends AbilityBaseObject
 
         if (count($this->options['conditions'])) {
           $whereSql = Statement::where($this->options['conditions']);
-          $SQLs['condition'] = $this->executeType ? "WHERE {$whereSql}" : $whereSql;
+          $sqls['condition'] = $this->executeType ? "WHERE {$whereSql}" : $whereSql;
         }
       }
     }
 
     if (!empty($this->options['orders'])) {
-      $SQLs['order'] = Statement::order($this->options['orders']);
+      $sqls['order'] = Statement::order($this->options['orders']);
     }
     if ($this->options['pagination'] && $this->executeType != "delete") {
       if (!is_null($this->options['pagination']['limit']) || !is_null($this->options['pagination']['offset'])) {
-        $SQLs['pagination'] = Statement::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
+        $sqls['pagination'] = Statement::pagination($this->options['pagination']['limit'], $this->options['pagination']['offset']);
       }
     }
 
     if ($this->options['groupBy']) {
-      $SQLs['groupBy'] = Statement::groupBy($this->options['groupBy']);
+      $sqls['groupBy'] = Statement::groupBy($this->options['groupBy']);
     }
 
-    $SQLs = array_filter($SQLs, function ($item) {
+    $sqls = array_filter($sqls, function ($item) {
       return $item;
     });
 
-    return join(" ", $SQLs);
+    return join(" ", $sqls);
   }
 
   /**
@@ -627,7 +627,7 @@ class Query extends AbilityBaseObject
     } elseif ($type === 'update') {
       $this->options['updateData'] = $data;
     }
-    return $this->generateSQL();
+    return $this->generateSql();
   }
 
   // ===================================================================
@@ -677,13 +677,13 @@ class Query extends AbilityBaseObject
    * ->from('users', 'u')
    * 
    * @param string $tableName 表名
-   * @param string|null $ASName 表别名（可选）
+   * @param string|null $asName 表别名（可选）
    * @return $this
    */
-  function from($tableName, $ASName = null)
+  function from($tableName, $asName = null)
   {
     $this->options['from']['tableName'] = $tableName;
-    $this->options['from']['asName'] = $ASName;
+    $this->options['from']['asName'] = $asName;
     return $this;
   }
 
@@ -699,13 +699,13 @@ class Query extends AbilityBaseObject
    * }, 'subquery')
    * 
    * @param callable|Query $callableOrQuery 子查询或闭包
-   * @param string|null $ASName 子查询别名（可选）
+   * @param string|null $asName 子查询别名（可选）
    * @return $this
    */
-  function fromSub($callableOrQuery, $ASName = null)
+  function fromSub($callableOrQuery, $asName = null)
   {
     $this->options['from']['tableName'] = $callableOrQuery;
-    $this->options['from']['asName'] = $ASName;
+    $this->options['from']['asName'] = $asName;
 
     return $this;
   }
@@ -825,16 +825,16 @@ class Query extends AbilityBaseObject
    * // 使用计算字段
    * ->selectRaw('price * quantity as total_price')
    * 
-   * @param string $columnSQL 原始SQL字段表达式
+   * @param string $columnSql 原始SQL字段表达式
    * @return $this
    */
-  function selectRaw($columnSQL)
+  function selectRaw($columnSql)
   {
     $this->executeType = "select";
 
     $this->options['select']['fields'][] = [
       "type" => "raw",
-      "value" => $columnSQL
+      "value" => $columnSql
     ];
 
     return $this;
@@ -867,7 +867,7 @@ class Query extends AbilityBaseObject
       if ($fieldItem instanceof Statement) {
         return [
           "type" => "raw",
-          "value" => $fieldItem->getSQL()
+          "value" => $fieldItem->getSql()
         ];
       } else if (is_string($fieldItem)) {
         if (preg_match("/\s(as|AS)\s/", $fieldItem) || preg_match("/,/", $fieldItem)) {
@@ -1029,13 +1029,13 @@ class Query extends AbilityBaseObject
    * // 使用复杂排序条件
    * ->orderByRaw('FIELD(status, "active", "pending", "inactive")')
    * 
-   * @param string $rawSQL 原始SQL排序表达式
+   * @param string $rawSql 原始SQL排序表达式
    * @return $this
    */
-  function orderByRaw($rawSQL)
+  function orderByRaw($rawSql)
   {
     $this->options['orders'][] = [
-      "field" => $rawSQL,
+      "field" => $rawSql,
       "by" => null,
       "type" => "raw"
     ];
@@ -1114,16 +1114,16 @@ class Query extends AbilityBaseObject
    * // 使用表达式分组
    * ->groupByRaw('CASE WHEN price > 100 THEN "premium" ELSE "standard" END')
    * 
-   * @param string $rawSQL 原始 SQL 分组表达式
+   * @param string $rawSql 原始 SQL 分组表达式
    * @return $this 返回当前实例以支持链式调用
    * 
    * @note 使用原始 SQL 时需要注意 SQL 注入风险，确保传入的 SQL 是安全的
    * @see groupBy() 实际处理分组的核心方法
    * @see Statement 自定义 SQL 表达式类
    */
-  function groupByRaw($rawSQL)
+  function groupByRaw($rawSql)
   {
-    return $this->groupBy(new Statement($rawSQL));
+    return $this->groupBy(new Statement($rawSql));
   }
 
   // ===================================================================
@@ -1264,23 +1264,23 @@ class Query extends AbilityBaseObject
    * echo "共 {$paginator->getTotal()} 条记录";
    * 
    * @note 内部通过克隆查询实例执行 COUNT，不会影响原查询条件
+   * @note 总数统计会剔除 limit/offset/order；GROUP BY / DISTINCT 时由 {@see count()} 包一层子查询
    * @note 页码通过 offset / limit 反算得出，仅作估算参考
    * @see page() 设置分页参数
    * @see Paginator 分页结果封装类
    */
   function paginate($params = [])
   {
-    $TotalQuery = clone $this;
-    $TotalQuery->reset();
-    $Total = $TotalQuery->count("*", $params);
+    //* 分页与排序在 count() 内部已剔除（含 GROUP BY / DISTINCT 的子查询处理），这里直接克隆统计
+    $total = (clone $this)->count("*", $params);
 
     $perPage = $this->options['pagination']['limit'] ?: 10;
     $offset = $this->options['pagination']['offset'] ?: 0;
     $page = ($offset / $perPage) + 1; // 简单推算当前页
 
-    $Items = $this->get($params);
+    $items = $this->get($params);
 
-    return new Paginator($Items, $page, $perPage, $Total);
+    return new Paginator($items, $page, $perPage, $total ? (int)$total : 0);
   }
 
   // ===================================================================
@@ -2394,7 +2394,7 @@ class Query extends AbilityBaseObject
       $this->limit(1);
     }
 
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
     $data = $this->databaseDriver->fetch($this->sql, $this->mergeBindings($params));
 
     if ($originLimit === null) {
@@ -2457,7 +2457,7 @@ class Query extends AbilityBaseObject
   function get($params = [])
   {
     $this->executeType = "select";
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
 
     $data = $this->databaseDriver->fetchAll($this->sql, $this->mergeBindings($params));
 
@@ -2494,7 +2494,7 @@ class Query extends AbilityBaseObject
       $this->addSelect($indexKey);
 
     $this->executeType = "select";
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
 
     $data = $this->databaseDriver->fetchAll($this->sql, $this->mergeBindings($params));
 
@@ -2524,23 +2524,23 @@ class Query extends AbilityBaseObject
   function cursor($params = [])
   {
     $this->executeType = "select";
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
 
     /**
      * @var \PDOStatement
      */
-    $PDOStatement = $this->databaseDriver->prepare($this->sql, [
+    $pdoStatement = $this->databaseDriver->prepare($this->sql, [
       \PDO::ATTR_CURSOR => \PDO::CURSOR_SCROLL
     ]);
 
     $allParams = $this->mergeBindings($params);
     if (!empty($allParams)) {
-      $this->databaseDriver->bindValues($PDOStatement, $allParams);
+      $this->databaseDriver->bindValues($pdoStatement, $allParams);
     }
 
-    $PDOStatement->execute();
+    $pdoStatement->execute();
 
-    while ($record = $PDOStatement->fetch(\PDO::FETCH_ASSOC)) {
+    while ($record = $pdoStatement->fetch(\PDO::FETCH_ASSOC)) {
       yield $record;
     }
   }
@@ -2728,6 +2728,11 @@ class Query extends AbilityBaseObject
   private function aggregate($func, $column, $params = [])
   {
     $query = clone $this;
+    //* 聚合结果与原有选列无关：不清空的话 SELECT 首列会抢占 Arr::first()，取到的不是聚合值
+    $query->options['select']['fields'] = [];
+    //* 排序与分页对聚合无意义：ORDER BY 白排一次序，LIMIT/OFFSET 还会让聚合查询一行都取不到
+    $query->options['orders'] = [];
+    $query->options['pagination'] = ["limit" => null, "offset" => null];
     $query->addSelect($query->raw("{$func}({$column})"));
     $data = $query->first($params);
     return $data === false ? false : Arr::first($data);
@@ -2753,11 +2758,50 @@ class Query extends AbilityBaseObject
    * @return int|string|false 返回统计数量；无匹配记录时返回 0，查询失败返回 false
    * 
    * @note 此方法会修改 SELECT 子句，添加 COUNT 聚合函数
+   * @note GROUP BY / DISTINCT 查询会包一层子查询统计行数（前者得到分组数、后者得到去重后的行数），
+   *       此时 $column 不参与统计
+   * @note 统计时忽略 limit/offset/order：分页与排序对总数没有意义
    * @see raw() 用于创建原始 SQL 表达式
    */
   function count($column = "*", $params = [])
   {
+    //* 一条 COUNT(*) 数的是「行」，而 GROUP BY 后一行是一组、DISTINCT 后需要去重，
+    //* 两者都不能直接套聚合，必须把原查询整体包成派生表再数行数
+    if ($this->options['groupBy'] || $this->options['select']['distinct']) {
+      return $this->countBySubQuery($params);
+    }
+
     return $this->aggregate("COUNT", $column, $params);
+  }
+  /**
+   * 通过子查询统计行数
+   *
+   * 把当前查询原样包成派生表（`SELECT COUNT(*) FROM (原查询) AS __count`）：GROUP BY 时
+   * 得到分组数量、DISTINCT 时得到去重后的行数，与 {@see get()} 取到的行数口径一致。
+   * 分页与排序对总数没有意义，在内层清掉。
+   *
+   * @param array $params 预处理参数
+   * @return int|string|false 统计数量；查询失败返回 false
+   *
+   * @see count() 唯一调用方
+   */
+  private function countBySubQuery($params = [])
+  {
+    $innerQuery = clone $this;
+    $innerQuery->executeType = "select";
+    $innerQuery->options['orders'] = [];
+    $innerQuery->options['pagination'] = ["limit" => null, "offset" => null];
+    //* 只做分组时不关心选列，换成常量 1：保留 SELECT * 在 ONLY_FULL_GROUP_BY 下会报错
+    if (!$innerQuery->options['select']['distinct']) {
+      $innerQuery->options['select']['fields'] = [["type" => "raw", "value" => "1"]];
+    }
+
+    $countQuery = new Query(null, $this->databaseDriver);
+    $countQuery->fromSub($innerQuery, "__count");
+    //* 内层条件的占位符写在子查询 SQL 里，绑定值必须一并带到外层执行
+    $countQuery->addBindings($innerQuery->bindings);
+
+    return $countQuery->aggregate("COUNT", "*", $params);
   }
 
   /**
@@ -2880,7 +2924,7 @@ class Query extends AbilityBaseObject
   private function checkExists($not, $params = [])
   {
     $this->executeType = "select";
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
     $prefix = $not ? "NOT EXISTS" : "EXISTS";
     $this->sql = "SELECT {$prefix}({$this->sql}) as exist";
     $data = $this->databaseDriver->fetch($this->sql, $this->mergeBindings($params));
@@ -2946,7 +2990,7 @@ class Query extends AbilityBaseObject
    */
   private function executeWrite($params = [])
   {
-    $this->sql = $this->generateSQL();
+    $this->sql = $this->generateSql();
     $allParams = $this->mergeBindings($params);
     $result = empty($allParams)
       ? $this->databaseDriver->query($this->sql)

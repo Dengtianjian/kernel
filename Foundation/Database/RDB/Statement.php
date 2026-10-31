@@ -103,7 +103,7 @@ class Statement
    * 获取 SQL
    * @return string|null
    */
-  function getSQL()
+  function getSql()
   {
     return $this->baseSQL;
   }
@@ -140,9 +140,9 @@ class Statement
         $target = serialize($target);
       }
     } else if ($target instanceof Query) {
-      $target = "(" . $target->getSQL() . ")";
+      $target = "(" . $target->getSql() . ")";
     } else if ($target instanceof Statement) {
-      $target = $target->getSQL();
+      $target = $target->getSql();
     } else if (is_null($target)) {
       $target = "NULL";
     }
@@ -193,9 +193,9 @@ class Statement
     } else if (isSafeCallable($from)) {
       $subQuery = new Query();
       $from($subQuery);
-      $from = "({$subQuery->getSQL()})";
+      $from = "({$subQuery->getSql()})";
     } else if ($from instanceof Query) {
-      $subQuery = $from->getSQL();
+      $subQuery = $from->getSql();
       $from = "($subQuery)";
     }
 
@@ -281,7 +281,7 @@ class Statement
           case "comparsion":
             $column = $ConditionItem['column'];
             if ($column instanceof Statement) {
-              $column = $column->getSQL();
+              $column = $column->getSql();
             }
 
             $value = $ConditionItem['value'];
@@ -290,9 +290,9 @@ class Statement
               if (isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
-                $value = $subQuery->getSQL();
+                $value = $subQuery->getSql();
               } else {
-                $value = $value->getSQL();
+                $value = $value->getSql();
               }
               $value = "({$value})";
             } else if (is_array($value)) {
@@ -322,9 +322,9 @@ class Statement
             if (isSafeCallable($value)) {
               $subQuery = new Query();
               $value($subQuery);
-              $value = $subQuery->getSQL();
+              $value = $subQuery->getSql();
             } else if ($value instanceof Query) {
-              $value = $value->getSQL();
+              $value = $value->getSql();
             }
             $statement = "({$value})";
             break;
@@ -360,9 +360,9 @@ class Statement
                 } else if (isSafeCallable($value)) {
                   $subQuery = new Query();
                   $value($subQuery);
-                  $value = $subQuery->getSQL();
+                  $value = $subQuery->getSql();
                 } else if ($value instanceof Query) {
-                  $value = $value->getSQL();
+                  $value = $value->getSql();
                 } else {
                   $value = self::format($ConditionItem['value'], "'");
                 }
@@ -401,9 +401,9 @@ class Statement
               if (isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
-                $value = $subQuery->getSQL();
+                $value = $subQuery->getSql();
               } else if ($value instanceof Query) {
-                $value = $value->getSQL();
+                $value = $value->getSql();
               }
 
               $statement = "{$ConditionItem['funcName']}({$value})";
@@ -435,7 +435,7 @@ class Statement
     foreach ($orders as $orderItem) {
       if ($orderItem['type'] === 'general') {
         if ($orderItem['field'] instanceof Statement) {
-          $OrderSQLs[] = $orderItem['field']->getSQL();
+          $OrderSQLs[] = $orderItem['field']->getSql();
         } else {
           // 整数按结果集列位排序（ORDER BY 1）；字符串走统一格式化，正确拆分 table.column
           $field = is_int($orderItem['field']) ? $orderItem['field'] : self::format($orderItem['field']);
@@ -474,12 +474,12 @@ class Statement
   static function pagination($limit = null, $offset = null)
   {
     if (!is_null($limit) && $limit instanceof Statement) {
-      $limit = $limit->getSQL();
+      $limit = $limit->getSql();
     } else if (!is_null($limit)) {
       $limit = (int) $limit;
     }
     if (!is_null($offset) && $offset instanceof Statement) {
-      $offset = $offset->getSQL();
+      $offset = $offset->getSql();
     } else if (!is_null($offset)) {
       $offset = (int) $offset;
     }
@@ -648,11 +648,11 @@ class Statement
             $fieldSQLs[] = $item['value'];
           } else if ($item['type'] === "sub") {
             if ($item['value'] instanceof Query) {
-              $item['value'] = $item['value']->getSQL();
+              $item['value'] = $item['value']->getSql();
             } else if (isSafeCallable($item['value'])) {
               $query = new Query();
               $item['value']($query);
-              $item['value'] = $query->getSQL();
+              $item['value'] = $query->getSql();
             }
 
             $fieldSQLs[] = "({$item['value']}) AS {$item['asName']}";
