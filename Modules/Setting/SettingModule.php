@@ -2,9 +2,7 @@
 
 namespace kernel\Modules\Setting;
 
-use kernel\Foundation\Config;
 use kernel\Foundation\Module\Module;
-use kernel\Modules\DiscuzX\Model\DiscuzXSettingsModel;
 
 class SettingModule extends Module
 {

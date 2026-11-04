@@ -6,7 +6,7 @@ use kernel\Foundation\App;
 use kernel\Foundation\Config;
 use kernel\Foundation\Database\RDB\Model;
 use kernel\Foundation\Module\Module;
-use kernel\Modules\DiscuzX\Middleware\GlobalDiscuzXAuthMiddleware;
+use kernel\DiscuzX\Middleware\GlobalDiscuzXAuthMiddleware;
 
 /**
  * 认证模块
