@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\Auth;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 
 /**
  * Auth 门面

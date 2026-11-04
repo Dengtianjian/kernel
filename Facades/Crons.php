@@ -2,7 +2,7 @@
 
 namespace kernel\Facades;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 use kernel\Foundation\Crontab\Crons as CronsManager;
 use kernel\Foundation\FileSystem\Path;
 

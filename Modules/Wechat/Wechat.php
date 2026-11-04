@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\Wechat;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 
 /**
  * 微信模块门面（Facade）

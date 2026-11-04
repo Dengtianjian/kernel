@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\Setting;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 
 /**
  * 设置模块门面（Facade，单例）

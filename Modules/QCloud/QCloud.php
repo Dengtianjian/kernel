@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\QCloud;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 
 /**
  * 腾讯云模块门面（Facade）

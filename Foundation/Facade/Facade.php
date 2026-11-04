@@ -1,6 +1,6 @@
 <?php
 
-namespace kernel\Foundation;
+namespace kernel\Foundation\Facade;
 
 /**
  * 门面基类
@@ -146,6 +146,30 @@ abstract class Facade
   public static function clearInstance()
   {
     unset(static::$registry[static::class]);
+  }
+
+  /**
+   * 包装任意类为门面代理（无需手动实例化）
+   *
+   * 返回 {@see FacadeProxy}，调用方可直接在其上以「方法调用」形式使用目标类的实例方法，
+   * 底层自动单例化目标类（同一类名首次实例化后复用）。
+   *
+   * 示例：
+   * ```php
+   * Facade::of(SomeService::class)->doSomething($a);
+   * Facade::of(SomeService::class, $dep)->run(); // 构造参数仅首次实例化生效
+   * ```
+   *
+   * 与 {@see __callStatic()}（门面子类的静态转发）相互独立：本方法不要求目标类继承
+   * {@see Facade}，也不要求方法是 static，直接对任意类生效。
+   *
+   * @param string $class 目标类名（完整命名空间）
+   * @param mixed  ...$args 目标类构造参数（仅首次实例化生效）
+   * @return FacadeProxy
+   */
+  public static function of(string $class, ...$args)
+  {
+    return new FacadeProxy($class, $args);
   }
 
   /**

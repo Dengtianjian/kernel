@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\WechatPay;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 
 /**
  * 微信支付模块门面（Facade）

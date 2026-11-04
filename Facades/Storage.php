@@ -2,7 +2,7 @@
 
 namespace kernel\Facades;
 
-use kernel\Foundation\Facade;
+use kernel\Foundation\Facade\Facade;
 use kernel\Foundation\FileSystem\Storage\FileStorage;
 use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
 
@@ -146,7 +146,7 @@ use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
  *
  * @see \kernel\Foundation\FileSystem\Storage\FileStorage 底层存储聚合类（含全部实现与常量）
  * @see \kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage 磁盘驱动抽象（本地 / COS / OSS / FTP）
- * @see \kernel\Foundation\Facade 门面基类（setInstance / getInstance / clearInstance / __callStatic）
+ * @see \kernel\Foundation\Facade\Facade 门面基类（setInstance / getInstance / clearInstance / __callStatic）
  */
 class Storage extends Facade
 {
