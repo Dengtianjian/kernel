@@ -22,7 +22,7 @@ use kernel\Foundation\Result;
  *
  * @property boolean $error 是否有错误
  */
-class AbilityBaseObject extends BaseObject
+class AbilityBaseObject extends AppBaseObject
 {
   /**
    * 是否有错误

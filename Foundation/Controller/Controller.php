@@ -7,6 +7,7 @@ use kernel\Foundation\Data\Serializer;
 use kernel\Foundation\Data\Transform;
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\Object\AppBaseObject;
 
 /**
  * 控制器基类
@@ -51,7 +52,7 @@ use kernel\Foundation\HTTP\Response;
  * - `$this->success($data)` → 成功响应
  * - `$this->fail($statusCode, $code, $message)` → 错误响应
  */
-class Controller
+class Controller extends AppBaseObject
 {
   // region 请求参数处理
 
