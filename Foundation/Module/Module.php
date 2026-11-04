@@ -29,7 +29,6 @@ class Module extends AbilityBaseObject
    * @var bool
    */
   protected $booted = false;
-
   /**
    * 构建模块
    *

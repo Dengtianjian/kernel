@@ -1082,7 +1082,7 @@ class Model extends Table
   public function discuzTableName($tableName)
   {
     if (strpos($tableName, "gstudio") === false) {
-      $tableName = implode("_", [getApp()::id()]);
+      $tableName = implode("_", [$this->belongAppId()]);
     }
     return \DB::table($tableName);
   }

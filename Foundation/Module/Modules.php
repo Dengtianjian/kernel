@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Module;
 
+use kernel\Foundation\Object\AbilityBaseObject;
+
 /**
  * 模块管理器
  *
@@ -11,7 +13,7 @@ namespace kernel\Foundation\Module;
  * 注：本类不持有 App 实例 —— 模块若需访问应用，用全局的 `getApp()` / `App::getInstance()`
  * （避免 App 与 Modules 相互持有）。因此构造函数无需任何参数。
  */
-class Modules
+class Modules extends AbilityBaseObject
 {
   /**
    * 已装载的模块列表（模块名 => 实例）

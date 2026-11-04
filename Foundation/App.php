@@ -648,6 +648,36 @@ class App
     return $app === null ? null : $app->kernelId;
   }
   /**
+   * 通过类名 / 对象 / 命名空间字符串解析所属应用的 ID（appId）
+   *
+   * 入参支持三种形态，统一归一为「完整类名」后取命名空间第一段作为 appId：
+   * - 对象：`get_class()` 取完整类名；
+   * - 类名字符串（含命名空间，如 `gstudio_download\Services\DownloadFileService`）；
+   * - 纯命名空间字符串（如 `gstudio_super_app\Model`）。
+   *
+   * 命名空间第一段即应用 ID（目录名）：
+   * - `gstudio_download\Services\DownloadFileService` → `gstudio_download`
+   * - `gstudio_super_app\Model\SuperAppFilesModel`  → `gstudio_super_app`
+   * - `kernel\Foundation\...`                        → `kernel`（由 DiscuzX 环境覆写加前缀）
+   *
+   * 用途：子系统复用主系统的类时，kernel 内部需要按「某个类所属的应用」而非「默认应用」
+   * 来决定表名前缀、签名密钥、URL 的 id 参数等。
+   *
+   * @param object|string $class 对象、完整类名或命名空间字符串
+   * @return string|null 命名空间第一段（应用 ID）；入参无法解析时返回 null
+   */
+  public static function appIdFromNamespace($class)
+  {
+    //* 对象 → 取完整类名；字符串原样使用
+    $target = is_object($class) ? get_class($class) : (string)$class;
+
+    if ($target === "") {
+      return null;
+    }
+
+    return explode("\\", ltrim($target, "\\"))[0];
+  }
+  /**
    * 获取当前运行模式（mode）
    *
    * 读取配置的 "mode" 键（Config::get("mode", "production")），未配置或未加载配置时默认 "production"。
