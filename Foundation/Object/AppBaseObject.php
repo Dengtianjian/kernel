@@ -15,13 +15,13 @@ use kernel\Foundation\App;
  * 这些类拿到的 app 就是 super_app —— 等价于两个应用各自在跑。
  *
  * 提供两个维度的归属查询（各取所需）：
- * - {@see app()}  ：返回「当前默认应用」实例（装配上下文，经 {@see getApp()}）；
+ * - {@see belongApp()}  ：返回「当前默认应用」实例（装配上下文，经 {@see getApp()}）；
  *   表示「这一段装配是在为哪个应用服务」。
- * - {@see appId()}：返回「类自身所属应用」的 ID（经 {@see App::appIdFromNamespace(static::class)}）；
+ * - {@see belongAppId()}：返回「类自身所属应用」的 ID（经 {@see App::appIdFromNamespace(static::class)}）；
  *   表示「这个类定义在哪个插件」，与运行时的装配上下文无关。
  *
  * 继承关系：BaseObject → AppBaseObject → AbilityBaseObject →（Table/Model/Module/Service/...）
- * 所有走 AbilityBaseObject 链的基类自动获得 app()/appId()；Controller 直接继承本类。
+ * 所有走 AbilityBaseObject 链的基类自动获得 belongApp()/belongAppId()；Controller 直接继承本类。
  */
 class AppBaseObject extends BaseObject
 {
@@ -33,7 +33,7 @@ class AppBaseObject extends BaseObject
    *
    * @return App|null 默认应用实例；无可用实例时返回 null
    */
-  public function app()
+  public function belongApp()
   {
     return getApp();
   }
@@ -50,7 +50,7 @@ class AppBaseObject extends BaseObject
    *
    * @return string|null 应用 ID；无法识别时返回 null
    */
-  public function appId()
+  public function belongAppId()
   {
     return App::appIdFromNamespace(static::class);
   }
