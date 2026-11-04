@@ -12,8 +12,5 @@ class IndexController extends Controller
 
     parent::__construct($R);
   }
-  public function data()
-  {
- 
-  }
+  public function data() {}
 }
