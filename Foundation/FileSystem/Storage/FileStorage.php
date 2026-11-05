@@ -137,7 +137,7 @@ class FileStorage extends AbilityBaseObject
    */
   public function __construct($disks)
   {
-    $this->signature = new StorageSignature($this->belongAppId());
+    $this->signature = new StorageSignature(getApp()->id());
 
     $this->disks = $disks;
 
