@@ -293,7 +293,7 @@ class StorageURL extends URL
 
     if (Config::inDiscuzX()) {
       $this->pathName = "plugin.php";
-      $queryParams["id"] = $this->storage->belongAppId();
+      $queryParams["id"] = getApp()->id();
       $queryParams["uri"] = $pathName;
     } else {
       $this->pathName = $pathName;

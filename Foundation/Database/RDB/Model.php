@@ -2,6 +2,7 @@
 
 namespace kernel\Foundation\Database\RDB;
 
+use kernel\Foundation\App;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\RDB\Relation\HasOne;
 use kernel\Foundation\Database\RDB\Relation\HasMany;
@@ -1079,10 +1080,23 @@ class Model extends Table
   // discuz 适配
   // ===================================================================
 
+  /**
+   * 拼出 DiscuzX 环境下的真实表名
+   *
+   * Discuz 的表名由「应用 ID + 表名」组成（如 `gstudio_super_app_files`），应用 ID 取
+   * 当前运行应用（{@see App::id()}，即默认应用）。
+   *
+   * 需要读写**别的应用**的表时（例如子系统读主系统 super_app 的文件表 / 设置表），
+   * 不要指望这里自动推断，直接在构造模型时把完整表名传进去——表名里已含 `gstudio`
+   * 前缀，本方法会原样透传。
+   *
+   * @param string $tableName 模型声明的裸表名（如 `files`），或调用方给定的完整表名
+   * @return string 带 Discuz 表前缀的完整表名
+   */
   public function discuzTableName($tableName)
   {
     if (strpos($tableName, "gstudio") === false) {
-      $tableName = implode("_", [$this->belongAppId()]);
+      $tableName = implode("_", [App::id(), $tableName]);
     }
     return \DB::table($tableName);
   }
