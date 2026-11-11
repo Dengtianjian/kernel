@@ -3,9 +3,10 @@
 namespace kernel\Foundation\Database\RDB;
 
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Func;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Error;
-use kernel\Foundation\Output;
+use kernel\Support\Output;
 
 
 /**
@@ -190,7 +191,7 @@ class Statement
       } else {
         $from = Statement::format($from);
       }
-    } else if (isSafeCallable($from)) {
+    } else if (Func::isSafeCallable($from)) {
       $subQuery = new Query();
       $from($subQuery);
       $from = "({$subQuery->getSql()})";
@@ -286,8 +287,8 @@ class Statement
 
             $value = $ConditionItem['value'];
 
-            if (isSafeCallable($value) || $value instanceof Query) {
-              if (isSafeCallable($value)) {
+            if (Func::isSafeCallable($value) || $value instanceof Query) {
+              if (Func::isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
                 $value = $subQuery->getSql();
@@ -319,7 +320,7 @@ class Statement
           //* 子查询
           case "sub":
             $value = $ConditionItem['value'];
-            if (isSafeCallable($value)) {
+            if (Func::isSafeCallable($value)) {
               $subQuery = new Query();
               $value($subQuery);
               $value = $subQuery->getSql();
@@ -357,7 +358,7 @@ class Statement
                 $value = $ConditionItem['value'];
                 if (is_array($value)) {
                   $value = join(", ", self::batchFormat($ConditionItem['value'], "'"));
-                } else if (isSafeCallable($value)) {
+                } else if (Func::isSafeCallable($value)) {
                   $subQuery = new Query();
                   $value($subQuery);
                   $value = $subQuery->getSql();
@@ -398,7 +399,7 @@ class Statement
               ]);
             } else if (in_array($ConditionItem['funcName'], ["EXISTS", "NOT EXISTS"], true)) {
               $value = $ConditionItem['value'];
-              if (isSafeCallable($value)) {
+              if (Func::isSafeCallable($value)) {
                 $subQuery = new Query();
                 $value($subQuery);
                 $value = $subQuery->getSql();
@@ -649,7 +650,7 @@ class Statement
           } else if ($item['type'] === "sub") {
             if ($item['value'] instanceof Query) {
               $item['value'] = $item['value']->getSql();
-            } else if (isSafeCallable($item['value'])) {
+            } else if (Func::isSafeCallable($item['value'])) {
               $query = new Query();
               $item['value']($query);
               $item['value'] = $query->getSql();

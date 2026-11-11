@@ -328,11 +328,11 @@ class Route
    *
    * @param string $name   路由名
    * @param array  $params 路由参数
-   * @return \kernel\Foundation\Result 302 重定向响应
+   * @return \kernel\Support\Result 302 重定向响应
    */
   static function redirect($name, $params = [])
   {
     $url = self::url($name, $params);
-    return \kernel\Foundation\Result::failed(null, "重定向", 302)->header("Location", $url);
+    return \kernel\Support\Result::failed(null, "重定向", 302)->header("Location", $url);
   }
 }

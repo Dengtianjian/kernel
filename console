@@ -24,10 +24,8 @@ use kernel\Foundation\Console\Console;
 use kernel\Setup\Console\Bootstrap;
 
 //* 命令由 Console 统一注册（不再经 Router），CLI 按命令名分发，不解析 URI（Request 的 URI 即命令名）
-$console = new Console("kernel");
-
-//* 应用装配：注册内核命令（setup() 必须在 run() 之前调用）
-$console->setup(Bootstrap::class);
+//* 构造即装配：第一个参数是装配类（装配失败时走 CLI 的异常输出路径）；appId / kernelId 默认都是 kernel
+$console = new Console(Bootstrap::class);
 
 //* 执行命令分发，并以退出码结束（Console::run 内部调用 handle 后 exit）
 $console->run();

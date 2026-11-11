@@ -3,12 +3,10 @@
 namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\App;
-
 /**
  * 生成控制器命令
  *
- * 命令名 make:controller 在 kernel/console 中注册（Console::register）。
+ * 命令名 make:controller 在 kernel/console 中注册（Console::addCommand）。
  *
  * 用法：
  *   php kernel/console make:controller User          // 生成 UserController
@@ -39,7 +37,7 @@ class MakeControllerCommand extends MakeCommand
     [$subDir, $shortName] = $this->split($name);
     $className = $shortName . "Controller";
     $classPath = $subDir !== "" ? $subDir . "/" . $className : $className;
-    $namespace = $this->joinNamespace(App::id() . "\\Controller", $subDir);
+    $namespace = $this->joinNamespace($console->appId() . "\\Controllers", $subDir);
 
     $body = <<<PHP
 use kernel\\Foundation\\Controller\\Controller;
@@ -67,6 +65,6 @@ class {$className} extends Controller
 }
 PHP;
 
-    return $this->write(Path::root() . "/Controller", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(Path::root() . "/Controllers", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }

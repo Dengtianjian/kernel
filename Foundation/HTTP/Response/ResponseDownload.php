@@ -4,7 +4,7 @@ namespace kernel\Foundation\HTTP\Response;
 
 use kernel\Foundation\HTTP\Request;
 use kernel\Foundation\HTTP\Response;
-use kernel\Foundation\Output;
+use kernel\Support\Output;
 
 class ResponseDownload extends Response
 {

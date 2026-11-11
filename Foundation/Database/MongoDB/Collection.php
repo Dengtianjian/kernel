@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Database\MongoDB;
 
-use kernel\Foundation\Output;
+use kernel\Support\Output;
 use stdClass;
 
 class Collection

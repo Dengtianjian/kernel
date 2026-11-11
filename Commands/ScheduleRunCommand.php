@@ -7,7 +7,7 @@ use kernel\Facades\Crons;
 /**
  * 定时任务执行命令
  *
- * 命令名 schedule:run 在 kernel/console 中注册（Console::register）。
+ * 命令名 schedule:run 在 kernel/console 中注册（Console::addCommand）。
  *
  * 用法：
  *   php isdtj/console schedule:run

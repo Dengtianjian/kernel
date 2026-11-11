@@ -4,10 +4,10 @@ namespace kernel\DiscuzX\Member;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Mutator;
-use kernel\Foundation\Result;
+use kernel\Support\Result;
 use kernel\Foundation\Database\RDB\Model;
-use kernel\DiscuzX\Model\DiscuzXSystemModel;
-use kernel\DiscuzX\Model\System\CommonMemberModel;
+use kernel\DiscuzX\Models\DiscuzXSystemModel;
+use kernel\DiscuzX\Models\System\CommonMemberModel;
 
 class DiscuzXMember
 {
@@ -517,7 +517,7 @@ class DiscuzXMember
     $prompts = Arr::group($prompts, "uid");
     foreach ($prompts as &$MemberPrompts) {
       foreach ($MemberPrompts as &$promptItem) {
-        $promptItem = \array_merge($promptItem, \unserialize($promptItem['data']));
+        $promptItem = \array_merge($promptItem, \dunserialize($promptItem['data']));
         unset($promptItem['data']);
       }
     }
@@ -529,7 +529,6 @@ class DiscuzXMember
   }
   public static function get($memberId = null, $detailed = true, $dataConversionRules = null)
   {
-    global $_G;
     if ($memberId === null) {
       $memberId = \getglobal("uid");
     }

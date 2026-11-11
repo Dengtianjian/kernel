@@ -5,6 +5,7 @@ namespace kernel\Foundation\Database\RDB;
 use kernel\Foundation\Database\RDB\Drivers\AbstractDriver;
 use kernel\Foundation\Database\RDB\Drivers\Connections;
 use kernel\Foundation\Data\Arr;
+use kernel\Foundation\Data\Func;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\Object\AbilityBaseObject;
 
@@ -1350,7 +1351,7 @@ class Query extends AbilityBaseObject
       ];
     }
 
-    if ($column instanceof Query || isSafeCallable($column)) {
+    if ($column instanceof Query || Func::isSafeCallable($column)) {
       $type = "sub";
       $value = $column;
       $column = null;
@@ -1378,7 +1379,7 @@ class Query extends AbilityBaseObject
     }
 
     // IN / NOT IN 数组值 → 占位符绑定，防止 SQL 注入
-    if (is_array($value) && !isSafeCallable($value) && !($value instanceof Query)) {
+    if (is_array($value) && !Func::isSafeCallable($value) && !($value instanceof Query)) {
       if ($type === 'comparsion') {
         // comparsion 类型 + 数组值 → 自动转为 IN
         $operator = 'IN';

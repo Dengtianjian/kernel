@@ -2,10 +2,10 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\App;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Router\Routes;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 重定向响应
@@ -257,7 +257,7 @@ class ResponseRedirect extends Response
       return $path;
     }
 
-    $request = App::getInstance()->request();
+    $request = Applications::default()->request();
     $host = $request->host();
     $protocol = $secure ? "https" : ($request->isSecure() ? "https" : "http");
     $pathName = $path !== "" && $path[0] !== "/" ? "/" . $path : $path;

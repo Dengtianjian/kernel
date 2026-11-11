@@ -7,7 +7,7 @@ use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Numeric;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Error;
-use kernel\Foundation\Result;
+use kernel\Support\Result;
 
 class Validator
 {

@@ -3,12 +3,10 @@
 namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\App;
-
 /**
  * 生成模型命令
  *
- * 命令名 make:model 在 kernel/console 中注册（Console::register）。
+ * 命令名 make:model 在 kernel/console 中注册（Console::addCommand）。
  *
  * 用法：
  *   php kernel/console make:model User              // 生成 UserModel
@@ -40,7 +38,7 @@ class MakeModelCommand extends MakeCommand
     [$subDir, $shortName] = $this->split($name);
     $className = $shortName . "Model";
     $classPath = $subDir !== "" ? $subDir . "/" . $className : $className;
-    $namespace = $this->joinNamespace(App::id() . "\\Model", $subDir);
+    $namespace = $this->joinNamespace($console->appId() . "\\Models", $subDir);
     $table = $options["table"] ?? $this->tableName($shortName);
 
     $body = <<<PHP
@@ -69,6 +67,6 @@ class {$className} extends Model
 }
 PHP;
 
-    return $this->write(Path::root() . "/Model", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(Path::root() . "/Models", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }

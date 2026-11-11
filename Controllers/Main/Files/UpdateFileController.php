@@ -1,0 +1,51 @@
+<?php
+
+namespace kernel\Controllers\Main\Files;
+
+use kernel\Foundation\Controller\Controller;
+use kernel\Providers\Storage\Storage;
+use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\Validation\Rule;
+use kernel\Providers\Storage\FilesModel;
+
+class UpdateFileController extends Controller
+{
+  public $requestBodySerializes = [
+    "disk" => "string",
+    "ref" => "string",
+    "type" => "string",
+    "owner_id" => "string",
+    "access_control" => "string",
+  ];
+
+  public function __construct(Request $R)
+  {
+    $this->requestBodyValidator = [
+      "disk" => Rule::nullable()->type("string", "磁盘名称格式错误")->maxLength(32, "磁盘名称过长"),
+      "ref" => Rule::nullable()->type(["string", "double", "int", "float"], "引用ID格式错误")->maxLength(48, "引用ID过长"),
+      "type" => Rule::nullable()->type(["string", "double", "int", "float"], "业务类型格式错误")->maxLength(128, "业务类型过长"),
+      "owner_id" => Rule::nullable()->type("string", "所属ID格式错误")->maxLength(32, "所属ID过长"),
+      "access_control" => Rule::nullable()->type("string", "访问控制权限格式错误")->in([
+        Storage::PRIVATE,
+        Storage::PUBLIC_READ,
+        Storage::PUBLIC_READ_WRITE,
+        Storage::AUTHENTICATED_READ,
+        Storage::AUTHENTICATED_READ_WRITE,
+      ], "访问控制权限不合法"),
+    ];
+
+    parent::__construct($R);
+  }
+
+  public function data(string $fileKey)
+  {
+    $storage = $this->app()->make(Storage::class);
+    if (!$storage->authorizeOperation($fileKey, "write", "update")) return $storage->return();
+    if (!$storage->dataSave()) return $this->fail(400, 400, "修改文件信息功能已关闭");
+
+    $file = $this->app()->make(FilesModel::class)->where("key", $fileKey)->first();
+    if (!$file) return $this->fail(404, 404001, "文件记录不存在");
+
+    return $this->app()->make(FilesModel::class)->where("key", $fileKey)->update($this->body());
+  }
+}

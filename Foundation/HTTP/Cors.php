@@ -2,7 +2,8 @@
 
 namespace kernel\Foundation\HTTP;
 
-use kernel\Foundation\Config;
+use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Application\Applications;
 
 /**
  * CORS 辅助类
@@ -51,7 +52,7 @@ class Cors
    */
   public static function config(string $key)
   {
-    return Config::get("cors/" . $key, self::DEFAULTS[$key] ?? null);
+    return Applications::default()->config()->get("cors/" . $key, self::DEFAULTS[$key] ?? null);
   }
 
   /**
@@ -183,7 +184,7 @@ class Cors
    * 即浏览器同源策略的判定方式。
    *
    * 注意（保守策略）：来源缺失、相对地址、畸形地址、或取不到本站 origin 时一律返回 **false**。
-   * 若调用方希望「无 Origin/Referer 头视为非跨域」（如 {@see \kernel\Middleware\GlobalCorsMiddleware} 的约定），
+   * 若调用方希望「无 Origin/Referer 头视为非跨域」（如 {@see \kernel\Middlewares\GlobalCorsMiddleware} 的约定），
    * 请自行先用 {@see requestOrigin()} 判断头是否存在，再调用本方法。
    *
    * @param string|null $url 要判断的来源或 URL；不传/为空时取当前请求头 Origin（缺失时退化为 Referer）
@@ -270,7 +271,7 @@ class Cors
   public static function isDevelopment(): bool
   {
     try {
-      return Config::get("mode", "production") === "development";
+      return Applications::default()->isDevelopment();
     } catch (\Throwable $e) {
       return false;
     }

@@ -4,7 +4,8 @@ namespace kernel\DiscuzX\Foundation;
 
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Foundation\Provisioner;
+use kernel\Providers\App\ProvisionerProvider;
+use kernel\Foundation\Application\Applications;
 
 //* 仅允许在 Discuz 后台（admincp）上下文中载入：本类会建目录 / 删目录，不能被 URL 直接访问触发
 if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
@@ -14,12 +15,12 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
 /**
  * DiscuzX Provisioner: Install / Upgrade / Uninstall
  *
- * 安装 / 升级 / 卸载编排器 —— 内核 {@see Provisioner} 的 DiscuzX 实现。
+ * 安装 / 升级 / 卸载编排器 —— 内核 {@see ProvisionerProvider} 的 DiscuzX 实现。
  *
  * 调用方式（各插件包根目录的 install.php / uninstall.php / upgrade.php，
  * 由插件 XML 的 installfile / uninstallfile / upgradefile 声明）：
  * ```php
- * // 前置：内核自动加载器已注册，且当前应用已启动（new DiscuzXApp($pluginId)）
+ * // 前置：内核自动加载器已注册，且当前应用已启动（new DiscuzXApp(null, $pluginId)）
  * $Iuu = new DiscuzXProvisioner();          // install.php
  * $Iuu->install();
  *
@@ -33,7 +34,7 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  * 与父类的分工：
  * - 复用父类的版本与升级机制（`.version`、升级脚本扫描与执行、`install.key`、`install.lock`）；
  * - 叠加 DiscuzX 特有的三点：
- *   1. **应用与路径取自「当前应用」**：构造函数不接收参数，用 `getApp()` 取 `id()`，
+ *   1. **应用与路径取自「当前应用」**：构造函数不接收参数，用 `Applications::default()` 取 `id()`，
  *      因此要求 App 已启动，`Path::root()` / `Path::data()` 才会指向本插件（详见构造函数的「前置条件」）；
  *   2. **升级基线可由 Discuz 的 `?fromversion=` 提供**：从 `$app->request()->query` 读取该参数，
  *      传入后覆盖父类从 `.version` 推导的基线（见构造函数）；
@@ -47,8 +48,8 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  * - `clean()`     ：`cleanInstall()` + `cleanUpgrade()`，并删除 `{appRoot}/Provisioner` 目录本身。
  *
  * 注意（改动前请先了解这四点）：
- * 1. **前置条件：App 必须已注册**。构造函数用 `getApp()` 取当前应用（`$app->id()`、
- *    `$app->request()->query`），未启动 App 时 `getApp()` 返回 null，`$app->id()` 会直接致命错误；
+ * 1. **前置条件：App 必须已注册**。构造函数用 `Applications::default()` 取当前应用（`$app->id()`、
+ *    `$app->request()->query`），未启动 App 时 `Applications::default()` 返回 null，`$app->id()` 会直接致命错误；
  *    同时 `CHARSET` 需已定义（`DiscuzXApp` 构造时会兜底定义为 utf-8）；
  * 2. 本文件顶部有 `IN_DISCUZ` + `IN_ADMINCP` 双重守卫，只能在 Discuz 后台上下文被载入，
  *    否则直接 `exit('Access Denied')`；
@@ -62,32 +63,32 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  *    推出的 `{appId}\Upgrades\Upgrade_x_y_z` 也与现有脚本的命名空间不符。
  *    要让升级真正生效，需把脚本迁到 `Upgrades/`，或在构造时改传实际目录。
  *
- * @see Provisioner  父类：版本持久化、增量升级 / 回滚、安装锁与密钥
+ * @see ProvisionerProvider  父类：版本持久化、增量升级 / 回滚、安装锁与密钥
  * @see DiscuzXPath  DiscuzX 路径（data / storage 等）
  */
-class DiscuzXProvisioner extends Provisioner
+class DiscuzXProvisioner extends ProvisionerProvider
 {
   /**
    * 构造（无参数，全部从「当前应用」推导）
    *
    * 顺序：
    *   1. `parent::__construct({appRoot}/Upgrades)` —— 与父类签名对齐：
-   *      父类第一个形参是**升级脚本目录**（`Provisioner::__construct($upgradesDir = null)`）；
+   *      父类第一个形参是**升级脚本目录**（`ProvisionerProvider::__construct($upgradesDir = null)`）；
    *   2. 取 Discuz 侧已安装版本（插件设置 `setting.plugins.version.{appId}`）作为 `latestVersion`；
    *   3. 若请求带 `fromversion`，用它覆盖父类从 `.version` 推导出的升级基线 `currentSemver`
    *      —— Discuz 后台升级带上的是当前实际版本，比 `.version` 更权威
    *      （换机、手工改版本号后仍能正确计算增量）。
    *
-   * 前置条件（重要）：调用前必须已经注册当前应用（例如先 `new DiscuzXApp($pluginId)`），
-   * 否则 `getApp()` 返回 null → `$app->id()` 致命错误；同时 `Path::root()` 会因 `App::id()` 为空而失效。
+   * 前置条件（重要）：调用前必须已经注册当前应用（例如先 `new DiscuzXApp(null, $pluginId)`），
+   * 否则 `Applications::default()` 返回 null → `$app->appId()` 致命错误；同时 `Path::root()` 会因默认应用缺失而失效。
    *
    * @return void
    */
   public function __construct()
   {
-    parent::__construct(DiscuzXPath::join(DiscuzXPath::root(), "Provisioner", "Upgrades"));
+    parent::__construct(DiscuzXPath::join(DiscuzXPath::root(), "ProvisionerProvider", "Upgrades"));
 
-    $app = getApp();
+    $app = Applications::default();
 
     $this->latestVersion = \getglobal("setting/plugins/version/" . $app->id());
 
@@ -119,7 +120,7 @@ class DiscuzXProvisioner extends Provisioner
    *
    * 父类负责创建内核侧目录（`Path::data()`、`Path::storage()`），
    * 这里再补建 Discuz 惯例的数据目录 `{project}/data/plugindata/{appId}`
-   * （已存在则跳过，0777 递归创建）。
+   * 0755 递归创建）。
    *
    * @return static $this，便于链式调用
    */
@@ -128,7 +129,7 @@ class DiscuzXProvisioner extends Provisioner
     parent::install();
     $dataPluginDir = DiscuzXPath::pluginData();
     if (!is_dir($dataPluginDir)) {
-      mkdir($dataPluginDir, 0777, true);
+      mkdir($dataPluginDir, 0755, true);
     }
     return $this;
   }

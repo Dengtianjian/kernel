@@ -2,7 +2,7 @@
 
 namespace kernel\DiscuzX\Member;
 
-use kernel\DiscuzX\Model\System\CommonUserGroupModel;
+use kernel\DiscuzX\Models\System\CommonUserGroupModel;
 
 class DiscuzXMemberGroup
 {

@@ -6,6 +6,7 @@ use kernel\Foundation\App;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\HTTP\Request;
+use kernel\Foundation\Application\Applications;
 
 class Middleware
 {
@@ -126,10 +127,10 @@ class Middleware
     array_push($params, $next);
 
     if (is_string($middleware['target'])) {
-      $middlewareInstance = new $middleware['target'](getApp()->request(), $controller);
+      $middlewareInstance = new $middleware['target'](Applications::default()->request(), $controller);
       $executedResponse = $middlewareInstance->handle(...$params);
     } else {
-      array_unshift($params, getApp()->request());
+      array_unshift($params, Applications::default()->request());
       $executedResponse = $middleware['target'](...$params);
     }
 

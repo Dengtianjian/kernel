@@ -12,7 +12,7 @@ use kernel\Foundation\Exception\Error;
  * 职责边界（本类只做「实际文件动作」，不含磁盘与鉴权）：
  * - 路径推导与拼接 → {@see Path}（root / data / storage / join / optimizedPath）
  * - 文件类型判断与目录扫描 → {@see FileHelper}（isImage、scandir 等）
- * - 带多磁盘、签名鉴权、元信息落库的存储门面 → {@see \kernel\Foundation\FileSystem\Storage\FileStorage}
+ * - 带多磁盘、签名鉴权、元信息落库的存储门面 → {@see \kernel\Providers\Storage\Storage}
  *
  * 约定：
  * - 全部方法均为**静态**，本类不持有任何状态（无静态属性、无缓存）；构造函数只做一件事：
@@ -42,7 +42,7 @@ final class FileSystem
   /**
    * 确保当前应用的 data/storage 目录存在，不存在则递归创建
    *
-   * 未实例化 App（App::id() 为 null）时路径不可推导，直接跳过。
+   * 未实例化 App（Applications::defaultId() 为 null）时路径不可推导，直接跳过。
    */
   private static function ensureDirectories()
   {
@@ -91,7 +91,7 @@ final class FileSystem
    * ```
    *
    * @param array|string $file `$_FILES` 单文件数组，或已存在的本地文件路径字符串
-   * @param string $savePath 保存目录；目录不存在时按 **0757** 递归创建。
+   * @param string $savePath 保存目录；目录不存在时按 **0755** 递归创建。
    *                         传 `"."` 等价于不传（落当前工作目录）
    * @param string|null $fileName 指定保存文件名（可含扩展名，扩展名以它为准）；不传则用 `uniqid()`
    * @return array 文件信息数组，键见上方示例
@@ -105,10 +105,10 @@ final class FileSystem
    *               - `move_uploaded_file()` / `copy()` 落盘失败 → `500` `FileSave:500003`
    *
    * 实现现状（与期望不一致，改动前留意）：
-   * 1. `$savePath` 为空（含传 `"."`）时仍会执行 `is_dir(null)` 判断并 `mkdir(null, 0757, true)`：
+   * 1. `$savePath` 为空（含传 `"."`）时仍会执行 `is_dir(null)` 判断并 `mkdir(null, 0755, true)`：
    *    PHP 7 会告警 `mkdir(): Invalid path`，PHP 8 还会追加 `Passing null to parameter` 的 deprecation（实测）；
    * 2. 非图片时 `width` / `height` 返回 `0`，而 {@see getFileInfo()} 返回 `null`，两个方法的返回结构并不一致；
-   * 3. 落盘权限用的是 `0757`（含 other 的执行位），与其它方法的 `0755` 不统一；
+   * 3. 落盘权限用的是 `0755`（含 other 的执行位），与其它方法的 `0755` 不统一；
    * 4. 仅按 `FileHelper::isImage()`（MIME）判断，判定为图片后才调用 `getimagesize()`，
    *    但后者仍可能返回 false（损坏图片），此时 `$imageInfo[0]` 会告警。
    */
@@ -163,7 +163,7 @@ final class FileSystem
     }
 
     if (!is_dir($savePath)) {
-      mkdir($savePath, 0757, true);
+      mkdir($savePath, 0755, true);
     }
 
     if (is_string($file)) {

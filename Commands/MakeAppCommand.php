@@ -2,20 +2,19 @@
 
 namespace kernel\Commands;
 
+use kernel\Facades\Config;
 use kernel\Foundation\FileSystem\Path;
-
-use kernel\Foundation\Config;
 
 /**
  * 创建新应用命令
  *
- * 命令名 make:app 在 kernel/console 中注册（Console::register）。
+ * 命令名 make:app 在 kernel/console 中注册（Console::addCommand）。
  *
  * 用法：
  *   php kernel/console make:app <AppId>
  *
  * 生成应用骨架到 {root}/{AppId}/：Setup/（Bootstrap/Bootup/Shutdown 装配类）、Routes/index.php（HTTP 路由 + 命令注册）、
- * Controller/、console 入口（Console 子类）等。
+ * Controllers/、console 入口（Console 子类）等。
  */
 class MakeAppCommand
 {
@@ -51,7 +50,7 @@ class MakeAppCommand
 
     $mode = Config::get("mode", "production");
 
-    mkdir($targetDirectory . "/Controller", 0755, true);
+    mkdir($targetDirectory . "/Controllers", 0755, true);
     mkdir($targetDirectory . "/Routes", 0755, true);
     mkdir($targetDirectory . "/Setup", 0755, true);
     mkdir($targetDirectory . "/Data", 0755, true);
@@ -66,56 +65,52 @@ class MakeAppCommand
 <?php
 
 namespace {$AppId}\\Setup;
-use kernel\\Foundation\\Cache;
 use kernel\\Foundation\\Config;
 use kernel\\Foundation\\FileSystem\\FileSystem;
-use kernel\\Foundation\\Lifecycle;
 use kernel\\Foundation\\Middleware\\Middleware;
+use kernel\\Foundation\\Object\\AbilityBaseObject;
 
 /**
- * 应用装配类：手动实例化组件（App 构造不再自动实例化任何组件，均为延迟实例化）
+ * 应用装配类：按需实例化组件（App 构造只建容器与骨架，其余均为「访问即构建」）
  *
- * 在入口（index.php / console）通过 \$app->setup(\\{$AppId}\\Setup\\Bootstrap::class) 装配，
- * setup() 调用时立即执行本构造方法（构造参数为当前 App 实例 \$app）：
- * - new Config：加载 Configs/ 目录配置（框架兜底：run() 前未加载会自动加载）
+ * 在入口（index.php / console）作为构造第一个参数传入（构造即装配）：
+ *   new App(\\{$AppId}\\Setup\\Bootstrap::class, "{$AppId}");
+ * 构造末尾立即执行本构造方法（无参构造）：
+ * - 应用实例不传参、不手动 \$this->app = \$app：继承自 BaseObject 的 \$this->app()
+ *   会回落默认应用（构造时已把当前应用登记为默认）
+ * - Config：不用手动 new，\$this->app()->config() 首次访问时自动读 Configs/ 目录
  * - new FileSystem：创建 Data/、Storage/ 等目录
- * - new Cache：生成缓存动态 KEY（Cache::key()）
- * - new Middleware 后 ->set(...)：注册全局中间件，再 \$app->set(["middleware" => \$middleware]) 注入
- * - new Lifecycle 后 ->onBootUp() / ->onShutdown() 等：注册生命周期钩子，
- *   再 \$app->set(["lifeCycle" => \$lifeCycle]) 注入
+ * - 缓存：不是每个应用都需要，要用就自己登记一行
+ *   \$this->app()->provider(\kernel\Providers\App\CacheProvider::class)；登记后
+ *   \$this->app()->cache() 与门面 \kernel\Facades\Cache 都可用（动态 KEY 在请求级）
+ * - new Middleware 后 ->set(...)：注册全局中间件，再 \$this->app()->provider(\$middleware) 登记
+ * - \$this->app()->onBootUp() / ->onShutdown() / ->onError()：注册生命周期钩子，
+ *   不必再 new Lifecycle，也不必手动登记（内部委托请求级的 Lifecycle）
  *
- * 路由由 Request 构造内实例化（new Router），App 不再存储 Router、也无需在 App 注入；
- * 如需自定义 Request（或其内部路由实例），可在 setup() 中手动实例化并注入：
- *   \$app->set(["request" => new \\kernel\\Foundation\\HTTP\\Request]);
+ * Request / Router / Middleware / Lifecycle / Config 都是访问即构建，不登记也能用；
+ * 登记只是为了换成自己的实现（容器里的实例优先，登记的一定生效）：
+ *   \$this->app()->provider(new \\kernel\\Foundation\\HTTP\\Request);
  *
- * 也可以在 setup() 中传闭包（推荐，可获得 App 实例）：
- *   \$app->setup(function (\$app) {
- *     \$app->set(["request" => new \\kernel\\Foundation\\HTTP\\Request]);
+ * 也可以传闭包（可获得 App 实例）：
+ *   new App(function (\$app) {
+ *     \$app->register(new \\kernel\\Foundation\\HTTP\\Request);
  *   });
  */
-class Bootstrap
+class Bootstrap extends AbilityBaseObject
 {
-  public function __construct(\$app)
+  public function __construct()
   {
-    //* 初始化配置（加载 Configs/ 目录下的配置文件）
-    new Config;
-
     //* 实例化文件系统（创建 Data/、Storage/ 等目录）
     new FileSystem;
 
-    //* 实例化缓存（生成缓存动态 KEY）
-    new Cache;
-
-    //* 中间件：手动 new Middleware 后注册，再注入 App（如需启用全局中间件，取消注释）
+    //* 中间件：手动 new Middleware 后注册，再登记进容器（如需启用全局中间件，取消注释）
     // \$middleware = new Middleware;
-    // \$middleware->set(\\{$AppId}\\Middleware\\GlobalAuthMiddleware::class);
-    // \$app->set(["middleware" => \$middleware]);
+    // \$middleware->set(\\{$AppId}\\Middlewares\\GlobalAuthMiddleware::class);
+    // \$this->app()->provider(\$middleware);
 
-    //* 生命周期：手动 new Lifecycle 后注册钩子，再注入 App
-    \$lifeCycle = new Lifecycle;
-    \$lifeCycle->onBootUp(\\{$AppId}\\Setup\\Bootup::class);
-    \$lifeCycle->onShutdown(\\{$AppId}\\Setup\\Shutdown::class);
-    \$app->set(["lifeCycle" => \$lifeCycle]);
+    //* 生命周期：直接挂在 App 上（内部委托请求级的 Lifecycle，随请求一起清）
+    \$this->app()->onBootUp(\\{$AppId}\\Setup\\Bootup::class);
+    \$this->app()->onShutdown(\\{$AppId}\\Setup\\Shutdown::class);
   }
 }
 PHP
@@ -130,9 +125,8 @@ include_once("{$kernel}/vendor/autoload.php");
 
 use kernel\\Foundation\\App;
 
-\$app = new App("{$AppId}");
-//* 应用装配：手动实例化配置、缓存、文件系统等（setup() 必须在 run() 之前调用）
-\$app->setup(\\{$AppId}\\Setup\\Bootstrap::class);
+//* 构造即装配：第一个参数是装配类，构造返回后应用即可 run()
+\$app = new App(\\{$AppId}\\Setup\\Bootstrap::class, "{$AppId}");
 \$app->run();
 PHP
     );
@@ -144,7 +138,7 @@ PHP
 <?php
 use kernel\\Foundation\\Router\\Route;
 
-Route::get("/", {$AppId}\\Controller\\IndexController::class);
+Route::get("/", {$AppId}\\Controllers\\IndexController::class);
 PHP
     );
 
@@ -191,7 +185,7 @@ class Shutdown
 PHP
     );
 
-    //* CLI 入口（Console 子类，可补充 register() 注册额外命令）
+    //* CLI 入口（Console 子类，可补充 addCommand() 注册额外命令）
     file_put_contents(
       $targetDirectory . "/console",
       <<<PHP
@@ -202,23 +196,20 @@ include_once("{$kernel}/vendor/autoload.php");
 use kernel\\Foundation\\Console\\Console;
 
 //* 命令由 Console 统一注册（不再经 Router）
-//* 如需注册命令，可在此 \$console->register("name", fn) 注册
-\$console = new Console("{$AppId}");
-//* 应用装配（setup() 必须在 run() 之前调用）
-\$console->setup(\\{$AppId}\\Setup\\Bootstrap::class);
+//* 构造即装配：第一个参数是装配类，在内核命令之外追加本应用命令
+\$console = new Console(\\{$AppId}\\Setup\\Bootstrap::class, "{$AppId}");
 \$console->run();
 PHP
     );
 
     //* 示例控制器
     file_put_contents(
-      $targetDirectory . "/Controller/IndexController.php",
+      $targetDirectory . "/Controllers/IndexController.php",
       <<<PHP
 <?php
 
-namespace {$AppId}\\Controller;
+namespace {$AppId}\\Controllers;
 use kernel\\Foundation\\Controller\\Controller;
-use kernel\\Foundation\\HTTP\\Request;
 
 /**
  * 默认控制器

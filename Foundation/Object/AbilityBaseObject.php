@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Object;
 
-use kernel\Foundation\Result;
+use kernel\Support\Result;
 
 /**
  * 能力基础对象

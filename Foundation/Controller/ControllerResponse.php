@@ -10,6 +10,7 @@ use kernel\Foundation\HTTP\Response\ResponsePagination;
 use kernel\Foundation\HTTP\Response\ResponseProxy;
 use kernel\Foundation\HTTP\Response\ResponseRedirect;
 use kernel\Foundation\HTTP\Response\ResponseView;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 控制器响应工厂
@@ -19,7 +20,7 @@ use kernel\Foundation\HTTP\Response\ResponseView;
  * 控制器可通过 `success()`/`fail()` 复用该实例，也可在 `data()` 中调用以下工厂方法
  * 生成「独立响应对象」（如文件下载、分页、视图），由其作为最终结果输出。
  *
- * 除 `proxy()` 外，其余工厂方法均自动注入当前请求（`getApp()->request()`）作为响应上下文，
+ * 除 `proxy()` 外，其余工厂方法均自动注入当前请求（`Applications::default()->request()`）作为响应上下文，
  * 因此无需手动传入 Request 即可直接使用。
  */
 class ControllerResponse extends Response
@@ -38,7 +39,7 @@ class ControllerResponse extends Response
    */
   function file($filePath, $downloadFileName = null, $imageQuality = null, $cacheControl = "no-cache", $httpExpires = null)
   {
-    return new ResponseFile(getApp()->request(), $filePath, $downloadFileName, $imageQuality, $cacheControl, $httpExpires);
+    return new ResponseFile(Applications::default()->request(), $filePath, $downloadFileName, $imageQuality, $cacheControl, $httpExpires);
   }
   /**
    * 下载文件响应
@@ -50,7 +51,7 @@ class ControllerResponse extends Response
    */
   function download($filePath, $downloadFileName = null, $rateLimit = false)
   {
-    return new ResponseDownload(getApp()->request(), $filePath, $downloadFileName, $rateLimit);
+    return new ResponseDownload(Applications::default()->request(), $filePath, $downloadFileName, $rateLimit);
   }
   /**
    * 响应分页列表
@@ -61,7 +62,7 @@ class ControllerResponse extends Response
    */
   function pagination($total, $data = null)
   {
-    return new ResponsePagination(getApp()->request(), $total, $data);
+    return new ResponsePagination(Applications::default()->request(), $total, $data);
   }
   /**
    * 视图响应

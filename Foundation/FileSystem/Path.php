@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\FileSystem;
 
-use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 路径体系（纯路径计算，无副作用）
@@ -13,13 +13,13 @@ use kernel\Foundation\App;
  * 7 个路径 getter：
  *   kernel        = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
  *   project       = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernel 的上级目录
- *   root          = kernel 同级目录下的 {App::id()}
+ *   root          = kernel 同级目录下的 {默认应用 ID}
  *   data          = root/Data
  *   storage       = root/Storage
  *   kernelDir/dir = kernel/root 相对 project 的路径
  *
- * 依赖 App::id() 的 getter（root/data/storage/dir）在未实例化 App（App::id() 为 null）
- * 时返回 null。
+ * 依赖默认应用 ID 的 getter（root/data/storage/dir）在尚未登记任何 App
+ * （Applications::defaultId() 为 null）时返回 null。
  *
  * 非 final，可被继承扩展；getter 均为 public static，便于子类重写。
  */
@@ -44,7 +44,7 @@ class Path
   /**
    * 内核根目录（绝对路径）
    *
-   * 即本类所在目录，与 App::kernelId()、部署位置无关，永远正确。
+   * 即本类所在目录，与 kernelId、部署位置无关，永远正确。
    *
    * @return string
    */
@@ -54,26 +54,61 @@ class Path
   }
 
   /**
-   * 当前应用根目录（绝对路径），默认 {kernel 同级目录}/{App::id()}
+   * 指定应用的根目录（绝对路径），默认 {kernel 同级目录}/{appId}
+   *
+   * 与 {@see root()} 的区别：这里能明确指定「哪个应用」。多应用共存时
+   * `root()` 取的是默认应用，而 `appRoot($app->appId())` 取的是调用方自己那份
+   * （配置目录、数据目录都靠它定位）。
+   *
+   * @param string|null $appId 应用 ID，不传取默认应用
+   * @return string|null 应用尚未创建时返回 null
+   */
+  public static function appRoot($appId = null)
+  {
+    $appId = $appId ?? Applications::defaultId();
+    if ($appId === null || $appId === "") {
+      return null;
+    }
+
+    return self::join(dirname(self::kernel()), $appId);
+  }
+
+  /**
+   * 当前应用根目录（绝对路径），默认 {kernel 同级目录}/{默认应用 ID}
    *
    * @return string|null
    */
   public static function root()
   {
-    if (App::id() === null) {
-      return null;
-    }
-    return self::join(dirname(self::kernel()), App::id());
+    return self::appRoot();
   }
 
   /**
-   * 应用数据目录（绝对路径），默认 appRoot/Data
+   * 指定应用的配置目录（绝对路径），即 appRoot/Configs
    *
+   * @param string|null $appId 应用 ID，不传取默认应用
    * @return string|null
    */
-  public static function data()
+  public static function configs($appId = null)
   {
-    $appRoot = self::root();
+    $root = self::appRoot($appId);
+
+    return $root === null ? null : self::join($root, "Configs");
+  }
+
+  /**
+   * 指定应用的数据目录（绝对路径），默认 appRoot/Data
+   *
+   * 与 {@see configs()} / {@see storage()} 一样支持指定应用：多应用同进程时
+   * 传 `$app->appId()` 才能拿到调用方自己那份，不传永远取默认应用。
+   *
+   * @param string|null $appId 应用 ID，不传取默认应用
+   * @return string|null
+   */
+  public static function data($appId = null)
+  {
+    $appRoot = self::appRoot($appId);
+
     return $appRoot === null ? null : self::join($appRoot, "Data");
   }
 

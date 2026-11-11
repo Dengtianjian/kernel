@@ -18,6 +18,18 @@ namespace kernel\Foundation\Object;
 class BaseObject
 {
   /**
+   * 本对象所属的应用
+   *
+   * 由构造期注入（{@see resolveApp()}），不做事后推断：对象一旦创建，归属就固定，
+   * 不会因为「现在哪个应用在跑」而变。未注入时由 {@see app()} 回落到默认应用。
+   *
+   * 注意：`Modules\WechatPay\V3\WechatPayV3` 已有同名 `app()`（返回 APP 支付产品），
+   * 它会覆盖本方法——那个类不参与应用归属解析。新增子类时请避免再用 `app` 作为方法名。
+   *
+   * @var \kernel\Foundation\App|null
+   */
+  protected $app = null;
+  /**
    * 单例实例池，键为实际类名（get_called_class()）
    *
    * @var array<string, static>
@@ -141,5 +153,84 @@ class BaseObject
     } catch (\Throwable $e) {
       return null;
     }
+  }
+
+  /**
+   * 本对象所属的应用
+   *
+   * 优先返回构造期注入的实例；未注入时回落到默认应用（= 当前请求的应用）。
+   * 两者都没有说明引导阶段就有对象在算表名 / 路径，属于装配错误——直接抛错，
+   * 让问题在 `new` 的那一刻暴露，而不是把表名拼成 `_files` 这种错得无声无息的结果。
+   *
+   * @return \kernel\Foundation\App
+   * @throws \kernel\Foundation\Exception\Error 未关联任何应用时抛出
+   */
+  public function app()
+  {
+    $app = $this->app
+      ?: \kernel\Foundation\Application\Applications::setUpApp()
+      ?: \kernel\Foundation\Application\Applications::default();
+
+    if ($app === null) {
+      throw new \kernel\Foundation\Exception\Error(
+        static::class . " 未关联任何应用：请先注册应用（new DiscuzXApp(null, \$pluginId)），或用 \$app->make() 创建对象",
+        500,
+        "500:AppNotRegistered"
+      );
+    }
+
+    return $app;
+  }
+
+  /**
+   * 补归属应用（容器专用）
+   *
+   * 只在对象自身还没有归属时补；已有归属（构造签名里写了 `App` 的）原样保留。
+   *
+   * 读与写都在本类内完成——`Container` 从外部读写 protected 的 `$app` 会直接报
+   * `Cannot access non-public member`，所以这里开一个受控入口，而不是让容器玩反射。
+   *
+   * @internal 仅供 {@see \kernel\Foundation\Application\Container::bindApp()} 在
+   *           构造完对象后调用；业务代码请勿使用（改归属会造出「半个对象属于上一个应用」的东西）
+   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给默认应用
+   * @return $this
+   */
+  public function bindApp($app)
+  {
+    if ($this->app === null) {
+      $this->app = $app;
+      $this->onAppBound();
+    }
+
+    return $this;
+  }
+
+  /**
+   * 归属绑定完成的钩子
+   *
+   * 容器是「先构造、后补归属」，构造期只能按默认应用推导的东西（典型如表名前缀）
+   * 需要在归属就位后重算。默认空实现，需要重算的子类覆盖本方法。
+   *
+   * 只在 `bindApp()` 真正赋值时触发一次；对象已有归属时不会再调。
+   *
+   * @return void
+   */
+  protected function onAppBound()
+  {
+  }
+
+  /**
+   * 构造期注入所属应用
+   *
+   * protected 而非 public：表名、路径、签名密钥都在构造期按 app 算好了，
+   * 事后改只会造出「半个对象属于上一个应用」的东西。
+   *
+   * @internal 仅供构造链调用
+   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给默认应用
+   * @return void
+   */
+  protected function resolveApp($app = null)
+  {
+    $this->app = $app;
   }
 }

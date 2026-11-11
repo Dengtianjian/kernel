@@ -207,4 +207,36 @@ class Date
     }
     return date($format, $timestamp);
   }
+
+  /**
+   * 当前日期时间
+   *
+   * 等价于 `date($format)`——把「当前时间格式化」收进本类，取代原来的全局函数 `now()`。
+   *
+   * @param string $format date() 格式化字符串
+   * @return string
+   *
+   * @example
+   * Date::now()                // "2026-11-09 14:30:00"
+   * Date::now("YmdHis")        // "20261109143000"
+   */
+  public static function now($format = "Y-m-d H:i:s"): string
+  {
+    return self::format(null, $format);
+  }
+
+  /**
+   * 当前日期（`Y-m-d`）
+   *
+   * 取代原来的全局函数 `today()`。
+   *
+   * @return string
+   *
+   * @example
+   * Date::today()              // "2026-11-09"
+   */
+  public static function today(): string
+  {
+    return self::now("Y-m-d");
+  }
 }

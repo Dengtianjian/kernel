@@ -2,11 +2,12 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\Config;
+use kernel\Providers\App\ConfigProvider;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\HTTP\Response;
-use kernel\Foundation\Log;
+use kernel\Facades\Log;
+use kernel\Foundation\Application\Applications;
 
 class ServerSentEvent extends Response
 {
@@ -187,17 +188,17 @@ class ServerSentEvent extends Response
     $data = $this->getData();
 
     if ($this->outputType === "json") {
-      $body['version'] = Config::get("version");
+      $body['version'] = Applications::default()->config()->get("version");
     }
 
     $content = null;
     switch ($this->outputType) {
       case "json":
 
-        $body['version'] = Config::get("version");
+        $body['version'] = Applications::default()->config()->get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = ($endTime - Config::get("startTime", $endTime)) . " ms";
+        $body['requiredTime'] = ($endTime - (Applications::default()->startTime() ?? $endTime)) . " ms";
 
         $content = json_encode($body, JSON_UNESCAPED_UNICODE);
         break;

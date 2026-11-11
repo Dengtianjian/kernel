@@ -2,12 +2,12 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Foundation\FileSystem\Storage\FileStorage;
-use kernel\Foundation\FileSystem\Storage\StorageSignature;
-use kernel\Foundation\FileSystem\Storage\StorageURL;
+use kernel\Providers\Storage\Storage;
+use kernel\Providers\Storage\StorageSignature;
+use kernel\Providers\Storage\StorageURL;
 use kernel\DiscuzX\DiscuzXURL;
 
-class DiscuzXStorage extends FileStorage
+class DiscuzXStorage extends Storage
 {
   public function __construct($disks = null)
   {

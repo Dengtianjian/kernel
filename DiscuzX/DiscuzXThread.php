@@ -5,7 +5,7 @@ namespace kernel\DiscuzX;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Object\BaseObject;
 use kernel\Foundation\Database\RDB\Model;
-use kernel\DiscuzX\Model\DiscuzXSystemModel;
+use kernel\DiscuzX\Models\DiscuzXSystemModel;
 
 class DiscuzXThread extends BaseObject
 {

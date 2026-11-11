@@ -12,7 +12,7 @@
 //   foreach ($SDKClassName as $item) {
 //     $item = str_replace("\\", "/", $item);
 //     if (strpos($className, $item) !== false) {
-//       $className = \kernel\Foundation\App::id() . "/SDK/{$className}";
+//       $className = \kernel\Foundation\Application\Applications::defaultId() . "/SDK/{$className}";
 //       $SDKLoaded = true;
 //     }
 //   }
@@ -47,7 +47,7 @@ return function ($SkipClassName = [], $SDKClassName = []) {
     foreach ($SDKClassName as $item) {
       $item = str_replace("\\", "/", $item);
       if (strpos($className, $item) !== false) {
-        $className = \kernel\Foundation\App::id() . "/SDK/{$className}";
+        $className = \kernel\Foundation\Application\Applications::defaultId() . "/SDK/{$className}";
         $SDKLoaded = true;
       }
     }

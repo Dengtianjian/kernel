@@ -3,28 +3,29 @@
 namespace kernel\Foundation\Console;
 
 use kernel\Foundation\App;
-use kernel\Foundation\Config;
+use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 控制台应用
  *
- * 继承 App：提供命令注册（register/discover）、分发、参数解析、彩色输出与交互输入能力。
+ * 继承 App：提供命令注册（command/discover）、分发、参数解析、彩色输出与交互输入能力。
  * 命令完全由本类实例管理，不再依赖 Router（Router 只负责 HTTP 路由）。
  *
  * 命令注册方式：
- * 1. 业务方在自己入口（如 kernel/console、App 的 CLI 入口）手动 $console->register() 注册
+ * 1. 业务方在自己入口（如 kernel/console、App 的 CLI 入口）手动 $console->command() 注册
  * 2. discover() 自动扫描命令类目录注册（命令类自带 $name 属性）
  *
  * 命令处理器支持三种形式：
  * 1. 命令控制器类：实现 handle(Console $console, array $args, array $options): int 方法，
- *    类放 Controller/ 目录（如 "kernel\\Controller\\Commands\\MakeAppCommand"），由本类实例化并调用
+ *    类放 Controller/ 目录（如 "kernel\\Controllers\\Commands\\MakeAppCommand"），由本类实例化并调用
  * 2. 闭包：function (Console $console, array $args, array $options): int
  *
  * 命令名支持冒号命名空间（如 make:controller）；输入空参数、help、-h 或 --help
  * 时自动列出全部已注册命令。CLI 环境下异常/错误输出到 stderr 并以非 0 退出。
  *
  * 入口脚本：kernel/console
- *   $console = new Console("kernel");
+ *   $console = new Console(\kernel\Setup\Console\Bootstrap::class);
  *   $console->run(); // 内部调用 handle() 分发命令并以退出码结束
  *
  * 命令行调用：php kernel/console make:app hello --name=john
@@ -60,17 +61,22 @@ class Console extends App
   /**
    * 构建
    *
+   * 装配不交给父类构造（第三参传 null）：CLI 要先把异常 / 错误处理器换成输出到 stderr、
+   * 以非 0 退出的那一套，装配期抛错才不会打出 web 的 HTML 错误页。
+   *
+   * @param string|callable|null $setup 装配类名或装配闭包；null 表示只建骨架、不装配
    * @param string $AppId AppId，默认 kernel
    * @param string $KernelId KernelId，默认 kernel
    */
-  function __construct($AppId = "kernel", $KernelId = "kernel")
+  function __construct($setup = null, $AppId = "kernel", $KernelId = "kernel")
   {
-    //* Router 由 App 持有（ensureInstances()/router() 实例化，只负责 HTTP 路由；命令由本类管理）
-    parent::__construct($AppId, $KernelId);
+    //* Router 由 App 持有（router() 访问即构建，只负责 HTTP 路由；命令由本类管理）
+    //* 装配传 null：CLI 的异常处理器要在装配之前就位（见构造末尾的 assemble）
+    parent::__construct(null, $AppId, $KernelId);
 
     $this->argv = isset($GLOBALS['argv']) ? array_slice($GLOBALS['argv'], 1) : [];
 
-    //* getApp() 在父类 App 构造时已注册当前实例（App::getInstance()）
+    //* Applications::default() 在父类 App 构造时已注册当前实例
 
     //* CLI 环境覆盖异常处理：直接输出到 stderr 并以非 0 退出
     \set_exception_handler(function ($exception) {
@@ -78,7 +84,7 @@ class Console extends App
       $file = $exception->getFile();
       $line = $exception->getLine();
       $this->error($message ?: get_class($exception));
-      if (Config::get("mode") !== "production") {
+      if ($this->config()->get("mode") !== "production") {
         $this->line("  at {$file}:{$line}", "90");
       }
       exit(1);
@@ -91,9 +97,15 @@ class Console extends App
       $this->line("  at {$file}:{$line}", "90");
       return true;
     }, E_ALL);
+
+    //* 装配放在最后：CLI 的异常 / 错误处理器已就位，装配期抛错也走 CLI 输出
+    $this->assemble($setup);
   }
   /**
-   * 注册命令
+   * 注册一条命令
+   *
+   * 方法名刻意不叫 register()：父类的 register() 登记的是容器组件，子类重写会让
+   * Console 无法登记组件（签名不兼容直接 fatal），两个概念也不该共用一个名字。
    *
    * @param string $name 命令名，例如 "make:controller"，支持冒号命名空间
    * @param callable|string $handler 闭包：function (Console $console, array $args, array $options): int；
@@ -101,7 +113,7 @@ class Console extends App
    * @param string $description 命令说明，用于帮助列表
    * @return Console
    */
-  public function register(string $name, $handler, string $description = ""): Console
+  public function addCommand(string $name, $handler, string $description = ""): Console
   {
     $this->commands[$name] = [
       "handler" => $handler,
@@ -150,14 +162,14 @@ class Console extends App
       if (!is_string($name) || $name === "") {
         continue;
       }
-      $this->register($name, $className, (string) ($properties["description"] ?? ""));
+      $this->addCommand($name, $className, (string) ($properties["description"] ?? ""));
     }
     return $this;
   }
   /**
    * 获取已注册的全部命令
    *
-   * 命令由本实例 register()/discover() 统一管理，不再依赖 Router。
+   * 命令由本实例 addCommand()/discover() 统一管理，不再依赖 Router。
    *
    * @return array<string, array> 命令名 => 命令定义
    */
@@ -209,9 +221,6 @@ class Console extends App
    */
   public function handle($argv = null): int
   {
-    //* 延迟实例化兜底：setup() 未注入的组件在此自动实例化（Request/Middleware/Lifecycle/Config）
-    $this->ensureInstances();
-
     if ($argv === null) {
       $argv = $this->argv;
     }
@@ -224,10 +233,10 @@ class Console extends App
     $this->options = $options;
 
     //* CLI 下 Request 的 URI 即命中的命令名（HTTP 下为请求 URI）
-    $this->request->uri($name);
+    $this->request()->uri($name);
 
     //* 调用生命周期"启动"钩子
-    $this->lifeCycle->fireBootUp();
+    $this->lifeCycle()->fireBootUp();
 
     $exitCode = 0;
     try {
@@ -239,19 +248,19 @@ class Console extends App
         $this->line("");
         $exitCode = $this->listCommands(1);
       } else {
-        //* CLI 按命令名匹配（仅查本实例 register()/discover() 注册的命令）
+        //* CLI 按命令名匹配（仅查本实例 addCommand()/discover() 注册的命令）
         $exitCode = $this->execute($this->commands[$name]);
       }
 
       //* 调用生命周期"结束"钩子
-      $this->lifeCycle->fireShutdown($exitCode, [
+      $this->lifeCycle()->fireShutdown($exitCode, [
         "exception" => null,
         "error" => false
       ]);
     } catch (\Throwable $E) {
       //* 命令执行异常：先触发错误钩子（onError），再执行结束钩子（记录已执行到的步骤、释放资源），最后交由异常处理器输出并退出
-      $this->lifeCycle->fireError($E);
-      $this->lifeCycle->fireShutdown($exitCode, [
+      $this->lifeCycle()->fireError($E);
+      $this->lifeCycle()->fireShutdown($exitCode, [
         "exception" => $E,
         "error" => true
       ]);
@@ -328,7 +337,7 @@ class Console extends App
   /**
    * 执行命令处理器
    *
-   * 命令由本实例 register()/discover() 注册，定义结构为：
+   * 命令由本实例 addCommand()/discover() 注册，定义结构为：
    * - 闭包：function (Console $console, array $args, array $options): int
    * - 命令类名（默认调用 handle() 方法）
    *

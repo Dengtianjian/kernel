@@ -6,7 +6,7 @@ namespace kernel\Foundation\HTTP\Request;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Mutator;
 use kernel\Foundation\Exception\Error;
-use kernel\Foundation\Result;
+use kernel\Support\Result;
 use kernel\Foundation\Validation\Rules;
 use kernel\Foundation\Validation\Rule;
 use kernel\Foundation\Validation\Validator;

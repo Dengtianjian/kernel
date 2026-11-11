@@ -5,6 +5,7 @@ namespace kernel\Foundation\Router;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\URL;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 路由匹配实例
@@ -23,7 +24,7 @@ class Router
   /**
    * 构造：加载路由
    *
-   * 由 App 实例化并持有（`App::$router`）。匹配所需的请求实例通过 `getApp()->request()`
+   * 由 App 实例化并持有（`App::$router`）。匹配所需的请求实例通过 `Applications::default()->request()`
    * 获取，无需在构造时传入。
    */
   public function __construct()
@@ -75,7 +76,7 @@ class Router
    */
   public function route()
   {
-    $request = getApp()->request();
+    $request = Applications::default()->request();
 
     $uri = $request->uri();
     if ($uri !== "/") {

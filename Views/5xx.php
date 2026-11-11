@@ -1,7 +1,7 @@
 <?
 
 use kernel\Foundation\App;
-use kernel\Foundation\Output;
+use kernel\Support\Output;
 
 ?>
 

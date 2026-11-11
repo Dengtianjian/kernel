@@ -4,7 +4,7 @@ namespace kernel\DiscuzX\Foundation;
 use kernel\Foundation\FileSystem\Path;
 
 
-use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Exception\Error;
@@ -32,7 +32,7 @@ class DiscuzXView extends ResponseView
     $dir = $viewFileDir ?: Path::dir();
     if (strpos($viewFile, ".") === false) {
       return template($viewFile, implode("_", [
-        App::id(),
+        Applications::defaultId(),
         $templateId
       ]), Path::join($dir, $viewFileDirBaseProject));
     } else {
@@ -56,7 +56,7 @@ class DiscuzXView extends ResponseView
 
     $this->templateId = $templateId;
     $this->viewFilePath = template($layout, implode("_", [
-      App::id(),
+      Applications::defaultId(),
       $templateId
     ]), Path::join(Path::dir(), $fileBaseDir));
 

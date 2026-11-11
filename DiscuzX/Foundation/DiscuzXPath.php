@@ -2,7 +2,7 @@
 
 namespace kernel\DiscuzX\Foundation;
 
-use kernel\Foundation\App;
+use kernel\Foundation\Application\Applications;
 use kernel\Foundation\FileSystem\Path;
 
 /**
@@ -61,11 +61,14 @@ class DiscuzXPath extends Path
    * DiscuzX 下应用根即插件目录（`{project}/source/plugin/{appId}`），因此取值落在插件目录内。
    * 按 Discuz 惯例存放、且会随插件升级被覆盖的数据请改用 {@see pluginData()}。
    *
+   * @param string|null $appId 应用 ID，不传取默认应用（必须保留该参数，否则与父类签名不兼容）
    * @return string|null 形如 `{project}/source/plugin/{appId}/Data`
    */
-  public static function data()
+  public static function data($appId = null)
   {
-    return self::join(self::root(), "Data");
+    $root = self::appRoot($appId);
+
+    return $root === null ? null : self::join($root, "Data");
   }
   /**
    * 本插件的数据目录（绝对路径）
@@ -77,7 +80,7 @@ class DiscuzXPath extends Path
    */
   public static function pluginData()
   {
-    $appId = getApp()::id();
+    $appId = Applications::defaultId();
     if ($appId === null) {
       return null;
     }

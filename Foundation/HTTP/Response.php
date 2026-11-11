@@ -3,12 +3,13 @@
 namespace kernel\Foundation\HTTP;
 
 use kernel\Foundation\App;
-use kernel\Foundation\Config;
+use kernel\Providers\App\ConfigProvider;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\Response\ResponseView;
-use kernel\Foundation\Output;
+use kernel\Support\Output;
+use kernel\Foundation\Application\Applications;
 
 class Response
 {
@@ -456,17 +457,17 @@ class Response
     // 控制器未显式设置时，依据请求头 Content-Type / Accept 推断
     $outputType = $this->outputType;
     if (!$outputType) {
-      $outputType = getApp()->request()->preferredOutputType();
+      $outputType = Applications::default()->request()->preferredOutputType();
     }
 
     switch ($outputType) {
       case "json":
         header("Content-type:application/json", true);
 
-        $body['version'] = Config::get("version");
+        $body['version'] = Applications::default()->config()->get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = ($endTime - Config::get("startTime", $endTime)) . " ms";
+        $body['requiredTime'] = ($endTime - (Applications::default()->startTime() ?? $endTime)) . " ms";
 
         echo json_encode($body, JSON_UNESCAPED_UNICODE);
         break;

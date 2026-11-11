@@ -3,12 +3,10 @@
 namespace kernel\Commands;
 use kernel\Foundation\FileSystem\Path;
 
-use kernel\Foundation\App;
-
 /**
  * 生成中间件命令
  *
- * 命令名 make:middleware 在 kernel/console 中注册（Console::register）。
+ * 命令名 make:middleware 在 kernel/console 中注册（Console::addCommand）。
  *
  * 用法：
  *   php kernel/console make:middleware Auth             // 生成 AuthMiddleware
@@ -39,7 +37,7 @@ class MakeMiddlewareCommand extends MakeCommand
     [$subDir, $shortName] = $this->split($name);
     $className = $shortName . "Middleware";
     $classPath = $subDir !== "" ? $subDir . "/" . $className : $className;
-    $namespace = $this->joinNamespace(App::id() . "\\Middleware", $subDir);
+    $namespace = $this->joinNamespace($console->appId() . "\\Middlewares", $subDir);
 
     $body = <<<PHP
 use kernel\\Foundation\\Middleware\\MiddlewareBase;
@@ -63,6 +61,6 @@ class {$className} extends MiddlewareBase
 }
 PHP;
 
-    return $this->write(Path::root() . "/Middleware", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
+    return $this->write(Path::root() . "/Middlewares", $classPath, $namespace, $body, !empty($options["force"]), $console) ? 0 : 1;
   }
 }

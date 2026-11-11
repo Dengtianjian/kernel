@@ -636,7 +636,7 @@ class Mutator
             return;
         }
 
-        if (isSafeCallable($type)) {
+        if (Func::isSafeCallable($type)) {
             // 值为 null 时不调用回调，保持原值（null 不按规则转换）
             $result[$keyStr] = $this->data[$keyStr] === null ? null : $type($this->data[$keyStr]);
             return;
@@ -1709,7 +1709,7 @@ class Mutator
             return $this->createChild($type)->data($value)->convert();
         }
 
-        if (isSafeCallable($type)) {
+        if (Func::isSafeCallable($type)) {
             // 值为 null 时不调用回调，保持原值（null 不按规则转换）
             return $value === null ? null : $type($value);
         }

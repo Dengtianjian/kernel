@@ -2,14 +2,14 @@
 
 namespace kernel\Foundation\Exception;
 
-use kernel\Foundation\App;
-use kernel\Foundation\Config;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\HTTP\Cors;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\HTTP\Response\ResponseView;
-use kernel\Foundation\Log;
+use kernel\Facades\Config;
+use kernel\Facades\Log;
 use Throwable;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 全局异常 / 错误处理器（静态门面）
@@ -138,7 +138,7 @@ class ExceptionHandler
       // 4. 致命分支：客户端期望 JSON 则输出 JSON；否则渲染错误视图；最后 exit
       // 期望类型取自 Request::preferredOutputType()（依据 Content-Type / Accept，返回 json|xml|html|text|null），
       // 探测失败（App 未实例化、Request 取用异常）时按「非 JSON」处理，保证任何情况下都有兜底输出
-      $app = App::getInstance();
+      $app = Applications::default();
       $expectsJson = false;
       if ($app) {
         try {
@@ -218,7 +218,7 @@ class ExceptionHandler
   /**
    * 安全获取运行模式，配置未装配时默认为 development
    *
-   * 读 `Config::get("mode")`；读取失败（Config 未初始化等）时按 development 处理 ——
+   * 读默认应用的 `mode`；读取失败（应用还没建好等）时按 development 处理 ——
    * 宁可多回调试信息，也不因配置缺失在异常处理过程中再抛一次错。
    *
    * @return string "production" 表示只回状态码；"development" 表示回传完整错误详情

@@ -1,0 +1,517 @@
+<?php
+
+namespace kernel\Providers\App;
+
+use kernel\Foundation\Application\Applications;
+use kernel\Foundation\FileSystem\Path;
+use kernel\Foundation\Object\AbilityBaseObject;
+
+/**
+ * 应用生命周期编排器：安装 / 增量升级 / 回滚 / 卸载
+ *
+ * 升级机制：
+ * - 扫描 upgradesDir 目录下 Upgrade_x_y_z.php 文件，从文件名提取版本号按序执行
+ * - 每个升级文件定义一个同名类，类有 upgrade() 方法则调用，否则构造器即升级逻辑
+ * - 类可选定义 rollback() 方法以支持回滚
+ *
+ * 版本管理：
+ * - .version 文件存储完整版本号（如 2.2.0.20260721.1746）
+ * - 对比时自动提取前三段基础版本号（2.2.0）与升级脚本版本号做比较
+ *
+ * 安装辅助：
+ * - install() / lockInstall() / installLocked()：创建数据/存储目录、写入并检测安装锁文件（install.lock）
+ * - verifiyInstallKey() / refreshInstallKey()：校验与重新生成安装密钥（install.key）
+ * - updateVersion() / version()：把配置版本号写入 .version、读取 .version 原文
+ * - resetVersion() / uninstall()：强制改写版本号、删除 .version 版本记录
+ *
+ * 查询与状态（只读，不执行升级/回滚）：
+ * - parseSemver() / compare()：提取三段基础版本号、按基础版本号比较两个版本
+ * - getPendingUpgrades()：列出待升级版本（过滤条件与 upgrade() 一致）
+ * - getStatus()：返回 app_id / current_version / latest_version / upgrade_dir / data_dir 快照
+ *
+ * 升级脚本文件格式：
+ * ```php
+ * // 基础写法：构造器即升级逻辑
+ * class Upgrade_1_1_0 { public function __construct() { ... } }
+ *
+ * // 推荐写法：显式 upgrade/rollback 方法
+ * class Upgrade_1_1_0 {
+ *     public function upgrade()  { ... }
+ *     public function rollback() { ... }
+ * }
+ * ```
+ *
+ * 使用示例：
+ * ```php
+ * $p = new Provisioner();
+ *
+ * // 升级到目标版本（每次升级后自动持久化 .version）
+ * $p->upgrade('2.0.0');
+ *
+ * // 回滚到指定版本（每次回滚后自动持久化 .version）
+ * $p->rollback('1.0.0');
+ *
+ * // 查看待升级版本
+ * $pending = $p->getPendingUpgrades('2.0.0');
+ *
+ * // 查询当前状态
+ * $status = $p->getStatus();
+ * ```
+ */
+class ProvisionerProvider extends AbilityBaseObject
+{
+  /**
+   * 完整版本号（.version 文件原文，如 2.2.0.20260721.1746）
+   * @var string|null
+   */
+  protected $latestVersion = null;
+
+  /**
+   * 从完整版本号中提取的三段基础版本号（如 2.2.0），用于与升级脚本版本号做 version_compare
+   * @var string
+   */
+  protected $currentSemver = '0.0.0';
+
+  /**
+   * 升级脚本目录（null 时默认为 {Path::root()}/Upgrades）
+   *
+   * 原为「构造器属性提升」（PHP 7.4/8.0 语法），已改为显式属性声明 + 构造赋值，以兼容 PHP 7。
+   *
+   * @var string|null
+   */
+  protected $upgradesDir = null;
+
+  /**
+   * @param string|null $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades
+   */
+  public function __construct($upgradesDir = null)
+  {
+    $this->upgradesDir = $upgradesDir;
+
+    $versionFile = Path::join(Path::data(), ".version");
+    if (file_exists($versionFile)) {
+      $this->latestVersion = trim(file_get_contents($versionFile));
+      $this->currentSemver = $this::parseSemver($this->latestVersion);
+    }
+  }
+
+  /**
+   * 从完整版本号中提取三段基础版本号
+   *
+   * 2.2.0.20260721.1746 → 2.2.0
+   * 1.0 → 1.0（不足三段原样返回）
+   *
+   * @param string $fullVersion 完整版本号
+   * @return string 基础版本号
+   */
+  public static function parseSemver(string $fullVersion): string
+  {
+    $parts = explode('.', $fullVersion);
+    if (count($parts) >= 3) {
+      return implode('.', array_slice($parts, 0, 3));
+    }
+    return $fullVersion;
+  }
+  /**
+   * 比较两个版本号
+   *
+   * 先各自提取三段基础版本号（见 parseSemver），再交给 version_compare 比较。
+   * 传 $operator 返回 bool（如 ">="、"<"）；不传返回 int（-1 / 0 / 1）。
+   *
+   * @param string $version1 版本号 1
+   * @param string $version2 版本号 2
+   * @param string|null $operator 比较运算符（>、>=、<、<=、==、!= 等），null 时返回 int
+   * @return int|bool 无运算符时返回 -1/0/1；有运算符时返回 bool
+   */
+  public static function compare($version1,  $version2, $operator = null)
+  {
+    $version1 = self::parseSemver($version1);
+    $version2 = self::parseSemver($version2);
+
+    return version_compare($version1, $version2, $operator);
+  }
+  /**
+   * 首次安装：创建应用数据和存储目录
+   *
+   * @return $this
+   */
+  public function install()
+  {
+    if (!is_dir(Path::data())) {
+      mkdir(Path::data(), 0755, true);
+    }
+    if (!is_dir(Path::storage())) {
+      mkdir(Path::storage(), 0755, true);
+    }
+    return $this;
+  }
+  /**
+   * 判断安装是否已锁定
+   *
+   * 检测数据目录下的 install.lock 文件是否存在，存在即视为已完成安装。
+   *
+   * @return bool 已锁定返回 true，否则 false
+   */
+  public function installLocked()
+  {
+    return file_exists(Path::join(Path::data(), "install.lock"));
+  }
+  /**
+   * 写入安装锁文件，标记安装完成
+   *
+   * 在 data 目录下创建 install.lock，内容为当前时间戳。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  public function lockInstall()
+  {
+    return file_put_contents(Path::join(Path::data(), "install.lock"), time());
+  }
+  /**
+   * 校验安装密钥
+   *
+   * 读取 install.key 内容并与传入的 $key 比对。
+   * $key 为空时直接返回 false；install.key 不存在（无内容）时也返回 false。
+   *
+   * 注：方法名 "verifiy" 为历史拼写（正确应为 "verify"），为保持向后兼容未改名。
+   *
+   * @param string $key 待校验的安装密钥
+   * @return bool 密钥一致返回 true，否则 false
+   */
+  public function verifiyInstallKey($key)
+  {
+    if (!$key) return false;
+    $fileContent = file_get_contents(Path::join(Path::data(), "install.key"));
+    return  $fileContent ? $fileContent === $key : false;
+  }
+  /**
+   * 重新生成并写入安装密钥
+   *
+   * 在 data 目录下写入一个新的 uniqid() 作为 install.key 内容。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  public function refreshInstallKey()
+  {
+    return file_put_contents(Path::join(Path::data(), "install.key"), uniqid());
+  }
+  /**
+   * 执行增量升级
+   *
+   * 扫描 upgradesDir 目录下的 Upgrade_x_y_z.php 文件，从文件名提取版本号
+   * （如 Upgrade_1_2_3.php → 1.2.3），过滤出 > currentSemver 且 ≤ targetVersion
+   * 的脚本，按版本升序逐个执行。
+   *
+   * 每个升级脚本是一个类，执行逻辑：
+   * 1. include 文件，从文件路径推导完全限定类名并实例化
+   * 2. 若类有 upgrade() 方法则调用之，否则构造器本身即升级逻辑（向后兼容）
+   *
+   * @param string|null $targetVersion 目标版本号，null 表示升级到最新
+   * @return bool true=升级完成，false=升级失败，有错误
+   */
+  public function upgrade($targetVersion = null)
+  {
+    $upgradeList = $this->scanUpgradeFiles();
+    if (empty($upgradeList)) {
+      return true;
+    }
+
+    $targetVersion = $this::parseSemver($targetVersion);
+    $currentVersion = $this->currentSemver;
+
+    if (!array_key_exists($targetVersion, $upgradeList)) {
+      $upgradeList[$targetVersion] = null;
+    }
+
+    ksort($upgradeList);
+
+    foreach ($upgradeList as $version => $filePath) {
+      if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
+        break;
+      }
+      if (version_compare($currentVersion, $version, ">=") === true) {
+        continue;
+      }
+
+      if ($filePath) {
+        if (!$this->runUpgrade($filePath, $version)) {
+          return $this->forwardBreak();
+        }
+      }
+
+      $currentVersion = $version;
+      $this->persistVersion($currentVersion);
+    }
+
+    return true;
+  }
+  /**
+   * 将配置中的版本号持久化到 .version 文件
+   *
+   * 读取应用配置中的目标版本号（`version`）并写入 data 目录下的 .version。
+   *
+   * @return int|false 写入的字节数，失败返回 false
+   */
+  function updateVersion()
+  {
+    return file_put_contents(Path::join(Path::data(), ".version"), $this->app()->config()->get("version"));
+  }
+  /**
+   * 读取当前持久化的完整版本号
+   *
+   * 返回 data 目录下 .version 文件的原文（如 2.2.0.20260721.1746）；
+   * 文件不存在时返回 null。
+   *
+   * @return string|null
+   */
+  function version()
+  {
+    return file_get_contents(Path::join(Path::data(), ".version")) ?: null;
+  }
+
+  /**
+   * 执行增量回滚
+   *
+   * 从当前版本降级到 $targetVersion，按版本降序执行回滚脚本。
+   * 过滤出 ≤ currentSemver 且 > targetVersion 的脚本，逐个执行 rollback()。
+   * 仅定义了 rollback() 方法的升级类参与回滚，无该方法则跳过。
+   *
+   * @param string $targetVersion 回滚目标版本号
+   * @return bool true=回滚完成，false=回滚失败，有错误
+   */
+  public function rollback($targetVersion)
+  {
+    $upgradeList = $this->scanUpgradeFiles();
+    if (empty($upgradeList)) {
+      return true;
+    }
+
+    $targetVersion = $this::parseSemver($targetVersion);
+    $currentVersion = $this->currentSemver;
+
+    if (!array_key_exists($targetVersion, $upgradeList)) {
+      $upgradeList[$targetVersion] = null;
+    }
+
+    // 降序：从高版本向低版本回滚
+    krsort($upgradeList);
+
+    foreach ($upgradeList as $version => $filePath) {
+      // 不高于目标版本，后续版本均不高于目标，无需继续
+      if (version_compare($version, $targetVersion, "<=") === true) {
+        break;
+      }
+      // 高于当前版本，无对应回滚脚本
+      if (version_compare($version, $currentVersion, ">") === true) {
+        continue;
+      }
+
+      if ($filePath) {
+        if (!$this->runRollback($filePath, $version)) {
+          return $this->forwardBreak();
+        }
+      }
+
+      $currentVersion = $version;
+      $this->persistVersion($version);
+    }
+
+    return true;
+  }
+
+  /**
+   * 获取升级脚本目录路径
+   *
+   * 未通过构造参数指定时返回默认路径 {Path::root()}/Upgrades。
+   *
+   * @return string 升级脚本目录（绝对路径）
+   */
+  private function upgradesDir(): string
+  {
+    return $this->upgradesDir ?? Path::join(Path::root(), "Upgrades");
+  }
+
+  /**
+   * 扫描 upgradesDir 目录，匹配 Upgrade_x_y_z.php 文件并提取版本号
+   *
+   * @return array<string, string> 关联数组 [version => filePath]，如 ['1.1.0' => '/path/to/Upgrade_1_1_0.php']
+   */
+  private function scanUpgradeFiles(): array
+  {
+    $upgradesDir = $this->upgradesDir();
+    if (!is_dir($upgradesDir)) {
+      return [];
+    }
+
+    $upgradeList = [];
+    $files = scandir($upgradesDir);
+
+    foreach ($files as $file) {
+      if (!preg_match('/^Upgrade_(\d+_\d+_\d+)\.php$/', $file, $matches)) {
+        continue;
+      }
+
+      $version = str_replace('_', '.', $matches[1]);
+      $upgradeList[$version] = Path::join($upgradesDir, $file);
+    }
+
+    return $upgradeList;
+  }
+
+  /**
+   * 从升级目录路径和文件名构建类的完全限定名
+   *
+   * 推导逻辑：取 upgradesDir 相对 Path::root() 的路径 → 目录分隔符转命名空间分隔符
+   * → 以默认应用 ID 为根命名空间拼接类短名。
+   * 例：默认应用 ID=myapp，upgradesDir={root}/Controller/Iuu/Upgrades/List，file=Upgrade_1_1_0.php
+   *     → myapp\Controller\Iuu\Upgrades\List\Upgrade_1_1_0
+   *
+   * @param string $filePath 升级脚本完整路径
+   * @return string 完全限定类名
+   */
+  private function buildUpgradeClassName( $filePath)
+  {
+    $shortName = pathinfo($filePath, PATHINFO_FILENAME);
+    $relativePath = ltrim(str_replace(Path::root(), '', $this->upgradesDir()), '/');
+    $namespace = str_replace('/', '\\', $relativePath);
+    return Applications::defaultId() . '\\' . $namespace . '\\' . $shortName;
+  }
+
+  /**
+   * 执行单个升级脚本
+   *
+   * include 脚本文件 → 实例化类 → 若类定义了 upgrade() 方法则调用，
+   * 否则仅实例化（构造器包含升级逻辑，向后兼容）。
+   *
+   * @param string $filePath 升级脚本文件路径
+   * @param string $version  对应版本号
+   */
+  private function runUpgrade( $filePath,  $version)
+  {
+    include($filePath);
+    $className = $this->buildUpgradeClassName($filePath);
+
+    if (!class_exists($className)) {
+      return $this->break(500, 500, "升级到 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
+    }
+
+    try {
+      $instance = new $className();
+      if (method_exists($instance, 'upgrade')) {
+        $instance->upgrade();
+      }
+    } catch (\Throwable $th) {
+      return $this->break(500, 500, "升级到 {$version} 失败: " . $th->getMessage(), $th);
+    }
+  }
+
+  /**
+   * 执行单个回滚脚本
+   *
+   * include 脚本文件 → 实例化类 → 调用 rollback() 方法。
+   * 若类未定义 rollback() 方法则跳过（不抛异常）。
+   *
+   * @param string $filePath 升级脚本文件路径
+   * @param string $version  对应版本号
+   */
+  private function runRollback( $filePath,  $version)
+  {
+    include($filePath);
+    $className = $this->buildUpgradeClassName($filePath);
+
+    if (!class_exists($className)) {
+      return $this->break(500, 500, "回滚 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
+    }
+
+    try {
+      $instance = new $className();
+      if (method_exists($instance, 'rollback')) {
+        $instance->rollback();
+      }
+    } catch (\Throwable $th) {
+      return $this->break(500, 500, "回滚 {$version} 失败: " . $th->getMessage(), $th);
+    }
+  }
+  /**
+   * 持久化当前版本号到 .version 文件
+   *
+   * @param string $version 要写入的版本号
+   */
+  private function persistVersion( $version)
+  {
+    $versionFile = Path::join(Path::data(), ".version");
+    file_put_contents($versionFile, $version);
+    $this->latestVersion = $version;
+    $this->currentSemver = $this::parseSemver($version);
+  }
+  /**
+   * 卸载：删除 .version 文件
+   *
+   * @return void
+   */
+  public function uninstall()
+  {
+    $versionFile = Path::join(Path::data(), ".version");
+    if (file_exists($versionFile)) {
+      unlink($versionFile);
+    }
+  }
+
+  /**
+   * 获取应用当前状态快照
+   *
+   * @return array{app_id: string|null, current_version: string, latest_version: string|null, upgrade_dir: string, data_dir: string|null}
+   */
+  public function getStatus(): array
+  {
+    return [
+      'app_id' => Applications::defaultId(),
+      'current_version' => $this->currentSemver,
+      'latest_version' => $this->latestVersion,
+      'upgrade_dir' => $this->upgradesDir(),
+      'data_dir' => Path::data(),
+    ];
+  }
+
+  /**
+   * 获取待升级的版本列表
+   *
+   * @param string|null $targetVersion 目标版本
+   * @return array 待升级的版本号列表，按升序排列
+   */
+  public function getPendingUpgrades($targetVersion = null): array
+  {
+    $upgradeList = $this->scanUpgradeFiles();
+    if (empty($upgradeList)) {
+      return [];
+    }
+    ksort($upgradeList);
+
+    $pending = [];
+    foreach ($upgradeList as $version => $_) {
+      if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
+        break;
+      }
+      if (version_compare($this->currentSemver, $version, ">=") === true) {
+        continue;
+      }
+      $pending[] = $version;
+    }
+    return $pending;
+  }
+
+  /**
+   * 强制重置当前版本号
+   *
+   * 直接修改内存状态和 .version 文件，不执行任何升级或回滚逻辑。
+   * 适用于手动修正版本号、初始化新环境的基准版本等场景。
+   *
+   * @param string $version 要设置的目标版本号
+   * @return ProvisionerProvider
+   */
+  public function resetVersion(string $version): ProvisionerProvider
+  {
+    $this->persistVersion($version);
+    return $this;
+  }
+}

@@ -2,7 +2,7 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Foundation\FileSystem\Storage\Drivers\LocalStorage;
+use kernel\Providers\Storage\Drivers\LocalStorage;
 use kernel\DiscuzX\Foundation\DiscuzXPath;
 class DiscuzXLocalStorage extends LocalStorage
 {

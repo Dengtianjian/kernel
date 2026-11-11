@@ -8,8 +8,6 @@ use kernel\Foundation\HTTP\Request\RequestData;
 use kernel\Foundation\HTTP\Request\RequestHeader;
 use kernel\Foundation\HTTP\Request\RequestParams;
 use kernel\Foundation\HTTP\Request\RequestQuery;
-use kernel\Foundation\Output;
-
 
 class Request
 {

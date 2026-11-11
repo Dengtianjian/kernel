@@ -2,7 +2,6 @@
 
 namespace kernel\Commands;
 
-use kernel\Foundation\App;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Zip;
 
@@ -10,12 +9,12 @@ use kernel\Foundation\FileSystem\Zip;
  * 解包命令（框架内置）：将应用与内核的 zip 解压回对应目录
  *
  * 用法：
- *   php isdtj/console unpack                    # 应用名取 App::id()，内核名取 App::kernelId()
+ *   php isdtj/console unpack                    # 应用名取 $console->appId()，内核名取 $console->kernelId()
  *   php kernel/console unpack isdtj             # 从内核控制台运行：位置参数指定应用名
  *   php kernel/console unpack isdtj kernel      # 同时指定应用名与内核名
  *   php kernel/console unpack --app=isdtj --kernel=kernel
  *
- * - 应用名默认取 `App::id()`，内核名默认取 `App::kernelId()`（默认 "kernel"）
+ * - 应用名默认取 `$console->appId()`，内核名默认取 `$console->kernelId()`（默认 "kernel"）
  * - 两者均可由位置参数（[app] [kernel]）或选项（--app / --kernel）覆盖
  * - 读取项目根下的 {app}.zip / {kernel}.zip，解压到 {app} / {kernel} 目录
  * - 归档文件不存在时跳过该目标并告警，不中断其余目标
@@ -43,10 +42,10 @@ class UnpackCommand
       return 1;
     }
 
-    //* 应用名：位置参数 > --app 选项 > App::id()
-    $appName = trim((string) ($args[0] ?? $options["app"] ?? App::id()));
-    //* 内核名：位置参数 > --kernel 选项 > App::kernelId()（默认 kernel）
-    $kernelName = trim((string) ($args[1] ?? $options["kernel"] ?? (App::kernelId() ?: "kernel")));
+    //* 应用名：位置参数 > --app 选项 > $console->appId()
+    $appName = trim((string) ($args[0] ?? $options["app"] ?? $console->appId()));
+    //* 内核名：位置参数 > --kernel 选项 > $console->kernelId()（默认 kernel）
+    $kernelName = trim((string) ($args[1] ?? $options["kernel"] ?? ($console->kernelId() ?: "kernel")));
 
     if ($appName === "") {
       $console->error("Cannot determine application name. Pass it as an argument: unpack <app> [kernel]");

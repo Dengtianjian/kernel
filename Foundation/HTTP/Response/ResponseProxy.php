@@ -2,8 +2,9 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Foundation\Config;
+use kernel\Providers\App\ConfigProvider;
 use kernel\Foundation\HTTP\Response;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 远程资源代理响应（服务端中转输出）
@@ -16,7 +17,7 @@ use kernel\Foundation\HTTP\Response;
  * 不会把整份资源读进内存。本类不需要 Request（既不处理 Range，也不读请求参数）。
  *
  * 安全与限制（重要）：
- * - 只应传入**由存储磁盘产出**的 URL（{@see \kernel\Foundation\FileSystem\Storage\Drivers\AbstractStorage::url()}）；
+ * - 只应传入**由存储磁盘产出**的 URL（{@see \kernel\Providers\Storage\Drivers\AbstractStorage::url()}）；
  *   切勿把用户输入直接传进来，否则等于给站点开了一个 SSRF 跳板；
  * - 协议白名单见 {@see canProxy()}（默认 `ftp` / `ftps`，可用配置扩展）；
  * - 超时与体积上限见 {@see proxyTimeout()} / {@see proxyMaxSize()}（配置 `storage.*` 可覆盖）；
@@ -276,7 +277,7 @@ class ResponseProxy extends Response
   protected static function config($key, $default)
   {
     try {
-      return Config::get("storage/" . $key, $default);
+      return Applications::default()->config()->get("storage/" . $key, $default);
     } catch (\Throwable $e) {
       return $default;
     }

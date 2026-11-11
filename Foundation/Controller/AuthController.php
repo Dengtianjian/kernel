@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Controller;
 
-use kernel\Foundation\Result;
+use kernel\Support\Result;
 
 
 /**
