@@ -81,7 +81,7 @@ use kernel\\Foundation\\Object\\AbilityBaseObject;
  * - Config：不用手动 new，\$this->app()->config() 首次访问时自动读 Configs/ 目录
  * - new FileSystem：创建 Data/、Storage/ 等目录
  * - 缓存：不是每个应用都需要，要用就自己登记一行
- *   \$this->app()->provider(\kernel\Providers\App\CacheProvider::class)；登记后
+ *   \$this->app()->provider(\kernel\Foundation\Builtin\Cache::class)；登记后
  *   \$this->app()->cache() 与门面 \kernel\Facades\Cache 都可用（动态 KEY 在请求级）
  * - new Middleware 后 ->set(...)：注册全局中间件，再 \$this->app()->provider(\$middleware) 登记
  * - \$this->app()->onBootUp() / ->onShutdown() / ->onError()：注册生命周期钩子，

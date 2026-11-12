@@ -2,7 +2,7 @@
 
 namespace kernel\Middlewares;
 
-use kernel\Providers\Auth\AuthProvider;
+use kernel\Modules\Auth\Auth;
 use kernel\Foundation\App;
 use kernel\Foundation\Application\Applications;
 use kernel\Foundation\Controller\AuthController;
@@ -13,10 +13,10 @@ use kernel\Support\Result;
 /**
  * 全局认证中间件
  *
- * 从 Authorization 头取 token，校验 logins 表，把结果写入 {@see AuthProvider}
+ * 从 Authorization 头取 token，校验 logins 表，把结果写入 {@see Auth}（登录态由 AuthModule 持有）
  * ——只写上下文，不碰服务状态，也不把「当前用户」缓存到任何静态变量里。
  *
- * 中间件由 {@see \kernel\Providers\Auth\AuthProvider} 的构造函数按运行环境挂上
+ * 中间件由 {@see \kernel\Modules\Auth\AuthProvider} 的构造函数按运行环境挂上
  * （DiscuzX 下换成 {@see \kernel\DiscuzX\Middlewares\GlobalDiscuzXAuthMiddleware}）。
  *
  * 注意：中间件是 `new $class($request, $controller)` 直接实例化的（见
@@ -33,26 +33,6 @@ class GlobalAuthMiddleware extends MiddlewareBase
   protected function app()
   {
     return Applications::default();
-  }
-
-  /**
-   * 本次请求的登录态上下文
-   *
-   * @return AuthProvider
-   */
-  protected function auth()
-  {
-    return $this->app()->make(AuthProvider::class);
-  }
-
-  /**
-   * 认证服务（凭证生成 / 吊销）
-   *
-   * @return AuthService
-   */
-  protected function authService()
-  {
-    return $this->app()->make(AuthProvider::class);
   }
 
   /**
@@ -86,7 +66,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
     }
 
     // 查哪张表、按什么条件查由认证服务决定（跨应用时查提供方的表）
-    $authData = $this->authService()->findValidToken($token);
+    $authData = Auth::findValidToken($token);
     if (empty($authData)) {
       if ($strongCheck) {
         return $RR->error(401, "Auth:401003", "登录信息无效，请重新登录", "无效的Token");
@@ -105,15 +85,14 @@ class GlobalAuthMiddleware extends MiddlewareBase
     //* 如果token的有效期剩余20%，就自动刷新token
     if ($expirationDay > 0 && $diffDay / $expirationDay > 0.8) {
       //* 自动刷新token
-      $newToken = $this->authService()->createToken($authData['user_id']);
-      $this->authService()->deleteToken($authData['token']);
+      $newToken = Auth::createToken($authData['user_id']);
+      Auth::deleteToken($authData['token']);
 
       $token = $newToken['value'];
       $expiresAt = $newToken['expiresAt'];
     }
 
-    $this->auth()
-      ->setTokenExpiresAt($expiresAt)
+    Auth::setTokenExpiresAt($expiresAt)
       ->setToken($token)
       ->setUserId($authData['user_id'])
       ->setLogged(true);
@@ -166,7 +145,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
   /**
    * 为响应补充 Authorization 头（后置注入）
    *
-   * 仅当本次请求成功登录（{@see AuthProvider::logged()} 为真）时才写入，便于客户端
+   * 仅当本次请求成功登录（{@see Auth::logged()} 为真）时才写入，便于客户端
    * 续期/携带 token。通过 Response::header() 管理头信息，由框架统一输出。
    *
    * @param \kernel\Foundation\HTTP\Response $response
@@ -174,10 +153,9 @@ class GlobalAuthMiddleware extends MiddlewareBase
    */
   protected function applyAuthHeader(Response $response): Response
   {
-    $auth = $this->auth();
-    if ($auth->logged()) {
-      $response->header("x-auth-token", $auth->token());
-      $response->header("x-auth-token-expires-at", $auth->tokenExpiresAt());
+    if (Auth::logged()) {
+      $response->header("x-auth-token", Auth::token());
+      $response->header("x-auth-token-expires-at", Auth::tokenExpiresAt());
     }
     return $response;
   }

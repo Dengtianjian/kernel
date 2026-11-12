@@ -2,11 +2,11 @@
 
 namespace kernel\Controllers\Main\Files;
 
-use kernel\Providers\Storage\Storage;
+use kernel\Modules\Storage\StorageModule;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\HTTP\Response\ResponseProxy;
 use kernel\Foundation\HTTP\URL;
-use kernel\Providers\Storage\FilesModel;
+use kernel\Modules\Storage\FilesModel;
 
 /**
  * 文件输出控制器（预览 / 下载的公共实现）
@@ -22,7 +22,7 @@ use kernel\Providers\Storage\FilesModel;
  * 2. 取文件记录：开启数据存储时查模型，否则走 {@see Storage::get()}；
  * 3. 404 兜底；
  * 4. 过滤掉签名相关 query 参数（{@see SIGN_QUERY_PARAMS}），其余留给目标地址；
- * 5. 按记录里的 `disk` 取磁盘、取访问地址（{@see \kernel\Providers\Storage\Drivers\AbstractStorage::url()}）；
+ * 5. 按记录里的 `disk` 取磁盘、取访问地址（{@see \kernel\Modules\Storage\Drivers\AbstractStorage::url()}）；
  * 6. **远程地址**：能被服务端代理的协议（如 `ftp://`，见 {@see ResponseProxy::canProxy()}）→ 代理取回后转发；
  *    其余（http/https 等）→ 补全协议相对地址、并入 query 参数后 302 跳转（省服务端带宽）；
  * 7. **本地路径**：预览 → {@see \kernel\Foundation\HTTP\Response\ResponseFile}（inline，带 `max-age=43200`）；
@@ -61,7 +61,7 @@ class FileOutputController extends Controller
    */
   protected function output($fileKey = null)
   {
-    $storage = $this->app()->make(Storage::class);
+    $storage = $this->app()->make(StorageModule::class);
     if (!$storage->authorizeOperation($fileKey, "read", ["preview", "download"])) return $storage->return();
 
     if ($storage->dataSave()) {

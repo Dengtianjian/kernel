@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\HTTP;
 
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\Application\Applications;
 
 /**

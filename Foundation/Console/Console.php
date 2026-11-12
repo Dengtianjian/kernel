@@ -3,7 +3,7 @@
 namespace kernel\Foundation\Console;
 
 use kernel\Foundation\App;
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\Application\Applications;
 
 /**

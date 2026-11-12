@@ -3,7 +3,7 @@
 namespace kernel\Facades;
 
 use kernel\Foundation\Facade\Facade;
-use kernel\Providers\App\LogProvider;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 日志门面
@@ -32,8 +32,8 @@ class Log extends Facade
    *
    * @return string
    */
-  protected static function accessor()
+  protected static function resolve()
   {
-    return LogProvider::class;
+    return Applications::default()->log();
   }
 }

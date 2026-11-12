@@ -3,8 +3,7 @@
 namespace kernel\Crons;
 
 use kernel\Foundation\Crontab\Cron;
-use kernel\Providers\Auth\AuthProvider;
-use kernel\Foundation\Application\Applications;
+use kernel\Modules\Auth\Auth;
 
 /**
  * 清理过期登录凭证的定时任务
@@ -35,6 +34,6 @@ class ClearExpiredTokensCron extends Cron
    */
   public function handle()
   {
-    Applications::default()->make(AuthProvider::class)->deleteExpiredTokens();
+    Auth::deleteExpiredTokens();
   }
 }

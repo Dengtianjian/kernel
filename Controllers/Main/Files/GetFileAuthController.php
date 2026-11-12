@@ -5,14 +5,14 @@ namespace kernel\Controllers\Main\Files;
 use kernel\Foundation\Controller\AuthController;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\FileSystem\Path;
-use kernel\Providers\Storage\Storage;
-use kernel\Providers\Auth\AuthProvider;
+use kernel\Modules\Auth\Auth;
+use kernel\Modules\Storage\StorageModule;
 
 /**
  * 获取文件操作授权
  *
  * 对应存储层注册的 `auth` 路由：`{prefix}/auth/{method:(get|post|patch|delete)}`
- * （见 {@see \kernel\Providers\Storage\Storage::registerRoute()}），
+ * （见 {@see \kernel\Modules\Storage\StorageModule::registerRoute()}），
  * URL 里的 `method` 会作为 {@see data()} 的第一个参数传入，据此派发到同名方法。
  *
  * 作用是向调用方**签发带签名与有效期的授权参数**（{@see Storage::createAuthParams()}）：
@@ -103,16 +103,15 @@ class GetFileAuthController extends AuthController
   /**
    * 签发「修改」授权（需登录）
    *
-   * 必须已登录（{@see $auth->logged()}），否则返回 403。
+   * 必须已登录，否则返回 403。
    *
    * @param string $fileKey 文件键
    * @return array|Response 授权参数；未登录时返回 break 错误态
    */
   protected function patch(string $fileKey)
   {
-    $auth = $this->app()->make(AuthProvider::class);
-    $storage = $this->app()->make(Storage::class);
-    if (!$auth->logged()) return $this->fail(403, 403, "抱歉，您无权获取修改文件授权");
+    $storage = $this->app()->make(StorageModule::class);
+    if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取修改文件授权");
 
     return $storage->createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", [],), "patch", $this->body("action", null));
   }
@@ -126,13 +125,13 @@ class GetFileAuthController extends AuthController
    */
   protected function get(string $fileKey)
   {
-    $storage = $this->app()->make(Storage::class);
+    $storage = $this->app()->make(StorageModule::class);
     return $storage->createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", []), "get", $this->body("action", null));
   }
   /**
    * 签发「上传」授权，并登记文件元信息（需登录）
    *
-   * 必须已登录（{@see $auth->logged()}），否则返回 403。流程：
+   * 必须已登录，否则返回 403。流程：
    * 1. 取请求体里的上传元信息（`name` / `path` / `size` / `width` / `height` /
    *    `accessControl` / `ref` / `type`）；
    * 2. 确定文件键：传入 `$fileKey` 时以它为准，并用它的 basename 作为对象文件名；
@@ -152,9 +151,8 @@ class GetFileAuthController extends AuthController
    */
   protected function post($fileKey = null)
   {
-    $auth = $this->app()->make(AuthProvider::class);
-    $storage = $this->app()->make(Storage::class);
-    if (!$auth->logged()) return $this->fail(403, 403, "抱歉，您无权获取上传文件授权");
+    $storage = $this->app()->make(StorageModule::class);
+    if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取上传文件授权");
 
     $body = $this->requestBody->some(
       [
@@ -179,12 +177,12 @@ class GetFileAuthController extends AuthController
       $this->fileKey = $fileKey = $storage->buildFileKey($body['path'], $objectFileName);
     }
 
-    $accessControl = ($this->body("accessControl") !== null) && $this->body("accessControl") ? $this->body("accessControl") : Storage::PUBLIC_READ;
+    $accessControl = ($this->body("accessControl") !== null) && $this->body("accessControl") ? $this->body("accessControl") : StorageModule::PUBLIC_READ;
 
     $disk = $storage->disk($this->body("disk") ?: null);
 
     if ($storage->dataSave()) {
-      $storage->add($fileKey, $body['name'], $objectFileName, $body['path'], $body['size'], $pathInfo['extension'], null, $auth->userId(), $accessControl, $disk->name(), $body['ref'] ?: null, $body['type'] ?: null, $body['width'], $body['height']);
+      $storage->add($fileKey, $body['name'], $objectFileName, $body['path'], $body['size'], $pathInfo['extension'], null, Auth::userId(), $accessControl, $disk->name(), $body['ref'] ?: null, $body['type'] ?: null, $body['width'], $body['height']);
     }
 
     $expires = $this->body("expires") ?: 600; //* 默认是 10 分钟有效期，如果文件大小超过 10M，就会通过尺寸大小来重新计算有效期，会基于 10 分钟的基础上去增加时间
@@ -209,16 +207,15 @@ class GetFileAuthController extends AuthController
   /**
    * 签发「删除」授权（需登录）
    *
-   * 必须已登录（{@see $auth->logged()}），否则返回 403。
+   * 必须已登录，否则返回 403。
    *
    * @param string $fileKey 文件键
    * @return array|Response 授权参数；未登录时返回 break 错误态
    */
   protected function delete(string $fileKey)
   {
-    $auth = $this->app()->make(AuthProvider::class);
-    $storage = $this->app()->make(Storage::class);
-    if (!$auth->logged()) return $this->fail(403, 403, "抱歉，您无权获取删除文件授权");
+    $storage = $this->app()->make(StorageModule::class);
+    if (!Auth::logged()) return $this->fail(403, 403, "抱歉，您无权获取删除文件授权");
 
     return $storage->createAuthParams($fileKey, $this->body("expires") ?: 1800, $this->body("urlParams", []),  $this->body("headers", []), "delete", $this->body("action", null));
   }

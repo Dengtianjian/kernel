@@ -2,8 +2,8 @@
 
 namespace kernel\Facades;
 
-use kernel\Providers\App\ConfigProvider;
 use kernel\Foundation\Facade\Facade;
+use kernel\Foundation\Application\Applications;
 
 /**
  * 配置门面
@@ -43,8 +43,8 @@ class Config extends Facade
    *
    * @return string
    */
-  protected static function accessor()
+  protected static function resolve()
   {
-    return ConfigProvider::class;
+    return Applications::default()->config();
   }
 }

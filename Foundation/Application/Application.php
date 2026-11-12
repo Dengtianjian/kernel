@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Application;
 
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\FileSystem\Path;
@@ -191,13 +191,13 @@ abstract class Application
    * {@see config()} 会构建并读文件；本方法只回答「已经加载了没有」。
    * 给静态入口（{@see mode()}）和排查用。
    *
-   * @return ConfigProvider|null
+   * @return \kernel\Foundation\Builtin\Config|null
    */
   public function resolvedConfig()
   {
     //* 容器不再提供「只查已构造实例」的入口，这里扫一遍已构造的单例即可
     foreach ($this->container()->providers() as $instance) {
-      if ($instance instanceof ConfigProvider) {
+      if ($instance instanceof \kernel\Foundation\Builtin\Config) {
         return $instance;
       }
     }

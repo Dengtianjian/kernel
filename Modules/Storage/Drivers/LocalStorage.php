@@ -1,0 +1,123 @@
+<?php
+
+namespace kernel\Modules\Storage\Drivers;
+
+use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\FileSystem\Path;
+use kernel\Modules\Storage\StorageFile;
+
+/**
+ * 本地磁盘存储
+ *
+ * {@see AbstractStorage} 的本地实现
+ * 本地存储目录下，路径经 {@see Path::join()} 安全拼接，避免
+ * 目录穿越。
+ *
+ * 磁盘名称固定为 `local`。
+ */
+class LocalStorage extends AbstractStorage
+{
+  /**
+   * 构造本地存储实例
+   *
+   * 固定将磁盘名称设为 `local`。
+   */
+  public function __construct()
+  {
+    $this->name = "local";
+    $this->basePath = Path::storage();
+  }
+
+  /**
+   * 获取本地文件信息
+   *
+   * @param string $fileName 文件名称
+   * @return false|StorageFile 文件信息数组，文件不存在时返回 false
+   */
+  public function get($fileName)
+  {
+    $filePath = Path::join($this->basePath(), $fileName);
+
+    $fileInfo = FileSystem::getFileInfo($filePath);
+    if ($fileInfo) {
+      $fileInfo['disk'] = "local";
+
+      return new StorageFile([
+        "name" => $fileInfo['name'],
+        "source_file_name" => $fileInfo['sourceFileName'],
+        "path" => $fileInfo['path'],
+        "extension" => $fileInfo['extension'],
+        "size" => $fileInfo['size'],
+        "width" => $fileInfo['width'],
+        "height" => $fileInfo['height'],
+        "filePath" => $fileInfo['filePath'],
+      ]);
+    }
+
+    return false;
+  }
+
+  /**
+   * 保存/上传文件到本地磁盘
+   *
+   * 通过 {@see FileSystem::upload()} 将源文件写入目标位置。目标文件名
+   * 由 `$saveFileName` 决定（未传则使用源文件的 `name`）。失败时调用
+   * {@see AbilityBaseObject::break()} 返回 500 错误态。
+   *
+   * @param array  $file         源文件描述数组（含 `name` 等上传信息）
+   * @param string|null $saveFileName 保存后的文件名称（含相对路径）；为 null 时使用 `$file['name']`
+   * @return false|StorageFile 成功时返回文件信息；失败时返回 false
+   */
+  public function put($file, $saveFileName = null)
+  {
+    $saveFileName = $saveFileName ?: $file['name'];
+    $pathInfo = pathinfo($saveFileName);
+
+    $fileInfo = FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
+    if (!$fileInfo) {
+      return $this->break(500, 500, "文件上传失败", TRUE);
+    }
+
+    return $this->get($saveFileName);
+  }
+
+  /**
+   * 删除本地文件
+   *
+   * 先经 {@see exists()} 确认文件存在（不存在返回 404 错误态），
+   * 再以 {@see url()} 得到的完整路径委托 {@see FileSystem::deleteFile()} 执行物理删除。
+   *
+   * @param string $fileName 文件名称（相对 storage 根目录的路径）
+   * @return mixed 成功返回 FileSystem::deleteFile 的结果（删除成功为 true）；文件不存在时返回 break 错误态
+   */
+  public function delete($fileName)
+  {
+    if (!$this->exists($fileName)) return $this->break(404, 404, "文件不存在");
+
+    return FileSystem::deleteFile($this->url($fileName));
+  }
+
+  /**
+   * 判断本地文件是否存在
+   *
+   * 以 {@see url()} 得到的完整路径进行 `file_exists` 判定。
+   *
+   * @param string $fileName 文件名称（相对 storage 根目录的路径）
+   * @return bool 存在返回 true，否则 false
+   */
+  public function exists($fileName)
+  {
+    return file_exists($this->url($fileName));
+  }
+
+  /**
+   * 获取本地文件的完整路径
+   *
+   * @param string $fileName 文件名称（相对 storage 根目录的路径）
+   * @return string 文件在本地磁盘上的完整路径
+   */
+  public function url($fileName)
+  {
+    return Path::join($this->basePath(), $fileName);
+  }
+}

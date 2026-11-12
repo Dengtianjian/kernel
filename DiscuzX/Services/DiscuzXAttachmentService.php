@@ -6,7 +6,7 @@ use kernel\Foundation\FileSystem\FileSystem;
 
 use forum_upload;
 use kernel\Foundation\Application\Applications;
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Support\Result;

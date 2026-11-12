@@ -2,6 +2,7 @@
 
 namespace kernel\DiscuzX\Middlewares;
 
+use kernel\Modules\Auth\Auth;
 use kernel\Foundation\HTTP\Cors;
 use kernel\Foundation\HTTP\Response;
 use kernel\Support\Result;
@@ -14,7 +15,7 @@ use kernel\DiscuzX\Member\DiscuzXMember;
  *
  * 在 {@see GlobalAuthMiddleware} 的基础上追加两件事：
  * - 同源视图请求（页面发起的 ajax）不用 token，改按 Discuz 的 uid / adminid / groupid 判定；
- * - 校验通过后用 Discuz 的会员信息补齐上下文（{@see \kernel\Providers\Auth\AuthProvider}）。
+ * - 校验通过后用 Discuz 的会员信息补齐上下文（{@see \kernel\Modules\Auth\Auth}）。
  *
  * 登录态仍然只写上下文，不缓存到任何静态变量。
  */
@@ -28,7 +29,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   public function verifyViewControllerAdmin()
   {
     $RR = new Result(true);
-    $userId = $this->auth()->userId() ? (int)$this->auth()->userId() : 0;
+    $userId = Auth::userId() ? (int)Auth::userId() : 0;
     $adminId =  $userId ? (int)getglobal("member/adminid") : 0;
 
     if (is_bool($this->controller->admin) && $this->controller->admin) {
@@ -56,7 +57,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   public function verifyViewControllerAuth()
   {
     $RR = new Result(true);
-    $userId = $this->auth()->userId() ? (int)$this->auth()->userId() : 0;
+    $userId = Auth::userId() ? (int)Auth::userId() : 0;
     $groupId = $userId ? (int)getglobal("member/groupid") : 0;
 
     if (is_bool($this->controller->auth) && $this->controller->auth && $userId === 0) {
@@ -85,7 +86,7 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
   }
   private function login()
   {
-    $userId = $this->auth()->userId();
+    $userId = Auth::userId();
     if (!$userId) return;
 
     $memberInfo = null;
@@ -98,8 +99,8 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     }
 
     if ($memberInfo) {
-      $this->auth()->setLogged(true);
-      $this->auth()->setUser($memberInfo);
+      Auth::setLogged(true);
+      Auth::setUser($memberInfo);
     }
   }
   /**
@@ -113,11 +114,11 @@ class GlobalDiscuzXAuthMiddleware extends GlobalAuthMiddleware
     $sameOrigin = Cors::isSameOrigin();
 
     if (getglobal("uid") && ($sameOrigin || !Cors::requestOrigin())) {
-      $this->auth()->setUserId(getglobal("uid"));
+      Auth::setUserId(getglobal("uid"));
       $this->login();
     }
 
-    if (!$this->auth()->logged()) {
+    if (!Auth::logged()) {
       $verified = $this->verifyToken(false);
       if ($verified->error) {
         return $verified;

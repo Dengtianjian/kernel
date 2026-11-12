@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\HTTP\Response;
 use kernel\Foundation\Application\Applications;
 
@@ -17,7 +17,7 @@ use kernel\Foundation\Application\Applications;
  * 不会把整份资源读进内存。本类不需要 Request（既不处理 Range，也不读请求参数）。
  *
  * 安全与限制（重要）：
- * - 只应传入**由存储磁盘产出**的 URL（{@see \kernel\Providers\Storage\Drivers\AbstractStorage::url()}）；
+ * - 只应传入**由存储磁盘产出**的 URL（{@see \kernel\Modules\Storage\Drivers\AbstractStorage::url()}）；
  *   切勿把用户输入直接传进来，否则等于给站点开了一个 SSRF 跳板；
  * - 协议白名单见 {@see canProxy()}（默认 `ftp` / `ftps`，可用配置扩展）；
  * - 超时与体积上限见 {@see proxyTimeout()} / {@see proxyMaxSize()}（配置 `storage.*` 可覆盖）；

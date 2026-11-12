@@ -286,7 +286,7 @@ class ModelBuilder
    *
    * @example
    * LinksModel::orderBy('sort')
-   *   ->when(!$app->make(AuthProvider::class)->logged(), fn($q) => $q->where('private', false))
+   *   ->when(!$app->make(AuthModule::class)->logged(), fn($q) => $q->where('private', false))
    *   ->get();
    */
   public function when($condition, callable $callback,$default = null)

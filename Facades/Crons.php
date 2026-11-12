@@ -27,18 +27,6 @@ use kernel\Foundation\Application\Applications;
 class Crons extends Facade
 {
   /**
-   * 容器键：定时任务管理器
-   *
-   * 与 {@see resolve()} 的兜底产物一致，保证 `$app->make(CronsManager::class)` 拿到同一份。
-   *
-   * @return string
-   */
-  protected static function accessor()
-  {
-    return CronsManager::class;
-  }
-
-  /**
    * 兜底实例：自动 new 一个管理器并扫描当前应用 Crons/ 目录登记定时器
    *
    * 首次调用后产物会写回容器，后续 `Crons::xxx()` 与 `$app->make(CronsManager::class)`

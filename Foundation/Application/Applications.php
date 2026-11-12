@@ -109,9 +109,9 @@ class Applications
    * ```php
    * [
    *   "gstudio_download" => [
-   *     "imports"   => ["kernel\Providers\Setting\SettingProvider" => "gstudio_super_app"],
+   *     "imports"   => ["kernel\Modules\Setting\Setting" => "gstudio_super_app"],
    *     "exposed"   => [],
-   *     "providers" => ["kernel\Providers\Setting\SettingProvider", ...],
+   *     "providers" => ["kernel\Modules\Setting\Setting", ...],
    *   ],
    *   // ...
    * ]

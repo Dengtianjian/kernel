@@ -2,7 +2,6 @@
 
 namespace kernel\Facades;
 
-use kernel\Providers\App\CacheProvider;
 use kernel\Foundation\Facade\Facade;
 use kernel\Foundation\Application\Applications;
 
@@ -46,9 +45,9 @@ class Cache extends Facade
    *
    * @return string
    */
-  protected static function accessor()
+  protected static function resolve()
   {
-    return CacheProvider::class;
+    return Applications::default()->cache();
   }
 
   /**
@@ -60,6 +59,6 @@ class Cache extends Facade
    */
   public static function key(): string
   {
-    return Applications::default()->make(CacheProvider::class)->key();
+    return Applications::default()->cache()->key();
   }
 }

@@ -2,7 +2,7 @@
 
 namespace kernel\Controllers\Main\Files;
 
-use kernel\Providers\Storage\Storage;
+use kernel\Modules\Storage\StorageModule;
 use kernel\Foundation\Controller\Controller;
 
 class GetFileURLController extends Controller
@@ -18,7 +18,7 @@ class GetFileURLController extends Controller
   ];
   protected function buildURL(string $key)
   {
-    $storage = $this->app()->make(Storage::class);
+    $storage = $this->app()->make(StorageModule::class);
     $fileURL = $storage->url($key);
     if ($this->requestBody->has("urlParams")) {
       $fileURL->urlParams($this->body("urlParams"));

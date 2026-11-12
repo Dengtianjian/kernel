@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\HTTP\Response;
 
-use kernel\Providers\App\ConfigProvider;
+use kernel\Foundation\Builtin\Config;
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Data\Date;
 use kernel\Foundation\HTTP\Response;

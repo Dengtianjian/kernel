@@ -12,7 +12,7 @@ use kernel\Foundation\Exception\Error;
  * 职责边界（本类只做「实际文件动作」，不含磁盘与鉴权）：
  * - 路径推导与拼接 → {@see Path}（root / data / storage / join / optimizedPath）
  * - 文件类型判断与目录扫描 → {@see FileHelper}（isImage、scandir 等）
- * - 带多磁盘、签名鉴权、元信息落库的存储门面 → {@see \kernel\Providers\Storage\Storage}
+ * - 带多磁盘、签名鉴权、元信息落库的存储门面 → {@see \kernel\Modules\Storage\StorageModule}
  *
  * 约定：
  * - 全部方法均为**静态**，本类不持有任何状态（无静态属性、无缓存）；构造函数只做一件事：

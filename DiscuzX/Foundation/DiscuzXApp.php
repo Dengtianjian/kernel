@@ -11,9 +11,9 @@ use kernel\Foundation\FileSystem\Path;
 class DiscuzXApp extends App
 {
   /**
-   * @var DiscuzXProvisioner
+   * @var DiscuzXDeployment
    */
-  private $provisioner = null;
+  private $deployment = null;
   /**
    * 构造：DiscuzX 基座 + 装配
    *
@@ -54,15 +54,17 @@ class DiscuzXApp extends App
     $this->request()->uri($uri);
   }
   /**
-   * @return DiscuzXProvisioner
+   * 部署编排器（安装 / 更新 / 卸载）
+   *
+   * @return DiscuzXDeployment
    */
-  function provisioner()
+  function deployment()
   {
-    if (!$this->provisioner) {
-      $this->provisioner = new DiscuzXProvisioner();
+    if (!$this->deployment) {
+      $this->deployment = new DiscuzXDeployment();
     }
 
-    return $this->provisioner;
+    return $this->deployment;
   }
   /**
    * 当前运行环境是否为 DiscuzX
@@ -72,7 +74,7 @@ class DiscuzXApp extends App
    *
    * 两类用途：
    * - 表名：DiscuzX 下要带应用前缀，见 {@see \kernel\Foundation\Database\RDB\Model::discuzTableName()}；
-   * - 中间件：{@see \kernel\Providers\Auth\AuthProvider} 的构造函数据此在 DiscuzX 认证与通用认证之间选型。
+   * - 中间件：{@see \kernel\Modules\Auth\Auth} 的构造函数据此在 DiscuzX 认证与通用认证之间选型。
    *
    * 只回答「宿主是不是 DiscuzX」，不回答「DiscuzX 适配层是否装配完整」。
    *

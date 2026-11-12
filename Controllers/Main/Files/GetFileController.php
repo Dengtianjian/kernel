@@ -2,10 +2,10 @@
 
 namespace kernel\Controllers\Main\Files;
 
-use kernel\Providers\Storage\Storage;
+use kernel\Modules\Storage\StorageModule;
 use kernel\Foundation\Controller\Controller;
-use kernel\Providers\Storage\StorageFile;
-use kernel\Providers\Storage\FilesModel;
+use kernel\Modules\Storage\StorageFile;
+use kernel\Modules\Storage\FilesModel;
 
 class GetFileController extends Controller
 {
@@ -24,7 +24,7 @@ class GetFileController extends Controller
   ];
   public function data(string $fileKey)
   {
-    $storage = $this->app()->make(Storage::class);
+    $storage = $this->app()->make(StorageModule::class);
     if (!$storage->authorizeOperation($fileKey, "read", "info")) return $storage->return();
 
     if ($storage->dataSave()) {

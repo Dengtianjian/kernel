@@ -2,10 +2,10 @@
 
 namespace kernel\Controllers\Main\Files;
 
-use kernel\Providers\Storage\Storage;
+use kernel\Modules\Storage\StorageModule;
 use kernel\Foundation\Controller\Controller;
 use kernel\Foundation\Data\Arr;
-use kernel\Providers\Storage\FilesModel;
+use kernel\Modules\Storage\FilesModel;
 
 class UploadFileController extends Controller
 {
@@ -24,7 +24,7 @@ class UploadFileController extends Controller
   ];
   public function data(string $fileKey)
   {
-    $storage = $this->app()->make(Storage::class);
+    $storage = $this->app()->make(StorageModule::class);
     $files = $this->request->file();
     if (!$files) {
       return $this->fail(400, "UploadFile:400001", "请上传文件", $_FILES);

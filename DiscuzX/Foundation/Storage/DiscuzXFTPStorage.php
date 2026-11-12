@@ -2,7 +2,7 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Providers\Storage\Drivers\FTPStorage;
+use kernel\Modules\Storage\Drivers\FTPStorage;
 use kernel\DiscuzX\Foundation\DiscuzXPath;
 
 /**

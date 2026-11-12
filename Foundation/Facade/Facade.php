@@ -2,107 +2,178 @@
 
 namespace kernel\Foundation\Facade;
 
-use kernel\Foundation\Exception\Error;
-use kernel\Foundation\Application\Applications;
-
 /**
- * 门面基类：静态入口 → 当前应用的容器
+ * 门面基类
  *
- * 门面**不持有实例、也不实例化任何东西**，只做一次名字到实例的解析转发：
+ * 提供静态转发能力：所有静态调用将被转发到 accessor() 返回的底层实例的对应方法。
  *
- * ```
- * Storage::get("x")
- *   → Applications::default()                    当前应用
- *   → resolve("storage")          该应用容器里已登记的单例
- *   → 那个实例的 get("x")
- * ```
+ * 自动判定单例/多例（无需子类手动覆写 singleton()）：
+ *   - 子类覆写 resolve()  →  单例门面：resolve() 提供兜底实例工厂，
+ *                            accessor() 首次解析后缓存到 $registry，后续复用同一实例
+ *   - 子类覆写 accessor() →  多例门面：每次转发都经该 accessor() 返回新实例
  *
- * 这样三点自然成立：
- * - 实例跟着应用走（多应用同进程不串）；
- * - 生命周期归容器管（应用级复用、请求级在 `flush()` 后重建）；
- * - 门面与 `$app->storage()` / `$app->make(FileStorage::class)` 必然同一份。
+ * 子类只需按需实现 resolve()（单例）或 accessor()（多例），无需再写 singleton()。
  *
- * 代价是门面不再「开箱即用」：目标必须由 Provider / Bootstrap 先登记。这是刻意的——
- * 门面自己 new 出来的实例一定带着默认配置（没有多磁盘、没有访问控制），
- * 与装配出来的那份不是一回事，宁可报错也不要静默用错。
- *
- * 子类二选一：
- * - 覆写 {@see accessor()}：纯容器代理（推荐）；
- * - 覆写 {@see resolve()}：容器里没有时兜底造一个，产物会写回容器，仍与 `$app->xxx()` 同源。
- *
- * @see \kernel\Foundation\Application\Container::instance() 装配期替换实例
+ * 若底层实例无法解析（accessor() 返回 null），则对应静态调用返回 null，
+ * 由子类决定是否在 accessor() 内抛出更明确的异常。
  */
 abstract class Facade
 {
+  /** @var array<string,mixed> 门面实例存储，按门面类名隔离（key 为 static::class） */
+  protected static $registry = [];
+
   /**
-   * 容器键（门面转发的目标）
+   * 门面构造函数
    *
-   * 必须与登记时用的主键一致：`$app->instance(FileStorage::class, $storage, "storage")`
-   * 这种登记下，写 `FileStorage::class` 或 `"storage"` 都能命中；写子类名则会取到别的东西。
+   * 实例化门面时按子类实现策略主动解析底层实例：
+   *   - 子类覆写 resolve()（单例）→ 调用 resolve() 创建兜底实例；
+   *   - 子类覆写 accessor()（多例）→ 调用 accessor() 获取实例；
+   *   - 两者皆无 → 不执行任何解析（空构造）。
    *
-   * @return string|null 未覆写时返回 null
+   * 该构造仅为「实例化即预热」提供入口，静态调用路径（__callStatic）不受影响。
+   */
+  public function __construct()
+  {
+    if (self::hasOwnMethod("resolve")) {
+      static::resolve();
+    } elseif (self::hasOwnMethod("accessor")) {
+      static::accessor();
+    }
+  }
+
+  /**
+   * 标识该门面是否为单例模式（自动检测，子类无需手动覆写）
+   *
+   * 判定规则：子类覆写 resolve() 即为单例，覆写 accessor() 即为多例，
+   * 两者皆无则默认非单例。
+   *
+   * @return bool
+   */
+  /**
+   * 判定子类是否自行声明（覆写）了指定方法
+   *
+   * 用于区分「基类默认实现」与「子类覆写实现」：仅当方法确实由子类
+   * （而非 Facade 基类）声明时返回 true。
+   *
+   * @param string $name 方法名
+   * @return bool
+   */
+  protected static function hasOwnMethod(string $name): bool
+  {
+    if (!method_exists(static::class, $name)) {
+      return false;
+    }
+    return (new \ReflectionMethod(static::class, $name))->getDeclaringClass()->getName() !== self::class;
+  }
+
+  public static function singleton(): bool
+  {
+    return self::hasOwnMethod("resolve");
+  }
+
+  /**
+   * 获取门面背后的底层实例
+   *
+   * 单例门面（子类覆写 resolve()）：首次调用 resolve() 创建并缓存到 $registry，
+   * 后续复用同一实例。
+   * 多例门面（子类覆写 accessor()）：由子类 accessor() 自行返回实例，
+   * 本基类 accessor() 仅在非单例且未覆写时返回 null。
+   *
+   * @return object|null 实例无法解析时返回 null
    */
   protected static function accessor()
   {
-    return null;
+    if (!static::singleton()) {
+      return null;
+    }
+    $current = static::$registry[static::class] ?? null;
+    if ($current === null) {
+      $current = static::resolve();
+      static::$registry[static::class] = $current;
+    }
+    return $current;
   }
 
   /**
-   * 兜底实例工厂（可选覆写）
+   * 兜底实例工厂（仅单例门面需覆写）
    *
-   * 仅当容器里没有该键时调用；返回值会被 `$app->instance()` 写回容器，
-   * 保证「门面拿到的」与「`$app->xxx()` 拿到的」是同一个。
-   *
-   * @return object|null
+   * @return object
    */
   protected static function resolve()
   {
-    return null;
+    throw new \BadMethodCallException(
+      static::class . " is not a singleton facade; override resolve() to enable singleton mode."
+    );
   }
 
   /**
-   * 取门面转发的实例
+   * 替换门面背后的底层实例（单例门面）
    *
-   * 顺序：容器已有 → 兜底工厂 → 抛错。绝不反射新建未登记的类
-   * （那会得到一个配置全默认的临时对象，且下次调用又是新的）。
+   * 用于应用装配阶段注入自定义实例（例如给 FileStorage 门面注入带多磁盘 / 云存储 /
+   * 元信息落库的实例），或测试时替换为桩实例。设置后，静态调用一律转发到该实例，
+   * 不再触发 resolve()。
    *
-   * @return object
-   * @throws Error 未注册应用 / 未声明 accessor / 目标未装配时抛出
+   * 注意：多例门面（覆写 accessor()）不使用本注册表，本方法对其无效。
+   *
+   * @param object $instance 底层实例
+   * @return void
    */
-  public static function instance()
+  public static function setInstance($instance)
   {
-    $app = Applications::default();
-    if ($app === null) {
-      throw new Error(static::class . " 门面无法解析：尚未注册任何应用", 500, "500:FacadeAppMissing");
-    }
-
-    $key = static::accessor();
-    if ($key === null) {
-      throw new Error(static::class . " 门面未声明 accessor()：无法知道要转发到容器里的哪个键", 500, "500:FacadeAccessorMissing");
-    }
-
-    //* 用 has() 而不是 resolved()：延迟登记（只记了类名、还没构造）也算「有」，
-    //* 此时 make() 会当场构造并转成单例；resolved() 只看已构造的实例，会误判成没登记。
-    if ($app->has($key)) {
-      return $app->make($key);
-    }
-
-    $instance = static::resolve();
-    if ($instance === null) {
-      throw new Error(
-        static::class . " 的目标未装配：{$key}（请先 \$app->provider() 登记）",
-        500,
-        "500:FacadeTargetMissing"
-      );
-    }
-
-    $app->provider($instance, $key);
-
-    return $instance;
+    static::$registry[static::class] = $instance;
   }
 
   /**
-   * 静态转发：把未定义的静态方法转给底层实例
+   * 获取当前已解析的底层实例（不触发 resolve()）
+   *
+   * 尚未解析 / setInstance 过时返回 null；需要确保拿到实例请改用 {@see accessor()}。
+   *
+   * @return object|null
+   */
+  public static function getInstance()
+  {
+    return static::$registry[static::class] ?? null;
+  }
+
+  /**
+   * 清除已解析的底层实例
+   *
+   * 清除后下次静态调用会重新解析：单例门面重新走 {@see resolve()}，
+   * 多例门面走子类 {@see accessor()}。
+   *
+   * @return void
+   */
+  public static function clearInstance()
+  {
+    unset(static::$registry[static::class]);
+  }
+
+  /**
+   * 包装任意类为门面代理（无需手动实例化）
+   *
+   * 返回 {@see FacadeProxy}，调用方可直接在其上以「方法调用」形式使用目标类的实例方法，
+   * 底层自动单例化目标类（同一类名首次实例化后复用）。
+   *
+   * 示例：
+   * ```php
+   * Facade::of(SomeService::class)->doSomething($a);
+   * Facade::of(SomeService::class, $dep)->run(); // 构造参数仅首次实例化生效
+   * ```
+   *
+   * 与 {@see __callStatic()}（门面子类的静态转发）相互独立：本方法不要求目标类继承
+   * {@see Facade}，也不要求方法是 static，直接对任意类生效。
+   *
+   * @param string $class 目标类名（完整命名空间）
+   * @param mixed  ...$args 目标类构造参数（仅首次实例化生效）
+   * @return FacadeProxy
+   */
+  public static function of(string $class, ...$args)
+  {
+    return new FacadeProxy($class, $args);
+  }
+
+  /**
+   * 静态转发：将未定义的静态方法调用委托给底层实例
    *
    * @param string $method 方法名
    * @param array $arguments 参数列表
@@ -110,26 +181,10 @@ abstract class Facade
    */
   public static function __callStatic(string $method, array $arguments)
   {
-    return static::instance()->$method(...$arguments);
-  }
-
-  /**
-   * 包装任意类为门面代理（无需手动实例化、**不经过容器**）
-   *
-   * 返回 {@see FacadeProxy}，同一目标类名首次实例化后复用。
-   * 只适合**无状态工具类**（Arr / Str 之类）；有状态的组件请走容器 + 上面的门面，
-   * 否则会绕开 Provider 的装配，拿到配置全默认的实例。
-   *
-   * ```php
-   * Facade::of(SomeUtil::class)->doSomething($a);
-   * ```
-   *
-   * @param string $class 目标类名（完整命名空间）
-   * @param mixed ...$args 目标类构造参数（仅首次实例化生效）
-   * @return FacadeProxy
-   */
-  public static function of(string $class, ...$args)
-  {
-    return new FacadeProxy($class, $args);
+    $instance = static::accessor();
+    if ($instance === null) {
+      return null;
+    }
+    return $instance->$method(...$arguments);
   }
 }

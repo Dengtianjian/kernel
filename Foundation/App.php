@@ -2,22 +2,19 @@
 
 namespace kernel\Foundation;
 
-use kernel\Facades\Log;
 use Exception as GlobalException;
 use kernel\Foundation\Application\Application;
 use kernel\Foundation\Application\Applications;
-use kernel\Providers\App\ConfigProvider;
-use kernel\Providers\App\LogProvider;
+use kernel\Foundation\Builtin\Config;
+use kernel\Foundation\Builtin\Log;
 use kernel\Foundation\Controller\Controller;
-use kernel\Foundation\Data\Date;
 use kernel\Foundation\Data\Func;
 use kernel\Foundation\Exception\Error;
 use kernel\Foundation\HTTP\Request;
-use kernel\Foundation\HTTP\Response\ServerSentEvent;
-use kernel\Providers\App\LifecycleProvider;
+use kernel\Foundation\Builtin\Lifecycle;
 use kernel\Foundation\Middleware\Middleware;
 use kernel\Foundation\Router\Router;
-use kernel\Providers\App\CacheProvider;
+use kernel\Foundation\Builtin\Cache;
 
 /**
  * Web 应用：框架零件登记 + 装配 + 请求执行流程
@@ -71,16 +68,13 @@ class App extends Application
     //* 框架零件：只登记、不构造——首次取用才反射实例化
     //* 名字即键：容器只做精确匹配，短名必须在这里显式给别名
     $this->provider($this);
-    $this->defer(ConfigProvider::class, "config");
-    $this->defer(LogProvider::class, "log");
+    $this->defer(Config::class, "config");
+    $this->defer(Log::class, "log");
     $this->defer(Middleware::class, "middleware");
     $this->defer(Request::class, "request");
     $this->defer(Router::class, "router");
-    $this->defer(LifecycleProvider::class, "lifecycle");
-
-    //* 请求态状态：容器不再区分请求级，它们就是普通单例（每进程一份）
-    //* 认证态已并入 AuthProvider，它构造时自登记，这里不用再 defer
-    $this->defer(CacheProvider::class, "cache");
+    $this->defer(Lifecycle::class, "lifecycle");
+    $this->defer(Cache::class, "cache");
 
     //* 异常处理
     \set_exception_handler("kernel\Foundation\Exception\ExceptionHandler::receive");
@@ -217,12 +211,6 @@ class App extends Application
   {
     //* 载入扩展 ~ 输出：正常与异常结束都会执行结束钩子（异常交由全局异常处理器输出）
     try {
-      //* 开发模式：把依赖图写进日志（谁 import 了谁、谁开放了什么），生产不写。
-      //* 这里显式判定模式：请求期配置是必须加载的（宿主环境已就绪），顺带把 mode 定下来
-      if ($this->isDevelopment()) {
-        Log::debug("app.dependencyGraph", Applications::graph());
-      }
-
       //* 调用生命周期"启动"钩子
       $this->lifeCycle()->fireBootUp();
 

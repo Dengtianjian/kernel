@@ -2,9 +2,9 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Providers\Storage\Storage;
-use kernel\Providers\Storage\StorageSignature;
-use kernel\Providers\Storage\StorageURL;
+use kernel\Modules\Storage\StorageModule;
+use kernel\Modules\Storage\StorageSignature;
+use kernel\Modules\Storage\StorageURL;
 use kernel\DiscuzX\DiscuzXURL;
 
 class DiscuzXStorage extends Storage
