@@ -1,6 +1,11 @@
 #!/usr/bin/env php
 <?php
 
+//* 仅允许 CLI 执行：被 Web 侧以 PHP 方式触达（宽松 handler / 被 include）时终止
+if (php_sapi_name() !== "cli") {
+  exit('Access Denied');
+}
+
 /**
  * 内核 CLI 入口
  * 用法：php kernel/console <command> [options] [arguments]
