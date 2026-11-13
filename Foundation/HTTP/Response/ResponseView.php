@@ -38,7 +38,7 @@ class ResponseView extends Response
    *
    * @param string $viewFile 渲染的视图文件，相对于$viewFileBaseDir目录
    * @param array $viewData 渲染的数据
-   * @param string $viewFileBaseDir 视图文件所在的目录，相对于当前项目的根目录
+   * @param string $viewFileDirBaseProject 视图文件所在的目录，相对于当前项目的根目录
    * @param string $templateId 模板ID，用于缓存模板
    * @param string $viewFileDir 视图文件根目录，默认是基于Path::root()的，也就是当前项目的根目录，但是有时候可能需要渲染别的项目的视图文件，可通过该参数来修改
    * @return ResponseView
@@ -116,7 +116,7 @@ class ResponseView extends Response
    * @param string|string[] $viewFiles 渲染的模板文件绝对路径，或者字符串数组，里面存在渲染的模板文件绝对路径
    * @param array $viewData 渲染的数据
    */
-  public static function render($viewFiles, $viewData = [])
+  public static function render($viewFiles, $viewData = [], $templateId = null)
   {
     if (!is_array($viewFiles)) {
       $viewFiles = [$viewFiles];
@@ -132,14 +132,27 @@ class ResponseView extends Response
       $viewData = [];
     }
 
-    // 将渲染数据抽取为局部变量，等价于原 eval 生成的 "$key=null" 函数签名
-    extract($viewData, EXTR_SKIP);
-
-    ob_start();
-    foreach ($viewFiles as $file) {
-      include $file;
+    // 仅合法 PHP 变量名可成为视图变量，杜绝 extract 注入/告警（对齐 DiscuzXView::render）
+    $safeVars = [];
+    foreach ($viewData as $k => $v) {
+      if (is_string($k) && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $k)) {
+        $safeVars[$k] = $v;
+      }
     }
-    return ob_get_clean();
+
+    // 闭包隔离：视图只访问 $safeVars + global $_G，看不到 render 内部变量，也不影响其他文件；
+    // 输出仍由 ob 捕获并返回字符串，保持 output() 的语义不变
+    $render = function (array $files, array $vars) {
+      global $_G;
+      extract($vars, EXTR_SKIP);
+      ob_start();
+      foreach ($files as $file) {
+        include $file;
+      }
+      return ob_get_clean();
+    };
+
+    return $render($viewFiles, $safeVars);
   }
   /**
    * 渲染App的模板，模板文件相对于当前运行的应用根目录
