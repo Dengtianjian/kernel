@@ -56,7 +56,7 @@ class StorageURL extends URL
   /**
    * 提供基础地址、路径前缀与签名能力的存储门面
    *
-   * @var Storage|null
+   * @var StorageModule|null
    */
   protected $storage = null;
   /**
@@ -105,10 +105,10 @@ class StorageURL extends URL
    * 仅记录存储门面与文件键并推导路径 `{prefix}/{fileKey}`，**不解析基础地址、不签发签名**，
    * 这些留到 {@see build()} / {@see toString()} 时再执行。
    *
-   * @param Storage $storage 存储门面（提供 baseURL / prefix / authEnabled / createAuthParams）
+   * @param StorageModule $storage 存储门面（提供 baseURL / prefix / authEnabled / createAuthParams）
    * @param string|null $fileKey 文件键
    */
-  public function __construct(Storage $storage, $fileKey = null)
+  public function __construct(StorageModule $storage, $fileKey = null)
   {
     parent::__construct(null);
 
@@ -153,7 +153,7 @@ class StorageURL extends URL
    * - 后缀只影响路径，**不参与签名**；需要限制地址用途时请配合 {@see action()}
    *   （按动作校验的端点通常两者成对使用：`->suffix("preview")->action("preview")`）。
    *
-   * @param string|null $suffix 路径后缀；不传表示仅读取（显式传 null / "" 表示清除后缀）
+   * @param string|null $value 路径后缀；不传表示仅读取（显式传 null / "" 表示清除后缀）
    * @return static|string|null 设置时返回 $this，读取时返回当前后缀
    */
   public function suffix($value = null)
