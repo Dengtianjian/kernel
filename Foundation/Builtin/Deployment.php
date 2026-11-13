@@ -190,13 +190,15 @@ class Deployment extends AbilityBaseObject
   /**
    * 重新生成并写入安装密钥
    *
-   * 在 data 目录下写入一个新的 uniqid() 作为 install.key 内容。
+   * 在 data 目录下写入一个新的随机安装密钥：`random_bytes` 取 16 字节密码学安全随机
+   * 再转 32 位十六进制串。安装密钥用于 {@see verifiyInstallKey()} 的门禁比对，
+   * 必须不可预测，故不用基于时间戳的 `uniqid()`（无熵、可枚举）。
    *
    * @return int|false 写入的字节数，失败返回 false
    */
   public function refreshInstallKey()
   {
-    return file_put_contents(Path::join(Path::data(), "install.key"), uniqid());
+    return file_put_contents(Path::join(Path::data(), "install.key"), bin2hex(\random_bytes(16)));
   }
   /**
    * 执行增量升级
