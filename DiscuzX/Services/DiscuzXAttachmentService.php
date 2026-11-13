@@ -28,7 +28,9 @@ class DiscuzXAttachmentService extends AbilityBaseObject
    */
   public static function saveFile($files, $saveDir = "")
   {
-    $savePath = $this->app()->config()->get("attachmentPath");
+    //* static 方法内不能取 $this（原实现 $this->app() 一调用即 fatal），改经 Applications 取默认应用
+    $DefaultApp = Applications::default();
+    $savePath = $DefaultApp ? $DefaultApp->config()->get("attachmentPath") : "";
     if (!$savePath) {
       $savePath = Path::join("data", "plugindata", Applications::defaultId(), "attachments", $saveDir);
       if (!is_dir($savePath)) {
