@@ -56,7 +56,8 @@ class MakeAppCommand
     mkdir($targetDirectory . "/Data", 0755, true);
     mkdir($targetDirectory . "/Storage", 0755, true);
 
-    file_put_contents($targetDirectory . "/Data/install.key", uniqid());
+    //* 安装密钥：random_bytes 生成（不可预测），不用基于时间戳的 uniqid()
+    file_put_contents($targetDirectory . "/Data/install.key", bin2hex(random_bytes(16)));
 
     //* 应用装配类：手动实例化配置、缓存、文件系统等组件
     file_put_contents(

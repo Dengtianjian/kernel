@@ -445,8 +445,10 @@ class DiscuzXGBKJsonResponse
 	static function utf8ToUTF16BE(&$str, $bom = false)
 	{
 		$out = $bom ? "\xFE\xFF" : '';
-		if (function_exists('mb_convert_encoding'))
-			return $out . mb_convert_encoding($str, 'UTF-16BE', 'UTF-8');
+		//* 编码转换统一走官方 diconv()（DZ-17e，与 encode() 内 $_G['charset'] 分支同口径）；
+		//* 扩展不可用时走下方 utf8ToUnicode + pack 的纯 PHP 兜底，行为不变
+		if (function_exists('diconv'))
+			return $out . diconv($str, 'utf-8', 'UTF-16BE');
 
 		$uni = self::utf8ToUnicode($str);
 		foreach ($uni as $cp)
