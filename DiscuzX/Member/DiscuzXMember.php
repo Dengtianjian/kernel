@@ -210,7 +210,7 @@ class DiscuzXMember
       return $R->error(400, "400:UsernameTooLong", "用户名长度不得超过 15 个字符");
     }
 
-    if (uc_get_user(addslashes($username)) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
+    if (uc_get_user(daddslashes($username)) && !\C::t('common_member')->fetch_uid_by_username($username) && !\C::t('common_member_archive')->fetch_uid_by_username($username)) {
       return $R->error(400, "400:ProfileUsernameDuplicate", "该用户名已被注册");
     }
 
@@ -252,7 +252,7 @@ class DiscuzXMember
       return $R->error(400, "400:BadPassword:002", $badPasswordMessage);
     }
     if (empty($_G['setting']['ignorepassword'])) {
-      if ($password != addslashes($password)) {
+      if ($password != daddslashes($password)) {
         return $R->error(400, "400:ProfilePasswordIllegal", "抱歉，密码空或包含非法字符");
       }
     }

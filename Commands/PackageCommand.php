@@ -43,6 +43,7 @@ class PackageCommand
     "/Storage",
     "/Secrets",
     "404.html",
+    "composer.lock"
   ];
 
   /**

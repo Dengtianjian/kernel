@@ -2,7 +2,6 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Modules\Storage\StorageSignature;
 use kernel\DiscuzX\Foundation\DiscuzXPath;
 use kernel\Modules\QCloud\QCloudAccount;
 use kernel\Modules\QCloud\QCloudCos\QCloudCOSStorage;

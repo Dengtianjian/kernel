@@ -37,7 +37,7 @@ class DiscuzXApp extends App
 
     //* 请求是访问即构建：这里直接写入 URI，不必提前兜底实例化
     if (isset($_GET['uri'])) {
-      $this->request()->uri(addslashes(trim($_GET['uri'])));
+      $this->request()->uri(daddslashes(trim($_GET['uri'])));
     } else {
       $this->request()->uri("/");
     }
