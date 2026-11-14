@@ -217,4 +217,40 @@ class Path
   {
     return str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $path);
   }
+  /**
+   * 规范化路径（纯字符串计算，不访问文件系统）
+   *
+   * 消解路径中的 `.` 与 `..` 段：`.` 丢弃、`..` 弹出上一段（栈空时忽略），
+   * 折叠重复分隔符并统一为 `/`。与 {@see realpath()} 的区别：realpath 要求
+   * 目标已存在（上传落盘的是新文件，会返回 false），本方法只做字符串计算，
+   * 适合在落盘前求出「真实目标位置」用于校验与回显。
+   *
+   * 使用示例：
+   * ```php
+   * Path::canonicalize('/data/uploads/../attachments/a.jpg');
+   * // "/data/attachments/a.jpg"
+   * Path::canonicalize('data/plugindata/./x');
+   * // "data/plugindata/x"
+   * ```
+   *
+   * @param string $path 原始路径
+   * @return string 规范化后的路径
+   */
+  public static function canonicalize($path)
+  {
+    $path = str_replace("\\", "/", (string) $path);
+    $absolute = strpos($path, "/") === 0;
+    $segments = [];
+    foreach (explode("/", $path) as $segment) {
+      if ($segment === "" || $segment === ".") {
+        continue;
+      }
+      if ($segment === "..") {
+        array_pop($segments);
+        continue;
+      }
+      array_push($segments, $segment);
+    }
+    return ($absolute ? "/" : "") . implode("/", $segments);
+  }
 }

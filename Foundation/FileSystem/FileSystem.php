@@ -156,13 +156,27 @@ final class FileSystem
       $fileName = uniqid();
     }
 
+    //* 文件名与扩展名消毒：文件名只保留字母数字、下划线、点、连字符（/u 下 \w 含中文），
+    //* 扩展名只保留字母数字——杜绝文件名段注入目录段 / 穿越段（\ 会在 join 中归一为 / 构成 ../ 注入）；
+    //* 消毒失败（非法 UTF-8 使 preg 返回 null）、为空或仅剩 "." / ".." 时退回随机名
+    $fileName = preg_replace("/[^\w.\-]/u", "", (string) $fileName);
+    if ($fileName === null || $fileName === "" || $fileName === "." || $fileName === "..") {
+      $fileName = uniqid();
+    }
+    $fileExtension = preg_replace("/[^A-Za-z0-9]/", "", (string) $fileExtension);
+
     $saveFullFileName = $fileExtension ? "{$fileName}.{$fileExtension}" : $fileName;
     $path = $saveFullFileName;
     if ($savePath) {
       $path = Path::join($savePath, $saveFullFileName);
     }
 
-    if (!is_dir($savePath)) {
+    //* 统一消解 . / .. 段（纯字符串计算）：mkdir、落盘、fileInfo 回显全部使用消解后的路径，
+    //* 保证「实际落盘位置」与「回显位置」一致；越界拦截由各调用入口的 .. 校验负责（见 LocalStorage::put 等）
+    $path = Path::canonicalize($path);
+    $savePath = $savePath ? Path::canonicalize($savePath) : "";
+
+    if ($savePath && !is_dir($savePath)) {
       mkdir($savePath, 0755, true);
     }
 

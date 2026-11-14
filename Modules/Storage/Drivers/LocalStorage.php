@@ -73,6 +73,11 @@ class LocalStorage extends AbstractStorage
     $saveFileName = $saveFileName ?: $file['name'];
     $pathInfo = pathinfo($saveFileName);
 
+    //* 目录段穿越校验：saveFileName 含 .. 时 Path::join 不会消解，会落盘到 basePath 之外，直接拒绝
+    if (strpos(str_replace("\\", "/", (string) $pathInfo['dirname']), "..") !== false) {
+      return $this->break(400, 400, "非法保存路径");
+    }
+
     $fileInfo = FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
     if (!$fileInfo) {
       return $this->break(500, 500, "文件上传失败", TRUE);

@@ -146,6 +146,11 @@ class DiscuzXLocalStorage extends LocalStorage
   private function moveIn($file, $saveFileName)
   {
     $saveFileName = $saveFileName ?: basename($file);
+    //* 穿越校验：字符串搬运分支绕过了 put() 的 .. 校验，这里补齐（对齐 put() 的拒绝口径）
+    $normalized = str_replace("\\", "/", (string) $saveFileName);
+    if (strpos($normalized, "..") !== false) {
+      return $this->break(400, "Storage:DZX:400104", "非法保存路径");
+    }
     $pathInfo = pathinfo($saveFileName);
 
     FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
