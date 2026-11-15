@@ -14,6 +14,20 @@ namespace kernel\Foundation\FileSystem;
 class FileHelper
 {
   /**
+   * 服务端脚本 / 可执行 / 配置劫持类扩展名参考清单
+   *
+   * 供业务层做上传扩展名校验时选用（配合 {@see hasDangerousExtension()}），
+   * 底层不强制任何策略——是否校验、用什么清单由调用方决定。
+   *
+   * @var string[]
+   */
+  const DANGEROUS_EXTENSIONS = [
+    "php", "php3", "php4", "php5", "php7", "php8", "phtml", "pht", "phar", "phps",
+    "cgi", "pl", "py", "sh", "bash", "jsp", "asp", "aspx",
+    "exe", "dll", "bat", "cmd", "com", "msi",
+    "htaccess", "htpasswd", "ini"
+  ];
+  /**
    * 判断指定的文件是否是视频文件
    *
    * 通过 MIME 类型判断，该文件必须存在且可读。
@@ -117,6 +131,64 @@ class FileHelper
   static function extension($path)
   {
     return pathinfo($path, PATHINFO_EXTENSION);
+  }
+  /**
+   * 判断文件扩展名是否在允许清单内（白名单匹配）
+   *
+   * 取最后一段扩展名做大小写不敏感比较（`.JPG` 与 `.jpg` 等价）；
+   * 无扩展名的文件仅当 `$allowed` 包含空串时视为匹配。
+   *
+   * 使用示例：
+   * ```php
+   * FileHelper::matchesExtension('photo.JPG', ['jpg', 'png']);  // true
+   * FileHelper::matchesExtension('x.php', ['jpg', 'png']);      // false
+   * ```
+   *
+   * @param string $fileName 文件名（可含路径）
+   * @param array $allowed 允许的扩展名清单（大小写不敏感）
+   * @return boolean 扩展名在清单内返回 true
+   */
+  public static function matchesExtension($fileName, array $allowed)
+  {
+    $extension = strtolower(self::extension($fileName));
+    return in_array($extension, array_map("strtolower", $allowed), true);
+  }
+  /**
+   * 检测文件名中是否含危险扩展名段
+   *
+   * 与 {@see extension()} 只取最后一段不同，本方法按 `.` 拆出**全部段**逐一比对，
+   * 用于拦截 `shell.php.jpg`（Apache 老配置左解析）、`x.php.` 尾点这类
+   * 「最后一段看似安全」的绕过。危险清单缺省用 {@see DANGEROUS_EXTENSIONS}，
+   * 也可传业务自定义清单。
+   *
+   * 使用示例：
+   * ```php
+   * FileHelper::hasDangerousExtension('shell.php.jpg');  // true（php 段命中）
+   * FileHelper::hasDangerousExtension('report.pdf');     // false
+   * FileHelper::hasDangerousExtension('a.exe', ['exe']); // true（自定义清单）
+   * ```
+   *
+   * @param string $fileName 文件名（可含路径）
+   * @param array|null $blocked 危险扩展名清单；null 时用 {@see DANGEROUS_EXTENSIONS}
+   * @return boolean 任一段命中清单返回 true
+   */
+  public static function hasDangerousExtension($fileName, ?array $blocked = null)
+  {
+    if ($blocked === null) {
+      $blocked = self::DANGEROUS_EXTENSIONS;
+    }
+    $blocked = array_map("strtolower", $blocked);
+    //* 归一分隔符后取文件名部分，防路径中的段干扰比对
+    $base = basename(str_replace("\\", "/", (string) $fileName));
+    foreach (explode(".", $base) as $segment) {
+      if ($segment === "" || $segment === "..") {
+        continue;
+      }
+      if (in_array(strtolower($segment), $blocked, true)) {
+        return true;
+      }
+    }
+    return false;
   }
   /**
    * 组合多个路径段为一个完整路径
