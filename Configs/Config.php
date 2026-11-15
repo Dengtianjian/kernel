@@ -2,7 +2,7 @@
 
 return [
   "mode" => "development", //* production development
-  "version" => "0.5.8.20260926.1810",
+  "version" => "0.6.0.20261115.0849",
   "extensions" => false,
   //* Redis 连接参数：由 RedisService 读取，只在首次取连接时使用（登记 Provider 不会连）
   "redis" => [
