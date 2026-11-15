@@ -5,7 +5,7 @@ namespace kernel\Foundation\Exception;
 use Exception as GlobalException;
 
 /**
- * 框架业务异常基类
+ * 基础插件业务异常基类
  *
  * 继承自 PHP 全局 \Exception，并额外携带 HTTP 状态码（statusCode）、
  * 业务错误码（errorCode）与错误详情（errorDetails）三字段。
@@ -53,7 +53,7 @@ class Error extends GlobalException
   /**
    * 按 ErrorCode name 直接抛出对应错误
    *
-   * 业务方只需告诉框架"抛 USER_NOT_FOUND"，由本方法去 ErrorCode 注册表查
+   * 业务方只需告诉基础插件"抛 USER_NOT_FOUND"，由本方法去 ErrorCode 注册表查
    * 对应的 statusCode/message/errorCode，再构造业务异常抛出。
    *
    * 调用前需先 {@see ErrorCode::load()} 加载错误码配置；name 不存在时抛 500:ErrorCodeNotExist。

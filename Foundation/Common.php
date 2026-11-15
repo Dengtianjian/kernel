@@ -91,7 +91,7 @@ if (!function_exists("dump")) {
 
 if (!function_exists("abort")) {
   /**
-   * 抛出框架异常
+   * 抛出基础插件异常
    *
    * 透传 Exception 构造参数（消息在前）。
    *

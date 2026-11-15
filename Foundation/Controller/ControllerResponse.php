@@ -16,7 +16,7 @@ use kernel\Foundation\Application\Applications;
  * 控制器响应工厂
  *
  * 继承 {@see Response}，作为控制器内部快速构建各类具体响应对象的工厂类。
- * 框架在 `Controller::__construct` 中将其初始化为 `$this->response` 的默认实例，
+ * 基础插件在 `Controller::__construct` 中将其初始化为 `$this->response` 的默认实例，
  * 控制器可通过 `success()`/`fail()` 复用该实例，也可在 `data()` 中调用以下工厂方法
  * 生成「独立响应对象」（如文件下载、分页、视图），由其作为最终结果输出。
  *
@@ -82,7 +82,7 @@ class ControllerResponse extends Response
    * 重定向响应
    *
    * 返回 `ResponseRedirect` 实例，用于控制器内快速发起跳转（Laravel 风格）。
-   * 返回值需由 `data()` 方法 `return`，框架据此输出 3xx 响应。
+   * 返回值需由 `data()` 方法 `return`，基础插件据此输出 3xx 响应。
    *
    * @param string|null $to          初始目标地址（可选，也可后续链式 `->route()`/`->back()` 等）
    * @param integer     $statusCode HTTP 状态码，默认 302

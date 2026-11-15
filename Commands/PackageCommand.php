@@ -6,7 +6,7 @@ use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Zip;
 
 /**
- * 打包命令（框架内置）：将业务应用与内核目录分别打包为 zip
+ * 打包命令（基础插件内置）：将业务应用与内核目录分别打包为 zip
  *
  * 用法：
  *   php isdtj/console package                    # 应用名取 $console->appId()，内核名取 $console->kernelId()

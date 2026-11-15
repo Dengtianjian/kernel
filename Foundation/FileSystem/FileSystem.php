@@ -171,7 +171,7 @@ final class FileSystem
     $saveFullFileName = $fileExtension ? "{$fileName}.{$fileExtension}" : $fileName;
 
     //* 白名单校验（可选）：$allowedExtensions 传数组时启用，null 时不校验（底层保持中性）。
-    //* 是否校验、用什么清单由业务层决定——底层不内置任何扩展名策略（kernel 是通用框架）
+    //* 是否校验、用什么清单由业务层决定——底层不内置任何扩展名策略（kernel 是通用基础插件）
     if ($allowedExtensions !== null && !FileHelper::matchesExtension($saveFullFileName, $allowedExtensions)) {
       throw new Error("文件类型不允许", 400, "FileUpload:400005", $saveFullFileName);
     }

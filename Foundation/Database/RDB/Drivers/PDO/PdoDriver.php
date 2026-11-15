@@ -34,7 +34,7 @@ use PDOStatement;
  * $driver = (new PdoDriver())->mysql('127.0.0.1', 'root', 'pass', 'my_db');
  * Connections::addDriver($driver, 'default', true);
  *
- * // SQLite 协议：相对路径按框架根目录解析
+ * // SQLite 协议：相对路径按基础插件根目录解析
  * $driver = (new PdoDriver())->sqlite('data/app.sqlite');
  * ```
  *
@@ -314,10 +314,10 @@ class PdoDriver extends AbstractDriver
    * 解析 SQLite 数据库文件路径
    *
    * `:memory:`（内存库）与空字符串（私有临时库）是 SQLite 的特殊文件名，必须原样透传；
-   * 绝对路径直接使用；其余按框架根目录拼接。
+   * 绝对路径直接使用；其余按基础插件根目录拼接。
    *
    * ⚠️ 因此**不支持** SQLite 的 URI 文件名写法（如 `file:/abs/x.db?mode=ro`）：它以 `file:`
-   * 开头、不匹配下面的绝对路径判定，会被当成相对路径拼到框架根目录下。需要只读请见 {@see sqlite()}。
+   * 开头、不匹配下面的绝对路径判定，会被当成相对路径拼到基础插件根目录下。需要只读请见 {@see sqlite()}。
    *
    * @param string $databaseFilePath 传入的路径
    * @return string 可拼进 DSN 的路径

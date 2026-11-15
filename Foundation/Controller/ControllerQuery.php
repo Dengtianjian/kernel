@@ -8,11 +8,11 @@ use kernel\Foundation\HTTP\Request\RequestQuery;
 /**
  * 控制器 GET 参数处理器
  *
- * 继承 {@see RequestQuery}，作为框架在控制器上下文中处理 URL 查询参数（GET）的专用载体。
+ * 继承 {@see RequestQuery}，作为基础插件在控制器上下文中处理 URL 查询参数（GET）的专用载体。
  *
  * 与直接使用 `RequestQuery` 的区别：
  * - `RequestQuery` 的父类构造会从原始 `$_GET` 直接填充数据；
- * - 本类显式以 `$request->query`（已由框架封装、可能经过统一预处理的请求查询组件）作为数据源，
+ * - 本类显式以 `$request->query`（已由基础插件封装、可能经过统一预处理的请求查询组件）作为数据源，
  *   避免从 `$_GET` 重复填充后被覆盖，从而保证与 `Controller::query()` 读取到的数据一致。
  *
  * 构造时会同时应用子类声明的 `$queryMutator`（类型转换）与 `$queryValidator`（校验规则），

@@ -6,7 +6,7 @@ use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\FileSystem\Zip;
 
 /**
- * 解包命令（框架内置）：将应用与内核的 zip 解压回对应目录
+ * 解包命令（基础插件内置）：将应用与内核的 zip 解压回对应目录
  *
  * 用法：
  *   php isdtj/console unpack                    # 应用名取 $console->appId()，内核名取 $console->kernelId()

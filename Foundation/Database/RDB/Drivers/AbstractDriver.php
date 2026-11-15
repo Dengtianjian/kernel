@@ -47,7 +47,7 @@ use PDOStatement;
  * // 复用外部已有的 mysqli 连接
  * $driver = new MysqliDriver(\DB::object()->curlink);
  *
- * // SQLite（由 PDO 后端承载；相对路径按框架根目录解析，文件不存在则自动创建）
+ * // SQLite（由 PDO 后端承载；相对路径按基础插件根目录解析，文件不存在则自动创建）
  * $driver = (new PdoDriver())->sqlite('data/app.sqlite');
  * ```
  *

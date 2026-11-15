@@ -8,10 +8,10 @@ use kernel\Foundation\HTTP\Request\RequestBody;
 /**
  * 控制器 Body 参数处理器
  *
- * 继承 {@see RequestBody}，作为框架在控制器上下文中处理请求体（POST/PUT/PATCH）参数的专用载体。
+ * 继承 {@see RequestBody}，作为基础插件在控制器上下文中处理请求体（POST/PUT/PATCH）参数的专用载体。
  *
  * 与 {@see ControllerQuery} 的取舍不同：本类先调用父类 `RequestBody::__construct` 完成 mutator/validator
- * 的初始化，再以 `$request->body`（框架封装后的请求体组件）覆盖 `data`，确保数据类型转换与
+ * 的初始化，再以 `$request->body`（基础插件封装后的请求体组件）覆盖 `data`，确保数据类型转换与
  * `Controller::body()` 读取到的内容一致。
  *
  * 构造时应用子类声明的 `$bodyMutator`（类型转换）与 `$bodyValidator`（校验规则），

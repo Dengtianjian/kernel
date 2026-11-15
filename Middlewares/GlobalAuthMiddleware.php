@@ -104,7 +104,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
    * 中间件处理：校验通过后执行业务逻辑，并为响应补充 Authorization 头
    *
    * 后置注入——先 $next() 执行后续逻辑拿到 Response，再统一写入鉴权头，
-   * 不绕过框架的响应头管理（避免直接调用全局 header()）。
+   * 不绕过基础插件的响应头管理（避免直接调用全局 header()）。
    *
    * @param \Closure $next
    * @return \kernel\Foundation\HTTP\Response
@@ -146,7 +146,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
    * 为响应补充 Authorization 头（后置注入）
    *
    * 仅当本次请求成功登录（{@see Auth::logged()} 为真）时才写入，便于客户端
-   * 续期/携带 token。通过 Response::header() 管理头信息，由框架统一输出。
+   * 续期/携带 token。通过 Response::header() 管理头信息，由基础插件统一输出。
    *
    * @param \kernel\Foundation\HTTP\Response $response
    * @return \kernel\Foundation\HTTP\Response

@@ -10,7 +10,7 @@ use kernel\Support\Result;
  *
  * 在 {@see Controller} 基础上增加「认证开关 + 校验分发」能力：
  * - 公开属性 `$admin` / `$auth` 为认证开关，设为非 false 即启用对应认证；
- * - 启用后由框架的认证中间件（如 `GlobalAuthMiddleware`）读取这两个属性，执行 Token 校验，
+ * - 启用后由基础插件的认证中间件（如 `GlobalAuthMiddleware`）读取这两个属性，执行 Token 校验，
  *   并在通过后将校验结果分发到本类的 `verifyAdmin()` / `verifyAuth()`；
  * - 子类可覆盖 `verifyAdmin()` / `verifyAuth()` 追加额外业务校验，返回 `Result` 表示校验结果。
  *

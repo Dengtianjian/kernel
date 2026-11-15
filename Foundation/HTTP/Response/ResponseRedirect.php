@@ -16,7 +16,7 @@ use kernel\Foundation\Application\Applications;
  * - `away()`     跳转到外部域名（不强制同域/HTTPS）
  * - `secure()`   强制以 HTTPS 跳转到当前域名下的路径
  * - `back()`     回退到上一页（读取 `Referer`，缺失时回退到 fallback）
- * - `with()`     携带一次性数据（本框架无 Session，数据以 URL 查询参数形式附加到目标地址）
+ * - `with()`     携带一次性数据（本插件无 Session，数据以 URL 查询参数形式附加到目标地址）
  * - `withFragment()` 附加 URL 片段（#anchor）
  *
  * 生命周期：跳转方法只「配置」目标与模式，`output()` 时才统一组装最终 URL
@@ -185,7 +185,7 @@ class ResponseRedirect extends Response
   /**
    * 携带一次性数据
    *
-   * 本框架无 Session 闪存，数据以 URL 查询参数形式附加到目标地址（前端可读、可再次透传）。
+   * 本插件无 Session 闪存，数据以 URL 查询参数形式附加到目标地址（前端可读、可再次透传）。
    * 支持 `with('key', 'value')` 单条，或 `with(['k1' => 'v1', 'k2' => 'v2'])` 批量。
    *
    * @param string|array $key   数据键名，或关联数组（批量）

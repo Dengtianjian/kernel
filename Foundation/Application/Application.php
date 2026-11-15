@@ -437,7 +437,7 @@ abstract class Application
     $app = Applications::get($appId);
     if ($app === null) {
       //* 懒装配：按默认应用的实际类现建一个（走完整构造，与先建的那个同类）。
-      //* 构造只登记框架零件，业务组件在装配类里注册——所以懒装配出来的应用只有骨架，
+      //* 构造只登记基础组件，业务组件在装配类里注册——所以懒装配出来的应用只有骨架，
       //* 跨应用要取业务能力，得由使用方自己 register() 或 make() 多例。
       $class = static::instanceClass();
       $default = Applications::default();

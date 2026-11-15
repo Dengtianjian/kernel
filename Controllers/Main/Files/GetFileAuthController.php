@@ -32,7 +32,7 @@ class GetFileAuthController extends AuthController
   /**
    * 请求体字段的类型转换规则（字段名 => 类型）
    *
-   * 由框架在 {@see \kernel\Foundation\Controller\Controller::__construct()} 中传给
+   * 由基础插件在 {@see \kernel\Foundation\Controller\Controller::__construct()} 中传给
    * `ControllerBody`，决定 `$this->body()` 取值的类型，因此接口要用到的字段必须在这里声明。
    *
    * - `disk`：目标磁盘名（空 = 当前磁盘）；`expires`：授权有效期（秒）；

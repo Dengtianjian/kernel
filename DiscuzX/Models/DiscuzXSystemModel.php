@@ -7,7 +7,7 @@ use kernel\Foundation\Database\RDB\Model;
 /**
  * DiscuzX 系统表模型基类
  *
- * 面向 Discuz 自带的数据表（`common_*`、`forum_*` 等），把系统表与框架通用模型的两点差异
+ * 面向 Discuz 自带的数据表（`common_*`、`forum_*` 等），把系统表与基础插件通用模型的两点差异
  * 收敛到基类，子类只需声明**裸表名**：
  *
  * 1. **表名补 Discuz 的 `tablepre` 前缀**：子类把 `$tableName` 写成不带前缀的表名
@@ -17,7 +17,7 @@ use kernel\Foundation\Database\RDB\Model;
  *    会连带处理 Discuz 的分表映射。
  * 2. **默认不维护时间戳字段**：关闭 `created_at` / `updated_at` 的自动填充
  *    （{@see Model::$timestamps} 与 {@see Model::$queryTimestamps} 一并关闭）。
- *    Discuz 系统表用自身的时间字段命名（如 `dateline`），不遵循本框架的约定，
+ *    Discuz 系统表用自身的时间字段命名（如 `dateline`），不遵循本插件的约定，
  *    若开启会在写入时凭空插入不存在的列。
  *
  * 用法：

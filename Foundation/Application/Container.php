@@ -16,7 +16,7 @@ use ReflectionNamedType;
  *
  * 四张表，按「什么时候构造」区分，键统一是「别名，没有别名就用类名」：
  * - `$providers`：名字 => 实例。**登记即构造**，取用直接返回，适合装配类（构造即装配）；
- * - `$deferred` ：名字 => 实现体。登记不构造，首次取用才建，适合框架零件这类构造有副作用的；
+ * - `$deferred` ：名字 => 实现体。登记不构造，首次取用才建，适合基础组件这类构造有副作用的；
  * - `$bindings` ：名字 => 实现体。每次取用都新建，取用时传的参数即构造参数；
  * - `$imports`  ：名字 => 来源。只记 appId 与转发目标，实际构造发生在提供方容器。
  *
@@ -113,7 +113,7 @@ class Container
   /**
    * 登记延迟单例：登记不构造，首次取用才建
    *
-   * 用于「构造有副作用、但希望等真正用到再付代价」的类（框架零件：Request / Router
+   * 用于「构造有副作用、但希望等真正用到再付代价」的类（基础组件：Request / Router
    * / Lifecycle / Middleware）；传实例时与 {@see provider()} 等价。
    *
    * @param object|string|callable|array $concrete 实现体

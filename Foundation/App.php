@@ -17,7 +17,7 @@ use kernel\Foundation\Router\Router;
 use kernel\Foundation\Builtin\Cache;
 
 /**
- * Web 应用：框架零件登记 + 装配 + 请求执行流程
+ * Web 应用：基础组件登记 + 装配 + 请求执行流程
  *
  * 身份（ID / kernelId）、容器、组件登记与取用全在基类 {@see Application} 里，
  * 本类只负责 Web 这一层：装配（{@see assemble()}）、执行（{@see run()}）、
@@ -39,12 +39,12 @@ use kernel\Foundation\Builtin\Cache;
 class App extends Application
 {
   /**
-   * 构造：基座 + 框架零件 + 装配
+   * 构造：基座 + 基础组件 + 装配
    *
    * 三步，顺序不能换：
    * 1. 基座（身份、容器、启动时间、登记到应用管理器）由
    *    {@see Application::__construct()} 准备；
-   * 2. 登记框架零件：App 自身、ConfigProvider / LogProvider / Middleware，以及请求级三件套
+   * 2. 登记基础组件：App 自身、ConfigProvider / LogProvider / Middleware，以及请求级三件套
    *    Request / Router / LifecycleProvider（只登记、不构造）；
    * 3. 执行装配（{@see assemble()}）——Bootstrap 里第一句就要 `register()`，因此必须排在最后。
    *
@@ -65,7 +65,7 @@ class App extends Application
   {
     parent::__construct($id, $kernelId);
 
-    //* 框架零件：只登记、不构造——首次取用才反射实例化
+    //* 基础组件：只登记、不构造——首次取用才反射实例化
     //* 名字即键：容器只做精确匹配，短名必须在这里显式给别名
     $this->provider($this);
     $this->defer(Config::class, "config");
@@ -282,7 +282,7 @@ class App extends Application
 
     if (Func::isSafeCallable($route['controller'])) {
       $callTarget = $route['controller'];
-      //* 闭包路由：逐参数按名绑定（保持声明顺序；$request 由框架注入，append 隐式参数可按名取值）
+      //* 闭包路由：逐参数按名绑定（保持声明顺序；$request 由基础插件注入，append 隐式参数可按名取值）
       $closure = new \ReflectionFunction($callTarget);
       $callParams = $this->bindClosureParams($closure->getParameters(), $routeParams, $routeInstantiateParams, $this->request());
       //* 预建默认 Controller 承载响应（中间件链 / after() / 输出均依赖它）
@@ -461,7 +461,7 @@ class App extends Application
   /**
    * 按参数名绑定闭包路由参数（反射，保持声明顺序）
    *
-   * 与 bindParamsByName() 的差异：闭包参数支持框架注入与隐式参数，逐个参数按其声明位置绑定：
+   * 与 bindParamsByName() 的差异：闭包参数支持基础插件注入与隐式参数，逐个参数按其声明位置绑定：
    * 1. 参数名为 request 或类型声明为 Request 派生类型：注入当前请求实例
    * 2. 参数名存在于路由参数（URL 路由参数 + append 隐式参数）：取对应值
    * 3. 参数名存在于路由实例化参数（->parameters() 关联数组）：取对应值

@@ -18,7 +18,7 @@ use kernel\Foundation\Middleware\MiddlewareBase;
  * - 开发模式：**前置**——先 Cors::emit() 输出头再 $next()。业务抛异常时响应不经过后置逻辑，
  *   前置输出可让错误响应也带 CORS 头；同时开发模式下来源不限制（Cors::isDevelopment()）。
  *
- * 关于预检（OPTIONS）：CORS 预检请求不再由框架统一拦截，交由业务应用自行处理
+ * 关于预检（OPTIONS）：CORS 预检请求不再由基础插件统一拦截，交由业务应用自行处理
  * （注册 options 路由返回 204/空体，或倚赖本中间件为响应补 CORS 头）。
  *
  * 配置键（cors.*，默认值见 Cors::DEFAULTS）。

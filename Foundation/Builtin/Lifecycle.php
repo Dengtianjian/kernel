@@ -249,7 +249,7 @@ class Lifecycle extends AbilityBaseObject
   /**
    * 获取当前请求处理过程中捕获的异常
    *
-   * 正常结束返回 null；控制器/中间件/引导等任意环节抛出并被框架捕获后，
+   * 正常结束返回 null；控制器/中间件/引导等任意环节抛出并被基础插件捕获后，
    * shutdown 回调可通过该方法判断是否异常结束、读取错误信息。
    *
    * @return \Throwable|null

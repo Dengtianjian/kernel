@@ -10,7 +10,7 @@ use kernel\Foundation\Exception\Error;
  *
  * 本类是 DiscuzX 适配层的控制器底座，**不承载业务逻辑**，只沉淀通用能力：
  * - Token 认证：继承自 {@see AuthController} 的 `$admin` / `$auth` 开关与校验分发，
- *   接口请求由认证中间件按 Token 鉴权（`AuthModule` 凭证体系），这是本框架的
+ *   接口请求由认证中间件按 Token 鉴权（`AuthModule` 凭证体系），这是本插件的
  *   主要访问控制手段；
  * - formhash 校验：面向「需要 Discuz 会话表单语义」的业务控制器的**可选开关**，
  *   见 {@see $forumhash} 与 {@see verifyFormhash()}。

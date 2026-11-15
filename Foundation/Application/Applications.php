@@ -12,7 +12,7 @@ use kernel\Foundation\Exception\Error;
  * - 也可以**显式指定**默认应用：注册时传 `$makeDefault = true`，或事后调用 {@see setDefault()}。
  *
  * 默认应用是 {@see default()} / {@see defaultId()} / `$app->kernelId()` 的数据来源，
- * 因此「谁被登记为默认」直接决定框架各处取到的是哪个应用。
+ * 因此「谁被登记为默认」直接决定基础插件各处取到的是哪个应用。
  *
  * 典型场景与顺序：
  * - 常规应用：`new App(Bootstrap::class, "app")` 构造时自动注册，因是第一个注册者，自动成为默认；
