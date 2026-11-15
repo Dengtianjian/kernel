@@ -2,7 +2,6 @@
 
 namespace kernel\DiscuzX\Foundation\Storage;
 
-use kernel\Foundation\Application\Applications;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
@@ -17,23 +16,19 @@ use kernel\DiscuzX\Foundation\DiscuzXPath;
  * 直接经 {@see FileSystem::upload()} 以 `move_uploaded_file()` 落盘——无扩展名白名单，
  * 上架审核按「自写文件上传」记严重。本类把上传落盘改为**Discuz 官方上传类
  * `discuz_upload`**（`source/class/discuz/discuz_upload.php`，由 Discuz 的
- * `core::autoload` 按类名自动加载）：扩展名经 `discuz_upload::get_target_extension()`
- * 白名单过滤（不在白名单内一律落成 `.attach`），落盘用官方 `save()` / `save_to_local()`，
- * 图片走官方 `get_image_info()` 校验——审核口径为「经过官方上传机制」，合规。
+ * `core::autoload` 按类名自动加载）：扩展名走「危险拒绝」策略（`FileHelper::hasDangerousExtension()`，
+ * 服务端脚本/可执行/配置劫持类一律拒绝，其余类型**原样落盘**、不做白名单改写），落盘用官方
+ * `save_to_local()`，图片走官方 `get_image_info()` 校验。
  *
  * 字符串入参（CLI 临时文件、已下载到本地的文件等）不是「上传」，保留父类的
  * {@see FileSystem::upload()} `copy` 搬运语义，不做白名单处理。
  *
- * ## 两种存储位置归属（put 第三参 $location 二选一）
+ * ## 存储位置归属
  *
- * | 归属 | 位置 | 落盘方式 | 与 get()/exists()/url() 的一致性 |
- * |---|---|---|---|
- * | {@see LOCATION_PLUGINDATA}（默认） | `{@see DiscuzXPath::storage()}`，即 `data/plugindata/{appId}/Storage/` | 官方类**静态方法**拼装：`fileext()` + `get_target_extension()`（白名单）+ `get_target_filename()`（随机名）+ `save_to_local()`（落盘）+ `get_image_info()`（图片校验）；目录与文件名拼装在本驱动内 | **一致**：落盘位置就在 {@see basePath()} 下，put 后 `get($saveFileName)` 可直接查到 |
- * | {@see LOCATION_ATTACHDIR} | Discuz 官方附件目录 `data/attachment/{type}/...`（`$attachType` 指定段，缺省取当前应用 ID） | 官方 `init()` + `save()` **全流程**（目录创建、白名单、落盘、图片校验全部官方） | **不一致**：落盘在 Discuz attachdir 体系内，不在 basePath 下，put 后 `get()` 查不到；返回的 StorageFile 信息完全来自 `$upload->attach`，filePath 指向 attachdir 下的绝对路径 |
- *
- * 选型指引：希望沿用磁盘抽象（put 后还能 get/delete/url）→ 用默认 plugindata；
- * 希望文件完全纳入 Discuz 附件体系（后台附件管理、与论坛附件同目录）→ 用 attachdir，
- * 但调用方要自己持有返回的 filePath，不能再用本驱动的 get()/delete() 管它。
+ * 统一落 `{@see DiscuzXPath::storage()}`，即 `data/plugindata/{appId}/Storage/`，
+ * 与 {@see basePath()} 一致——put 后 `get($saveFileName)` / `delete()` / `url()` 可直接用。
+ * 历史上的 `LOCATION_ATTACHDIR`（Discuz 官方附件目录）归属已移除：其落盘位置不在
+ * basePath 下，put 后 `get()` 查不到（读写不对齐），且全库无调用方。
  *
  * ## 使用前提
  *
@@ -46,26 +41,6 @@ use kernel\DiscuzX\Foundation\DiscuzXPath;
  */
 class DiscuzXLocalStorage extends LocalStorage
 {
-  /**
-   * 存储位置归属：Discuz 官方附件目录
-   *
-   * 落 `data/attachment/{type}/...`，完全走官方 `init()` + `save()` 流程。
-   * 代价：落盘位置不在 {@see basePath()} 下，put 后 {@see get()} 查不到。
-   *
-   * @var string
-   */
-  const LOCATION_ATTACHDIR = "attachdir";
-  /**
-   * 存储位置归属：插件数据目录（默认）
-   *
-   * 落 `{@see DiscuzXPath::storage()}`（`data/plugindata/{appId}/Storage/`），
-   * 落盘用官方类的静态方法拼装（白名单/落盘/图片校验仍是官方实现）。
-   * 与 {@see basePath()} 一致，put 后 {@see get()} 可查。
-   *
-   * @var string
-   */
-  const LOCATION_PLUGINDATA = "plugindata";
-
   /**
    * 构造 DiscuzX 本地磁盘
    *
@@ -82,21 +57,16 @@ class DiscuzXLocalStorage extends LocalStorage
    * 保存/上传文件到本地磁盘
    *
    * 按入参类型分流：
-   * - **字符串**：本地文件搬运（`copy` + 删源），非上传，不经白名单；
+   * - **字符串**：本地文件搬运（`copy` + 删源），非上传，不做白名单处理；
    * - **数组（`$_FILES` 单文件格式）**：真上传，经 Discuz 官方 `discuz_upload`
-   *   落盘（扩展名白名单 + 官方落盘 + 图片校验），归属由 `$location` 决定。
+   *   落盘（危险扩展名拒绝 + 官方落盘 + 图片校验）。
    *
    * @param array|string $file `$_FILES` 单文件数组（需含 `tmp_name`/`name`/`size`），或本地文件路径字符串
    * @param string|null $saveFileName 保存后的文件名称（可含相对目录，如 `2026/01/avatar`）；
-   *                                   缺省时上传取官方随机名、搬运取源文件名。
-   *                                   注意 `attachdir` 归属只取其中的文件名段（官方校验
-   *                                   `^[a-z0-9_]+$`，不合法自动改随机名），目录段会被忽略
-   * @param string $location 存储位置归属：{@see LOCATION_PLUGINDATA}（默认）或 {@see LOCATION_ATTACHDIR}
-   * @param string|null $attachType 仅 `attachdir` 归属有效：`data/attachment/` 下的目录段；
-   *                                缺省取当前应用 ID（不合法时官方 `check_dir_type()` 兜底为 `temp`）
+   *                                   缺省时上传取官方随机名、搬运取源文件名
    * @return false|StorageFile 成功返回文件信息；失败返回 {@see AbilityBaseObject::break()} 错误态
    */
-  public function put($file, $saveFileName = null, $location = self::LOCATION_PLUGINDATA, $attachType = null)
+  public function put($file, $saveFileName = null)
   {
     //* 字符串入参 = 本地搬运（CLI 临时文件、已落地的下载文件等），非上传
     if (is_string($file)) {
@@ -114,9 +84,11 @@ class DiscuzXLocalStorage extends LocalStorage
       $saveFileName = basename($file['name']);
     }
 
-    //* 保存名解析：剥出目录段与文件名段；目录穿越在此统一拒绝
+    //* 保存名解析：剥出目录段、文件名段与扩展名段；目录穿越在此统一拒绝。
+    //* 扩展名随 saveFileName 传递（与 StorageModule 落库 fileKey 同源，消除大小写/截断差异——F2）
     $dir = "";
     $fileNameOnly = null;
+    $fileExtension = null;
     if ($saveFileName !== null && $saveFileName !== "") {
       $normalized = str_replace("\\", "/", (string) $saveFileName);
       if (strpos($normalized, "..") !== false) {
@@ -125,13 +97,10 @@ class DiscuzXLocalStorage extends LocalStorage
       $info = pathinfo(trim($normalized, "/"));
       $dir = trim((string) $info['dirname'], "./");
       $fileNameOnly = (string) $info['filename'];
+      $fileExtension = isset($info['extension']) ? (string) $info['extension'] : null;
     }
 
-    if ($location === self::LOCATION_ATTACHDIR) {
-      return $this->putToAttachDir($file, $fileNameOnly, $attachType);
-    }
-
-    return $this->putToPluginData($file, $dir, $fileNameOnly);
+    return $this->putToPluginData($file, $dir, $fileNameOnly, $fileExtension);
   }
 
   /**
@@ -169,101 +138,60 @@ class DiscuzXLocalStorage extends LocalStorage
   }
 
   /**
-   * 归属一：官方附件目录（`data/attachment/{type}/...`）
-   *
-   * 全程走官方 `discuz_upload::init()` + `save()`：目录创建（`check_dir_exists`）、
-   * 扩展名白名单（`get_target_extension`）、随机/指定文件名、落盘（`save_to_local`）、
-   * 图片校验（`get_image_info`）均为官方实现，本方法只做入参适配与结果转译。
-   *
-   * 官方 `init()` 第五/六/七参（`$subdir`/`$dirtype`/`$filename`）中仅 `$filename`
-   * 由调用方的 `$saveFileName` 文件名段映射（官方校验 `^[a-z0-9_]+$`，不合法自动改随机名），
-   * 目录结构（`{Ym}/{d}/`）由官方固定，不接受调用方目录段。
-   *
-   * 注意：落盘位置在 Discuz attachdir 体系内、不在 {@see basePath()} 下，
-   * put 后 {@see get()} 查不到；返回的 StorageFile 的 filePath 为 attachdir 下的绝对路径。
-   *
-   * @param array $file `$_FILES` 单文件数组
-   * @param string|null $fileNameOnly 保存文件名段（已剥目录）；null 用官方随机名
-   * @param string|null $attachType attachdir 下的目录段；null 取当前应用 ID
-   * @return false|StorageFile
-   */
-  private function putToAttachDir($file, $fileNameOnly, $attachType)
-  {
-    $uploader = new \discuz_upload();
-
-    $type = $attachType;
-    if ($type === null || $type === "") {
-      $type = (string) Applications::defaultId();
-      if ($type === "") {
-        $type = "temp";
-      }
-    }
-
-    if (!$uploader->init($file, $type, 0, "", "", 1, (string) $fileNameOnly)) {
-      return $this->break(400, "Storage:DZX:400104", "文件校验失败", [
-        "errorCode" => $uploader->error()
-      ]);
-    }
-    if (!$uploader->save()) {
-      return $this->break(500, "Storage:DZX:500105", "文件保存失败", [
-        "errorCode" => $uploader->error()
-      ]);
-    }
-
-    $attach = $uploader->attach;
-    $imageInfo = $attach['imageinfo'] ?? null;
-
-    return new StorageFile([
-      "name" => basename($attach['attachment']),
-      "source_file_name" => $attach['name'],
-      "path" => dirname($attach['attachment']),
-      "extension" => $attach['extension'],
-      "size" => $attach['size'],
-      "width" => is_array($imageInfo) ? $imageInfo[0] : 0,
-      "height" => is_array($imageInfo) ? $imageInfo[1] : 0,
-      "filePath" => $attach['target']
-    ]);
-  }
-
-  /**
-   * 归属二：插件数据目录（`data/plugindata/{appId}/Storage/...`，默认）
+   * 插件数据目录（`data/plugindata/{appId}/Storage/...`）
    *
    * 官方 `discuz_upload` 的落盘目标固定在其 attachdir 体系内，无法直接落插件数据目录，
    * 因此本方法用官方类的**静态方法**拼装（与 `save()` 内部同一套安全件）：
-   * - `fileext()` + `get_target_extension()`：扩展名白名单，不在白名单内一律 `.attach`；
+   * - `FileHelper::hasDangerousExtension()`：扩展名「危险拒绝」，其余类型**原样落盘**（不做白名单改写）；
    * - `get_target_filename()`：未指定文件名时的官方随机名（`date('His') + random(16)`）；
    * - `save_to_local()`：官方落盘（`is_upload_file` 校验 + `copy`/`move_uploaded_file`，
    *   成功后 `chmod 0644` 并删临时文件）；
    * - `get_image_info()`：图片/swf 内容校验，不通过即删文件并报错（与官方 `save()` 行为一致）。
    *
-   * 与 {@see putToAttachDir()} 的差异：目录与文件名拼装在本驱动内（`{basePath()}/{dir}/{name}.{ext}`），
+   * 目录与文件名拼装在本驱动内（`{basePath()}/{dir}/{name}.{ext}`），
    * 落盘位置就在 {@see basePath()} 下，put 后 {@see get($saveFileName)} 可直接查到。
    *
    * @param array $file `$_FILES` 单文件数组
    * @param string $dir 相对 basePath 的目录段（已在 {@see put()} 里做穿越校验，可为空串）
    * @param string|null $fileNameOnly 文件名段（不含扩展名）；null/空 用官方随机名
+   * @param string|null $fileExtension 扩展名段（来自调用方 saveFileName，与落库 fileKey 同源）；
+   *                                   null/空 时兜底取原上传文件名的扩展名
    * @return false|StorageFile
    */
-  private function putToPluginData($file, $dir, $fileNameOnly)
+  private function putToPluginData($file, $dir, $fileNameOnly, $fileExtension = null)
   {
     $basePath = $this->basePath();
     if ($basePath === null || $basePath === "") {
       return $this->break(500, "Storage:DZX:500106", "存储目录不可用（应用未初始化）");
     }
 
-    //* 扩展名白名单：官方口径，不在白名单内的扩展名一律落成 .attach
-    $extension = \discuz_upload::get_target_extension(\discuz_upload::fileext($file['name']));
+    //* 扩展名单一来源：优先取调用方 saveFileName 的扩展名段（与 StorageModule 落库 fileKey 完全
+    //* 同源，消除 fileext() 的 strtolower/addslashes/截断差异——F2），未指定时兜底原上传名扩展名；
+    //* 不再使用 get_target_extension 白名单改写（改写会把 pdf/docx 落成 .attach 致写读不一致——R1）
+    $extension = $fileExtension !== null && $fileExtension !== ""
+      ? $fileExtension
+      : pathinfo($file['name'], PATHINFO_EXTENSION);
 
-    //* 文件名段：调用方指定时做安全过滤，否则用官方随机名
+    //* 文件名段：调用方指定时仅接受字母数字/下划线/点/连字符与中文（拒绝式——消毒改名会使落库
+    //* fileKey 与磁盘名不一致，F1）；未指定时用官方随机名
     $fileName = "";
     if ($fileNameOnly !== null && $fileNameOnly !== "") {
-      $fileName = preg_replace("/[^\w.\-]/", "", $fileNameOnly);
+      if ($fileNameOnly === "." || $fileNameOnly === ".." || preg_match("/[^\w.\-]/u", $fileNameOnly)) {
+        return $this->break(400, "Storage:DZX:400111", "保存文件名含非法字符");
+      }
+      $fileName = $fileNameOnly;
     }
     if ($fileName === "") {
       $fileName = \discuz_upload::get_target_filename("local");
     }
 
-    $target = Path::join($basePath, $dir, "{$fileName}.{$extension}");
+    //* 危险扩展名全段检查（拦 x.php.jpg 左解析类绕过）：对落盘全名与原上传名双侧覆盖
+    $saveFullFileName = $extension !== "" ? "{$fileName}.{$extension}" : $fileName;
+    if (FileHelper::hasDangerousExtension($saveFullFileName) || FileHelper::hasDangerousExtension($file['name'])) {
+      return $this->break(400, "Storage:DZX:400110", "文件类型不允许");
+    }
+
+    $target = Path::join($basePath, $dir, $saveFullFileName);
 
     $uploader = new \discuz_upload();
     if (!$uploader->save_to_local($file['tmp_name'], $target)) {
@@ -281,7 +209,7 @@ class DiscuzXLocalStorage extends LocalStorage
     }
 
     return new StorageFile([
-      "name" => "{$fileName}.{$extension}",
+      "name" => $saveFullFileName,
       "source_file_name" => (string) $file['name'],
       "path" => $dir,
       "extension" => $extension,

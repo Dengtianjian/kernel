@@ -529,6 +529,8 @@ class StorageModule extends AbilityBaseObject
   {
     $result = $this->useDisk->get($fileKey);
     if ($this->useDisk->error) return $this->useDisk->forwardBreak();
+    //* 文件不存在时驱动返回 false：对 false 调 toArray() 会 fatal，转为 404 错误态（F3）
+    if (!$result) return $this->break(404, "getFileFailed:404", "文件不存在");
 
     $file = $result->toArray();
     if (!$file) return $this->break(500, 500, "获取文件信息失败");
