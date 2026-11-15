@@ -94,6 +94,8 @@ final class FileSystem
    * @param string $savePath 保存目录；目录不存在时按 **0755** 递归创建。
    *                         传 `"."` 等价于不传（落当前工作目录）
    * @param string|null $fileName 指定保存文件名（可含扩展名，扩展名以它为准）；不传则用 `uniqid()`
+   * @param array|null $allowedExtensions 扩展名白名单（经 {@see FileHelper::matchesExtension()} 匹配）。
+   *                                      **null 时不校验**（底层保持中性，是否校验、用什么清单由业务层决定）
    * @return array 文件信息数组，键见上方示例
    *
    * @throws Error 以下情况会抛出（第三参为业务错误码）：
@@ -103,6 +105,7 @@ final class FileSystem
    *               - 数组缺少 `tmp_name` / `name` → `400` `FileUpload:400003`
    *               - 字符串入参的源文件不存在 → `500` `FileUpload:500002`
    *               - `move_uploaded_file()` / `copy()` 落盘失败 → `500` `FileSave:500003`
+   *               - 扩展名不在 `$allowedExtensions` 白名单 → `400` `FileUpload:400005`
    *
    * 实现现状（与期望不一致，改动前留意）：
    * 1. `$savePath` 为空（含传 `"."`）时仍会执行 `is_dir(null)` 判断并 `mkdir(null, 0755, true)`：
@@ -112,7 +115,7 @@ final class FileSystem
    * 4. 仅按 `FileHelper::isImage()`（MIME）判断，判定为图片后才调用 `getimagesize()`，
    *    但后者仍可能返回 false（损坏图片），此时 `$imageInfo[0]` 会告警。
    */
-  public static function upload($file, $savePath, $fileName = null)
+  public static function upload($file, $savePath, $fileName = null, ?array $allowedExtensions = null)
   {
     if (!$file) {
       throw new Error("请上传文件", 400, "FileUpload:400001");
@@ -166,6 +169,13 @@ final class FileSystem
     $fileExtension = preg_replace("/[^A-Za-z0-9]/", "", (string) $fileExtension);
 
     $saveFullFileName = $fileExtension ? "{$fileName}.{$fileExtension}" : $fileName;
+
+    //* 白名单校验（可选）：$allowedExtensions 传数组时启用，null 时不校验（底层保持中性）。
+    //* 是否校验、用什么清单由业务层决定——底层不内置任何扩展名策略（kernel 是通用框架）
+    if ($allowedExtensions !== null && !FileHelper::matchesExtension($saveFullFileName, $allowedExtensions)) {
+      throw new Error("文件类型不允许", 400, "FileUpload:400005", $saveFullFileName);
+    }
+
     $path = $saveFullFileName;
     if ($savePath) {
       $path = Path::join($savePath, $saveFullFileName);

@@ -3,6 +3,7 @@
 namespace kernel\DiscuzX\Foundation\Storage;
 
 use kernel\Foundation\Application\Applications;
+use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Modules\Storage\Drivers\LocalStorage;
@@ -150,6 +151,10 @@ class DiscuzXLocalStorage extends LocalStorage
     $normalized = str_replace("\\", "/", (string) $saveFileName);
     if (strpos($normalized, "..") !== false) {
       return $this->break(400, "Storage:DZX:400104", "非法保存路径");
+    }
+    //* 适配层策略：搬运目标名含危险扩展名段（.php/.htaccess 等，全段检查）时拒绝——搬运与上传同具落盘危害
+    if (FileHelper::hasDangerousExtension($normalized)) {
+      return $this->break(400, "Storage:DZX:400105", "文件类型不允许");
     }
     $pathInfo = pathinfo($saveFileName);
 

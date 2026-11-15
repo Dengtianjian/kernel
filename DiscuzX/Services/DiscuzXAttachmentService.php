@@ -32,6 +32,12 @@ class DiscuzXAttachmentService extends AbilityBaseObject
     if (strpos(str_replace("\\", "/", (string) $saveDir), "..") !== false) {
       return new Result(false, 400, "Attachment:400001", "非法保存路径");
     }
+    //* 适配层策略：底线拒绝危险扩展名（FileHelper 全段检查，拦 shell.php.jpg 左解析类绕过）。
+    //* 不用官方 get_target_extension 白名单改写——清单过窄（pdf/mp4 类正常附件会被改写为 .attach），
+    //* 且改写致落库名不一致（R1 教训）；严格白名单制由宿主/后台配置化时再引入
+    if (isset($files['name']) && FileHelper::hasDangerousExtension($files['name'])) {
+      return new Result(false, 400, "Attachment:400002", "文件类型不允许");
+    }
     //* static 方法内不能取 $this（原实现 $this->app() 一调用即 fatal），改经 Applications 取默认应用
     $DefaultApp = Applications::default();
     $savePath = $DefaultApp ? $DefaultApp->config()->get("attachmentPath") : "";
