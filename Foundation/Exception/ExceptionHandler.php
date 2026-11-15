@@ -216,19 +216,21 @@ class ExceptionHandler
   // ---------- private ----------
 
   /**
-   * 安全获取运行模式，配置未装配时默认为 development
+   * 安全获取运行模式，配置未装配/读取失败时按 production 处理
    *
-   * 读默认应用的 `mode`；读取失败（应用还没建好等）时按 development 处理 ——
-   * 宁可多回调试信息，也不因配置缺失在异常处理过程中再抛一次错。
+   * 读默认应用的 `mode`；读取失败（应用还没建好、配置损坏等）时按 production
+   * 兜底——与 {@see \kernel\Foundation\Application\Application::mode()} 的保守
+   * 取向一致：配置缺失即按生产处理，不向响应暴露调试详情。开发期需要完整
+   * 详情时，在配置里显式写 `"mode" => "development"`（走正常读取路径）。
    *
    * @return string "production" 表示只回状态码；"development" 表示回传完整错误详情
    */
   private static function mode(): string
   {
     try {
-      return Config::get("mode", "development");
+      return Config::get("mode", "production");
     } catch (\Throwable $e) {
-      return "development";
+      return "production";
     }
   }
 
