@@ -158,9 +158,14 @@ class DiscuzXLocalStorage extends LocalStorage
     }
     $pathInfo = pathinfo($saveFileName);
 
-    FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
+    $fileInfo = FileSystem::upload($file, Path::join($this->basePath(), $pathInfo['dirname']), $pathInfo['basename']);
+    if (!$fileInfo) {
+      return $this->break(500, "Storage:DZX:500109", "文件保存失败");
+    }
 
-    return $this->get($saveFileName);
+    //* 回查用实际落盘名（upload 消毒可能改名），避免写读不一致
+    $savedDir = ($pathInfo['dirname'] === "." || $pathInfo['dirname'] === "/") ? "" : $pathInfo['dirname'];
+    return $this->get(Path::join($savedDir, $fileInfo['name']));
   }
 
   /**

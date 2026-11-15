@@ -83,7 +83,10 @@ class LocalStorage extends AbstractStorage
       return $this->break(500, 500, "文件上传失败", TRUE);
     }
 
-    return $this->get($saveFileName);
+    //* 回查用实际落盘名：upload 会消毒文件名（剔 [\w.\-]/u 外字符，如空格），落盘名可能与原
+    //* saveFileName 不同，按原名回查将失败（写读不一致 / 孤儿文件）
+    $savedDir = ($pathInfo['dirname'] === "." || $pathInfo['dirname'] === "/") ? "" : $pathInfo['dirname'];
+    return $this->get(Path::join($savedDir, $fileInfo['name']));
   }
 
   /**
