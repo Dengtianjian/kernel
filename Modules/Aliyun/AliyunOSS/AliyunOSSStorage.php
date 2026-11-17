@@ -327,4 +327,164 @@ class AliyunOSSStorage extends AbstractObjectStorage
       "Region" => $this->region
     ];
   }
+  /**
+   * 列举桶内对象（支撑 Discuz! X5.0 class_oss 适配器的 getFilesList）
+   *
+   * @param string $prefix 对象名前缀
+   * @param string $marker 从该位置之后继续列举（分页）
+   * @param integer $limit 返回条数上限
+   * @param string $delimiter 分隔符（模拟目录结构）
+   * @return array objects / directories / nextMarker / isTruncated
+   */
+  function listObjects($prefix = "", $marker = "", $limit = 100, $delimiter = "")
+  {
+    try {
+      $request = new Oss\Models\ListObjectsRequest($this->bucket, $prefix, $marker, $delimiter, $limit);
+      $result = $this->sdkClient->listObjects($request);
+      return [
+        "objects" => $result->contents ?? [],
+        "directories" => $result->commonPrefixes ?? [],
+        "nextMarker" => $result->nextMarker ?? null,
+        "isTruncated" => (bool) ($result->isTruncated ?? false)
+      ];
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 复制对象（支撑 class_oss 适配器的 renameObject：复制后由调用方删除源对象）
+   *
+   * @param string $oldObject 源对象名
+   * @param string $newObject 目标对象名
+   * @return boolean
+   */
+  function copyObject($oldObject, $newObject)
+  {
+    try {
+      $request = new Oss\Models\CopyObjectRequest($this->bucket, $oldObject, $this->bucket, $newObject);
+      $this->sdkClient->copyObject($request);
+      return true;
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 下载对象内容到指定本地文件（支撑 class_oss 适配器的 downFile）
+   *
+   * SDK 保存到本地文件的参数形态以联调时官方 SDK 校准为准。
+   *
+   * @param string $object 对象名
+   * @param string $saveToPath 本地保存路径
+   * @return boolean
+   */
+  function downloadObject($object, $saveToPath)
+  {
+    try {
+      $request = new Oss\Models\GetObjectRequest($this->bucket, $object);
+      $this->sdkClient->getObject($request, $saveToPath);
+      return true;
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 数据内容直写为对象（支撑 class_oss 适配器的 uploadData）
+   *
+   * 复用 {@see put()} 的「临时文件 + newUploader」通道，避免依赖 V2 SDK 各版本的
+   * 内存上传 API 差异。
+   *
+   * @param string $data 对象内容
+   * @param string $object 对象名
+   * @return boolean
+   */
+  function putObjectData($data, $object)
+  {
+    $tempPath = Path::join(Path::storage(), "oss_temp", uniqid("temp_data_"));
+    @mkdir(dirname($tempPath), 0755, true);
+    file_put_contents($tempPath, $data);
+    try {
+      $uploader = $this->sdkClient->newUploader();
+      $uploader->uploadFile(
+        new Oss\Models\PutObjectRequest($this->bucket, $object),
+        $tempPath,
+        ["part_size" => 1024 * 1024, "parallel_num" => 1]
+      );
+      FileSystem::deleteFile($tempPath);
+      return true;
+    } catch (\Exception $e) {
+      if (file_exists($tempPath)) @unlink($tempPath);
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 桶 CORS 配置（支撑 class_oss 适配器的 setCors）
+   *
+   * @param array $rules CORS 规则数组（origin / method / allowedHeader），模型以联调校准为准
+   * @return boolean
+   */
+  function setBucketCors($rules)
+  {
+    try {
+      $request = new Oss\Models\PutBucketCorsRequest($this->bucket, ["corsRules" => $rules]);
+      $this->sdkClient->putBucketCors($request);
+      return true;
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 桶 Referer 防盗链配置（支撑 class_oss 适配器的 RefererConfig）
+   *
+   * @param array $config Referer 配置（referList / allowEmpty），模型以联调校准为准
+   * @return boolean
+   */
+  function setBucketReferer($config)
+  {
+    try {
+      $request = new Oss\Models\PutBucketRefererRequest($this->bucket, $config);
+      $this->sdkClient->putBucketReferer($request);
+      return true;
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 对象 ACL（支撑 class_oss 适配器的 setAcl）
+   *
+   * @param string $object 对象名
+   * @param string|null $acl "public-read" / "private" 等；null 按默认继承
+   * @return boolean
+   */
+  function setObjectAcl($object, $acl = null)
+  {
+    try {
+      $request = new Oss\Models\PutObjectAclRequest($this->bucket, $object, $acl ?? "default");
+      $this->sdkClient->putObjectAcl($request);
+      return true;
+    } catch (\Exception $e) {
+      debug($e);
+      throw new Error($e->getMessage(), 500, 500, $e->getMessage());
+    }
+  }
+  /**
+   * 桶连通性测试（支撑 class_oss 适配器的 testOSS）：true = 凭据与桶可用
+   *
+   * @return boolean
+   */
+  function testBucket()
+  {
+    try {
+      $this->exists("__oss_connectivity_test__");
+      return true;
+    } catch (\Throwable $e) {
+      debug($e);
+      return false;
+    }
+  }
 }

@@ -369,4 +369,122 @@ class QCloudCOSStorage extends AbstractObjectStorage
 
     return $urlParams;
   }
+  /**
+   * 列举桶内对象（支撑 Discuz! X5.0 class_oss 适配器的 getFilesList）
+   * 委托 {@see QCloudCosClient::listObjects()}。
+   *
+   * @param string $prefix 对象名前缀
+   * @param string $marker 从该位置之后继续列举（分页）
+   * @param integer $limit 返回条数上限
+   * @param string $delimiter 分隔符
+   * @return array 列举结果
+   */
+  function listObjects($prefix = "", $marker = "", $limit = 100, $delimiter = "")
+  {
+    return $this->client->listObjects($prefix, array_filter([
+      "marker" => $marker ?: null,
+      "max-keys" => $limit ?: null,
+      "delimiter" => $delimiter ?: null
+    ], fn($value) => $value !== null));
+  }
+  /**
+   * 复制对象（支撑 class_oss 适配器的 renameObject：复制后由调用方删除源对象）
+   * 委托 {@see QCloudCosClient::copy()}。
+   *
+   * @param string $oldObject 源对象名
+   * @param string $newObject 目标对象名
+   * @return boolean
+   */
+  function copyObject($oldObject, $newObject)
+  {
+    return (bool) $this->client->copy($oldObject, $newObject);
+  }
+  /**
+   * 下载对象内容到指定本地文件（支撑 class_oss 适配器的 downFile）
+   * 委托 {@see QCloudCosClient::download()}。
+   *
+   * @param string $object 对象名
+   * @param string $saveToPath 本地保存路径
+   * @return boolean
+   */
+  function downloadObject($object, $saveToPath)
+  {
+    return (bool) $this->client->download($object, null, $saveToPath);
+  }
+  /**
+   * 数据内容直写为对象（支撑 class_oss 适配器的 uploadData）
+   * 复用 {@see put()} 的「临时文件 + client->upload」管线，按扩展名推断 Content-Type。
+   *
+   * @param string $data 对象内容
+   * @param string $object 对象名
+   * @return boolean
+   */
+  function putObjectData($data, $object)
+  {
+    $tempPath = Path::join(Path::storage(), "cos_temp", uniqid("temp_data_"));
+    @mkdir(dirname($tempPath), 0755, true);
+    file_put_contents($tempPath, $data);
+    try {
+      $uploaded = $this->client->upload(
+        $object,
+        $tempPath,
+        ["Content-Type" => FileHelper::getMimeType($tempPath) ?: "application/octet-stream"]
+      );
+    } finally {
+      if (file_exists($tempPath)) @unlink($tempPath);
+    }
+    return (bool) $uploaded;
+  }
+  /**
+   * 桶 CORS 配置（支撑 class_oss 适配器的 setCors）
+   *
+   * 自研 COS HTTP 客户端暂未实现 Bucket 级配置接口；CORS 为桶级一次性配置，
+   * 实际部署在腾讯云控制台配置，此处按显式拒绝落地（联调时再补客户端接口）。
+   *
+   * @param array $rules CORS 规则数组
+   * @throws Error
+   */
+  function setBucketCors($rules)
+  {
+    throw new Error("腾讯云 COS 桶 CORS 目前请在腾讯云控制台配置（客户端接口待联调实现）", 500, 500, "setBucketCors pending");
+  }
+  /**
+   * 桶 Referer 防盗链配置（支撑 class_oss 适配器的 RefererConfig）
+   * 同 {@see setBucketCors()}：控制台配置，客户端接口待联调实现。
+   *
+   * @param array $config Referer 配置
+   * @throws Error
+   */
+  function setBucketReferer($config)
+  {
+    throw new Error("腾讯云 COS 桶 Referer 目前请在腾讯云控制台配置（客户端接口待联调实现）", 500, 500, "setBucketReferer pending");
+  }
+  /**
+   * 对象 ACL（支撑 class_oss 适配器的 setAcl）
+   *
+   * COS 对象权限默认继承桶策略（桶级统一公共读/私有），驱动层不做对象级覆盖。
+   *
+   * @param string $object 对象名
+   * @param string|null $acl
+   * @return boolean
+   */
+  function setObjectAcl($object, $acl = null)
+  {
+    return true;
+  }
+  /**
+   * 桶连通性测试（支撑 class_oss 适配器的 testOSS）：true = 凭据与桶可用
+   *
+   * @return boolean
+   */
+  function testBucket()
+  {
+    try {
+      $this->client->listObjects("", ["max-keys" => 1]);
+      return true;
+    } catch (\Throwable $e) {
+      debug($e);
+      return false;
+    }
+  }
 }
