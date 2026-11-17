@@ -1,0 +1,20 @@
+{
+  "Title": "Discuz! Plugin",
+  "Data": {
+    "plugin": {
+      "available": "1",
+      "adminid": "1",
+      "name": "gstudio_kernel 基础插件",
+      "identifier": "gstudio_kernel",
+      "description": "DiscuzX 基础功能插件（非业务插件）：为业务插件提供 RESTful 接口开发能力（控制器 / 模型 / 中间件 / 路由 / 数据库 / 存储 / 认证），自身不包含业务功能。",
+      "datatables": "",
+      "directory": "gstudio_kernel/",
+      "copyright": "COOOCC",
+      "version": "0.6.0",
+      "__modules": []
+    },
+    "version": "X5.0",
+    "var": [],
+    "intro": "DiscuzX 基础功能插件（非业务插件），供业务插件依赖复用。"
+  }
+}
