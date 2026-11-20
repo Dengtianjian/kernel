@@ -26,6 +26,10 @@ class DB
   {
     return self::$db->insertId();
   }
+  static function quote($value)
+  {
+    return self::$db->quote($value);
+  }
   static function getOne($query)
   {
     $data = self::query($query->limit(1)->get()->sql());

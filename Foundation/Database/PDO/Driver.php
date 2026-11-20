@@ -16,7 +16,7 @@ class Driver
   {
     $link = null;
     try {
-      $link = new \PDO("mysql:dbname=$database;host:$hostname;port=$port", $username, $password, $options);
+      $link = new \PDO("mysql:dbname=$database;host:$hostname;port=$port;charset=utf8mb4", $username, $password, $options);
     } catch (\Exception $e) {
       throw new Exception("数据连接失败：" . $e->getMessage(), 500, "PDO:500001", $e->getMessage() . ":" . $e->getCode());
     }
@@ -39,6 +39,10 @@ class Driver
   public function insertId()
   {
     return $this->PDOInstance->lastInsertId();
+  }
+  public function quote($value)
+  {
+    return $this->PDOInstance->quote((string)$value);
   }
   public function query(string $query, $selectCallback = null)
   {

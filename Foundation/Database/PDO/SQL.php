@@ -33,7 +33,7 @@ class SQL
         $item = $item ? 1 : 0;
       }
       if ($addQuote && !is_null($item)) {
-        $item = $quote . $item . $quote;
+        $item = $quote === "'" ? DB::quote($item) : $quote . $item . $quote;
       }
 
       return $item;
