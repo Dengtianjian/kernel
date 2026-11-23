@@ -139,7 +139,7 @@ class Cache extends AbilityBaseObject
       return false;
     }
 
-    $cache = @unserialize(file_get_contents($targetPath));
+    $cache = @unserialize(file_get_contents($targetPath), ["allowed_classes" => false]);
     if (!is_array($cache) || !array_key_exists("content", $cache) || !is_array($cache["meta"] ?? null)) {
       return false;
     }
@@ -175,7 +175,7 @@ class Cache extends AbilityBaseObject
       return false;
     }
 
-    $cache = @unserialize(file_get_contents($targetPath));
+    $cache = @unserialize(file_get_contents($targetPath), ["allowed_classes" => false]);
     if (!is_array($cache) || !isset($cache["meta"]) || !is_array($cache["meta"])) {
       return false;
     }
@@ -363,7 +363,7 @@ class Cache extends AbilityBaseObject
     }
     flock($fp, LOCK_EX);
 
-    $cache = @unserialize(stream_get_contents($fp));
+    $cache = @unserialize(stream_get_contents($fp), ["allowed_classes" => false]);
     $current = (is_array($cache) && array_key_exists("content", $cache) && is_numeric($cache["content"])) ? $cache["content"] : 0;
     $value = $current + $step;
 
@@ -434,7 +434,7 @@ class Cache extends AbilityBaseObject
   {
     $removed = 0;
     foreach (glob($this->saveBasePath() . "/*.txt") ?: [] as $file) {
-      $cache = @unserialize(@file_get_contents($file));
+      $cache = @unserialize(@file_get_contents($file), ["allowed_classes" => false]);
       if (!is_array($cache) || !isset($cache["meta"]) || !is_array($cache["meta"])) {
         @unlink($file);
         $removed++;

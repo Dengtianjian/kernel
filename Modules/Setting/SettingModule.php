@@ -54,7 +54,7 @@ class SettingModule extends AbilityBaseObject
     if ($raw === null || $raw === "") {
       return null;
     }
-    $value = @unserialize($raw);
+    $value = @unserialize($raw, ["allowed_classes" => false]);
     if ($value === false && strpos($raw, "b:") === false) {
       return $raw;
     }
