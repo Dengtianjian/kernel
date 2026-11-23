@@ -52,7 +52,7 @@ class RequestFiltering extends DataObject
      * 筛选条件处理
      */
     if ($R->query->has("filter")) {
-      $filter = addslashes(trim($R->query->get("filter")));
+      $filter = trim($R->query->get("filter"));
       $conditions = [];
       if (strpos($filter, ",") !== false) {
         foreach (explode(",", $filter) as $item) {
@@ -69,7 +69,7 @@ class RequestFiltering extends DataObject
       $data['filtered'] = true;
     }
     if ($R->query->has("search")) {
-      $data['search'] = addslashes(trim($R->query->get("search")));
+      $data['search'] = trim($R->query->get("search"));
       $data['filtered'] = true;
     }
 
