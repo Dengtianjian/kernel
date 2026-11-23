@@ -50,8 +50,7 @@ class PackageCommand
         "/DiscuzX",
         "/oss",
         "/pay",
-        "discuz_plugin_gstudio_kernel.json",
-        "discuz_plugin_gstudio_kernel.xml"
+        "discuz_plugin_gstudio_kernel.json"
       ],
       "manifests" => []
     ]
