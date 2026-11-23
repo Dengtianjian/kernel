@@ -1,4 +1,4 @@
-<?
+<?php
 
 use kernel\Foundation\App;
 use kernel\Support\Output;
@@ -12,7 +12,7 @@ use kernel\Support\Output;
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><? echo $code; ?>:<? echo $message; ?></title>
+  <title><?php echo $code; ?>:<?php echo $message; ?></title>
 </head>
 
 <body>
@@ -25,8 +25,8 @@ use kernel\Support\Output;
       border-radius: 5px;
     }
   </style>
-  <h1><? if ($errorCode) { ?> 「<? echo $errorCode; ?>」 <? } ?> <? echo $code; ?></h1>
-  <h2><? echo $message; ?></h2>
+  <h1><?php if ($errorCode) { ?> 「<?php echo $errorCode; ?>」 <?php } ?> <?php echo $code; ?></h1>
+  <h2><?php echo $message; ?></h2>
 </body>
 
 </html>
