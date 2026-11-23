@@ -17,6 +17,9 @@ use kernel\Foundation\FileSystem\Zip;
  * - 应用名默认取 `$console->appId()`（业务应用目录名，如 isdtj）
  * - 内核名默认取 `$console->kernelId()`（内核目录名，默认 "kernel"）
  * - 两者均可由位置参数（[app] [kernel]）或选项（--app / --kernel）覆盖
+ * - `--profile`：打包形态（默认 `x5`）。`x5` = Discuz! X5.0 插件版（manifest version
+ *   自动声明为 X5.0）；`framework` = 纯框架版（剔除 DiscuzX/ 与 X5 品类适配目录 oss/、pay/
+ *   及两份插件 manifest，version 独立管理）
  * - 输出到项目根：{app}.zip / {kernel}.zip；打包前删除旧 zip
  * - 按内置忽略名单排除 .git、vendor、Data、Storage、Secrets 等
  */
@@ -26,6 +29,33 @@ class PackageCommand
   protected $name = "package";
   /** @var string 命令说明，用于帮助列表 */
   protected $description = "Package the application and kernel into zip archives";
+
+  /**
+   * 打包形态（profile）→ 追加忽略名单 / manifest version 覆写
+   *
+   * - x5：Discuz! X5.0 插件版（默认）——全量内容，manifest version 声明为 X5.0
+   * - framework：纯框架版——剔除 DiscuzX/、X5 品类适配目录（oss/、pay/）与插件 manifest
+   *
+   * @var array<string,array{ignore:string[],manifests:array<string,string>}>
+   */
+  const PROFILES = [
+    "x5" => [
+      "ignore" => [],
+      "manifests" => [
+        "discuz_plugin_gstudio_kernel.json" => "X5.0"
+      ]
+    ],
+    "framework" => [
+      "ignore" => [
+        "/DiscuzX",
+        "/oss",
+        "/pay",
+        "discuz_plugin_gstudio_kernel.json",
+        "discuz_plugin_gstudio_kernel.xml"
+      ],
+      "manifests" => []
+    ]
+  ];
 
   /**
    * 打包忽略名单（追加进 Zip 的 ignore 列表）
@@ -76,8 +106,17 @@ class PackageCommand
       return 1;
     }
 
+    //* 打包形态：--profile=x5（默认）/ framework
+    $profile = strtolower((string) ($options["profile"] ?? "x5"));
+    if (!isset(self::PROFILES[$profile])) {
+      $console->error("Unknown profile \"{$profile}\". Available: " . implode(", ", array_keys(self::PROFILES)));
+      return 1;
+    }
+    $profileIgnore = self::PROFILES[$profile]["ignore"];
+    $manifestVersions = self::PROFILES[$profile]["manifests"];
+
     $zip = new Zip();
-    $zip->exclude(self::IGNORE);
+    $zip->exclude(array_merge(self::IGNORE, $profileIgnore));
 
     $targets = [
       $appName    => $appName . ".zip",
@@ -97,8 +136,24 @@ class PackageCommand
         unlink($output);
       }
 
+      //* profile 的 manifest version 覆写（仅 kernel 打包；x5 形态声明 X5.0，幂等）
+      foreach ($manifestVersions as $manifestFile => $version) {
+        $manifestPath = $source . "/" . $manifestFile;
+        if (is_file($manifestPath)) {
+          $manifest = json_decode((string) file_get_contents($manifestPath), true);
+          if (is_array($manifest) && (($manifest["Data"]["version"] ?? null) !== $version)) {
+            $manifest["Data"]["version"] = $version;
+            file_put_contents(
+              $manifestPath,
+              json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            );
+            $console->success("Manifest version set to {$version}: {$manifestFile}");
+          }
+        }
+      }
+
       if ($zip->zipDirectory($source, $output)) {
-        $console->success("Packed {$dir} -> {$out}");
+        $console->success("Packed {$dir} -> {$out} (profile: {$profile})");
       } else {
         $console->error("Failed to pack {$dir}: " . ($zip->lastError() ?? "unknown error"));
         $failed = true;
