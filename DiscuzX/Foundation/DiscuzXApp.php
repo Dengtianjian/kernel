@@ -18,7 +18,7 @@ class DiscuzXApp extends App
    * 构造：DiscuzX 基座 + 装配
    *
    * 装配刻意**不交给父类构造**（`parent::__construct()` 第三参传 null）：本类要先把
-   * 语言包与请求 URI 准备好，Bootstrap 里读 `$app->request()->uri()` 才拿得到真实值。
+   * 请求 URI 准备好，Bootstrap 里读 `$app->request()->uri()` 才拿得到真实值。
    * 因此这里在父类构造之后、URI 写入之后，再显式调 {@see App::assemble()}。
    *
    * @param string|callable|null $setup 装配类名或装配闭包；null 表示只建骨架、不装配
@@ -32,8 +32,6 @@ class DiscuzXApp extends App
     }
 
     parent::__construct(null, $appId, $kernelId ?: "gstudio_kernel");
-
-    DiscuzXLang::load("DiscuzX/Langs/" . (strtolower(CHARSET) === "gbk" ? "gbk" : "utf-8"), Path::kernel());
 
     //* 请求是访问即构建：这里直接写入 URI，不必提前兜底实例化
     if (isset($_GET['uri'])) {
