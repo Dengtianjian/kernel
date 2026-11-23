@@ -121,7 +121,8 @@ class AliyunOSSStorage extends AbstractObjectStorage
     $accessKeyId = $this->secretId;
     $accessKeySecret = $this->secretKey;
     $provider = new StaticCredentialsProvider($accessKeyId, $accessKeySecret);
-    $endpoint = "http://oss-{$this->region}.aliyuncs.com";
+    //* 统一走 HTTPS（OSS 官方 endpoint 支持；避免明文传输，符合站外资源协议要求）
+    $endpoint = "https://oss-{$this->region}.aliyuncs.com";
     $config = array(
       "provider" => $provider,
       "endpoint" => $endpoint,
