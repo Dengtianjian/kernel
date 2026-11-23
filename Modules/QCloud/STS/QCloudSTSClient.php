@@ -2,6 +2,8 @@
 
 namespace kernel\Modules\QCloud\STS;
 
+use kernel\Foundation\HTTP\Curl;
+
 /**
  * 腾讯云 STS 临时密钥申请（官方样例移植版）
  *
@@ -21,10 +23,11 @@ namespace kernel\Modules\QCloud\STS;
  * - 其它：durationSeconds（整数，秒）、allowCiSource（为 true 时额外放行万象 ci 资源）；
  * - policy：直接给完整 policy，**跳过上面的自动组装**；
  * - roleArn / externalId：仅 {@see getRoleCredential()} 使用；
- * - url / domain / endpoint / proxy：覆盖服务地址与代理。
+ * - url / domain / endpoint / proxy：覆盖服务地址与代理；
+ * - verifySsl（默认 true，校验 TLS 证书）/ caInfo（CA bundle 路径）：服务器缺 CA bundle 时使用（verifySsl=false 跳过校验仅限内网）。
  *
  * 注意（实现现状，改动前先读）：
- * - 请求一律 CURLOPT_SSL_VERIFYPEER = 0 + CURLOPT_SSL_VERIFYHOST = 0（官方样例如此，**不校验 TLS 证书**）；
+ * - 请求已改用 kernel 的 {@see \kernel\Foundation\HTTP\Curl}（默认校验 TLS 证书）；仅当客户服务器缺 CA bundle、证书校验失败（curl 60/51）时，自动跳过校验重试一次并记录告警，见 {@see request()}；
  * - 异常在 catch 里被**重新包装成 \Exception**（原始异常类型与消息会丢失，只剩文本）；
  * - durationSeconds 只做「存在则须为 int」的校验，**不是必填**；缺失时请求里的 DurationSeconds 为 null，由服务端报错；
  * - $ShortBucketName / $allow 等变量由官方样例保留，实际未被使用。
@@ -247,22 +250,8 @@ class QCloudSTSClient
 			if (array_key_exists('endpoint', $config)) {
 				$url = 'https://sts.' . $config['endpoint'];
 			}
-			// debug($policy);
 
-			$ch = curl_init($url);
-			if (array_key_exists('proxy', $config)) {
-				$config['proxy'] && curl_setopt($ch, CURLOPT_PROXY, $config['proxy']);
-			}
-			curl_setopt($ch, CURLOPT_HEADER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $this->json2str($params));
-			$result = curl_exec($ch);
-			if (curl_errno($ch)) $result = curl_error($ch);
-			curl_close($ch);
-			$result = json_decode($result, 1);
+			$result = $this->request($url, $params, $config);
 			if (isset($result['Response'])) {
 				$result = $result['Response'];
 				if (isset($result['Error'])) {
@@ -280,6 +269,61 @@ class QCloudSTSClient
 			}
 			throw new \Exception($result);
 		}
+	}
+
+	/**
+	 * 发送 STS 请求（证书校验失败时自动降级）
+	 *
+	 * 正常路径严格校验 TLS 证书；只有当证书校验失败（客户服务器缺 CA bundle，
+	 * curl error 60 证书不匹配 / 51 对端验证失败）时，自动跳过校验重试一次并记录告警，
+	 * 避免非技术部署环境下功能整体失败。正常环境不会触发降级分支。
+	 *
+	 * 可通过 $config['verifySsl']=false 强制跳过校验，或 $config['caInfo'] 指定 CA 路径。
+	 *
+	 * @param string $url 请求地址
+	 * @param array $params 表单参数
+	 * @param array $config 配置（proxy / verifySsl / caInfo）
+	 * @return array|string 解析后的响应数组；失败时为错误字符串
+	 */
+	private function request($url, $params, $config)
+	{
+		$send = function ($skipVerify) use ($url, $params, $config) {
+			$curl = Curl::init()->url($url)->json(false);
+			if ($skipVerify) {
+				$curl->https(false);
+			}
+			if (!empty($config['caInfo'])) {
+				$curl->options([CURLOPT_CAINFO => $config['caInfo']]);
+			}
+			if (!empty($config['proxy'])) {
+				$curl->options([CURLOPT_PROXY => $config['proxy']]);
+			}
+			$curl->post($this->json2str($params));
+
+			if ($curl->errorNo()) {
+				$result = $curl->error();
+			} else {
+				$result = $curl->responseData();
+				if (is_string($result)) {
+					$result = json_decode($result, 1);
+				}
+			}
+			$errorNo = $curl->errorNo();
+			$curl->close();
+
+			return [$result, $errorNo];
+		};
+
+		$skipVerify = array_key_exists('verifySsl', $config) && $config['verifySsl'] === false;
+		list($result, $errorNo) = $send($skipVerify);
+
+		//* 证书校验失败（缺 CA bundle）→ 跳过校验重试一次，保证功能可用
+		if (!$skipVerify && in_array($errorNo, [60, 51], true)) {
+			list($result, $errorNo) = $send(true);
+			error_log("[gstudio_kernel] QCloud STS 证书校验失败（服务器缺 CA bundle），已降级为跳过 TLS 校验重试：" . $url);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -385,20 +429,7 @@ class QCloudSTSClient
 				$url = 'https://sts.' . $config['endpoint'];
 			}
 
-			$ch = curl_init($url);
-			if (array_key_exists('proxy', $config)) {
-				$config['proxy'] && curl_setopt($ch, CURLOPT_PROXY, $config['proxy']);
-			}
-			curl_setopt($ch, CURLOPT_HEADER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $this->json2str($params));
-			$result = curl_exec($ch);
-			if (curl_errno($ch)) $result = curl_error($ch);
-			curl_close($ch);
-			$result = json_decode($result, 1);
+			$result = $this->request($url, $params, $config);
 			if (isset($result['Response'])) {
 				$result = $result['Response'];
 				if (isset($result['Error'])) {
@@ -520,20 +551,7 @@ class QCloudSTSClient
 			if (array_key_exists('endpoint', $config)) {
 				$url = 'https://sts.' . $config['endpoint'];
 			}
-			$ch = curl_init($url);
-			if (array_key_exists('proxy', $config)) {
-				$config['proxy'] && curl_setopt($ch, CURLOPT_PROXY, $config['proxy']);
-			}
-			curl_setopt($ch, CURLOPT_HEADER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, $this->json2str($params));
-			$result = curl_exec($ch);
-			if (curl_errno($ch)) $result = curl_error($ch);
-			curl_close($ch);
-			$result = json_decode($result, 1);
+			$result = $this->request($url, $params, $config);
 			if (isset($result['Response'])) {
 				$result = $result['Response'];
 				if (isset($result['Error'])) {

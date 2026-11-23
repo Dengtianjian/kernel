@@ -85,6 +85,36 @@ class QCloudSTS extends AbilityBaseObject
    * @var QCloudSTSClient|Sts
    */
   private $stsClient = null;
+
+  /**
+   * TLS 校验配置（透传给底层请求客户端）
+   *
+   * 默认空数组 = 底层客户端默认校验 TLS 证书；服务器缺 CA bundle（ca-certificates）时，
+   * 用 {@see sslOptions()} 关闭校验或指定 CA 路径。
+   *
+   * @var array{verifySsl?:bool, caInfo?:string}
+   */
+  private $sslConfig = [];
+
+  /**
+   * 设置 TLS 校验选项（透传给底层请求客户端）
+   *
+   * 正常环境无需调用（底层客户端默认校验 TLS）。仅当服务器缺 CA bundle 时使用：
+   * - `sslOptions(false)`：跳过证书校验（有中间人风险，仅限内网/测试）；
+   * - `sslOptions(true, '/path/cacert.pem')`：指定 CA bundle 路径。
+   *
+   * @param bool $verify 是否校验 TLS 证书（默认 true）
+   * @param string|null $caInfo CA bundle 文件路径（可选）
+   * @return $this
+   */
+  public function sslOptions($verify = true, $caInfo = null)
+  {
+    $this->sslConfig = ['verifySsl' => $verify];
+    if ($caInfo !== null) {
+      $this->sslConfig['caInfo'] = $caInfo;
+    }
+    return $this;
+  }
   /**
    * 创建腾讯云 STS 服务实例
    *
@@ -154,6 +184,8 @@ class QCloudSTS extends AbilityBaseObject
       'allowPrefix' => is_string($allowPrefix) ? [$allowPrefix] : $allowPrefix,
       "allowActions" => $allowActions
     ];
+    //* 合并 TLS 校验配置（未调用 sslOptions 时为空数组，不影响底层默认校验）
+    $config = array_merge($config, $this->sslConfig);
 
     $tempKeys = $this->stsClient->getTempKeys($config);
     return $this->handleResponseData($tempKeys);
@@ -189,6 +221,8 @@ class QCloudSTS extends AbilityBaseObject
         "statement" => $statement
       ]
     ];
+    //* 合并 TLS 校验配置
+    $config = array_merge($config, $this->sslConfig);
     $tempKeys = $this->stsClient->getTempKeys($config);
     return $this->handleResponseData($tempKeys);
   }
