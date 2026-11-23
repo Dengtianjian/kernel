@@ -31,15 +31,15 @@ class WechatUsersModel extends Model
   public function bound($memberId, $openId)
   {
     return $this->where([
-      "member_id" => $memberId,
+      "user_id" => $memberId,
       "open_id" => $openId
-    ])->exist();
+    ])->exists();
   }
   public function bind($memberId, $openId, $unionId = null, $phone = null)
   {
     $now = time();
     return $this->insert([
-      "member_id" => $memberId,
+      "user_id" => $memberId,
       "open_id" => $openId,
       "union_id" => $unionId ?: "",
       "phone" => $phone ?: "",
@@ -60,7 +60,7 @@ class WechatUsersModel extends Model
   }
   public function removeByMemberId($memberId, $directly = false)
   {
-    return $this->where("member_id", $memberId)->delete($directly);
+    return $this->where("user_id", $memberId)->delete($directly);
   }
   public function removeByOpenId($openId)
   {
@@ -76,7 +76,7 @@ class WechatUsersModel extends Model
   }
   public function updatePhone($memberId, $phone)
   {
-    return $this->where("member_id", $memberId)->update([
+    return $this->where("user_id", $memberId)->update([
       "phone" => $phone
     ]);
   }
