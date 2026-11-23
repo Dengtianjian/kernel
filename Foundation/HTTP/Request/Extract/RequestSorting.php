@@ -48,43 +48,68 @@ class RequestSorting extends DataObject
   public function __construct(Request $R)
   {
     $data = [];
+
+    //* 默认排序方向（orders 内部兜底用；仅白名单命中才采用，否则保持 ASC）
+    $defaultDirection = "ASC";
+    if ($R->query->has("orderBy")) {
+      $direction = self::sanitizeDirection($R->query->get("orderBy"));
+      if ($direction !== null) {
+        $defaultDirection = $direction;
+      }
+    }
+
     /**
      * 排序相关参数处理
+     *
+     * 字段名与方向均做白名单净化，杜绝 ORDER BY 结构位注入（不依赖下游 Query::orderBy 校验）。
      */
     if ($R->query->has("order")) {
-      $data['order'] = addslashes(trim($R->query->get("order")));
-      $data['sorted'] = true;
+      $field = self::sanitizeField($R->query->get("order"));
+      if ($field !== null) {
+        $data['order'] = $field;
+        $data['sorted'] = true;
+      }
     }
     if ($R->query->has("orderBy")) {
-      $data['orderBy'] = addslashes(trim($R->query->get("orderBy")));
-      $data['sorted'] = true;
+      $direction = self::sanitizeDirection($R->query->get("orderBy"));
+      if ($direction !== null) {
+        $data['orderBy'] = $direction;
+        $data['sorted'] = true;
+      }
     }
     if ($R->query->has("orders")) {
-      $orders = addslashes(trim($R->query->get("orders")));
+      $orders = trim($R->query->get("orders"));
 
       if (strpos($orders, ",") !== false) {
-        $orders = array_filter(explode(",", $orders), function ($item) {
-          return addslashes(trim($item));
-        });
         $orderList = [];
-        foreach ($orders as $item) {
+        foreach (explode(",", $orders) as $item) {
+          $item = trim($item);
+          if ($item === "") {
+            continue;
+          }
           if (strpos($item, ":") === false) {
-            $orderList[$item] = $R->query->has("orderBy") ? $R->query->get("orderBy") : "ASC";
+            $fieldName = $item;
+            $sortType = $defaultDirection;
           } else {
-            list($fieldName, $sortType) = explode(":", $item);
-            if (!$sortType) {
-              $sortType = $R->query->has("orderBy") ? $R->query->get("orderBy") : "ASC";
+            list($fieldName, $sortType) = explode(":", $item, 2);
+            $sortType = self::sanitizeDirection($sortType);
+            if ($sortType === null) {
+              $sortType = $defaultDirection;
             }
+          }
+          $fieldName = self::sanitizeField($fieldName);
+          if ($fieldName !== null) {
             $orderList[$fieldName] = $sortType;
           }
         }
         $data['orders'] = $orderList;
         if (count($orderList)) {
+          $firstField = array_keys($orderList)[0];
           if (!$R->query->has("order")) {
-            $data['order'] = array_keys($orderList)[0];
+            $data['order'] = $firstField;
           }
           if (!$R->query->has("orderBy")) {
-            $data['orderBy'] = $orderList[array_keys($orderList)[0]];
+            $data['orderBy'] = $orderList[$firstField];
           }
         }
       }
@@ -158,5 +183,34 @@ class RequestSorting extends DataObject
       return $this;
     }
     return $this->sorted;
+  }
+
+  /**
+   * 排序字段名白名单净化
+   *
+   * 仅允许字母、数字、下划线、点、$，杜绝 ORDER BY 结构位注入；
+   * 不依赖下游 {@see \kernel\Foundation\Database\RDB\Query::orderBy()} 的校验。
+   *
+   * @param mixed $field 原始字段名
+   * @return string|null 合法字段名；非法返回 null
+   */
+  private static function sanitizeField($field)
+  {
+    $field = trim((string)$field);
+    return preg_match('/^[A-Za-z0-9_$.]+$/', $field) ? $field : null;
+  }
+
+  /**
+   * 排序方向白名单净化
+   *
+   * 仅允许 ASC / DESC（大小写不敏感），其余返回 null。
+   *
+   * @param mixed $direction 原始方向
+   * @return string|null 规范化的 ASC/DESC；非法返回 null
+   */
+  private static function sanitizeDirection($direction)
+  {
+    $direction = strtoupper(trim((string)$direction));
+    return in_array($direction, ["ASC", "DESC"], true) ? $direction : null;
   }
 }
