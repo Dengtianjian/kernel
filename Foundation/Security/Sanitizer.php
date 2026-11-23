@@ -3,6 +3,7 @@
 namespace kernel\Foundation\Security;
 
 use kernel\Foundation\Exception\Error;
+use kernel\Foundation\FileSystem\Path;
 
 /**
  * 安全净化器
@@ -208,6 +209,73 @@ class Sanitizer
     if (!$allowAbsolute && preg_match('#^(/|[A-Za-z]:[\\\\/])#', $value)) {
       throw new Error("不允许绝对路径", 400, "invalidPath:400", $value);
     }
+    return $value;
+  }
+
+  /**
+   * 文件路径范围校验（防越界）
+   *
+   * 在 {@see safePath()} 的形态校验之上，再判定「最终位置是否落在 $root 之内」：
+   * 先经 {@see safePath()} 挡掉空字节、`..` 与（默认）绝对路径，再用
+   * {@see Path::canonicalize()} 把目标与根都规范化后做前缀比对。相对路径以 $root 为基准
+   * 求绝对；空路径视为根目录本身。越界直接抛 {@see Error}（400）。
+   *
+   * 与 `realpath()` 的取舍：canonicalize 是纯字符串计算，目标尚不存在（如待 mkdir 的目录）
+   * 也能判定；代价是挡不住符号链接穿越——若根目录下可能被放入指向外部的软链接，
+   * 需在部署层禁止，或在落盘前后补 `realpath()` 事实校验。
+   *
+   * 注意：本方法需要根目录参数，因此不纳入 {@see filter()} 的类型表；`filter($v, "path")`
+   * 仍是不带根范围的 {@see safePath()}。
+   *
+   * 用法示例：
+   * ```php
+   * // 相对路径：拼到根下后仍在根内 → 通过
+   * Sanitizer::pathWithin('community/post/images', '/data/storage');
+   *
+   * // 绝对路径：显式放行后仍必须在根内 → 通过
+   * Sanitizer::pathWithin('/data/storage/avatar/a.png', '/data/storage', true);
+   *
+   * // 绝对路径不在根内 → 抛 Error(400, "outOfPath:400")
+   * Sanitizer::pathWithin('/etc/passwd', '/data/storage', true);
+   *
+   * // 含 .. → 由 safePath 先拦下，抛 Error(400, "invalidPath:400")
+   * Sanitizer::pathWithin('../../etc', '/data/storage');
+   * ```
+   *
+   * @param mixed $value 待校验的路径
+   * @param string $root 允许的根目录（绝对/相对均可，相对时按相对根比对）
+   * @param bool $allowAbsolute 是否允许绝对路径（默认不允许）
+   * @return string 合法的路径
+   * @throws Error 路径不安全（形态）或越界（范围）时抛出
+   */
+  public static function pathWithin($value, $root, $allowAbsolute = false)
+  {
+    $value = self::safePath($value, $allowAbsolute);
+
+    $canonicalRoot = Path::canonicalize($root);
+    if ($canonicalRoot === "") {
+      throw new Error("根目录不合法", 500, "invalidPathRoot:500", $root);
+    }
+    if ($canonicalRoot !== "/") {
+      $canonicalRoot = rtrim($canonicalRoot, "/");
+    }
+
+    $target = Path::canonicalize($value);
+    //* 空路径即根目录本身
+    if ($target === "") {
+      return $value;
+    }
+    //* 相对路径以根为基准求绝对
+    if (strpos($target, "/") !== 0) {
+      $target = Path::canonicalize($canonicalRoot . "/" . $target);
+    }
+
+    //* 根为 "/" 时前缀即 "/"，其余情况用 "根 + /" 避免 "/root2" 误判为 "/root" 的子路径
+    $prefix = ($canonicalRoot === "/" ? "" : $canonicalRoot) . "/";
+    if ($target !== rtrim($prefix, "/") && strpos($target, $prefix) !== 0) {
+      throw new Error("路径越界", 400, "outOfPath:400", $value);
+    }
+
     return $value;
   }
 
