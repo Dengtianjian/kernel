@@ -12,7 +12,7 @@ use kernel\Support\Output;
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo $code; ?>:<?php echo $message; ?></title>
+  <title><?php echo htmlspecialchars((string)$code, ENT_QUOTES | ENT_SUBSTITUTE); ?>:<?php echo htmlspecialchars((string)$message, ENT_QUOTES | ENT_SUBSTITUTE); ?></title>
 </head>
 
 <body>
@@ -25,24 +25,24 @@ use kernel\Support\Output;
       border-radius: 5px;
     }
   </style>
-  <h1><?php if ($errorCode) { ?> 「<?php echo $errorCode; ?>」 <?php } ?> <?php echo $code; ?></h1>
-  <h2><?php echo $message; ?></h2>
+  <h1><?php if ($errorCode) { ?> 「<?php echo htmlspecialchars((string)$errorCode, ENT_QUOTES | ENT_SUBSTITUTE); ?>」 <?php } ?> <?php echo htmlspecialchars((string)$code, ENT_QUOTES | ENT_SUBSTITUTE); ?></h1>
+  <h2><?php echo htmlspecialchars((string)$message, ENT_QUOTES | ENT_SUBSTITUTE); ?></h2>
   <?php if (App::mode() === "development") { ?>
     <section>
       <p>
-        File:<?php echo $file; ?>
+        File:<?php echo htmlspecialchars((string)$file, ENT_QUOTES | ENT_SUBSTITUTE); ?>
       </p>
       <p>
-        Line:<?php echo $line; ?>
+        Line:<?php echo htmlspecialchars((string)$line, ENT_QUOTES | ENT_SUBSTITUTE); ?>
       </p>
       <p>
         Trace:
-      <pre><?php Output::printContent($traceString) ?></pre>
+      <pre><?php echo htmlspecialchars(Output::string($traceString), ENT_QUOTES | ENT_SUBSTITUTE); ?></pre>
       </p>
 
       <p>
         Details:
-      <pre><?php Output::printContent($details) ?></pre>
+      <pre><?php echo htmlspecialchars(Output::string($details), ENT_QUOTES | ENT_SUBSTITUTE); ?></pre>
       </p>
     </section>
   <?php } ?>

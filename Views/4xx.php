@@ -12,7 +12,7 @@ use kernel\Support\Output;
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo $code; ?>:<?php echo $message; ?></title>
+  <title><?php echo htmlspecialchars((string)$code, ENT_QUOTES | ENT_SUBSTITUTE); ?>:<?php echo htmlspecialchars((string)$message, ENT_QUOTES | ENT_SUBSTITUTE); ?></title>
 </head>
 
 <body>
@@ -25,8 +25,8 @@ use kernel\Support\Output;
       border-radius: 5px;
     }
   </style>
-  <h1><?php if ($errorCode) { ?> 「<?php echo $errorCode; ?>」 <?php } ?> <?php echo $code; ?></h1>
-  <h2><?php echo $message; ?></h2>
+  <h1><?php if ($errorCode) { ?> 「<?php echo htmlspecialchars((string)$errorCode, ENT_QUOTES | ENT_SUBSTITUTE); ?>」 <?php } ?> <?php echo htmlspecialchars((string)$code, ENT_QUOTES | ENT_SUBSTITUTE); ?></h1>
+  <h2><?php echo htmlspecialchars((string)$message, ENT_QUOTES | ENT_SUBSTITUTE); ?></h2>
 </body>
 
 </html>
