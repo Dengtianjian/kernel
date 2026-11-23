@@ -11,6 +11,7 @@ use AlibabaCloud\Oss\V2 as Oss;
 use AlibabaCloud\Oss\V2\Credentials\Credentials;
 use AlibabaCloud\SDK\Sts\V20150401\Models\AssumeRoleRequest;
 use kernel\Foundation\Exception\Error;
+use kernel\Facades\Log;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use OSS\Credentials\StaticCredentialsProvider;
@@ -161,7 +162,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $request = new Oss\Models\HeadObjectRequest($this->bucket(), $fileName);
       $fileInfo = $this->sdkClient->headObject($request);
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
     if (!$fileInfo) return $this->break(500, 500, "获取文件信息失败", "获取 COS 文件元信息失败");
@@ -349,7 +350,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
         "isTruncated" => (bool) ($result->isTruncated ?? false)
       ];
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -367,7 +368,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->sdkClient->copyObject($request);
       return true;
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -387,7 +388,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->sdkClient->getObject($request, $saveToPath);
       return true;
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -417,7 +418,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       return true;
     } catch (\Exception $e) {
       if (file_exists($tempPath)) @unlink($tempPath);
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -434,7 +435,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->sdkClient->putBucketCors($request);
       return true;
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -451,7 +452,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->sdkClient->putBucketReferer($request);
       return true;
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -469,7 +470,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->sdkClient->putObjectAcl($request);
       return true;
     } catch (\Exception $e) {
-      debug($e);
+      Log::error($e);
       throw new Error($e->getMessage(), 500, 500, $e->getMessage());
     }
   }
@@ -484,7 +485,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
       $this->exists("__oss_connectivity_test__");
       return true;
     } catch (\Throwable $e) {
-      debug($e);
+      Log::error($e);
       return false;
     }
   }

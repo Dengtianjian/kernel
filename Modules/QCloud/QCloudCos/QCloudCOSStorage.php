@@ -5,6 +5,7 @@ namespace kernel\Modules\QCloud\QCloudCos;
 use kernel\Foundation\FileSystem\FileSystem;
 
 use kernel\Foundation\Exception\Error;
+use kernel\Facades\Log;
 use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Modules\Storage\Drivers\AbstractObjectStorage;
@@ -483,7 +484,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
       $this->client->listObjects("", ["max-keys" => 1]);
       return true;
     } catch (\Throwable $e) {
-      debug($e);
+      Log::error($e);
       return false;
     }
   }
