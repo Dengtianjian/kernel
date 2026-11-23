@@ -204,15 +204,15 @@ class Str
    *
    * @param integer     $stringLength 生成的字符串长度
    * @param string|null $chars        自定义字符集，默认为 [a-zA-Z0-9]
-   * @param bool        $secure       是否使用密码学安全随机数（random_int），默认 false
+   * @param bool        $secure       是否使用密码学安全随机数（random_int），默认 true
    * @return string 随机字符串
    *
    * @example
-   * Str::random(8)                        // "aB3xY9kL"
+   * Str::random(8)                        // "aB3xY9kL"（默认密码学安全）
    * Str::random(6, '0123456789')          // "392817"（纯数字）
-   * Str::random(32, null, true)           // API token 场景（密码学安全）
+   * Str::random(8, null, false)           // 非安全场景（如调试占位）可显式关闭
    */
-  static function random($stringLength = 5, $chars = null, $secure = false): string
+  static function random($stringLength = 5, $chars = null, $secure = true): string
   {
     if ($chars === null) {
       $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
