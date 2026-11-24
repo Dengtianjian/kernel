@@ -110,6 +110,28 @@ class WechatPayV3Api extends WechatPayApi
    */
   public function decryptNotifyData($associatedData, $nonceStr, $ciphertext)
   {
+    $data = $this->decryptToString($associatedData, $nonceStr, $ciphertext);
+
+    return $data ? json_decode($data, true) : $data;
+  }
+
+  /**
+   * 解密 AEAD_AES_256_GCM 密文，返回明文
+   *
+   * 回调通知与平台证书用的是同一套加密方式，差别只在解密后的形态：
+   * 通知是 JSON，由 {@see decryptNotifyData()} 负责解析；平台证书是 PEM 文本，
+   * 由 {@see WechatPayV3::certificates()} 直接使用。因此把「解密」与「解析」拆开，
+   * 避免证书被当成 JSON 解析后拿到 null。
+   *
+   * @link https://pay.weixin.qq.com/doc/v3/merchant/4012551764
+   *
+   * @param string $associatedData 附加数据（证书里固定为 certificate）
+   * @param string $nonceStr 随机串
+   * @param string $ciphertext Base64 编码的密文
+   * @return string|null 解密后的明文；密文过短、环境不支持 aes-256-gcm 或解密失败时返回 null
+   */
+  public function decryptToString($associatedData, $nonceStr, $ciphertext)
+  {
     $ciphertext = \base64_decode($ciphertext);
     if (strlen($ciphertext) <= self::AUTH_TAG_LENGTH_BYTE) {
       return null;
@@ -129,8 +151,10 @@ class WechatPayV3Api extends WechatPayApi
         $authTag,
         $associatedData
       );
-      return $data ? json_decode($data, true) : $data;
+
+      return $data === false ? null : $data;
     }
+
     return null;
   }
 

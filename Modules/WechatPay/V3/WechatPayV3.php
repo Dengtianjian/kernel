@@ -20,6 +20,8 @@ use kernel\Modules\WechatPay\V3\Products\Native;
  *   —— 各产品对象继承 {@see WechatPayProductApi}，既有本产品下单，也有查单/关单等通用接口
  * - 合单：combine() —— 合单查单/关单；合单下单在各产品对象上（{@see WechatPayProductApi::combine()}）
  * - 账单：bill()
+ * - 平台证书：certificates() —— 下载并解密平台证书列表，结果可直接交给
+ *   {@see \kernel\Modules\WechatPay\WechatPayMerchant::platformCertificates()} 做回调验签
  * - 退款：refund() —— 与支付产品无关，独立成 {@see WechatPayRefundApi}
  * - 分账：profitSharing()
  * - 商家转账：transfer()
@@ -118,6 +120,50 @@ class WechatPayV3 extends WechatPayV3Api
   public function bill()
   {
     return new WechatPayBillApi($this->merchant);
+  }
+  /**
+   * 下载平台证书（获取平台证书列表）
+   *
+   * 请求 `GET /v3/certificates`，用 APIv3 密钥逐张解密 `encrypt_certificate`，
+   * 返回「serial_no => PEM 内容」，可直接交给
+   * {@see \kernel\Modules\WechatPay\WechatPayMerchant::platformCertificates()} 供回调验签使用。
+   *
+   * 微信会不定期轮换平台证书：换证前 24 小时内接口会同时返回新、老两张证书，
+   * 换证完成后只返回最新的一张。因此应定期调用本方法刷新商户上的证书表
+   * （官方建议间隔小于 12 小时），不要硬编码证书。
+   *
+   * 解密走 {@see WechatPayV3Api::decryptToString()} 而非 {@see WechatPayV3Api::decryptNotifyData()}：
+   * 证书明文是 PEM 文本，交给后者会被当成 JSON 解析成 null。
+   *
+   * @link https://pay.weixin.qq.com/doc/v3/merchant/4012551764
+   *
+   * @return array|boolean 成功返回 serial_no => PEM 内容（商户暂无平台证书时为空数组）；
+   *   失败返回 false，错误状态记在本实例上（见 {@see getErrorMessage()}）
+   */
+  public function certificates()
+  {
+    $response = $this->request("GET", "/v3/certificates");
+    if ($response === false) {
+      return false;
+    }
+
+    $certificates = [];
+    foreach ($response["data"] ?? [] as $item) {
+      $serialNo = $item["serial_no"] ?? "";
+      $encrypted = $item["encrypt_certificate"] ?? [];
+      $certificate = $this->decryptToString(
+        $encrypted["associated_data"] ?? "",
+        $encrypted["nonce"] ?? "",
+        $encrypted["ciphertext"] ?? ""
+      );
+      if (!$certificate) {
+        return $this->break(500, 500, "平台证书解密失败", $serialNo);
+      }
+
+      $certificates[$serialNo] = $certificate;
+    }
+
+    return $certificates;
   }
   /**
    * 退款（申请退款、查询单笔退款、发起异常退款）
