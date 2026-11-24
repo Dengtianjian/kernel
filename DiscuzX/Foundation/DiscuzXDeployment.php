@@ -3,7 +3,6 @@
 namespace kernel\DiscuzX\Foundation;
 
 use kernel\Foundation\FileSystem\FileSystem;
-use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Builtin\Deployment;
 use kernel\Foundation\Application\Applications;
 
@@ -35,7 +34,7 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  * - 复用父类的版本与升级机制（`.version`、升级脚本扫描与执行、`install.key`、`install.lock`）；
  * - 叠加 DiscuzX 特有的三点：
  *   1. **应用与路径取自「当前应用」**：构造函数不接收参数，用 `Applications::default()` 取 `id()`，
- *      因此要求 App 已启动，`Path::root()` / `Path::data()` 才会指向本插件（详见构造函数的「前置条件」）；
+ *      因此要求 App 已启动，`DiscuzXPath::root()` / `DiscuzXPath::data()` 才会指向本插件（详见构造函数的「前置条件」）；
  *   2. **升级基线可由 Discuz 的 `?fromversion=` 提供**：从 `$app->request()->query` 读取该参数，
  *      传入后覆盖父类从 `.version` 推导的基线（见构造函数）；
  *   3. **数据目录落到 Discuz 惯例位置**：`{project}/data/plugindata/{appId}`
@@ -44,14 +43,15 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  * 生命周期：
  * - `install()`   ：先调父类（创建内核侧 Data / Storage 目录），再补建 Discuz 侧 plugindata 目录；
  * - `upgrade()`   ：执行父类的增量升级，并返回 `$this` 以便链式调用；
- * - `uninstall()` ：先调父类（删除 `.version`），再删除 Discuz 侧 plugindata 目录；
- *   内核侧 `Data/`（日志、缓存、`install.key`）与 `Storage/`（用户文件）**保留**。
+ * - `uninstall()` ：先调父类（删除 `.version`），再清理插件目录之外的 Discuz 数据目录
+ *   `{project}/data/plugindata/{appId}`（见 {@see self::outerDirectories()}）；
+ *   插件目录内的内容由 Discuz 卸载时整目录删除，不在本类职责内。
  *
  * 升级脚本约定（父类 `scanUpgradeFiles()` / `buildUpgradeClassName()` 决定，写错等于没有升级）：
  * - 目录：`{appRoot}/Deployment/Upgrades`（构造函数传给父类的就是它）；
  * - 文件名：`Upgrade_{x}_{y}_{z}.php`，三段数字，如 `Upgrade_1_3_0.php`；
  * - 命名空间与类名：`{appId}\Deployment\Upgrades\Upgrade_{x}_{y}_{z}`
- *   —— 由「升级目录相对 `Path::root()` 的路径」推导，目录一改命名空间必须跟着改；
+ *   —— 由「升级目录相对 `DiscuzXPath::root()` 的路径」推导，目录一改命名空间必须跟着改；
  * - 类里定义 `upgrade()` 方法，或把升级逻辑写在构造函数里（父类两种都支持）。
  *
  * 注意（改动前请先了解这两点）：
@@ -78,7 +78,7 @@ class DiscuzXDeployment extends Deployment
    *      （换机、手工改版本号后仍能正确计算增量）。
    *
    * 前置条件（重要）：调用前必须已经注册当前应用（例如先 `new DiscuzXApp(null, $pluginId)`），
-   * 否则 `Applications::default()` 返回 null → `$app->appId()` 致命错误；同时 `Path::root()` 会因默认应用缺失而失效。
+   * 否则 `Applications::default()` 返回 null → `$app->appId()` 致命错误；同时 `DiscuzXPath::root()` 会因默认应用缺失而失效。
    *
    * @return void
    */
@@ -116,7 +116,7 @@ class DiscuzXDeployment extends Deployment
   /**
    * 安装
    *
-   * 父类负责创建内核侧目录（`Path::data()`、`Path::storage()`），
+   * 父类负责创建 `{appRoot}/Data`、`{appRoot}/Storage` 目录，
    * 这里再补建 Discuz 惯例的数据目录 `{project}/data/plugindata/{appId}`
    * 0755 递归创建）。
    *
@@ -134,17 +134,34 @@ class DiscuzXDeployment extends Deployment
   /**
    * 卸载
    *
-   * 父类负责删除版本记录（`Path::data()/.version`），
-   * 这里再删除 Discuz 侧数据目录 `{project}/data/plugindata/{appId}` 及其全部内容。
+   * 父类删除版本记录 `{appRoot}/Data/.version`，这里清理**插件目录之外**的数据目录。
    *
-   * 注意：不删除内核侧的 `Data/`（日志、缓存、`install.key`）与 `Storage/`（用户文件），
-   * 这两处需由调用方按业务需要自行处理。
+   * 插件目录内的内容（`Data/` 日志缓存、`Storage/` 上传文件、`Secrets/` 证书私钥等）
+   * 由 Discuz 卸载时整目录删除，无需在此处理；漏掉的只有 Discuz 惯例位置下的数据。
    *
    * @return void
    */
   public function uninstall()
   {
     parent::uninstall();
-    FileSystem::deleteDirectory(DiscuzXPath::pluginData());
+
+    foreach ($this->outerDirectories() as $directory) {
+      if ($directory) {
+        FileSystem::deleteDirectory($directory);
+      }
+    }
+  }
+  /**
+   * 安装在插件目录之外、需要随卸载清理的目录（绝对路径）
+   *
+   * 列表内的目录由插件写入、Discuz 不会代为删除；子类有额外落点时覆写本方法追加。
+   *
+   * @return array
+   */
+  protected function outerDirectories()
+  {
+    return [
+      DiscuzXPath::pluginData(),
+    ];
   }
 }
