@@ -165,19 +165,32 @@ class WechatPayV3Api extends WechatPayApi
    * 两类用途共用：请求签名（{@see generateSign()} 拼好待签串后调用）与
    * 前端调起参数签名（JSAPI / APP 的 paySign，待签串规则与请求签名不同，各自拼好再传进来）。
    *
+   * 私钥来源按以下顺序取用，取到即止：
+   * - {@see WechatPayMerchant::apiV3PrivateKeyContent()}：直接持有的 PEM 文本，不碰磁盘；
+   * - {@see WechatPayMerchant::apiV3PrivateKeyFilePath()}：读取文件内容。
+   *
    * @param string $message 待签名原文
    * @return string Base64 编码后的签名
+   * @throws Error 私钥来源均未配置、文件不可读或内容无法解析为私钥时抛出
    */
   protected function signMessage($message)
   {
-    if (!file_exists($this->merchant->apiV3PrivateKeyFilePath())) {
-      throw new Error("微信支付处理失败", 500, 500, "密钥文件不存在");
+    $privateKey = $this->merchant->apiV3PrivateKeyContent();
+    if (!$privateKey) {
+      $privateKeyFilePath = $this->merchant->apiV3PrivateKeyFilePath();
+      if (!$privateKeyFilePath || !file_exists($privateKeyFilePath)) {
+        throw new Error("微信支付处理失败", 500, 500, "密钥文件不存在");
+      }
+      $privateKey = file_get_contents($privateKeyFilePath);
+      if (!$privateKey) {
+        throw new Error("微信支付处理失败", 500, 500, "无法获取到密钥文件内容");
+      }
     }
-    $privateKeyFile = file_get_contents($this->merchant->apiV3PrivateKeyFilePath());
-    if (!$privateKeyFile) {
-      throw new Error("微信支付处理失败", 500, 500, "无法获取到密钥文件内容");
+
+    $merchantPrivateKey = @openssl_pkey_get_private($privateKey);
+    if (!$merchantPrivateKey) {
+      throw new Error("微信支付处理失败", 500, 500, "商户私钥无法解析");
     }
-    $merchantPrivateKey = openssl_pkey_get_private($privateKeyFile);
     openssl_sign($message, $rawSign, $merchantPrivateKey, 'sha256WithRSAEncryption');
 
     return base64_encode($rawSign);

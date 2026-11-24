@@ -15,8 +15,8 @@ use kernel\Modules\WechatPay\V3\WechatPayV3;
  *
  * 本模块目前**只支持 APIv3**，因此本类只承载 V3 所需凭证：
  * - **身份**：`appId`（公众平台 AppId）与 `merchantId`（商户号），构造时传入；
- * - **凭证**：APIv3 密钥、商户私钥文件路径、证书序列号、回调地址，
- *   按需通过同名「读写一体」方法设置；
+ * - **凭证**：APIv3 密钥、商户私钥（**文件路径或 PEM 内容**，二者其一即可）、证书序列号、
+ *   回调地址，按需通过同名「读写一体」方法设置；
  * - **平台证书**：验证回调签名用的**微信支付平台证书**（微信方的证书，不是本商户的），
  *   通过 {@see platformCertificates()} 显式配置——本模块不会去调用接口拉取平台证书。
  *
@@ -30,7 +30,7 @@ use kernel\Modules\WechatPay\V3\WechatPayV3;
  *
  * $merchant
  *   ->apiV3Secret("...")
- *   ->apiV3PrivateKeyFilePath("/path/apiclient_key.pem")
+ *   ->apiV3PrivateKeyFilePath("/path/apiclient_key.pem") // 或 apiV3PrivateKeyContent(PEM 文本)，二选一
  *   ->apiV3PrivateKeySerialNo("...")
  *   ->notifyUrl("https://example.com/wechatPayNotify.php");
  *
@@ -81,9 +81,24 @@ class WechatPayMerchant extends AbilityBaseObject
   /**
    * APIv3 商户私钥文件路径（apiclient_key.pem）
    *
+   * 与 {@see $apiV3PrivateKeyContent} 二选一：两者都设置时以**私钥内容**为准，
+   * 本字段作为回退，见 {@see \kernel\Modules\WechatPay\V3\WechatPayV3Api::signMessage()}。
+   *
    * @var string|null
    */
   protected $apiV3PrivateKeyFilePath = null;
+  /**
+   * APIv3 商户私钥内容（PEM 文本）
+   *
+   * 供私钥不由本模块托管、而是存在别处（如 Discuz! 的 `ec_wechat.v3_private_key` 设置项）
+   * 的场景使用：那边只存 PEM 文本、没有可读文件，落盘反而多一份泄露面，
+   * 因此这里允许直接持有内容，签名时无需再碰磁盘。
+   *
+   * 与 {@see $apiV3PrivateKeyFilePath} 二选一，两者都设置时以本字段为准。
+   *
+   * @var string|null
+   */
+  protected $apiV3PrivateKeyContent = null;
   /**
    * APIv3 商户证书序列号
    *
@@ -227,6 +242,39 @@ class WechatPayMerchant extends AbilityBaseObject
   }
 
   /**
+   * 读写一体：获取或设置 APIv3 商户私钥内容（PEM 文本）
+   *
+   * 传参即设置并返回 `$this`（便于链式调用），不传参则读取当前值。
+   *
+   * 适用的场景是私钥**不由本模块托管**：例如 Discuz! 把商户私钥整体存在
+   * `ec_wechat.v3_private_key` 设置项里，只有 PEM 文本、没有对应的可读文件。
+   * 与 {@see apiV3PrivateKeyFilePath()} 二选一即可；两者都设置时以本方法设置的**内容**为准，
+   * 签名时优先取内容、内容为空才回退读文件（见
+   * {@see \kernel\Modules\WechatPay\V3\WechatPayV3Api::signMessage()}）。
+   *
+   * 设置时用 `openssl_pkey_get_private()` 校验能否解析为私钥（与
+   * {@see platformCertificates()} 设置时即校验证书的做法一致），避免无效文本留到签名时才失败；
+   * 传 null 或空串视为「不设置/清空私钥内容」，不做校验。
+   *
+   * @param string|null $data 待设置的私钥 PEM 内容
+   * @return static|string|null 设置时返回当前实例；读取时返回当前值
+   * @throws Error 传入内容无法解析为私钥时抛出
+   */
+  public function apiV3PrivateKeyContent($data = null)
+  {
+    if (func_num_args()) {
+      if ($data !== null && $data !== "" && !@openssl_pkey_get_private($data)) {
+        //* 私钥内容不能进错误详情（会被写进日志与响应），只报结论
+        throw new Error("微信支付 v3 商户私钥无法解析", 500, 500);
+      }
+      $this->apiV3PrivateKeyContent = $data;
+      return $this;
+    }
+
+    return $this->apiV3PrivateKeyContent;
+  }
+
+  /**
    * 读写一体：获取或设置 APIv3 商户证书序列号
    *
    * 传参即设置并返回 `$this`（便于链式调用），不传参则读取当前值。
@@ -328,8 +376,8 @@ class WechatPayMerchant extends AbilityBaseObject
   /**
    * 是否具备发起 APIv3 请求的凭证
    *
-   * 判定条件：AppId、商户号、APIv3 密钥、商户私钥文件路径、证书序列号
-   * 与回调地址均已配置（V3 下单必须携带 notify_url）。
+   * 判定条件：AppId、商户号、APIv3 密钥、商户私钥（**文件路径或 PEM 内容**，二者其一）、
+   * 证书序列号与回调地址均已配置（V3 下单必须携带 notify_url）。
    *
    * @return boolean
    */
@@ -339,7 +387,7 @@ class WechatPayMerchant extends AbilityBaseObject
       $this->appId
       && $this->merchantId
       && $this->apiV3Secret
-      && $this->apiV3PrivateKeyFilePath
+      && ($this->apiV3PrivateKeyFilePath || $this->apiV3PrivateKeyContent)
       && $this->apiV3PrivateKeySerialNo
       && $this->notifyUrl
     );
