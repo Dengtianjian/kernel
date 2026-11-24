@@ -18,10 +18,13 @@ use kernel\Modules\WechatPay\V3\WechatPayV3;
  * - **凭证**：APIv3 密钥、商户私钥（**文件路径或 PEM 内容**，二者其一即可）、证书序列号、
  *   回调地址，按需通过同名「读写一体」方法设置；
  * - **平台证书**：验证回调签名用的**微信支付平台证书**（微信方的证书，不是本商户的），
- *   通过 {@see platformCertificates()} 显式配置——本模块不会去调用接口拉取平台证书。
+ *   通过 {@see platformCertificates()} 显式配置——本模块不会去调用接口拉取平台证书；
+ * - **微信支付公钥**：公钥模式下的验签密钥，替代平台证书（灰度期可能并存），
+ *   通过 {@see platformPublicKeyContent()} 或 {@see platformPublicKeyFilePath()} 二选一配置。
  *
  * 是否具备发起请求的条件由 {@see hasApiV3Credentials()} 判断，避免把「半配置」的商户
- * 交给接口客户端。
+ * 交给接口客户端。注意该判定**不含验签密钥**（平台证书、微信支付公钥）——它们是
+ * 收报文时用的，不是发请求的前提。
  *
  * 使用示例：
  *
@@ -123,6 +126,24 @@ class WechatPayMerchant extends AbilityBaseObject
    * @var array<string, string>
    */
   protected $platformCertificates = [];
+  /**
+   * 微信支付公钥文件路径（pub_key.pem）
+   *
+   * **公钥模式**下的验签密钥（与平台证书模式二选一，灰度期可能并存）。
+   * 与 {@see $platformPublicKeyContent} 二选一，两者都设置时以内容为准。
+   *
+   * @var string|null
+   */
+  protected $platformPublicKeyFilePath = null;
+  /**
+   * 微信支付公钥内容（PEM 文本）
+   *
+   * 与 {@see $platformPublicKeyFilePath} 二选一的另一种写法：公钥存在别处
+   * （如 Discuz! 的设置项）时直接持有文本，验签无需碰磁盘。
+   *
+   * @var string|null
+   */
+  protected $platformPublicKeyContent = null;
 
   /**
    * 初始化微信支付商户
@@ -371,6 +392,87 @@ class WechatPayMerchant extends AbilityBaseObject
     }
 
     return $this->platformCertificates;
+  }
+
+  /**
+   * 读写一体：获取或设置微信支付公钥文件路径
+   *
+   * 传参即设置并返回 `$this`（便于链式调用），不传参则读取当前值。
+   *
+   * 设置时只校验文件存在与可读（同 {@see apiV3PrivateKeyFilePath()}），不解析内容；
+   * 真正取用见 {@see platformPublicKey()}。传 null 或空串视为「不设置/清空」，不做校验。
+   *
+   * @param string|null $data 待设置的公钥文件路径
+   * @return static|string|null 设置时返回当前实例；读取时返回当前值
+   * @throws Error 文件不存在或不可读时抛出
+   */
+  public function platformPublicKeyFilePath($data = null)
+  {
+    if (func_num_args()) {
+      if ($data !== null && $data !== "") {
+        if (!file_exists($data)) {
+          throw new Error("微信支付公钥文件不存在：{$data}", 500, 500, $data);
+        }
+        if (!is_readable($data)) {
+          throw new Error("微信支付公钥文件不可读：{$data}", 500, 500, $data);
+        }
+      }
+      $this->platformPublicKeyFilePath = $data;
+      return $this;
+    }
+
+    return $this->platformPublicKeyFilePath;
+  }
+
+  /**
+   * 读写一体：获取或设置微信支付公钥内容（PEM 文本）
+   *
+   * 传参即设置并返回 `$this`（便于链式调用），不传参则读取当前值。
+   *
+   * 设置时用 `openssl_pkey_get_public()` 校验能否解析为公钥（与
+   * {@see apiV3PrivateKeyContent()} 校验私钥的做法一致），避免无效文本留到验签时才失败；
+   * 传 null 或空串视为「不设置/清空」，不做校验。
+   *
+   * @param string|null $data 待设置的公钥 PEM 内容
+   * @return static|string|null 设置时返回当前实例；读取时返回当前值
+   * @throws Error 传入内容无法解析为公钥时抛出
+   */
+  public function platformPublicKeyContent($data = null)
+  {
+    if (func_num_args()) {
+      if ($data !== null && $data !== "" && !@openssl_pkey_get_public($data)) {
+        //* 公钥内容不进错误详情（会被写进日志与响应），只报结论
+        throw new Error("微信支付公钥无法解析", 500, 500);
+      }
+      $this->platformPublicKeyContent = $data;
+      return $this;
+    }
+
+    return $this->platformPublicKeyContent;
+  }
+
+  /**
+   * 取出实际可用的微信支付公钥（PEM 文本）
+   *
+   * 取值顺序与私钥一致：**先内容、后文件**（见
+   * {@see \kernel\Modules\WechatPay\V3\WechatPayV3Api::signMessage()} 对私钥的处理）。
+   * 两处都没配、或文件读不到时返回 null，由验签方按「未配置」处理。
+   *
+   * @return string|null 公钥 PEM；未配置或文件不可读时返回 null
+   */
+  public function platformPublicKey()
+  {
+    if ($this->platformPublicKeyContent) {
+      return $this->platformPublicKeyContent;
+    }
+    if (!$this->platformPublicKeyFilePath) {
+      return null;
+    }
+    if (!file_exists($this->platformPublicKeyFilePath) || !is_readable($this->platformPublicKeyFilePath)) {
+      return null;
+    }
+
+    return file_get_contents($this->platformPublicKeyFilePath) ?: null;
   }
 
   /**
