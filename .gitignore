@@ -6,3 +6,7 @@ gstudio_kernel.inc.php
 .DS_Store
 
 composer.lock
+
+# 本地环境配置：基线是 production，开发态在这两层覆盖，不进仓库也不进发布包
+Config.local.php
+Config.development.php

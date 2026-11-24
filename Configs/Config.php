@@ -1,18 +1,12 @@
 <?php
 
 return [
-  "mode" => "development", //* production development
-  "version" => "0.6.0.20261115.0849",
-  "extensions" => false,
-  //* Redis 连接参数：由 RedisService 读取，只在首次取连接时使用（登记 Provider 不会连）
-  "redis" => [
-    "host" => "127.0.0.1",
-    "port" => 6379,
-    "database" => 0,
-    "timeout" => 0,
-    "persistentId" => null,
-    "retryInterval" => 0,
-    "readTimeout" => 0,
-    "password" => null,
-  ]
+  /**
+   * 基线即生产：发布包直接取自本目录，不做任何改写。
+   * 本地开发用 `Config.local.php` / `Config.development.php` 声明 development 覆盖——
+   * 这两层会被打包忽略（见 PackageCommand::IGNORE），不会随包发布。
+   * 五层覆盖顺序：Config.php → development → local → production → release（后读覆盖先读）。
+   */
+  "mode" => "production", //* production development
+  "version" => "0.6.0.20261115.0849"
 ];

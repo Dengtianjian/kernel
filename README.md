@@ -103,6 +103,25 @@ $App->run();
 | `Path::storage()` | 业务应用存储目录路径 |
 | `$app->appId()` | 当前应用标识（实例方法；静态上下文用 `Applications::defaultId()`） |
 
+## 运行模式
+
+`mode` 决定错误详情、测试路由、CORS 放宽、`_method` / `x-async` 覆盖等开发期行为是否生效。
+
+**基线即生产**：`Configs/Config.php` 默认 `production`，发布包直接用基线，打包过程不改写任何配置。
+
+**本地开发覆盖**：新建 `Configs/Config.local.php` 切回开发态——
+
+```php
+<?php
+
+return [
+  "mode" => "development",
+];
+```
+
+该文件在 `.gitignore` 与 `PackageCommand::IGNORE` 里，既不进仓库也不随包发布。配置分五层读取，
+后读覆盖先读：`Config.php → Config.development.php → Config.local.php → Config.production.php → Config.release.php`。
+
 ## 依赖
 
 本插件**零第三方依赖**，`composer.json` 仅声明 PSR-4 自动加载。云存储 SDK 由
