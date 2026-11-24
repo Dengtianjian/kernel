@@ -67,6 +67,7 @@ class PackageCommand
     ".gitignore",
     "Config.local.php",
     "Config.development.php",
+    "Config.example.php",
     "/vendor",
     "/Data",
     "/Storage",

@@ -109,17 +109,14 @@ $App->run();
 
 **基线即生产**：`Configs/Config.php` 默认 `production`，发布包直接用基线，打包过程不改写任何配置。
 
-**本地开发覆盖**：新建 `Configs/Config.local.php` 切回开发态——
+**本地开发覆盖**：把模板复制一份即可切回开发态——
 
-```php
-<?php
-
-return [
-  "mode" => "development",
-];
+```bash
+cp Configs/Config.example.php Configs/Config.local.php
 ```
 
-该文件在 `.gitignore` 与 `PackageCommand::IGNORE` 里，既不进仓库也不随包发布。配置分五层读取，
+模板内容即 `["mode" => "development"]`。`Config.local.php` 在 `.gitignore` 与 `PackageCommand::IGNORE`
+里，既不进仓库也不随包发布；`Config.example.php` 本身同样被排除在打包之外。配置分五层读取，
 后读覆盖先读：`Config.php → Config.development.php → Config.local.php → Config.production.php → Config.release.php`。
 
 ## 依赖
