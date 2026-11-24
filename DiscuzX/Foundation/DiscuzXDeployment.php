@@ -21,14 +21,14 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  * 由插件 XML 的 installfile / uninstallfile / upgradefile 声明）：
  * ```php
  * // 前置：内核自动加载器已注册，且当前应用已启动（new DiscuzXApp(null, $pluginId)）
- * $Iuu = new DiscuzXDeployment();          // install.php
- * $Iuu->install();
+ * $provisioner = new DiscuzXDeployment();          // install.php
+ * $provisioner->install();
  *
- * $Iuu = new DiscuzXDeployment();          // uninstall.php
- * $Iuu->uninstall();
+ * $provisioner = new DiscuzXDeployment();          // uninstall.php
+ * $provisioner->uninstall();
  *
- * $Iuu = new DiscuzXDeployment();          // upgrade.php：是否升级、升到哪个版本由 ?fromversion= 决定
- * $Iuu->upgrade()->cleanUpgrade();
+ * $provisioner = new DiscuzXDeployment();          // upgrade.php：是否升级、升到哪个版本由 ?fromversion= 决定
+ * $provisioner->upgrade();
  * ```
  *
  * 与父类的分工：
@@ -43,25 +43,23 @@ if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
  *
  * 生命周期：
  * - `install()`   ：先调父类（创建内核侧 Data / Storage 目录），再补建 Discuz 侧 plugindata 目录；
- * - `upgrade()`   ：执行父类的增量升级，并**适配为可链式**（父类返回 bool，调用方写法是 `->cleanUpgrade()`）；
+ * - `upgrade()`   ：执行父类的增量升级，并返回 `$this` 以便链式调用；
  * - `uninstall()` ：先调父类（删除 `.version`），再删除 Discuz 侧 plugindata 目录；
- * - `clean()`     ：`cleanInstall()` + `cleanUpgrade()`，并删除 `{appRoot}/Provisioner` 目录本身。
+ *   内核侧 `Data/`（日志、缓存、`install.key`）与 `Storage/`（用户文件）**保留**。
  *
- * 注意（改动前请先了解这四点）：
+ * 升级脚本约定（父类 `scanUpgradeFiles()` / `buildUpgradeClassName()` 决定，写错等于没有升级）：
+ * - 目录：`{appRoot}/Deployment/Upgrades`（构造函数传给父类的就是它）；
+ * - 文件名：`Upgrade_{x}_{y}_{z}.php`，三段数字，如 `Upgrade_1_3_0.php`；
+ * - 命名空间与类名：`{appId}\Deployment\Upgrades\Upgrade_{x}_{y}_{z}`
+ *   —— 由「升级目录相对 `Path::root()` 的路径」推导，目录一改命名空间必须跟着改；
+ * - 类里定义 `upgrade()` 方法，或把升级逻辑写在构造函数里（父类两种都支持）。
+ *
+ * 注意（改动前请先了解这两点）：
  * 1. **前置条件：App 必须已注册**。构造函数用 `Applications::default()` 取当前应用（`$app->id()`、
  *    `$app->request()->query`），未启动 App 时 `Applications::default()` 返回 null，`$app->id()` 会直接致命错误；
  *    同时 `CHARSET` 需已定义（`DiscuzXApp` 构造时会兜底定义为 utf-8）；
  * 2. 本文件顶部有 `IN_DISCUZ` + `IN_ADMINCP` 双重守卫，只能在 Discuz 后台上下文被载入，
- *    否则直接 `exit('Access Denied')`；
- * 3. `cleanInstall()` / `cleanUpgrade()` 删除的是 `{appRoot}/Provisioner/{Install,Upgrade}`
- *    （扩展安装包 `ExtensionProvisioner` 使用的布局），与插件自身的升级脚本目录并不重合 ——
- *    升级后调 `cleanUpgrade()` 不会清理掉实际执行过的脚本，如需清理请另行确认目标目录；
- * 4. **升级脚本目录固定为 `{appRoot}/Upgrades`**，而仓库内现有脚本实际放在
- *    `{appRoot}/Iuu/Upgrades`（super_app）与 `{appRoot}/Iuu/Upgrade`（community / employment）下。
- *    两者不一致时：父类 `scanUpgradeFiles()` 会扫不到脚本（视作无升级），
- *    且其 `buildUpgradeClassName()` 按「相对 `Path::root()` 的目录」推导类名，
- *    推出的 `{appId}\Upgrades\Upgrade_x_y_z` 也与现有脚本的命名空间不符。
- *    要让升级真正生效，需把脚本迁到 `Upgrades/`，或在构造时改传实际目录。
+ *    否则直接 `exit('Access Denied')`。
  *
  * @see Deployment  父类：版本持久化、增量升级 / 回滚、安装锁与密钥
  * @see DiscuzXPath  DiscuzX 路径（data / storage 等）
@@ -102,7 +100,7 @@ class DiscuzXDeployment extends Deployment
    *
    * 逻辑完全交给父类（扫描升级目录 → 按版本升序执行 `Upgrade_x_y_z.php` → 逐个持久化版本号），
    * 这里只做一件事：**适配返回值** —— 父类返回 bool（成功 / 失败），
-   * 而调用方写法是 `$Iuu->upgrade()->cleanUpgrade()`，因此统一返回 `$this` 以支持链式调用。
+   * 这里统一返回 `$this`，便于调用方在该步骤后继续追加动作。
    *
    * 失败信息不会丢失：父类内部经 `break()` 记录在实例的错误状态上，
    * 调用方可用 `isError()` / `getErrorMessage()` 判断，或直接 `return()` 抛出。
@@ -139,8 +137,8 @@ class DiscuzXDeployment extends Deployment
    * 父类负责删除版本记录（`Path::data()/.version`），
    * 这里再删除 Discuz 侧数据目录 `{project}/data/plugindata/{appId}` 及其全部内容。
    *
-   * 注意：不删除内核侧的 Data / Storage 目录（与 `install()` 不对称），
-   * 需要彻底清理时请另行处理或调用 `clean()`。
+   * 注意：不删除内核侧的 `Data/`（日志、缓存、`install.key`）与 `Storage/`（用户文件），
+   * 这两处需由调用方按业务需要自行处理。
    *
    * @return void
    */

@@ -9,8 +9,9 @@ use kernel\Foundation\Object\AbilityBaseObject;
 /**
  * 应用部署编排器：安装 / 更新 / 卸载（含回滚）
  *
- * 名字对应各应用根目录的 `Deployment/` 目录 —— 那里放 Install / Uninstall / Upgrades 脚本，
- * 本类负责扫描并执行它们，顺带管理 `.version`、`install.lock`、`install.key`。
+ * 名字对应各应用根目录的 `Deployment/` 目录 —— 其中的升级脚本（`Upgrades/`）由本类扫描执行；
+ * 安装 / 卸载用到的 SQL 与钩子由各应用自己的部署类组织（如 `AppDeployment` 覆写 install / uninstall）。
+ * 本类顺带管理 `.version`、`install.lock`、`install.key`。
  *
  * 升级机制：
  * - 扫描 upgradesDir 目录下 Upgrade_x_y_z.php 文件，从文件名提取版本号按序执行
@@ -368,8 +369,8 @@ class Deployment extends AbilityBaseObject
    *
    * 推导逻辑：取 upgradesDir 相对 Path::root() 的路径 → 目录分隔符转命名空间分隔符
    * → 以默认应用 ID 为根命名空间拼接类短名。
-   * 例：默认应用 ID=myapp，upgradesDir={root}/Controller/Iuu/Upgrades/List，file=Upgrade_1_1_0.php
-   *     → myapp\Controller\Iuu\Upgrades\List\Upgrade_1_1_0
+   * 例：默认应用 ID=myapp，upgradesDir={root}/Deployment/Upgrades，file=Upgrade_1_1_0.php
+   *     → myapp\Deployment\Upgrades\Upgrade_1_1_0
    *
    * @param string $filePath 升级脚本完整路径
    * @return string 完全限定类名
