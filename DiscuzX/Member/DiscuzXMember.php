@@ -622,6 +622,6 @@ class DiscuzXMember
   {
     $CM = new DiscuzXSystemModel("common_member");
 
-    return (bool)$CM->where("uid", $UserId)->exist();
+    return (bool)$CM->where("uid", $UserId)->exists();
   }
 }

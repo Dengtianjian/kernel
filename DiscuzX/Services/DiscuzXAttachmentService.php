@@ -93,13 +93,13 @@ class DiscuzXAttachmentService extends AbilityBaseObject
   public static function getAttachment($AttachmentId, $thumbWidth = null, $thumbHeight = null)
   {
     $AM = new DiscuzXSystemModel("forum_attachment");
-    $attachment = $AM->where("aid", $AttachmentId)->getOne();
+    $attachment = $AM->where("aid", $AttachmentId)->first();
     if (!$attachment) {
       return new Result(null, 404, 404001, "附件不存在");
     }
     $TableId = $attachment['tableid'];
     $SAM = new DiscuzXSystemModel("forum_attachment_$TableId");
-    $attachment = $SAM->where("aid", $AttachmentId)->getOne();
+    $attachment = $SAM->where("aid", $AttachmentId)->first();
     if (!$attachment) {
       return new Result(null, 404, 404001, "附件不存在");
     }
@@ -172,14 +172,14 @@ class DiscuzXAttachmentService extends AbilityBaseObject
     }
 
     $AttachmentModel = new DiscuzXSystemModel("forum_attachment");
-    $attachment = $AttachmentModel->where("aid", $AttachmentId)->getOne();
+    $attachment = $AttachmentModel->where("aid", $AttachmentId)->first();
     if (!$attachment) {
       return null;
     }
 
     $TableId = intval($attachment['tableid']);
     $DetailModel = new DiscuzXSystemModel("forum_attachment_" . $TableId);
-    $detail = $DetailModel->where("aid", $AttachmentId)->getOne();
+    $detail = $DetailModel->where("aid", $AttachmentId)->first();
     if (!$detail) {
       return null;
     }
