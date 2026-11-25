@@ -330,7 +330,7 @@ class AliyunOSSStorage extends AbstractObjectStorage
     ];
   }
   /**
-   * 列举桶内对象（支撑 Discuz! X5.0 class_oss 适配器的 getFilesList）
+   * 列举桶内对象（供存储适配器列举文件）
    *
    * @param string $prefix 对象名前缀
    * @param string $marker 从该位置之后继续列举（分页）

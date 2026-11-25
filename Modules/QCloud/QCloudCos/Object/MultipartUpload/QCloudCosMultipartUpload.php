@@ -34,7 +34,7 @@ namespace kernel\Modules\QCloud\QCloudCos\Object\MultipartUpload;
  * - 「完成」时必须按 `PartNumber` **升序**提交各块的 `ETag`（{@see completeXml()} 会自动排序）；
  * - 小于 1MB 的文件其实用 `PUT Object` 一次传完更划算；**0 字节**文件本类仍会给出 1 个 0 字节的块。
  *
- * 依赖方向：本类**不引用**存储层以免 QCloud → Discuz 逆向依赖；
+ * 依赖方向：本类**不引用**存储层以免 QCloud → 存储层逆向依赖；
  * 对象键的编码方式与该类的 `encodeObjectName()` 一致（按段 `rawurlencode` + 前导 `/`）。
  *
  * 文档核对状态：**待核对**（分块规则与请求形态按官方分块上传通用写法整理；首次接入对真实桶复核）。

@@ -93,8 +93,8 @@ abstract class Application
     $this->container = new Container($this);
 
     //* 启动时间：响应输出时靠它算 requiredTime。
-    //* 刻意不在这里读配置文件——配置里可能有 `if (!defined("IN_DISCUZ")) exit;` 这类
-    //* 宿主保护，CLI / 单测环境提前 include 会直接退出；配置留给首次 `config()` 访问时加载。
+    //* 刻意不在这里读配置文件——配置里可能有「未初始化就 exit」这类平台守卫，
+    //* CLI / 单测环境提前 include 会直接退出；配置留给首次 `config()` 访问时加载。
     $this->startTime = Date::milliseconds();
   }
 
@@ -156,7 +156,7 @@ abstract class Application
   {
     //* 静态入口留给「没有 $app 上下文」的地方（自动加载器、视图）。
     //* 只读**已经加载过**的配置，不在这里触发加载：自动加载是每条 include 都会走的热路径，
-    //* 让它去读磁盘（甚至 include 带 IN_DISCUZ 保护的配置文件）会把 CLI 直接带崩。
+    //* 让它去读磁盘（甚至 include 带平台守卫的配置文件）会把 CLI 直接带崩。
     //* 配置还没加载时按 production 处理——保守取向，与「配置缺失」一致。
     $app = Applications::default();
     $config = $app === null ? null : $app->resolvedConfig();
@@ -400,7 +400,7 @@ abstract class Application
   /**
    * 本实例的内核 ID（KernelId），即内核目录文件夹名称
    *
-   * 就是构造时传入的第二个参数（Discuz 下默认 `gstudio_kernel`，其余默认 `kernel`）。
+   * 就是构造时传入的第二个参数（默认取内核目录名，即 `kernel`）。
    * 多应用共存时只有它是可靠的——静态语境要取「默认应用的内核 ID」，
    * 请写 `Applications::default()->kernelId()`，不要用静态的。
    *
@@ -456,8 +456,8 @@ abstract class Application
   /**
    * 懒装配新应用时使用的类
    *
-   * 取当前默认应用的实际类（Discuz 下即 {@see \kernel\Discuz\Foundation\DiscuzApp}），
-   * 保证懒装配出来的应用与先建的那个同类；进程里一个应用都没有时退回本类。
+   * 取当前默认应用的实际类，保证懒装配出来的应用与先建的那个同类；
+   * 进程里一个应用都没有时退回本类。
    *
    * @return class-string<Application>
    */

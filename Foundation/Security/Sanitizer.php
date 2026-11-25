@@ -181,7 +181,7 @@ class Sanitizer
    * ```php
    * // 通过：相对路径拼到固定根目录下
    * $file = Sanitizer::safePath($request->query->get('path'));
-   * $full = DISCUZ_ROOT . '/data/attachment/' . $file;
+   * $full = '/var/www/site/data/attachment/' . $file;
    *
    * // 抛 Error(400, "invalidPath:400")
    * Sanitizer::safePath('../../etc/passwd');       // 含 ..

@@ -16,7 +16,7 @@ use kernel\Foundation\Exception\Error;
  *
  * 典型场景与顺序：
  * - 常规应用：`new App(Bootstrap::class, "app")` 构造时自动注册，因是第一个注册者，自动成为默认；
- * - 多应用共存（如 Discuz 插件）：插件 App 构造时传 `$makeDefault = true`，显式接管默认位置；
+ * - 多应用共存：App 构造时传 `$makeDefault = true`，显式接管默认位置；
  * - 测试/常驻进程：可用 {@see clear()} 重置注册表，或用 {@see setDefault()} 在多个实例间切换。
  *
  * 注意：注册表以「应用 ID」为键，重复注册同一 ID 会覆盖前者（实例替换，默认指针不变 ——

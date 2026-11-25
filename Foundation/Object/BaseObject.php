@@ -173,7 +173,7 @@ class BaseObject
 
     if ($app === null) {
       throw new \kernel\Foundation\Exception\Error(
-        static::class . " 未关联任何应用：请先注册应用（new DiscuzApp(null, \$pluginId)），或用 \$app->make() 创建对象",
+        static::class . " 未关联任何应用：请先注册应用（new App(null, \$appId)），或用 \$app->make() 创建对象",
         500,
         "500:AppNotRegistered"
       );

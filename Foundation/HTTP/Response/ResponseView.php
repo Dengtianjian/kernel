@@ -6,7 +6,6 @@ use kernel\Foundation\FileSystem\Path;
 
 use kernel\Foundation\Data\Arr;
 use kernel\Foundation\Exception\Error;
-use kernel\Foundation\FileSystem\FileHelper;
 use kernel\Foundation\HTTP\Response;
 
 class ResponseView extends Response
@@ -132,7 +131,7 @@ class ResponseView extends Response
       $viewData = [];
     }
 
-    // 仅合法 PHP 变量名可成为视图变量，杜绝 extract 注入/告警（对齐 DiscuzView::render）
+    // 仅合法 PHP 变量名可成为视图变量，杜绝 extract 注入/告警
     $safeVars = [];
     foreach ($viewData as $k => $v) {
       if (is_string($k) && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $k)) {
@@ -140,10 +139,9 @@ class ResponseView extends Response
       }
     }
 
-    // 闭包隔离：视图只访问 $safeVars + global $_G，看不到 render 内部变量，也不影响其他文件；
+    // 闭包隔离：视图只能访问 $safeVars，看不到 render 内部变量，也不影响其他文件；
     // 输出仍由 ob 捕获并返回字符串，保持 output() 的语义不变
     $render = function (array $files, array $vars) {
-      global $_G;
       extract($vars, EXTR_SKIP);
       ob_start();
       foreach ($files as $file) {

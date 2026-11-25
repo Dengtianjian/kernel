@@ -1033,8 +1033,8 @@ class StorageModule extends AbilityBaseObject
    * - **未启用数据存储**：退化为只校验请求签名（{@see verifyRequestSignature()}）。
    *
    * 取库中记录时以 `addSelect("owner_id", "access_control")` 只取这两列，随后按**数组下标**读取
-   * （`$file['owner_id']` / `$file['access_control']`），因此要求文件模型返回数组形态的行
-   * （Discuz 侧模型满足）。记录不存在返回 404，ACL / 签名不通过返回 403。
+   * （`$file['owner_id']` / `$file['access_control']`），因此要求文件模型返回数组形态的行。
+   * 记录不存在返回 404，ACL / 签名不通过返回 403。
    *
    * @param string $fileKey 文件键
    * @param string $operation 操作类型：read 或 write，默认 read

@@ -19,8 +19,7 @@ use QCloud\COSSTS\Sts;
  * 与客户端是**组合**关系（不是继承）：本类负责拼装它需要的 `$config`，真正的签名计算与
  * HTTPS 请求由它完成。
  *
- * 被 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCOSStorage} 与其子类
- * {@see \kernel\Discuz\Foundation\Storage\DiscuzQCloudCOSStorage} 持有 —— 都挂在父类的
+ * 被 {@see \kernel\Modules\QCloud\QCloudCos\QCloudCOSStorage} 持有 —— 挂在父类的
  * `$stsClient` 属性上，用于 COS 直传（前端拿临时密钥直传对象存储）。
  *
  * 字段：$userId / $bucket / $region 为 public，可读；$secretId / $secretKey 为 private，

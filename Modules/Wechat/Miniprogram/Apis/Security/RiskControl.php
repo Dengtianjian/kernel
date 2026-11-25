@@ -2,6 +2,7 @@
 
 namespace kernel\Modules\Wechat\Miniprogram\Apis\Security;
 
+use kernel\Foundation\HTTP\Request;
 use kernel\Modules\Wechat\Miniprogram\WechatMiniProgramApi;
 
 /**
@@ -17,14 +18,14 @@ class RiskControl extends WechatMiniProgramApi
    *
    * @param string $openid 用户的 openid
    * @param int $scene 场景值：0 注册；1 营销作弊
-   * @param string|null $clientIp 用户访问来源的 IP，留空时尝试取 Discuz 的 $_G['client_ip']
+   * @param string|null $clientIp 用户访问来源的 IP，留空时取 {@see Request::ip()}
    * @param bool $isTest 是否测试（测试时不消耗调用次数）
    * @return array 微信响应数组，成功时含 risk_rank（0 最安全，4 最高风险）
    */
   function getUserRiskRank($openid, $scene = 1, $clientIp = null, $isTest = false)
   {
     if ($clientIp === null) {
-      $clientIp = $GLOBALS['_G']['client_ip'] ?? null;
+      $clientIp = Request::ip();
     }
 
     $body = [

@@ -37,7 +37,7 @@ use kernel\Modules\QCloud\QCloudCos\Object\QCloudCosObjects;
  * | 驱动 | 触发条件 | 说明 |
  * |---|---|
  * | `sdk` | `Qcloud\Cos\Client` 类存在（vendor 里装了 COS SDK） | 走 SDK |
- * | `http` | 上者不存在（如 Discuz 插件环境未加载 vendor） | 自己用 `Curl` + {@see QCloudCosSignture} 发签名请求 |
+ * | `http` | 上者不存在（如未加载 vendor） | 自己用 `Curl` + {@see QCloudCosSignture} 发签名请求 |
  *
  * 可用 {@see driver()} 强制指定（`"sdk"` / `"http"`）以便测试或排障，{@see usingSdk()} 查当前是否走 SDK。
  *

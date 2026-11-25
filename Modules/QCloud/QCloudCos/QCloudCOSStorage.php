@@ -371,7 +371,7 @@ class QCloudCOSStorage extends AbstractObjectStorage
     return $urlParams;
   }
   /**
-   * 列举桶内对象（支撑 Discuz! X5.0 class_oss 适配器的 getFilesList）
+   * 列举桶内对象（供存储适配器列举文件）
    * 委托 {@see QCloudCosClient::listObjects()}。
    *
    * @param string $prefix 对象名前缀
