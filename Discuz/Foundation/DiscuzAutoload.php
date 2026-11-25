@@ -3,6 +3,7 @@
 if (!defined("DISCUZ_ROOT")) {
   return;
 }
+
 /**
  * 加载器
  * @param string $className
@@ -14,7 +15,8 @@ function loader($className)
   if (strpos($className, "kernel") !== false && strpos($className, "gstudio_kernel") === false) {
     $className = str_replace("kernel", "gstudio_kernel", $className);
   }
-  $filePath = DISCUZ_ROOT . "/source/plugin/$className.php";
+  //* 插件目录位置交给平台函数解析，不自己拼 DISCUZ_ROOT；插件目录不存在时返回空串，走下面的告警分支
+  $filePath = DISCUZ_PLUGIN("$className.php");
   if (file_exists($filePath)) {
     include_once($filePath);
   } else {

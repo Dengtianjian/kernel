@@ -131,7 +131,9 @@ class DiscuzPath extends Path
   /**
    * 插件目录（相对路径，相对项目根）
    *
-   * 供需要把插件目录拼成 URL / 相对引用的场景使用。
+   * 供需要把插件目录拼成 URL / 相对引用的场景使用，因此固定用 `/` 分隔，不随系统变化。
+   * 文件系统层的插件根不走本方法：引导阶段用平台函数 `DISCUZ_PLUGIN()`，
+   * 之后要绝对路径用 {@see plugin()}。
    *
    * @return string 固定为 `source/plugin`
    */
