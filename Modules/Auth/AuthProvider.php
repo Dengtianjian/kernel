@@ -2,8 +2,8 @@
 
 namespace kernel\Modules\Auth;
 
-use kernel\DiscuzX\Foundation\DiscuzXApp;
-use kernel\DiscuzX\Middlewares\GlobalDiscuzXAuthMiddleware;
+use kernel\Discuz\Foundation\DiscuzApp;
+use kernel\Discuz\Middlewares\GlobalDiscuzAuthMiddleware;
 use kernel\Foundation\Database\RDB\Drivers\Connections;
 use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Middlewares\GlobalAuthMiddleware;
@@ -13,7 +13,7 @@ use kernel\Middlewares\GlobalAuthMiddleware;
  *
  * 构造即装配，只做三件事：
  * - 把 {@see AuthModule} 登记成应用单例（凭证操作与登录态都挂在它身上）；
- * - 按运行环境挂认证中间件（DiscuzX / 通用）；
+ * - 按运行环境挂认证中间件（Discuz / 通用）；
  * - 有数据库连接时顺手清理过期 token（安装期无连接则跳过）。
  *
  * 业务方法不在这里，见 {@see AuthModule}；业务侧取用走门面 {@see Auth}。
@@ -38,7 +38,7 @@ class AuthProvider extends AbilityBaseObject
     $this->app()->provider($auth, "auth");
 
     $this->app()->middleware()->set(
-      DiscuzXApp::exists() ? GlobalDiscuzXAuthMiddleware::class : GlobalAuthMiddleware::class
+      DiscuzApp::exists() ? GlobalDiscuzAuthMiddleware::class : GlobalAuthMiddleware::class
     );
 
     //* 安装阶段还没有数据库连接，跳过清理

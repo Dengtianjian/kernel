@@ -1,4 +1,4 @@
-# gstudio_kernel — DiscuzX 基础插件
+# gstudio_kernel — Discuz 基础插件
 
 ## 定位
 
@@ -7,11 +7,11 @@ gstudio_kernel 是运行于 **Discuz! X3.5** 平台的**基础插件**（非业�
 职责是为其他业务插件提供统一的 RESTful 接口开发能力——控制器 / 模型 / 中间件 /
 路由 / 数据库 / 存储 / 认证 / 支付等基础组件，由业务插件依赖复用。
 
-与 Discuz 官方体系的协作方式（`DiscuzX/` 适配层）：
+与 Discuz 官方体系的协作方式（`Discuz/` 适配层）：
 
 - 数据表读写走官方 `C::t()` 接口；
 - 语言包按站点编码（GBK / UTF-8）加载官方体系内的语言文件；
-- 上传走官方 `discuz_upload` 白名单与落盘校验（`DiscuzX/Foundation/Storage/`）；
+- 上传走官方 `discuz_upload` 白名单与落盘校验（`Discuz/Foundation/Storage/`）；
 - 会员注册 / 登录复用 Discuz 官方 `common_member` 体系与 `updatemembercount` 等接口。
 
 ## 目录结构
@@ -19,7 +19,7 @@ gstudio_kernel 是运行于 **Discuz! X3.5** 平台的**基础插件**（非业�
 ```
 gstudio_kernel/
 ├── Foundation/     # 基础组件（应用、路由、数据库、HTTP、文件系统、缓存等）
-├── DiscuzX/        # DiscuzX 平台适配（语言包、原生模型、存储驱动、控制器基类）
+├── Discuz/        # Discuz 平台适配（语言包、原生模型、存储驱动、控制器基类）
 ├── Commands/       # 命令行工具（make:app / make:controller / make:model / make:middleware / package 等）
 ├── Controllers/    # 文件相关控制器（基类在 Foundation/Controller）
 ├── Middlewares/    # 全局中间件子类（基类在 Foundation/Middleware）
@@ -96,7 +96,7 @@ $App->run();
 
 | 常量/方法 | 说明 |
 |------|------|
-| `Path::project()` | 项目根目录路径（DiscuzX 平台取 `DISCUZ_ROOT`） |
+| `Path::project()` | 项目根目录路径（Discuz 平台取 `DISCUZ_ROOT`） |
 | `Path::kernel()` | 本基础插件目录路径（自动计算的静态 getter） |
 | `Path::root()` | 业务应用根目录路径（按默认应用 ID 推导） |
 | `Path::data()` | 业务应用数据目录路径 |

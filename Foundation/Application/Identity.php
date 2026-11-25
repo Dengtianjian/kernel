@@ -2,14 +2,14 @@
 
 namespace kernel\Foundation\Application;
 
-use kernel\DiscuzX\Foundation\DiscuzXApp;
+use kernel\Discuz\Foundation\DiscuzApp;
 
 /**
  * 应用身份解析
  *
  * 把「对象 / 类名 / 命名空间字符串」解析成应用 ID（等于应用目录名）。
- * 本类只做解析、不持有状态：规则是取命名空间第一段；DiscuzX 宿主下目录名统一带
- * `gstudio_` 前缀而命名空间不带，按 {@see DiscuzXApp::exists()}（宿主常量 `IN_DISCUZ`）判断后补前缀。
+ * 本类只做解析、不持有状态：规则是取命名空间第一段；Discuz 宿主下目录名统一带
+ * `gstudio_` 前缀而命名空间不带，按 {@see DiscuzApp::exists()}（宿主常量 `IN_DISCUZ`）判断后补前缀。
  * 判断只看宿主常量、不依赖是否已建应用实例，早期自动加载阶段也能得到正确结果。
  *
  * @package kernel\Foundation\Application
@@ -27,7 +27,7 @@ class Identity
    * 命名空间第一段即应用 ID（目录名）：
    * - `gstudio_download\Services\DownloadFileService` → `gstudio_download`
    * - `gstudio_super_app\Models\SuperAppFilesModel`  → `gstudio_super_app`
-   * - `kernel\Foundation\...`                        → `kernel`（由 DiscuzX 环境补前缀）
+   * - `kernel\Foundation\...`                        → `kernel`（由 Discuz 环境补前缀）
    *
    * 用途：子系统复用主系统的类时，kernel 内部需要按「某个类所属的应用」而非「默认应用」
    * 来决定表名前缀、签名密钥、URL 的 id 参数等。
@@ -46,8 +46,8 @@ class Identity
 
     $appId = explode("\\", $target)[0];
 
-    //* DiscuzX 下目录名带 gstudio_ 前缀；已带前缀（如 gstudio_download）时原样返回
-    $prefix = DiscuzXApp::exists() ? "gstudio_" : "";
+    //* Discuz 下目录名带 gstudio_ 前缀；已带前缀（如 gstudio_download）时原样返回
+    $prefix = DiscuzApp::exists() ? "gstudio_" : "";
     if ($prefix === "" || strpos($appId, $prefix) === 0) {
       return $appId;
     }

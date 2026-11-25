@@ -132,7 +132,7 @@ class ResponseView extends Response
       $viewData = [];
     }
 
-    // 仅合法 PHP 变量名可成为视图变量，杜绝 extract 注入/告警（对齐 DiscuzXView::render）
+    // 仅合法 PHP 变量名可成为视图变量，杜绝 extract 注入/告警（对齐 DiscuzView::render）
     $safeVars = [];
     foreach ($viewData as $k => $v) {
       if (is_string($k) && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $k)) {

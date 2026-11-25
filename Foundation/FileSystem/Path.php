@@ -12,7 +12,7 @@ use kernel\Foundation\Application\Applications;
  *
  * 7 个路径 getter：
  *   kernel        = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
- *   project       = DiscuzX 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernel 的上级目录
+ *   project       = Discuz 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernel 的上级目录
  *   root          = kernel 同级目录下的 {默认应用 ID}
  *   data          = root/Data
  *   storage       = root/Storage
@@ -28,7 +28,7 @@ class Path
   /**
    * 根目录（绝对路径）
    *
-   * DiscuzX 平台返回 DISCUZ_ROOT（去尾斜杠）；普通项目返回内核目录的上级目录。
+   * Discuz 平台返回 DISCUZ_ROOT（去尾斜杠）；普通项目返回内核目录的上级目录。
    *
    * @return string|null
    */

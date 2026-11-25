@@ -1,0 +1,167 @@
+<?php
+
+namespace kernel\Discuz\Foundation;
+
+use kernel\Foundation\FileSystem\FileSystem;
+use kernel\Foundation\Builtin\Deployment;
+use kernel\Foundation\Application\Applications;
+
+//* 仅允许在 Discuz 后台（admincp）上下文中载入：本类会建目录 / 删目录，不能被 URL 直接访问触发
+if (!defined("IN_DISCUZ") || !defined('IN_ADMINCP')) {
+  exit('Access Denied');
+}
+
+/**
+ * Discuz Deployment: Install / Upgrade / Uninstall
+ *
+ * 安装 / 升级 / 卸载编排器 —— 内核 {@see Deployment} 的 Discuz 实现。
+ *
+ * 调用方式（各插件包根目录的 install.php / uninstall.php / upgrade.php，
+ * 由插件 XML 的 installfile / uninstallfile / upgradefile 声明）：
+ * ```php
+ * // 前置：内核自动加载器已注册，且当前应用已启动（new DiscuzApp(null, $pluginId)）
+ * $provisioner = new DiscuzDeployment();          // install.php
+ * $provisioner->install();
+ *
+ * $provisioner = new DiscuzDeployment();          // uninstall.php
+ * $provisioner->uninstall();
+ *
+ * $provisioner = new DiscuzDeployment();          // upgrade.php：是否升级、升到哪个版本由 ?fromversion= 决定
+ * $provisioner->upgrade();
+ * ```
+ *
+ * 与父类的分工：
+ * - 复用父类的版本与升级机制（`.version`、升级脚本扫描与执行、`install.key`、`install.lock`）；
+ * - 叠加 Discuz 特有的三点：
+ *   1. **应用与路径取自「当前应用」**：构造函数不接收参数，用 `Applications::default()` 取 `id()`，
+ *      因此要求 App 已启动，`DiscuzPath::root()` / `DiscuzPath::data()` 才会指向本插件（详见构造函数的「前置条件」）；
+ *   2. **升级基线可由 Discuz 的 `?fromversion=` 提供**：从 `$app->request()->query` 读取该参数，
+ *      传入后覆盖父类从 `.version` 推导的基线（见构造函数）；
+ *   3. **数据目录落到 Discuz 惯例位置**：`{project}/data/plugindata/{appId}`
+ *      （见 {@see DiscuzPath::pluginData()}、{@see DiscuzPath::storage()}）。
+ *
+ * 生命周期：
+ * - `install()`   ：先调父类（创建内核侧 Data / Storage 目录），再补建 Discuz 侧 plugindata 目录；
+ * - `upgrade()`   ：执行父类的增量升级，并返回 `$this` 以便链式调用；
+ * - `uninstall()` ：先调父类（删除 `.version`），再清理插件目录之外的 Discuz 数据目录
+ *   `{project}/data/plugindata/{appId}`（见 {@see self::outerDirectories()}）；
+ *   插件目录内的内容由 Discuz 卸载时整目录删除，不在本类职责内。
+ *
+ * 升级脚本约定（父类 `scanUpgradeFiles()` / `buildUpgradeClassName()` 决定，写错等于没有升级）：
+ * - 目录：`{appRoot}/Deployment/Upgrades`（构造函数传给父类的就是它）；
+ * - 文件名：`Upgrade_{x}_{y}_{z}.php`，三段数字，如 `Upgrade_1_3_0.php`；
+ * - 命名空间与类名：`{appId}\Deployment\Upgrades\Upgrade_{x}_{y}_{z}`
+ *   —— 由「升级目录相对 `DiscuzPath::root()` 的路径」推导，目录一改命名空间必须跟着改；
+ * - 类里定义 `upgrade()` 方法，或把升级逻辑写在构造函数里（父类两种都支持）。
+ *
+ * 注意（改动前请先了解这两点）：
+ * 1. **前置条件：App 必须已注册**。构造函数用 `Applications::default()` 取当前应用（`$app->id()`、
+ *    `$app->request()->query`），未启动 App 时 `Applications::default()` 返回 null，`$app->id()` 会直接致命错误；
+ *    同时 `CHARSET` 需已定义（`DiscuzApp` 构造时会兜底定义为 utf-8）；
+ * 2. 本文件顶部有 `IN_DISCUZ` + `IN_ADMINCP` 双重守卫，只能在 Discuz 后台上下文被载入，
+ *    否则直接 `exit('Access Denied')`。
+ *
+ * @see Deployment  父类：版本持久化、增量升级 / 回滚、安装锁与密钥
+ * @see DiscuzPath  Discuz 路径（data / storage 等）
+ */
+class DiscuzDeployment extends Deployment
+{
+  /**
+   * 构造（无参数，全部从「当前应用」推导）
+   *
+   * 顺序：
+   *   1. `parent::__construct({appRoot}/Upgrades)` —— 与父类签名对齐：
+   *      父类第一个形参是**升级脚本目录**（`Deployment::__construct($upgradesDir = null)`）；
+   *   2. 取 Discuz 侧已安装版本（插件设置 `setting.plugins.version.{appId}`）作为 `latestVersion`；
+   *   3. 若请求带 `fromversion`，用它覆盖父类从 `.version` 推导出的升级基线 `currentSemver`
+   *      —— Discuz 后台升级带上的是当前实际版本，比 `.version` 更权威
+   *      （换机、手工改版本号后仍能正确计算增量）。
+   *
+   * 前置条件（重要）：调用前必须已经注册当前应用（例如先 `new DiscuzApp(null, $pluginId)`），
+   * 否则 `Applications::default()` 返回 null → `$app->appId()` 致命错误；同时 `DiscuzPath::root()` 会因默认应用缺失而失效。
+   *
+   * @return void
+   */
+  public function __construct()
+  {
+    parent::__construct(DiscuzPath::join(DiscuzPath::root(), "Deployment", "Upgrades"));
+
+    $app = Applications::default();
+
+    $this->latestVersion = \getglobal("setting/plugins/version/" . $app->id());
+
+    //* Discuz 后台升级会带上当前版本，比 .version 更权威（换机、手工改版本后仍能正确计算增量）
+    if ($app->request()->query->has("fromversion")) {
+      $this->currentSemver = self::parseSemver($app->request()->query->get("fromversion"));
+    }
+  }
+  /**
+   * 执行增量升级
+   *
+   * 逻辑完全交给父类（扫描升级目录 → 按版本升序执行 `Upgrade_x_y_z.php` → 逐个持久化版本号），
+   * 这里只做一件事：**适配返回值** —— 父类返回 bool（成功 / 失败），
+   * 这里统一返回 `$this`，便于调用方在该步骤后继续追加动作。
+   *
+   * 失败信息不会丢失：父类内部经 `break()` 记录在实例的错误状态上，
+   * 调用方可用 `isError()` / `getErrorMessage()` 判断，或直接 `return()` 抛出。
+   *
+   * @param string|null $targetVersion 目标版本号，null 表示升级到脚本中可用的最高版本
+   * @return static $this（便于链式调用 `->cleanUpgrade()`）
+   */
+  public function upgrade($targetVersion = null)
+  {
+    parent::upgrade($targetVersion);
+    return $this;
+  }
+  /**
+   * 安装
+   *
+   * 父类负责创建 `{appRoot}/Data`、`{appRoot}/Storage` 目录，
+   * 这里再补建 Discuz 惯例的数据目录 `{project}/data/plugindata/{appId}`
+   * 0755 递归创建）。
+   *
+   * @return static $this，便于链式调用
+   */
+  public function install()
+  {
+    parent::install();
+    $dataPluginDir = DiscuzPath::pluginData();
+    if (!is_dir($dataPluginDir)) {
+      mkdir($dataPluginDir, 0755, true);
+    }
+    return $this;
+  }
+  /**
+   * 卸载
+   *
+   * 父类删除版本记录 `{appRoot}/Data/.version`，这里清理**插件目录之外**的数据目录。
+   *
+   * 插件目录内的内容（`Data/` 日志缓存、`Storage/` 上传文件、`Secrets/` 证书私钥等）
+   * 由 Discuz 卸载时整目录删除，无需在此处理；漏掉的只有 Discuz 惯例位置下的数据。
+   *
+   * @return void
+   */
+  public function uninstall()
+  {
+    parent::uninstall();
+
+    foreach ($this->outerDirectories() as $directory) {
+      if ($directory) {
+        FileSystem::deleteDirectory($directory);
+      }
+    }
+  }
+  /**
+   * 安装在插件目录之外、需要随卸载清理的目录（绝对路径）
+   *
+   * 列表内的目录由插件写入、Discuz 不会代为删除；子类有额外落点时覆写本方法追加。
+   *
+   * @return array
+   */
+  protected function outerDirectories()
+  {
+    return [
+      DiscuzPath::pluginData(),
+    ];
+  }
+}

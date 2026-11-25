@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\Wechat\Models;
 
-use kernel\DiscuzX\Foundation\DiscuzXApp;
+use kernel\Discuz\Foundation\DiscuzApp;
 use kernel\Foundation\Database\RDB\Model;
 use kernel\Foundation\Database\RDB\Schema;
 
@@ -33,7 +33,7 @@ class WechatAccountsModel extends Model
     ];
 
     $this->tableName = "wechat_accounts";
-    if (DiscuzXApp::exists()) {
+    if (DiscuzApp::exists()) {
       $this->tableName = $this->discuzTableName($this->tableName);
     }
 

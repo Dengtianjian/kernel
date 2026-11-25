@@ -400,7 +400,7 @@ abstract class Application
   /**
    * 本实例的内核 ID（KernelId），即内核目录文件夹名称
    *
-   * 就是构造时传入的第二个参数（DiscuzX 下默认 `gstudio_kernel`，其余默认 `kernel`）。
+   * 就是构造时传入的第二个参数（Discuz 下默认 `gstudio_kernel`，其余默认 `kernel`）。
    * 多应用共存时只有它是可靠的——静态语境要取「默认应用的内核 ID」，
    * 请写 `Applications::default()->kernelId()`，不要用静态的。
    *
@@ -456,7 +456,7 @@ abstract class Application
   /**
    * 懒装配新应用时使用的类
    *
-   * 取当前默认应用的实际类（DiscuzX 下即 {@see \kernel\DiscuzX\Foundation\DiscuzXApp}），
+   * 取当前默认应用的实际类（Discuz 下即 {@see \kernel\Discuz\Foundation\DiscuzApp}），
    * 保证懒装配出来的应用与先建的那个同类；进程里一个应用都没有时退回本类。
    *
    * @return class-string<Application>
@@ -481,7 +481,7 @@ abstract class Application
   {
     $appId = Identity::fromNamespace($classOrObject);
 
-    //* kernel 在内核目录下、DiscuzX 下会被补成 gstudio_kernel —— 两者都是「无归属」的共用代码
+    //* kernel 在内核目录下、Discuz 下会被补成 gstudio_kernel —— 两者都是「无归属」的共用代码
     if (!$appId || $appId === "kernel" || $appId === "gstudio_kernel") {
       return null;
     }

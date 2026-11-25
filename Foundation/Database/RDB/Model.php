@@ -2,7 +2,7 @@
 
 namespace kernel\Foundation\Database\RDB;
 
-use kernel\DiscuzX\Foundation\DiscuzXApp;
+use kernel\Discuz\Foundation\DiscuzApp;
 use kernel\Foundation\Data\Str;
 use kernel\Foundation\Database\RDB\Relation\HasOne;
 use kernel\Foundation\Database\RDB\Relation\HasMany;
@@ -1081,7 +1081,7 @@ class Model extends Table
   // ===================================================================
 
   /**
-   * 拼出 DiscuzX 环境下的真实表名
+   * 拼出 Discuz 环境下的真实表名
    *
    * Discuz 的表名由「应用 ID + 表名」组成（如 `gstudio_super_app_files`）。应用 ID 取
    * **本模型所属的应用**（{@see BaseObject::app()}）：容器构造对象时会把所属应用压进
@@ -1097,7 +1097,7 @@ class Model extends Table
    */
   public function discuzTableName($tableName)
   {
-    if (!DiscuzXApp::exists()) return $tableName;
+    if (!DiscuzApp::exists()) return $tableName;
     
     if (strpos($tableName, "gstudio") === false) {
       //* 走 app()：构造期靠装配上下文（容器建对象时压栈），构造后靠 bindApp 注入的实例；

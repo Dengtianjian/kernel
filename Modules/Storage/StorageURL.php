@@ -2,7 +2,7 @@
 
 namespace kernel\Modules\Storage;
 
-use kernel\DiscuzX\Foundation\DiscuzXApp;
+use kernel\Discuz\Foundation\DiscuzApp;
 use kernel\Foundation\HTTP\URL;
 use kernel\Foundation\Application\Applications;
 
@@ -292,7 +292,7 @@ class StorageURL extends URL
       unset($queryParams['auth']);
     }
 
-    if (DiscuzXApp::exists()) {
+    if (DiscuzApp::exists()) {
       $this->pathName = "plugin.php";
       $queryParams["id"] = Applications::default()->appId();
       $queryParams["uri"] = $pathName;

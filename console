@@ -13,7 +13,7 @@ if (php_sapi_name() !== "cli") {
  */
 
 //* 定位 autoload：优先内核目录下的 vendor，其次项目根目录 vendor；
-//* 都不存在时（如 X5 提审包内已排除 /vendor）回退到自带 autoloader（DiscuzXAutoload.php）
+//* 都不存在时（如 X5 提审包内已排除 /vendor）回退到自带 autoloader（DiscuzAutoload.php）
 $kernelVendor = __DIR__ . "/vendor/autoload.php";
 $rootVendor = dirname(__DIR__) . "/vendor/autoload.php";
 
@@ -21,8 +21,8 @@ if (file_exists($kernelVendor)) {
   include_once($kernelVendor);
 } elseif (file_exists($rootVendor)) {
   include_once($rootVendor);
-} elseif (file_exists(__DIR__ . "/DiscuzX/Foundation/DiscuzXAutoload.php")) {
-  include_once(__DIR__ . "/DiscuzX/Foundation/DiscuzXAutoload.php");
+} elseif (file_exists(__DIR__ . "/Discuz/Foundation/DiscuzAutoload.php")) {
+  include_once(__DIR__ . "/Discuz/Foundation/DiscuzAutoload.php");
 } else {
   fwrite(STDERR, "autoload.php not found. Please run composer install.\n");
   exit(1);

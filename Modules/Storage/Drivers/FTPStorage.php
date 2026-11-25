@@ -354,7 +354,7 @@ class FTPStorage extends AbstractStorage
    * 上传中转用的本地临时目录（子类可覆写）
    *
    * FTP 需要先把源文件落到本地才谈得上 `ftp_put()`，这个目录决定它落在哪。
-   * DiscuzX 侧覆写为 `DiscuzXPath::storage()/ftp_temp`（落在 data/plugindata 下）。
+   * Discuz 侧覆写为 `DiscuzPath::storage()/ftp_temp`（落在 data/plugindata 下）。
    *
    * @return string
    */

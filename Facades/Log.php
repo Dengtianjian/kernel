@@ -11,7 +11,7 @@ use kernel\Foundation\Application\Applications;
  * 转发到当前应用的 {@see LogProvider} 实例：与 `$app->make(LogProvider::class)`、
  * `$app->log()` 是同一份，级别过滤与目录归属都跟着那个应用走。
  *
- * 日志目录按归属应用的 `Data/Logs` 计算，因此 DiscuzX 下落到 `gstudio_xxx/Data/Logs`。
+ * 日志目录按归属应用的 `Data/Logs` 计算，因此 Discuz 下落到 `gstudio_xxx/Data/Logs`。
  * 使用前无需装配——{@see \kernel\Foundation\App} 构造时已登记该服务；
  * 其它应用容器里同样可用，只是写到各自目录。
  *

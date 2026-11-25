@@ -18,7 +18,7 @@ use kernel\Foundation\FileSystem\Zip;
  * - 内核名默认取 `$console->kernelId()`（内核目录名，默认 "kernel"）
  * - 两者均可由位置参数（[app] [kernel]）或选项（--app / --kernel）覆盖
  * - `--profile`：打包形态（默认 `x5`）。`x5` = Discuz! X5.0 插件版（manifest version
- *   自动声明为 X5.0）；`framework` = 纯框架版（剔除 DiscuzX/ 与 X5 品类适配目录 oss/、pay/
+ *   自动声明为 X5.0）；`framework` = 纯框架版（剔除 Discuz/ 与 X5 品类适配目录 oss/、pay/
  *   及两份插件 manifest，version 独立管理）
  * - 输出到项目根：{app}.zip / {kernel}.zip；打包前删除旧 zip
  * - 按内置忽略名单排除 .git、vendor、Data、Storage、Secrets 等
@@ -34,7 +34,7 @@ class PackageCommand
    * 打包形态（profile）→ 追加忽略名单 / manifest version 覆写
    *
    * - x5：Discuz! X5.0 插件版（默认）——全量内容，manifest version 声明为 X5.0
-   * - framework：纯框架版——剔除 DiscuzX/、X5 品类适配目录（oss/、pay/）与插件 manifest
+   * - framework：纯框架版——剔除 Discuz/、X5 品类适配目录（oss/、pay/）与插件 manifest
    *
    * @var array<string,array{ignore:string[],manifests:array<string,string>}>
    */
@@ -47,7 +47,7 @@ class PackageCommand
     ],
     "framework" => [
       "ignore" => [
-        "/DiscuzX",
+        "/Discuz",
         "/oss",
         "/pay",
         "discuz_plugin_gstudio_kernel.json"
