@@ -25,12 +25,15 @@
 //     }
 //   }
 
-//   $filePath = DISCUZ_ROOT . "/source/plugin/$className.php";
+//   $filePath = DISCUZ_PLUGIN("$className.php");
 //   if (\file_exists($filePath)) {
 //     include_once($filePath);
 //   } else {
 //     if (strpos($filePath, "gstudio") !== false && \kernel\Foundation\App::mode() === "development") {
-//       debug($filePath);
+//       debug([
+//         $className,
+//         $filePath
+//       ]);
 //     }
 //   }
 // }
