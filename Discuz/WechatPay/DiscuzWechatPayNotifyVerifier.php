@@ -19,7 +19,7 @@ use kernel\Modules\WechatPay\WechatPayMerchant;
  * 验签用的报文必须是**原始请求体**：先 `json_decode` 再 `json_encode` 会因为空白、键序、
  * 转义差异导致验签失败，因此本类自己读 `php://input`，不接受已解析的数组。
  *
- * 业务入口（`source/plugin/xxx/wechatpay_notify.php`）用法：
+ * 业务入口是插件目录下的独立脚本（地址用 {@see \kernel\Discuz\Foundation\DiscuzPath::scriptPath()} 推导），用法：
  *
  * ```php
  * $merchant = new DiscuzWechatPayMerchant($appId, $mchId);

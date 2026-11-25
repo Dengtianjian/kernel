@@ -26,7 +26,7 @@ use kernel\Modules\WechatPay\WechatPayMerchant;
  * $merchant = new DiscuzWechatPayMerchant();      // 凭证全部来自 ec_wechat
  * $merchant
  *   ->platformPublicKeyContent($wechatPayPublicKeyPem)
- *   ->notifyUrl("https://example.com/source/plugin/xxx/wechatpay_notify.php");
+ *   ->notifyUrl(\kernel\Discuz\DiscuzURL::baseURL() . \kernel\Discuz\Foundation\DiscuzPath::scriptPath("wechatPayNotify.php"));
  *
  * $merchant->v3();        // DiscuzWechatPayV3：先走 Discuz!，失败回退直连
  * $merchant->channel();   // DiscuzWechatPayChannel：实际执行 Discuz! 支付的对象
