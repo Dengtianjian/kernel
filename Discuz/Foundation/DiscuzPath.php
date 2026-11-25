@@ -33,6 +33,7 @@ use kernel\Foundation\FileSystem\Path;
  * | {@see plugin()} | 插件目录（绝对路径） | `{project}/source/plugin` |
  * | {@see pluginDir()} | 插件目录（相对路径，相对项目根） | `source/plugin` |
  * | {@see pluginData()} | 本插件的数据目录（Discuz 插件数据惯例） | `{project}/data/plugindata/{appId}` |
+ * | {@see scriptPath()} | 插件内脚本的访问路径（相对项目根，带前导斜杠） | `/source/plugin/{appId}/{file}` |
  *
  * ## 使用前提（重要）
  *
@@ -137,5 +138,27 @@ class DiscuzPath extends Path
   public static function pluginDir(): string
   {
     return "source/plugin";
+  }
+
+  /**
+   * 插件内脚本的访问路径（相对项目根，带前导斜杠）
+   *
+   * 供回调 / 直连入口这类**必须由公网直接访问、且不经过路由与鉴权**的脚本拼接地址：
+   * `DiscuzURL::baseURL() . DiscuzPath::scriptPath("wechatPayNotify.php")`。
+   * 与 {@see pluginDir()} 的区别是这里把应用目录一并拼上，调用方不必再手写插件目录名，
+   * 插件目录与 identifier 不一致时也不会拼错。
+   *
+   * @param string $file 脚本文件名，可带子目录（如 `wechatPayNotify.php`、`pay/notify.php`）
+   * @param string|null $appId 脚本所属应用的应用 ID；引用**别的插件**的脚本时显式传入，不传取默认应用
+   * @return string|null 形如 `/source/plugin/{appId}/wechatPayNotify.php`；取不到 appId 时为 null
+   */
+  public static function scriptPath($file, $appId = null)
+  {
+    $appId = $appId ?? Applications::defaultId();
+    if ($appId === null || $appId === "") {
+      return null;
+    }
+
+    return "/" . self::pluginDir() . "/" . trim($appId, "/") . "/" . ltrim($file, "/");
   }
 }
