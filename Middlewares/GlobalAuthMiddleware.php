@@ -16,8 +16,8 @@ use kernel\Support\Result;
  * 从 Authorization 头取 token，校验 logins 表，把结果写入 {@see Auth}（登录态由 AuthModule 持有）
  * ——只写上下文，不碰服务状态，也不把「当前用户」缓存到任何静态变量里。
  *
- * 中间件由 {@see \kernel\Modules\Auth\AuthProvider} 的构造函数按运行环境挂上
- * （Discuz 下换成 {@see \kernel\Discuz\Middlewares\GlobalDiscuzAuthMiddleware}）。
+ * 中间件由 {@see \kernel\Modules\Auth\AuthProvider} 的构造函数按运行环境挂上，
+ * 平台可以提供自己的实现替换本类。
  *
  * 注意：中间件是 `new $class($request, $controller)` 直接实例化的（见
  * {@see \kernel\Foundation\Middleware\Middleware::executeMiddleware()}），不走容器注入，

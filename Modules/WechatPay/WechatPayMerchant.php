@@ -93,8 +93,8 @@ class WechatPayMerchant extends AbilityBaseObject
   /**
    * APIv3 商户私钥内容（PEM 文本）
    *
-   * 供私钥不由本模块托管、而是存在别处（如 Discuz! 的 `ec_wechat.v3_private_key` 设置项）
-   * 的场景使用：那边只存 PEM 文本、没有可读文件，落盘反而多一份泄露面，
+   * 供私钥不由本模块托管、而是存在别处（如平台的支付配置项）的场景使用：
+   * 那边只存 PEM 文本、没有可读文件，落盘反而多一份泄露面，
    * 因此这里允许直接持有内容，签名时无需再碰磁盘。
    *
    * 与 {@see $apiV3PrivateKeyFilePath} 二选一，两者都设置时以本字段为准。
@@ -139,7 +139,7 @@ class WechatPayMerchant extends AbilityBaseObject
    * 微信支付公钥内容（PEM 文本）
    *
    * 与 {@see $platformPublicKeyFilePath} 二选一的另一种写法：公钥存在别处
-   * （如 Discuz! 的设置项）时直接持有文本，验签无需碰磁盘。
+   * （如平台的配置项）时直接持有文本，验签无需碰磁盘。
    *
    * @var string|null
    */
@@ -267,8 +267,8 @@ class WechatPayMerchant extends AbilityBaseObject
    *
    * 传参即设置并返回 `$this`（便于链式调用），不传参则读取当前值。
    *
-   * 适用的场景是私钥**不由本模块托管**：例如 Discuz! 把商户私钥整体存在
-   * `ec_wechat.v3_private_key` 设置项里，只有 PEM 文本、没有对应的可读文件。
+   * 适用的场景是私钥**不由本模块托管**：例如平台把商户私钥整体存在配置项里，
+   * 只有 PEM 文本、没有对应的可读文件。
    * 与 {@see apiV3PrivateKeyFilePath()} 二选一即可；两者都设置时以本方法设置的**内容**为准，
    * 签名时优先取内容、内容为空才回退读文件（见
    * {@see \kernel\Modules\WechatPay\V3\WechatPayV3Api::signMessage()}）。

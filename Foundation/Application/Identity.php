@@ -8,9 +8,9 @@ use kernel\Discuz\Foundation\DiscuzApp;
  * 应用身份解析
  *
  * 把「对象 / 类名 / 命名空间字符串」解析成应用 ID（等于应用目录名）。
- * 本类只做解析、不持有状态：规则是取命名空间第一段；Discuz 宿主下目录名统一带
- * `gstudio_` 前缀而命名空间不带，按 {@see DiscuzApp::exists()}（宿主常量 `IN_DISCUZ`）判断后补前缀。
- * 判断只看宿主常量、不依赖是否已建应用实例，早期自动加载阶段也能得到正确结果。
+ * 本类只做解析、不持有状态：规则是取命名空间第一段；Discuz 平台下目录名统一带
+ * `gstudio_` 前缀而命名空间不带，按 {@see DiscuzApp::exists()}（平台常量 `IN_DISCUZ`）判断后补前缀。
+ * 判断只看平台常量、不依赖是否已建应用实例，早期自动加载阶段也能得到正确结果。
  *
  * @package kernel\Foundation\Application
  */

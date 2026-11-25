@@ -2,7 +2,10 @@
 
 namespace kernel\Foundation\Builtin;
 
+use kernel\Discuz\Foundation\DiscuzApp;
+use kernel\Discuz\Foundation\DiscuzPath;
 use kernel\Foundation\Application\Applications;
+use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Foundation\Object\AbilityBaseObject;
 
@@ -11,7 +14,8 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * 名字对应各应用根目录的 `Deployment/` 目录 —— 其中的升级脚本（`Upgrades/`）由本类扫描执行；
  * 安装 / 卸载用到的 SQL 与钩子由各应用自己的部署类组织（如 `AppDeployment` 覆写 install / uninstall）。
- * 本类顺带管理 `.version`、`install.lock`、`install.key`。
+ * 本类顺带管理 `.version`、`install.lock`、`install.key`；**Discuz 下这三者都不参与流程**：
+ * 版本基线取自插件设置（`setting.plugins.version.{appId}`），安装状态由 Discuz 自己维护。
  *
  * 升级机制：
  * - 扫描 upgradesDir 目录下 Upgrade_x_y_z.php 文件，从文件名提取版本号按序执行
@@ -86,10 +90,27 @@ class Deployment extends AbilityBaseObject
   protected $upgradesDir = null;
 
   /**
-   * @param string|null $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades
+   * @param string|null $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades；
+   *                                 Discuz 下默认为 `{插件目录}/Deployment/Upgrades`
    */
   public function __construct($upgradesDir = null)
   {
+    if (DiscuzApp::exists()) {
+      $app = Applications::default();
+
+      //* 插件布局：升级脚本在插件目录下；版本真源是 Discuz 的插件设置，不读 `.version`
+      $this->upgradesDir = $upgradesDir ?? DiscuzPath::join(DiscuzPath::root(), "Deployment", "Upgrades");
+      $this->latestVersion = $app ? \getglobal("setting/plugins/version/" . $app->id()) : null;
+      $this->currentSemver = self::parseSemver((string) $this->latestVersion);
+
+      //* 后台升级会带上当前版本，比插件设置更权威（换机、手工改版本号后仍能正确计算增量）
+      if ($app && $app->request()->query->has("fromversion")) {
+        $this->currentSemver = self::parseSemver($app->request()->query->get("fromversion"));
+      }
+
+      return;
+    }
+
     $this->upgradesDir = $upgradesDir;
 
     $versionFile = Path::join(Path::data(), ".version");
@@ -127,7 +148,7 @@ class Deployment extends AbilityBaseObject
    * @param string|null $operator 比较运算符（>、>=、<、<=、==、!= 等），null 时返回 int
    * @return int|bool 无运算符时返回 -1/0/1；有运算符时返回 bool
    */
-  public static function compare($version1,  $version2, $operator = null)
+  public static function compare($version1, $version2, $operator = null)
   {
     $version1 = self::parseSemver($version1);
     $version2 = self::parseSemver($version2);
@@ -184,9 +205,10 @@ class Deployment extends AbilityBaseObject
    */
   public function verifiyInstallKey($key)
   {
-    if (!$key) return false;
+    if (!$key)
+      return false;
     $fileContent = file_get_contents(Path::join(Path::data(), "install.key"));
-    return  $fileContent ? $fileContent === $key : false;
+    return $fileContent ? $fileContent === $key : false;
   }
   /**
    * 重新生成并写入安装密钥
@@ -375,7 +397,7 @@ class Deployment extends AbilityBaseObject
    * @param string $filePath 升级脚本完整路径
    * @return string 完全限定类名
    */
-  private function buildUpgradeClassName( $filePath)
+  private function buildUpgradeClassName($filePath)
   {
     $shortName = pathinfo($filePath, PATHINFO_FILENAME);
     $relativePath = ltrim(str_replace(Path::root(), '', $this->upgradesDir()), '/');
@@ -392,7 +414,7 @@ class Deployment extends AbilityBaseObject
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
    */
-  private function runUpgrade( $filePath,  $version)
+  private function runUpgrade($filePath, $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
@@ -420,7 +442,7 @@ class Deployment extends AbilityBaseObject
    * @param string $filePath 升级脚本文件路径
    * @param string $version  对应版本号
    */
-  private function runRollback( $filePath,  $version)
+  private function runRollback($filePath, $version)
   {
     include($filePath);
     $className = $this->buildUpgradeClassName($filePath);
@@ -443,7 +465,7 @@ class Deployment extends AbilityBaseObject
    *
    * @param string $version 要写入的版本号
    */
-  private function persistVersion( $version)
+  private function persistVersion($version)
   {
     $versionFile = Path::join(Path::data(), ".version");
     file_put_contents($versionFile, $version);
@@ -460,6 +482,14 @@ class Deployment extends AbilityBaseObject
     $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
       unlink($versionFile);
+    }
+
+    if (DiscuzApp::exists()) {
+      foreach ([DiscuzPath::data()] as $directory) {
+        if ($directory && is_dir($directory)) {
+          FileSystem::deleteDirectory($directory);
+        }
+      }
     }
   }
 

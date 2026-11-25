@@ -18,7 +18,7 @@ use PDOStatement;
  * | 后端 | 实现类 | 连接来源 |
  * |---|---|---|
  * | `pdo`（默认） | {@see PdoDriver} | 内核按主机 / 账号 / 密码建立 PDO 连接；SQLite 走同一类的 {@see PdoDriver::sqlite()} |
- * | `mysqli` | {@see MysqliDriver} | 按主机 / 账号 / 密码建立连接，也可**包装已有** `mysqli` 连接（如 Discuz 的 `\DB::object()->curlink`） |
+ * | `mysqli` | {@see MysqliDriver} | 按主机 / 账号 / 密码建立连接，也可**包装已有** `mysqli` 连接（如平台已建好的连接） |
  *
  * 当前后端用 {@see driverName()} 判断，返回 {@see DRIVER_PDO} / {@see DRIVER_MYSQLI}。
  * SQLite **不是**独立后端 —— 它由 PDO 后端的 `sqlite:` DSN 承载，`driverName()` 同样返回 `pdo`。

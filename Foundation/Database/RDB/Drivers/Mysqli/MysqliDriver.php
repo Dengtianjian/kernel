@@ -16,12 +16,12 @@ use PDO;
  * // 自行建连
  * Connections::addDriver(new MysqliDriver('127.0.0.1', 'root', 'pass', 'my_db', 3306));
  *
- * // 复用 Discuz 已建好的连接
- * Connections::addDriver(new MysqliDriver(\DB::object()->curlink));
+ * // 复用外部已建好的连接
+ * Connections::addDriver(new MysqliDriver($existingMysqliLink));
  * ```
  *
- * 复用模式是 Discuz! X 环境下的典型用法：数据库由 Discuz 自己连接，内核直接借用它的句柄，
- * 从而让内核的 Query / DB / Model 能在 Discuz 已建好的连接上执行。
+ * 复用模式用于「连接由外部管理」的场景：平台负责建连与参数配置，内核直接借用它的句柄，
+ * 从而让内核的 Query / DB / Model 在既有连接上执行。
  *
  * ## 与 PDO 后端的差异
  *
@@ -32,7 +32,7 @@ use PDO;
  * ## 事务状态
  *
  * mysqli 没有 `inTransaction()`，本驱动沿用 {@see AbstractDriver::inTransaction()} 的默认实现
- * （读标记位），因此只反映**本驱动自己开启的事务**：若外层（如 Discuz 自身）已在事务中，本类并不知情。
+ * （读标记位），因此只反映**本驱动自己开启的事务**：若外层已在事务中，本类并不知情。
  *
  * @see MysqliStatement mysqli 语句包装器
  * @see AbstractDriver  驱动抽象基类（本类的契约与共享逻辑）

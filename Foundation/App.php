@@ -54,8 +54,7 @@ class App extends Application
    * 不会顺带把对方的请求、路由表、钩子链拉起来。
    *
    * 路由表由 Router 加载，匹配所需的当前请求经 `$app->request()` 获取。CLI 下 Request 的
-   * URI 由 Console::handle() 置为命中的命令名；Discuz 下由 `DiscuzApp::run()` 在
-   * 处理请求前写入。
+   * URI 由 Console::handle() 置为命中的命令名；Web 下由平台装配器在装配前写入。
    *
    * @param string|callable|null $setup 装配类名或装配闭包；null 表示只建骨架、不装配
    * @param string $id 应用唯一标识，跟项目目录同名
@@ -96,9 +95,8 @@ class App extends Application
    *   （{@see onBootUp()} / {@see onShutdown()} / {@see onError()}）；
    * - 传 null：只建骨架、不装配，用于 {@see Application::of()} 的懒装配路径。
    *
-   * 之所以留成独立方法而不是把逻辑内联进构造函数：{@see \kernel\Discuz\Foundation\DiscuzApp}
-   * 要先把请求 URI 写好再装配（Bootstrap 里可能读 URI），需要一个「构造执行到中途」
-   * 的落点。
+   * 之所以留成独立方法而不是把逻辑内联进构造函数：平台装配器要先把请求 URI 写好再装配
+   * （Bootstrap 里可能读 URI），需要一个「构造执行到中途」的落点。
    *
    * @param string|callable|null $call 装配类名、装配闭包，或 null
    * @return void
@@ -145,7 +143,7 @@ class App extends Application
    *
    * 装配期（构造参数里的闭包 / Bootstrap）即可注册：
    * ```php
-   * new DiscuzApp(function ($app) {
+   * new App(function ($app) {
    *   $app->onBootUp(Bootup::class);
    *   $app->onShutdown(Shutdown::class);
    * });

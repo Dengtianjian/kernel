@@ -42,16 +42,19 @@ final class FileSystem
   /**
    * 确保当前应用的 data/storage 目录存在，不存在则递归创建
    *
+   * 路径一律取自 {@see Path::data()} / {@see Path::storage()}，因此与平台布局一致：
+   * Discuz 下落在站点 `data/plugindata/{appId}`，独立部署下落在应用目录内。
    * 未实例化 App（Applications::defaultId() 为 null）时路径不可推导，直接跳过。
    */
   private static function ensureDirectories()
   {
-    $appRoot = Path::root();
-    if ($appRoot === null) {
+    $dataDir = Path::data();
+    $storageDir = Path::storage();
+    if ($dataDir === null || $storageDir === null) {
       return;
     }
-    self::ensureDirectory(Path::join($appRoot, "Data"));
-    self::ensureDirectory(Path::join($appRoot, "Storage"));
+    self::ensureDirectory($dataDir);
+    self::ensureDirectory($storageDir);
   }
 
   /**

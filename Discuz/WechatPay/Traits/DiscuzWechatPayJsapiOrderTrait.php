@@ -6,7 +6,7 @@ namespace kernel\Discuz\WechatPay\Traits;
  * Discuz! X 的 JSAPI 下单（trait，JSAPI 与小程序共用）
  *
  * 两者在微信侧走的是同一个下单接口，`pay_jsapi()` 也接受同一个 openid 语义，
- * 因此下单逻辑只写一份；宿主类需要继承
+ * 因此下单逻辑只写一份；使用本 trait 的类需要继承
  * {@see \kernel\Modules\WechatPay\V3\Products\JSAPI}（或其子类）才能用上 `payParams()`。
  *
  * 签名用的是商户私钥，与 Discuz! 无关，所以拿到 prepay_id 后仍由 kernel 生成调起参数——

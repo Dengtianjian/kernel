@@ -6,7 +6,7 @@ namespace kernel\Discuz\WechatPay\Traits;
  * Discuz! X 的查单（trait，供各产品子类共用）
  *
  * 查单的请求路径不带产品，四个产品对象各自继承本 trait 即可，不必各写一份。
- * 宿主类必须同时使用 {@see DiscuzWechatPayProductTrait}（提供 `discuzChannel()`）。
+ * 使用本 trait 的类必须同时使用 {@see DiscuzWechatPayProductTrait}（提供 `discuzChannel()`）。
  *
  * ## 返回值还原的取舍
  *
