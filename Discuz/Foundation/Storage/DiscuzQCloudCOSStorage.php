@@ -2,7 +2,7 @@
 
 namespace kernel\Discuz\Foundation\Storage;
 
-use kernel\Discuz\Foundation\DiscuzPath;
+use kernel\Foundation\FileSystem\Path;
 use kernel\Modules\QCloud\QCloudAccount;
 use kernel\Modules\QCloud\QCloudCos\QCloudCOSStorage;
 
@@ -24,7 +24,7 @@ class DiscuzQCloudCOSStorage extends QCloudCOSStorage
     $region,
     $bucket
   ) {
-    $this->basePath = DiscuzPath::storage();
+    $this->basePath = Path::storage();
 
     parent::__construct($account, $region, $bucket);
   }

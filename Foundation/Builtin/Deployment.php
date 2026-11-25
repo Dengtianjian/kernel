@@ -3,7 +3,6 @@
 namespace kernel\Foundation\Builtin;
 
 use kernel\Discuz\Foundation\DiscuzApp;
-use kernel\Discuz\Foundation\DiscuzPath;
 use kernel\Foundation\Application\Applications;
 use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
@@ -99,7 +98,7 @@ class Deployment extends AbilityBaseObject
       $app = Applications::default();
 
       //* 插件布局：升级脚本在插件目录下；版本真源是 Discuz 的插件设置，不读 `.version`
-      $this->upgradesDir = $upgradesDir ?? DiscuzPath::join(DiscuzPath::root(), "Deployment", "Upgrades");
+      $this->upgradesDir = $upgradesDir ?? Path::join(Path::root(), "Deployment", "Upgrades");
       $this->latestVersion = $app ? \getglobal("setting/plugins/version/" . $app->id()) : null;
       $this->currentSemver = self::parseSemver((string) $this->latestVersion);
 
@@ -485,7 +484,7 @@ class Deployment extends AbilityBaseObject
     }
 
     if (DiscuzApp::exists()) {
-      foreach ([DiscuzPath::data()] as $directory) {
+      foreach ([Path::data()] as $directory) {
         if ($directory && is_dir($directory)) {
           FileSystem::deleteDirectory($directory);
         }

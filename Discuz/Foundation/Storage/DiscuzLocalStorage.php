@@ -7,13 +7,12 @@ use kernel\Foundation\FileSystem\FileSystem;
 use kernel\Foundation\FileSystem\Path;
 use kernel\Modules\Storage\Drivers\LocalStorage;
 use kernel\Modules\Storage\StorageFile;
-use kernel\Discuz\Foundation\DiscuzPath;
 
 /**
  * Discuz 本地存储（{@see LocalStorage} 的 Discuz 实现）
  *
  * 与父类 {@see LocalStorage} 的分野只有两点：
- * - basePath 取 {@see DiscuzPath::storage()}——用户文件放站点
+ * - basePath 取 {@see Path::storage()}——用户文件放站点
  *   `data/plugindata/{appId}/Storage/` 下，不写进会被升级覆盖的插件目录；
  * - {@see put()} 在落盘前做适配层策略校验：危险扩展名拒绝
  *   （{@see FileHelper::hasDangerousExtension()}，服务端脚本/可执行/配置劫持类
@@ -41,12 +40,12 @@ class DiscuzLocalStorage extends LocalStorage
   /**
    * 构造 Discuz 本地磁盘
    *
-   * 磁盘名固定 `local`（与父类一致）；basePath 取 {@see DiscuzPath::storage()}。
+   * 磁盘名固定 `local`（与父类一致）；basePath 取 {@see Path::storage()}。
    */
   public function __construct()
   {
     $this->name = "local";
-    $this->basePath = DiscuzPath::storage();
+    $this->basePath = Path::storage();
   }
 
   /**
