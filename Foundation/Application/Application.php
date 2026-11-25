@@ -481,8 +481,10 @@ abstract class Application
   {
     $appId = Identity::fromNamespace($classOrObject);
 
-    //* kernel 在内核目录下、Discuz 下会被补成 gstudio_kernel —— 两者都是「无归属」的共用代码
-    if (!$appId || $appId === "kernel" || $appId === "gstudio_kernel") {
+    //* 内核代码「无归属」：独立部署下目录名是 kernel，插件布局下会被补成 gstudio_kernel。
+    //* 取内核目录的实际名字判断，不写死前缀，插件目录改名也不受影响。
+    $kernelId = basename(Path::kernel());
+    if (!$appId || $appId === "kernel" || $appId === $kernelId) {
       return null;
     }
 
