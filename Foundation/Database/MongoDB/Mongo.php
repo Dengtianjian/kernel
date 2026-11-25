@@ -34,7 +34,7 @@ class Mongo
   {
     return self::$driver->insert($setName, $doc, $options);
   }
-  public static function update(string $setName, array $query = [], array $updateData, array $options = [])
+  public static function update(string $setName, array $query, array $updateData, array $options = [])
   {
     return self::$driver->update($setName, $query, $updateData, $options);
   }

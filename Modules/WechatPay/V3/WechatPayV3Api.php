@@ -172,7 +172,7 @@ class WechatPayV3Api extends WechatPayApi
    * @param string $bodyJson 请求报文的 JSON 字符串；GET 请求传空字符串
    * @return string Base64 编码后的签名
    */
-  public function generateSign($uri, $httpRequestMethod = "POST", $time, $nonceStr, $bodyJson)
+  public function generateSign($uri, $httpRequestMethod, $time, $nonceStr, $bodyJson)
   {
     return $this->signMessage(
       $httpRequestMethod . "\n" .

@@ -48,7 +48,7 @@ class Collection
     $doc = Mongo::optimParams($doc);
     return Mongo::insert($this->collectionName, $doc, $options);
   }
-  public function update(array $query = [], array $updateData, array $options = []): \MongoDB\Driver\WriteResult
+  public function update(array $query, array $updateData, array $options = []): \MongoDB\Driver\WriteResult
   {
     $query = Mongo::optimParams($query);
     return Mongo::update($this->collectionName, $query, $updateData, $options);

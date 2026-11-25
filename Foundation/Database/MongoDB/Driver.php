@@ -15,7 +15,7 @@ class Driver
     "databaseName" => "",
     "options" => []
   ];
-  function __construct(string $host = "localhost", int $port = 27017, string $username, string $password, string $databaseName, array $options = [])
+  function __construct(string $host = "localhost", int $port = 27017, string $username = "", string $password = "", string $databaseName = "", array $options = [])
   {
     $this->config['host'] = $host;
     $this->config['port'] = $port;
