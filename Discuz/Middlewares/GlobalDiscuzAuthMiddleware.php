@@ -89,19 +89,19 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
     $userId = Auth::userId();
     if (!$userId) return;
 
-    $memberInfo = null;
-    if ($userId) {
-      $memberInfo = DiscuzMember::get($userId);
-      include_once libfile("function/member");
-      \setloginstatus($memberInfo, 1296000);
-    } else {
-      $memberInfo = null;
+    $memberInfo = DiscuzMember::get($userId);
+    if (!$memberInfo) {
+      //* 用户已删除：吊销当前 token，并清空本进程登录态
+      if (Auth::token()) {
+        Auth::deleteToken(Auth::token());
+      }
+      Auth::setLogged(false)->setUser(null)->setUserId(null)->setToken(null)->setTokenExpiresAt(null);
+      return;
     }
 
-    if ($memberInfo) {
-      Auth::setLogged(true);
-      Auth::setUser($memberInfo);
-    }
+    include_once libfile("function/member");
+    \setloginstatus($memberInfo, 1296000);
+    Auth::setLogged(true)->setUser($memberInfo);
   }
   /**
    * 中间件处理
@@ -140,7 +140,7 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
         $this->login();
 
         if (!($this->controller instanceof DiscuzController)) {
-          return $next();
+          return $this->applyAuthHeader($next());
         }
       }
     }
@@ -169,10 +169,10 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
       }
     }
 
-    if ($verified->error) {
+    if ($verified && $verified->error) {
       return $verified;
     }
 
-    return $next();
+    return $this->applyAuthHeader($next());
   }
 }

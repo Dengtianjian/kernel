@@ -85,8 +85,10 @@ class AuthModule extends AbilityBaseObject
    */
   public function findValidToken($token)
   {
+    $hashed = self::hashToken($token);
+
     $record = $this->logins()
-      ->where("token", $token)
+      ->where("token", $hashed)
       ->where("app_id", $this->app()->appId())
       ->whereNotNull("user_id")
       ->first();
@@ -95,10 +97,23 @@ class AuthModule extends AbilityBaseObject
     }
 
     return $this->logins()
-      ->where("token", $token)
+      ->where("token", $hashed)
       ->whereNull("app_id")
       ->whereNotNull("user_id")
       ->first();
+  }
+
+  /**
+   * token 落库值：SHA-256 哈希
+   *
+   * 数据库泄露时拿不到可直接使用的 Bearer token。
+   *
+   * @param string $token 原始 token
+   * @return string
+   */
+  private static function hashToken($token)
+  {
+    return hash("sha256", (string)$token);
   }
 
   /**
@@ -110,7 +125,7 @@ class AuthModule extends AbilityBaseObject
    * @param integer $expireDays 有效天数
    * @return array{value:string,salt:string,expiresAt:int,expireDays:int}
    */
-  public function generateToken($expireDays = 30)
+  public function generateToken($expireDays = 7)
   {
     $salt = bin2hex(random_bytes(16));
     $value = bin2hex(random_bytes(32));
@@ -133,13 +148,13 @@ class AuthModule extends AbilityBaseObject
    * @param integer $expireDays 有效天数
    * @return array{value:string,salt:string,expiresAt:int,expireDays:int}
    */
-  public function createToken($userId, $expireDays = 30)
+  public function createToken($userId, $expireDays = 7)
   {
     $tokenData = $this->generateToken($expireDays);
     $now = time();
     // id 为自增主键（bigint autoIncrement），无需手动生成
     $this->logins()->insert([
-      "token" => $tokenData["value"],
+      "token" => self::hashToken($tokenData["value"]),
       "salt" => $tokenData["salt"],
       "expires_at" => $tokenData["expiresAt"],
       "expire_days" => $tokenData["expireDays"],
@@ -159,7 +174,28 @@ class AuthModule extends AbilityBaseObject
    */
   public function deleteToken($token)
   {
-    $this->logins()->where("token", $token)->delete();
+    $this->logins()->where("token", self::hashToken($token))->delete();
+  }
+
+  /**
+   * 滑动续期：延长 token 有效期，不更换 token 值
+   *
+   * 同一 token 持续使用就持续有效；避免旧实现「先删旧 token、再发新 token」
+   * 在客户端没读到响应头时直接掉线，也避免并发请求重复轮换。
+   *
+   * @param string $token 原始 token
+   * @param integer $expireDays 新的有效天数
+   * @return int 新的绝对过期时间戳
+   */
+  public function extendToken($token, $expireDays = 7)
+  {
+    $expiresAt = time() + (86400 * $expireDays);
+    $this->logins()->where("token", self::hashToken($token))->update([
+      "expires_at" => $expiresAt,
+      "updated_at" => time(),
+    ]);
+
+    return $expiresAt;
   }
 
   /**

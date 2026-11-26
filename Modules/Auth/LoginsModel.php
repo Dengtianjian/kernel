@@ -12,7 +12,7 @@ use kernel\Foundation\Database\RDB\Schema;
  * 表结构以 Schema 声明（见 $schema），字段名沿用 camelCase 以兼容既有读取方。
  *
  * @property int $id 主键（自增 bigint）
- * @property string|null $token Token 值
+ * @property string|null $token Token 的 SHA-256 哈希
  * @property string|null $expires_at 有效期至（字符串时间戳）
  * @property string|null $user_id 所属用户 ID
  * @property string|null $app_id 所属应用 ID，为空则为通用

@@ -22,9 +22,9 @@ use kernel\Foundation\Application\Applications;
  *     供「该请求是否本站发起」这类判定（如免 token 的同源 ajax）复用，与 CORS 白名单逻辑相互独立。
  *
  * 配置键（cors.*，未配置时用 DEFAULTS）：
- *   - allowOrigin   允许来源，默认 "*"
+ *   - allowOrigin   允许来源，默认空数组（不信任跨域，需显式配置白名单）
  *   - allowMethods  允许方法，默认 GET/POST/PUT/DELETE/PATCH/OPTIONS
- *   - allowHeaders  允许请求头，默认 ["Authorization"]
+ *   - allowHeaders  允许请求头，默认 ["Authorization","Content-Type","X-Requested-With"]
  *   - exposeHeaders 允许暴露响应头，默认 ["x-auth-token","x-auth-token-expires-at"]
  *   - maxAge        预检缓存秒数，默认 86400
  *   - allowCredentials 是否允许凭据，true 时输出 Allow-Credentials
@@ -36,7 +36,8 @@ class Cors
 {
   /** @var array CORS 配置默认值（业务未配置 cors.* 时使用） */
   const DEFAULTS = [
-    "allowOrigin" => "*",
+    //* 默认不信任任何跨域来源；需要跨域的 Web 前端在 cors.allowOrigin 显式列白名单
+    "allowOrigin" => [],
     "allowMethods" => ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     "allowHeaders" => ["authorization", "content-type", "x-requested-with"],
     "exposeHeaders" => ["x-auth-token", "x-auth-token-expires-at"],

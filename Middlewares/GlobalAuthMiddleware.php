@@ -80,16 +80,12 @@ class GlobalAuthMiddleware extends MiddlewareBase
       return $RR->error(401, "Auth:401004", "登录已过期，请重新登录", "Token已过期");
     }
     $expirationDay = (int)($authData['expire_days'] ?? 0);
-    $diffDay = round((time() - $authData['created_at']) / 86400);
+    $lastRenewAt = $authData['updated_at'] ?? $authData['created_at'];
+    $diffDay = round((time() - $lastRenewAt) / 86400);
 
-    //* 如果token的有效期剩余20%，就自动刷新token
+    //* 剩余 20% 时滑动续期：延长同一个 token，避免客户端没收到新 token 就掉线
     if ($expirationDay > 0 && $diffDay / $expirationDay > 0.8) {
-      //* 自动刷新token
-      $newToken = Auth::createToken($authData['user_id']);
-      Auth::deleteToken($authData['token']);
-
-      $token = $newToken['value'];
-      $expiresAt = $newToken['expiresAt'];
+      $expiresAt = Auth::extendToken($token, $expirationDay);
     }
 
     Auth::setTokenExpiresAt($expiresAt)
@@ -101,7 +97,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
   }
 
   /**
-   * 中间件处理：校验通过后执行业务逻辑，并为响应补充 Authorization 头
+   * 中间件处理：校验通过后执行业务逻辑，并为响应补充 x-auth-token 头
    *
    * 后置注入——先 $next() 执行后续逻辑拿到 Response，再统一写入鉴权头，
    * 不绕过基础插件的响应头管理（避免直接调用全局 header()）。
@@ -143,7 +139,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
   }
 
   /**
-   * 为响应补充 Authorization 头（后置注入）
+   * 为响应补充 x-auth-token 头（后置注入）
    *
    * 仅当本次请求成功登录（{@see Auth::logged()} 为真）时才写入，便于客户端
    * 续期/携带 token。通过 Response::header() 管理头信息，由基础插件统一输出。
@@ -153,10 +149,15 @@ class GlobalAuthMiddleware extends MiddlewareBase
    */
   protected function applyAuthHeader(Response $response): Response
   {
-    if (Auth::logged()) {
-      $response->header("x-auth-token", Auth::token());
-      $response->header("x-auth-token-expires-at", Auth::tokenExpiresAt());
+    $token = Auth::token();
+    if (!Auth::logged() || !$token) {
+      return $response;
     }
+
+    $expiresAt = Auth::tokenExpiresAt();
+    $response->header("x-auth-token", $token);
+    $response->header("x-auth-token-expires-at", $expiresAt);
+
     return $response;
   }
 }

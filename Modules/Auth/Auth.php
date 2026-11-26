@@ -32,8 +32,9 @@ use kernel\Foundation\Facade\Facade;
  *
  * @method static \kernel\Modules\Auth\LoginsModel logins() 本应用的表访问入口
  * @method static array|object|null findValidToken(string $token) 按 token 查未过期记录
- * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} generateToken(int $expireDays = 30) 生成 token（不落库）
- * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} createToken(string|int $userId, int $expireDays = 30) 生成并落库
+ * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} generateToken(int $expireDays = 7) 生成 token（不落库）
+ * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} createToken(string|int $userId, int $expireDays = 7) 生成并落库
+ * @method static int extendToken(string $token, int $expireDays = 7) 滑动续期并返回新的过期时间戳
  * @method static void deleteToken(string $token) 吊销单个 token（软删除）
  * @method static void deleteExpiredTokens() 清理过期凭证（物理删除）
  * @method static void deleteTokensByUser(string|int $userId) 吊销某用户全部凭证
