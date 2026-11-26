@@ -111,22 +111,37 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
    */
   public function handle(\Closure $next)
   {
-    $sameOrigin = Cors::isSameOrigin();
+    $isWrite = !in_array(strtoupper($this->request->method()), ["GET", "HEAD", "OPTIONS"], true);
+    //* 用户侧写操作强制走 Token：避免同源 cookie 兜底把 CSRF 防护交给 Origin/Referer
+    //* 后台 dashboard 目前仍用 Discuz 会话，单独在 B7 收紧
+    $requiresToken = $isWrite
+      && $this->controller instanceof DiscuzController
+      && $this->controller->auth;
 
-    if (getglobal("uid") && ($sameOrigin || !Cors::requestOrigin())) {
-      Auth::setUserId(getglobal("uid"));
-      $this->login();
-    }
-
-    if (!Auth::logged()) {
-      $verified = $this->verifyToken(false);
+    if ($requiresToken) {
+      $verified = $this->verifyToken(true);
       if ($verified->error) {
         return $verified;
       }
       $this->login();
+    } else {
+      $sameOrigin = Cors::isSameOrigin();
 
-      if (!($this->controller instanceof DiscuzController)) {
-        return $next();
+      if (getglobal("uid") && ($sameOrigin || !Cors::requestOrigin())) {
+        Auth::setUserId(getglobal("uid"));
+        $this->login();
+      }
+
+      if (!Auth::logged()) {
+        $verified = $this->verifyToken(false);
+        if ($verified->error) {
+          return $verified;
+        }
+        $this->login();
+
+        if (!($this->controller instanceof DiscuzController)) {
+          return $next();
+        }
       }
     }
 

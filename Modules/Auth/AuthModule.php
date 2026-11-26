@@ -85,10 +85,19 @@ class AuthModule extends AbilityBaseObject
    */
   public function findValidToken($token)
   {
-    return $this->logins()
+    $record = $this->logins()
       ->where("token", $token)
       ->where("app_id", $this->app()->appId())
-      ->orWhere("app_id", null)
+      ->whereNotNull("user_id")
+      ->first();
+    if ($record) {
+      return $record;
+    }
+
+    return $this->logins()
+      ->where("token", $token)
+      ->whereNull("app_id")
+      ->whereNotNull("user_id")
       ->first();
   }
 
