@@ -84,18 +84,24 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
       return $this->verifyViewControllerAuth();
     }
   }
+  /**
+   * 用会员信息补齐登录态
+   *
+   * @return Result 封禁用户返回 403，其余情况返回成功（删除/改密后由后续 auth 校验落到 401）
+   */
   private function login()
   {
+    $RR = new Result(true);
     $userId = Auth::userId();
     if (!$userId)
-      return;
+      return $RR;
 
     $memberInfo = DiscuzMember::get($userId);
     if (!$memberInfo) {
       //* 用户已删除：吊销该用户全部 token，并清空本进程登录态
       Auth::deleteTokensByUser($userId);
       $this->clearAuth();
-      return;
+      return $RR;
     }
 
     //* 密码指纹：密码已变更则全端下线
@@ -106,7 +112,7 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
       if (!hash_equals((string) $storedCredential, $currentCredential)) {
         Auth::deleteTokensByUser($userId);
         $this->clearAuth();
-        return;
+        return $RR;
       }
     }
 
@@ -119,12 +125,14 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
     if ($isBanned) {
       Auth::deleteTokensByUser($userId);
       $this->clearAuth();
-      return;
+      return $RR->error(403, "DiscuzAuth:403003", "账号已被封禁，请联系管理员", "用户被封禁");
     }
 
     include_once libfile("function/member");
     \setloginstatus($memberInfo, 1296000);
     Auth::setLogged(true)->setUser($memberInfo);
+
+    return $RR;
   }
   /**
    * 中间件处理
@@ -148,13 +156,19 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
       if ($verified->error) {
         return $verified;
       }
-      $this->login();
+      $login = $this->login();
+      if ($login->error) {
+        return $login;
+      }
     } else {
       $sameOrigin = Cors::isSameOrigin();
 
       if (getglobal("uid") && ($sameOrigin || !Cors::requestOrigin())) {
         Auth::setUserId(getglobal("uid"));
-        $this->login();
+        $login = $this->login();
+        if ($login->error) {
+          return $login;
+        }
       }
 
       if (!Auth::logged()) {
@@ -162,7 +176,10 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
         if ($verified->error) {
           return $verified;
         }
-        $this->login();
+        $login = $this->login();
+        if ($login->error) {
+          return $login;
+        }
 
         if (!$isDiscuzController) {
           return $this->applyAuthHeader($next());
