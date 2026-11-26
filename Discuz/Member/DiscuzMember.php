@@ -14,12 +14,13 @@ class DiscuzMember
   /**
    * 账号密码登录
    *
+   * 只校验账号密码并返回会员信息；不签发站点 cookie、不做 UC 同步登录。
+   *
    * @param string $username 会员账号
    * @param string $password 会员密码
-   * @param int $cookieTime cookie有效期
    * @return Result 会员信息
    */
-  static function login($username, $password, $cookieTime = 1296000)
+  static function login($username, $password)
   {
     global $_G;
     include_once libfile("function/member");
@@ -57,12 +58,11 @@ class DiscuzMember
         "loginCount" => $loginCount
       ]);
     }
-    setloginstatus($userLoginResult['member'], $cookieTime);
-    \C::t('common_member_status')->update($_G['uid'], array('lastip' => $_G['clientip'], 'port' => $_G['remoteport'], 'lastvisit' => TIMESTAMP, 'lastactivity' => TIMESTAMP));
 
-    uc_user_synlogin($_G['uid']); //* UC同步登录
+    $member = $userLoginResult['member'];
+    \C::t('common_member_status')->update($member['uid'], array('lastip' => $_G['clientip'], 'port' => $_G['remoteport'], 'lastvisit' => TIMESTAMP, 'lastactivity' => TIMESTAMP));
 
-    return $R->success($userLoginResult['member']);
+    return $R->success($member);
   }
   /**
    * 注册用户
