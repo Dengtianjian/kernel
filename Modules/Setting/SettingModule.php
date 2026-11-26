@@ -4,6 +4,7 @@ namespace kernel\Modules\Setting;
 
 use kernel\Foundation\App;
 use kernel\Foundation\Object\AbilityBaseObject;
+use kernel\Discuz\Foundation\DiscuzApp;
 
 /**
  * 设置服务
@@ -17,6 +18,90 @@ use kernel\Foundation\Object\AbilityBaseObject;
  */
 class SettingModule extends AbilityBaseObject
 {
+  /**
+   * 本次请求已解码的设置项
+   *
+   * null 表示尚未加载；加载后 name => value 直接复用，避免同一请求重复查库。
+   *
+   * @var array|null
+   */
+  protected $cachedItems = null;
+
+  /**
+   * syscache 缓存键
+   *
+   * 按应用隔离，避免多应用共用同一份设置缓存。
+   *
+   * @return string
+   */
+  private function cacheKey()
+  {
+    $appId = preg_replace("/[^A-Za-z0-9_]/", "_", (string) $this->app()->appId());
+
+    return "gstudio_settings_{$appId}";
+  }
+
+  /**
+   * 从数据库读出全部设置项并解码
+   *
+   * @return array name => value
+   */
+  private function queryAll()
+  {
+    $settings = [];
+    foreach ($this->model()->get() as $item) {
+      $settings[$item['name']] = $item['value'] ? $this->decodeValue($item['value']) : null;
+    }
+
+    return $settings;
+  }
+
+  /**
+   * 读取全部设置项（请求内缓存 → Discuz syscache → 数据库）
+   *
+   * Discuz 环境命中 syscache 时不再查 settings 表；未命中回源一次并写回。
+   * 非 Discuz 环境只在本次请求内复用。
+   *
+   * @return array name => value
+   */
+  protected function allItems()
+  {
+    if ($this->cachedItems !== null) {
+      return $this->cachedItems;
+    }
+
+    $isDiscuz = DiscuzApp::exists();
+    $cacheKey = $this->cacheKey();
+    if ($isDiscuz && function_exists("loadcache") && function_exists("getglobal")) {
+      \loadcache($cacheKey);
+      $cached = \getglobal("cache/{$cacheKey}");
+      if (is_array($cached)) {
+        return $this->cachedItems = $cached;
+      }
+    }
+
+    $this->cachedItems = $this->queryAll();
+    if ($isDiscuz && function_exists("save_syscache")) {
+      \save_syscache($cacheKey, $this->cachedItems);
+    }
+
+    return $this->cachedItems;
+  }
+
+  /**
+   * 写入后重建缓存
+   *
+   * @return array
+   */
+  private function refreshCache()
+  {
+    $this->cachedItems = $this->queryAll();
+    if (DiscuzApp::exists() && function_exists("save_syscache")) {
+      \save_syscache($this->cacheKey(), $this->cachedItems);
+    }
+
+    return $this->cachedItems;
+  }
   /**
    * 构造即装配
    *
@@ -74,11 +159,14 @@ class SettingModule extends AbilityBaseObject
       return [];
     }
 
-    $settingsData = $this->model()->where("name", $names)->get();
+    $allItems = $this->allItems();
     $settings = [];
-    foreach ($settingsData as $item) {
-      $settings[$item['name']] = $item['value'] ? $this->decodeValue($item['value']) : null;
+    foreach ($names as $name) {
+      if (array_key_exists($name, $allItems)) {
+        $settings[$name] = $allItems[$name];
+      }
     }
+
     return $settings;
   }
   /**
@@ -89,11 +177,9 @@ class SettingModule extends AbilityBaseObject
    */
   public function item($name)
   {
-    $setting = $this->model()->where("name", $name)->first();
-    if (!$setting) {
-      return null;
-    }
-    return $this->decodeValue($setting['value'] ?? null);
+    $allItems = $this->allItems();
+
+    return array_key_exists($name, $allItems) ? $allItems[$name] : null;
   }
   /**
    * 查询某个设置项是否存在
@@ -103,7 +189,7 @@ class SettingModule extends AbilityBaseObject
    */
   public function exists($name)
   {
-    return $this->model()->where("name", $name)->exists();
+    return array_key_exists($name, $this->allItems());
   }
   /**
    * 添加设置项
@@ -115,11 +201,16 @@ class SettingModule extends AbilityBaseObject
    */
   public function add($name, $value = null, $serialization = true)
   {
-    return $this->model()->insert([
+    $result = $this->model()->insert([
       "name" => $name,
       "value" => $serialization ? serialize($value) : $value,
       "updated_at" => time(),
     ]);
+    if ($result) {
+      $this->refreshCache();
+    }
+
+    return $result;
   }
   /**
    * 保存单个设置项
@@ -131,10 +222,15 @@ class SettingModule extends AbilityBaseObject
    */
   public function save($name, $value, $serialization = true)
   {
-    return $this->model()->where("name", $name)->update([
+    $result = $this->model()->where("name", $name)->update([
       "value" => $serialization ? serialize($value) : $value,
       "updated_at" => time(),
     ]);
+    if ($result) {
+      $this->refreshCache();
+    }
+
+    return $result;
   }
   /**
    * 保存多个设置项值
@@ -150,6 +246,8 @@ class SettingModule extends AbilityBaseObject
         "updated_at" => time(),
       ]);
     }
+    $this->refreshCache();
+
     return true;
   }
 }
