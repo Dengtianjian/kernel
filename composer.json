@@ -6,6 +6,9 @@
 			"email": "mail@isdtj.com"
 		}
 	],
+	"require": {
+		"php": ">=8.0"
+	},
 	"config": {
 		"platform-check": false
 	},
