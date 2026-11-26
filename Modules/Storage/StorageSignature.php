@@ -361,6 +361,8 @@ class StorageSignature extends BaseObject
    */
   function verifyAuthorization($signature, $fileKey, $startTime, $endTime, $urlParams = [], $headers = [], $httpMethod = "get", $action = null)
   {
-    return $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod, $action) === $signature;
+    $expected = $this->generateSignature($fileKey, $startTime, $endTime, $urlParams, $headers, $httpMethod, $action);
+
+    return hash_equals((string) $expected, (string) $signature);
   }
 }
