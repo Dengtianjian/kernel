@@ -128,11 +128,37 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
       return $RR->error(403, "DiscuzAuth:403003", "账号已被封禁，请联系管理员", "用户被封禁");
     }
 
-    include_once libfile("function/member");
-    \setloginstatus($memberInfo, 1296000);
+    //* token 请求只补进程上下文，不签发站点 cookie、不刷会话/积分
+    if ($this->tokenVerified) {
+      $this->applyMemberContext($memberInfo);
+    } else {
+      include_once libfile("function/member");
+      \setloginstatus($memberInfo, 1296000);
+    }
     Auth::setLogged(true)->setUser($memberInfo);
 
     return $RR;
+  }
+
+  /**
+   * 把会员信息写入 Discuz 全局上下文
+   *
+   * token 请求不调用 setloginstatus（避免下发 auth cookie 和刷会话统计），
+   * 但后续用户组校验仍依赖 $_G 的 uid / adminid / groupid，这里只做只读填充。
+   *
+   * @param array $memberInfo
+   * @return void
+   */
+  private function applyMemberContext($memberInfo)
+  {
+    global $_G;
+
+    $_G['uid'] = (int) $memberInfo['uid'];
+    $_G['username'] = $memberInfo['username'];
+    $_G['adminid'] = (int) $memberInfo['adminid'];
+    $_G['groupid'] = (int) $memberInfo['groupid'];
+    $_G['member'] = $memberInfo;
+    loadcache('usergroup_' . $_G['groupid']);
   }
   /**
    * 中间件处理

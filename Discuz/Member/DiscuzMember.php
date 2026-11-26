@@ -393,12 +393,17 @@ class DiscuzMember
     }
 
     include_once libfile('function/stat');
-    \setloginstatus([
+    //* 只补当前请求的会员上下文，不签发站点 cookie
+    $_G['uid'] = $uid;
+    $_G['username'] = $username;
+    $_G['groupid'] = $groupId;
+    $_G['member'] = [
       'uid' => $uid,
       'username' => $username,
       'password' => $password,
       'groupid' => $groupId
-    ], 0);
+    ];
+    loadcache('usergroup_' . $groupId);
     \updatestat('register');
 
     if ($invite['id']) {
@@ -447,10 +452,6 @@ class DiscuzMember
         notification_add($uid, 'system', $welcomemsgtxt, array('from_id' => 0, 'from_idtype' => 'welcomemsg'), 1);
       }
     }
-
-    dsetcookie('loginuser', '');
-    dsetcookie('activationauth', '');
-    dsetcookie('invite_auth', '');
 
     return $R->success(getuserbyuid($uid));
   }
