@@ -16,10 +16,10 @@ use kernel\Foundation\Database\RDB\Schema;
  * @property string|null $expires_at 有效期至（字符串时间戳）
  * @property string|null $user_id 所属用户 ID
  * @property string|null $app_id 所属应用 ID，为空则为通用
+ * @property string|null $credential 签发时的密码指纹
  * @property string|null $created_at 创建时间
  * @property string|null $updated_at 最后更新时间
  * @property string|null $deleted_at 删除时间（软删除标记，启用软删除后查询默认过滤）
- * @property string|null $salt token 盐值（用于校验/轮换）
  * @property int|null $expire_days 有效期天数
  */
 class LoginsModel extends Model
@@ -42,10 +42,10 @@ class LoginsModel extends Model
     "expires_at" => "int",
     "user_id" => "string",
     "app_id" => "string",
+    "credential" => "string",
     "created_at" => "int",
     "updated_at" => "int",
     "deleted_at" => "int",
-    "salt" => "string",
     "expire_days" => "int",
   ];
 
@@ -53,11 +53,11 @@ class LoginsModel extends Model
   {
     $this->schema = [
       (new Schema("id"))->bigint()->nullable(false)->autoIncrement()->comment("id")->primary(),
-      (new Schema("token"))->varchar(260)->nullable(true)->index('token_value')->unsigned()->comment("token值"),
+      (new Schema("token"))->varchar(64)->nullable(false)->unique()->comment("token哈希"),
       (new Schema("user_id"))->varchar(26)->nullable(true)->comment("所属用户"),
       (new Schema("app_id"))->varchar(26)->nullable(true)->comment("所属app"),
-      (new Schema("salt"))->varchar(64)->nullable(true)->comment("token 盐值（用于校验/轮换）"),
-      (new Schema("expires_at"))->unixtime()->nullable(true)->comment("有效期至"),
+      (new Schema("credential"))->varchar(64)->nullable(true)->comment("签发时的密码指纹"),
+      (new Schema("expires_at"))->unixtime()->nullable(true)->index("idx_expires_at")->comment("有效期至"),
       (new Schema("expire_days"))->int()->nullable(true)->comment("有效期天数"),
       (new Schema("created_at"))->unixtime()->nullable(true)->comment("创建时间"),
       (new Schema("updated_at"))->unixtime()->nullable(true)->comment("最后更新时间"),

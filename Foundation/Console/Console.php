@@ -3,8 +3,6 @@
 namespace kernel\Foundation\Console;
 
 use kernel\Foundation\App;
-use kernel\Foundation\Builtin\Config;
-use kernel\Foundation\Application\Applications;
 
 /**
  * 控制台应用

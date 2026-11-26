@@ -7,7 +7,9 @@ use kernel\Foundation\Object\AbilityBaseObject;
 use kernel\Commands\MakeAppCommand;
 use kernel\Commands\MakeControllerCommand;
 use kernel\Commands\MakeModelCommand;
+use kernel\Commands\MakeMigrationCommand;
 use kernel\Commands\MakeMiddlewareCommand;
+use kernel\Commands\MigrateCommand;
 use kernel\Commands\ScheduleRunCommand;
 use kernel\Commands\PackageCommand;
 use kernel\Commands\UnpackCommand;
@@ -30,6 +32,8 @@ class Bootstrap extends AbilityBaseObject
       ->addCommand("make:controller", MakeControllerCommand::class, "Create a new controller class")
       ->addCommand("make:model", MakeModelCommand::class, "Create a new model class")
       ->addCommand("make:middleware", MakeMiddlewareCommand::class, "Create a new middleware class")
+      ->addCommand("make:migration", MakeMigrationCommand::class, "Create a new migration file")
+      ->addCommand("migrate", MigrateCommand::class, "Run pending migrations")
       ->addCommand("schedule:run", ScheduleRunCommand::class, "Run scheduled tasks (Crons/)")
       ->addCommand("package", PackageCommand::class, "Package isdtj and kernel into zip archives")
       ->addCommand("unpack", UnpackCommand::class, "Unpack isdtj.zip and kernel.zip into directories");

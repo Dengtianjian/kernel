@@ -158,6 +158,7 @@ use kernel\Foundation\Database\RDB\Relation\Relation;
  * @method array|null getStatus() 获取表状态（引擎/行数/自增值等）
  * @method bool optimize() 优化表（整理碎片）
  * @method array getPhpSchema() $schema → 字段→PHP类型 映射
+ * @method static \kernel\Foundation\Database\RDB\TableBuilder alter(callable|null $callback = null) 修改表结构
  * @method int|false exec(string $sql) 执行写/DDL SQL（PDO::exec）
  * @method \PDOStatement|false execQuery(string $sql) 执行 SQL 返回结果集对象
  * @method array select(string $sql, array $bindings = []) 原生查询取全部行

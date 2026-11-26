@@ -26,6 +26,13 @@ use kernel\Support\Result;
 class GlobalAuthMiddleware extends MiddlewareBase
 {
   /**
+   * 本次请求是否通过 Authorization token 认证
+   *
+   * @var bool
+   */
+  protected $tokenVerified = false;
+
+  /**
    * 当前应用实例
    *
    * @return App
@@ -43,6 +50,8 @@ class GlobalAuthMiddleware extends MiddlewareBase
    */
   protected function verifyToken($strongCheck = true)
   {
+    $this->tokenVerified = false;
+    Auth::setTokenData(null);
     $RR = new Result(true);
     $token = null;
     if ($this->request->header->has("Authorization")) {
@@ -88,7 +97,9 @@ class GlobalAuthMiddleware extends MiddlewareBase
       $expiresAt = Auth::extendToken($token, $expirationDay);
     }
 
-    Auth::setTokenExpiresAt($expiresAt)
+    $this->tokenVerified = true;
+    Auth::setTokenData($authData)
+      ->setTokenExpiresAt($expiresAt)
       ->setToken($token)
       ->setUserId($authData['user_id'])
       ->setLogged(true);
@@ -159,5 +170,21 @@ class GlobalAuthMiddleware extends MiddlewareBase
     $response->header("x-auth-token-expires-at", $expiresAt);
 
     return $response;
+  }
+
+  /**
+   * 清空本进程登录态
+   *
+   * @return void
+   */
+  protected function clearAuth()
+  {
+    $this->tokenVerified = false;
+    Auth::setLogged(false)
+      ->setUser(null)
+      ->setUserId(null)
+      ->setToken(null)
+      ->setTokenExpiresAt(null)
+      ->setTokenData(null);
   }
 }

@@ -29,8 +29,8 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
   public function verifyViewControllerAdmin()
   {
     $RR = new Result(true);
-    $userId = Auth::userId() ? (int)Auth::userId() : 0;
-    $adminId =  $userId ? (int)getglobal("member/adminid") : 0;
+    $userId = Auth::userId() ? (int) Auth::userId() : 0;
+    $adminId = $userId ? (int) getglobal("member/adminid") : 0;
 
     if (is_bool($this->controller->admin) && $this->controller->admin) {
       if ($userId === 0) {
@@ -46,7 +46,7 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
           return $RR->error(403, "DiscuzAdminAuth:403001", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
         }
       } else if (is_numeric($this->controller->admin) || is_string($this->controller->admin)) {
-        if ($adminId !== (int)$this->controller->admin) {
+        if ($adminId !== (int) $this->controller->admin) {
           return $RR->error(403, "DiscuzAdminAuth:403002", "抱歉，您所在的用户组无法访问该资源", "非管理员，无权访问");
         }
       }
@@ -57,8 +57,8 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
   public function verifyViewControllerAuth()
   {
     $RR = new Result(true);
-    $userId = Auth::userId() ? (int)Auth::userId() : 0;
-    $groupId = $userId ? (int)getglobal("member/groupid") : 0;
+    $userId = Auth::userId() ? (int) Auth::userId() : 0;
+    $groupId = $userId ? (int) getglobal("member/groupid") : 0;
 
     if (is_bool($this->controller->auth) && $this->controller->auth && $userId === 0) {
       return $RR->error(401, "DiscuzAuth:401001", "请登录后重试", "未登录，缺少Token（Auth）");
@@ -69,7 +69,7 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
         return $RR->error(403, "DiscuzAuth:403001", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth1）");
       }
     } else if (is_numeric($this->controller->auth) || is_string($this->controller->auth)) {
-      if ($groupId !== (int)$this->controller->auth) {
+      if ($groupId !== (int) $this->controller->auth) {
         return $RR->error(403, "DiscuzAuth:403002", "抱歉，您所在的用户组无法访问该资源", "不在可访问用户范围（Auth2）");
       }
     }
@@ -87,15 +87,38 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
   private function login()
   {
     $userId = Auth::userId();
-    if (!$userId) return;
+    if (!$userId)
+      return;
 
     $memberInfo = DiscuzMember::get($userId);
     if (!$memberInfo) {
-      //* 用户已删除：吊销当前 token，并清空本进程登录态
-      if (Auth::token()) {
-        Auth::deleteToken(Auth::token());
+      //* 用户已删除：吊销该用户全部 token，并清空本进程登录态
+      Auth::deleteTokensByUser($userId);
+      $this->clearAuth();
+      return;
+    }
+
+    //* 密码指纹：密码已变更则全端下线
+    $tokenData = Auth::tokenData();
+    $storedCredential = is_array($tokenData) ? ($tokenData['credential'] ?? null) : null;
+    if ($storedCredential !== null) {
+      $currentCredential = hash("sha256", (string) $memberInfo['password']);
+      if (!hash_equals((string) $storedCredential, $currentCredential)) {
+        Auth::deleteTokensByUser($userId);
+        $this->clearAuth();
+        return;
       }
-      Auth::setLogged(false)->setUser(null)->setUserId(null)->setToken(null)->setTokenExpiresAt(null);
+    }
+
+    //* 严格封禁：status=-1 / groupid 4|5 / allowvisit=0
+    $group = DiscuzMember::group((int) $memberInfo['groupid']);
+    $isBanned = (int) $memberInfo['status'] === -1
+      || in_array((int) $memberInfo['groupid'], [4, 5], true)
+      || !$group
+      || empty($group['allowvisit']);
+    if ($isBanned) {
+      Auth::deleteTokensByUser($userId);
+      $this->clearAuth();
       return;
     }
 
@@ -112,11 +135,13 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
   public function handle(\Closure $next)
   {
     $isWrite = !in_array(strtoupper($this->request->method()), ["GET", "HEAD", "OPTIONS"], true);
-    //* 用户侧写操作强制走 Token：避免同源 cookie 兜底把 CSRF 防护交给 Origin/Referer
-    //* 后台 dashboard 目前仍用 Discuz 会话，单独在 B7 收紧
+    $isDiscuzController = $this->controller instanceof DiscuzController;
+    $hasToken = $this->request->header->has("Authorization");
+
+    //* 用户侧写操作强制 Token；后台写操作有 Token 时也走 Token
     $requiresToken = $isWrite
-      && $this->controller instanceof DiscuzController
-      && $this->controller->auth;
+      && $isDiscuzController
+      && ($this->controller->auth || ($this->controller->admin && $hasToken));
 
     if ($requiresToken) {
       $verified = $this->verifyToken(true);
@@ -139,7 +164,7 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
         }
         $this->login();
 
-        if (!($this->controller instanceof DiscuzController)) {
+        if (!$isDiscuzController) {
           return $this->applyAuthHeader($next());
         }
       }
@@ -171,6 +196,17 @@ class GlobalDiscuzAuthMiddleware extends GlobalAuthMiddleware
 
     if ($verified && $verified->error) {
       return $verified;
+    }
+
+    //* cookie 认证的写请求需要 formhash；token 认证不需要
+    $needsCsrf = $isWrite
+      && $isDiscuzController
+      && !$this->tokenVerified
+      && Auth::logged()
+      && !$this->controller->csrfExempt
+      && ($this->controller->admin || $this->controller->auth || $this->controller->csrfProtected);
+    if ($needsCsrf) {
+      $this->controller->verifyFormhash(true);
     }
 
     return $this->applyAuthHeader($next());

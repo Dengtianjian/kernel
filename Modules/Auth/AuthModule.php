@@ -42,6 +42,12 @@ class AuthModule extends AbilityBaseObject
    */
   protected $tokenExpiresAt = null;
   /**
+   * 本次命中的完整 token 记录
+   *
+   * @var array|object|null
+   */
+  protected $tokenData = null;
+  /**
    * 当前登录用户数据
    *
    * @var mixed
@@ -119,20 +125,17 @@ class AuthModule extends AbilityBaseObject
   /**
    * 生成 token（不落库）
    *
-   * 使用密码学安全的随机字节生成 token 值与 salt；salt 随 createToken 一并持久化，
-   * 可用于后续校验或密钥轮换。原 password_hash 方案每次输出不同且无对应验证，已弃用。
+   * 使用密码学安全的随机字节生成 token 值。原 password_hash 方案每次输出不同且无对应验证，已弃用。
    *
    * @param integer $expireDays 有效天数
-   * @return array{value:string,salt:string,expiresAt:int,expireDays:int}
+   * @return array{value:string,expiresAt:int,expireDays:int}
    */
   public function generateToken($expireDays = 7)
   {
-    $salt = bin2hex(random_bytes(16));
     $value = bin2hex(random_bytes(32));
     $expiresAt = time() + (86400 * $expireDays);
     return [
       "value" => $value,
-      "salt" => $salt,
       "expiresAt" => $expiresAt,
       "expireDays" => $expireDays
     ];
@@ -142,20 +145,20 @@ class AuthModule extends AbilityBaseObject
    * 生成并保存 token 到 logins 表
    *
    * 内部调用 generateToken 生成凭证，并写入当前模型（snake_case）。
-   * id 为自增主键；salt 与 expire_days 一并持久化。
    *
    * @param string|int $userId 关联用户 ID（写入 user_id 字段）
    * @param integer $expireDays 有效天数
-   * @return array{value:string,salt:string,expiresAt:int,expireDays:int}
+   * @param string|null $credential 密码指纹原文；落库前会再次哈希
+   * @return array{value:string,expiresAt:int,expireDays:int}
    */
-  public function createToken($userId, $expireDays = 7)
+  public function createToken($userId, $expireDays = 7, $credential = null)
   {
     $tokenData = $this->generateToken($expireDays);
     $now = time();
     // id 为自增主键（bigint autoIncrement），无需手动生成
     $this->logins()->insert([
       "token" => self::hashToken($tokenData["value"]),
-      "salt" => $tokenData["salt"],
+      "credential" => $credential === null ? null : self::hashToken($credential),
       "expires_at" => $tokenData["expiresAt"],
       "expire_days" => $tokenData["expireDays"],
       "user_id" => $userId,
@@ -269,6 +272,30 @@ class AuthModule extends AbilityBaseObject
   public function tokenExpiresAt()
   {
     return $this->tokenExpiresAt;
+  }
+
+  /**
+   * 写入本次命中的完整 token 记录
+   *
+   * @internal 仅认证中间件调用
+   * @param array|object|null $tokenData
+   * @return $this
+   */
+  public function setTokenData($tokenData)
+  {
+    $this->tokenData = $tokenData;
+
+    return $this;
+  }
+
+  /**
+   * 本次命中的完整 token 记录（未命中为 null）
+   *
+   * @return array|object|null
+   */
+  public function tokenData()
+  {
+    return $this->tokenData;
   }
 
   /**

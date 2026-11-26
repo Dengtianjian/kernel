@@ -20,7 +20,7 @@ gstudio_kernel 是运行于 **Discuz! X5.0** 平台的**基础插件**（非业�
 gstudio_kernel/
 ├── Foundation/     # 基础组件（应用、路由、数据库、HTTP、文件系统、缓存等）
 ├── Discuz/        # Discuz 平台适配（语言包、原生模型、存储驱动、控制器基类）
-├── Commands/       # 命令行工具（make:app / make:controller / make:model / make:middleware / package 等）
+├── Commands/       # 命令行工具（make:app / make:controller / make:model / make:middleware / make:migration / migrate / package 等）
 ├── Controllers/    # 文件相关控制器（基类在 Foundation/Controller）
 ├── Middlewares/    # 全局中间件子类（基类在 Foundation/Middleware）
 ├── Models/         # 模型层

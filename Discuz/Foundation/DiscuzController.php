@@ -30,26 +30,48 @@ class DiscuzController extends AuthController
   public $forumhash = false;
 
   /**
+   * 是否允许 cookie 认证的写请求强制走 formhash
+   *
+   * 后台控制器由 `$admin` 自动纳入；`$auth=false` 但手动检查用户身份的
+   * 写控制器（如文件授权）可显式设为 true。
+   *
+   * @var bool
+   */
+  public $csrfProtected = false;
+
+  /**
+   * 是否豁免 CSRF（仅登录 / silentLogin 等 bootstrap 接口使用）
+   *
+   * @var bool
+   */
+  public $csrfExempt = false;
+
+  /**
    * 校验 Discuz 的 formhash
    *
-   * 仅当业务子类把 {@see $forumhash} 覆盖为 true 时才执行，否则直接跳过（默认）。
+   * 默认只在 {@see $forumhash} 为 true 时校验；认证中间件可传 `$force=true`
+   * 对 cookie 认证的写请求强制执行（token 认证不校验）。
    *
    * 期望值取 Discuz 当前会话的 formhash（`$_G['formhash']`，兼容已定义的 FORMHASH 常量），
-   * 提交值同时从 query 与 body 中取。
+   * 提交值支持 `X-CSRF-Token` / `X-Formhash` 请求头，或 query/body 的 `formhash`。
    *
+   * @param bool $force 是否无视 `$forumhash` 强制执行
    * @return void
    * @throws Error 校验不通过时抛出 403
    */
-  final public function verifyFormhash()
+  final public function verifyFormhash($force = false)
   {
-    if (!$this->forumhash) {
+    if (!$force && !$this->forumhash) {
       return;
     }
 
-    $expected = defined("FORMHASH") ? \FORMHASH : \getglobal("formhash");
-    $submitted = $this->request->query->get("formhash") ?: $this->request->body->get("formhash");
+    $expected = \getglobal("formhash") ?: (defined("FORMHASH") ? \FORMHASH : "");
+    $submitted = $this->request->header->get("X-CSRF-Token")
+      ?: $this->request->header->get("X-Formhash")
+      ?: $this->request->query->get("formhash")
+      ?: $this->request->body->get("formhash");
 
-    if (empty($expected) || $submitted != $expected) {
+    if (empty($expected) || !hash_equals((string)$expected, (string)$submitted)) {
       throw new Error("非法访问", 403, 403, "formhash");
     }
   }

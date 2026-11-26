@@ -32,8 +32,8 @@ use kernel\Foundation\Facade\Facade;
  *
  * @method static \kernel\Modules\Auth\LoginsModel logins() 本应用的表访问入口
  * @method static array|object|null findValidToken(string $token) 按 token 查未过期记录
- * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} generateToken(int $expireDays = 7) 生成 token（不落库）
- * @method static array{value:string,salt:string,expiresAt:int,expireDays:int} createToken(string|int $userId, int $expireDays = 7) 生成并落库
+ * @method static array{value:string,expiresAt:int,expireDays:int} generateToken(int $expireDays = 7) 生成 token（不落库）
+ * @method static array{value:string,expiresAt:int,expireDays:int} createToken(string|int $userId, int $expireDays = 7, string|null $credential = null) 生成并落库
  * @method static int extendToken(string $token, int $expireDays = 7) 滑动续期并返回新的过期时间戳
  * @method static void deleteToken(string $token) 吊销单个 token（软删除）
  * @method static void deleteExpiredTokens() 清理过期凭证（物理删除）
@@ -42,6 +42,8 @@ use kernel\Foundation\Facade\Facade;
  * @method static string|null token() 本次请求的 token
  * @method static static setTokenExpiresAt(int|null $expiresAt) 写入 token 绝对过期时间
  * @method static int|null tokenExpiresAt() token 绝对过期时间
+ * @method static static setTokenData(array|object|null $tokenData) 写入本次命中的 token 记录
+ * @method static array|object|null tokenData() 本次命中的 token 记录
  * @method static static setUser(mixed $user) 写入当前登录用户数据
  * @method static mixed user() 当前登录用户数据
  * @method static static setUserId(string|int|null $userId) 写入当前登录用户 ID
