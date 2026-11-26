@@ -214,7 +214,7 @@ class ColumnDefinition
    * @param array|null $columns 索引列
    * @return $this
    */
-  public function unique($name = null, array $columns = null)
+  public function unique($name = null, ?array $columns = null)
   {
     $columns = $columns ?: [$this->getName()];
     $this->builder->unique($name ?: "uk_{$columns[0]}", $columns);
@@ -232,7 +232,7 @@ class ColumnDefinition
    * @param array|null $columns 索引列
    * @return $this
    */
-  public function index($name = null, array $columns = null)
+  public function index($name = null, ?array $columns = null)
   {
     $columns = $columns ?: [$this->getName()];
     $this->builder->index($name ?: "idx_{$columns[0]}", $columns);

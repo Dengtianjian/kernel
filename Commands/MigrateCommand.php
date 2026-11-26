@@ -3,8 +3,11 @@
 namespace kernel\Commands;
 
 use kernel\Discuz\Foundation\DiscuzApp;
+use kernel\Discuz\Foundation\DiscuzCliDatabase;
 use kernel\Foundation\Builtin\Deployment;
 use kernel\Foundation\Builtin\Migrator;
+use kernel\Foundation\Database\RDB\Drivers\Connections;
+use kernel\Foundation\Database\RDB\Drivers\Mysqli\MysqliDriver;
 use kernel\Foundation\FileSystem\Path;
 
 /**
@@ -32,6 +35,8 @@ class MigrateCommand
    */
   public function handle($console, $args, $options): int
   {
+    $this->bootstrapDatabase();
+
     $appId = trim((string) ($options["app"] ?? $console->appId()));
     if ($appId === "" || !preg_match("/^[A-Za-z][A-Za-z0-9_]*$/", $appId)) {
       $console->error("App id \"{$appId}\" is invalid.");
@@ -58,9 +63,11 @@ class MigrateCommand
     $to = trim((string) ($options["to"] ?? ""));
     $to = $to === "" ? null : $to;
 
+    $ledgerFile = Path::join($data, "migrations.json");
+
     $migrator = new Migrator(
       $migrationsDir,
-      Path::join($data, "migrations.json"),
+      $ledgerFile,
       $this->currentVersion($appId, $root, $data)
     );
 
@@ -92,6 +99,69 @@ class MigrateCommand
 
     $console->success("Migrated " . count($executed) . " migration(s).");
     return 0;
+  }
+
+  /**
+   * 命令行下补数据库连接
+   *
+   * 存在站点配置时直接按 config_global.php 建连，并注册表前缀适配；已有驱动或独立部署时跳过。
+   * 不启动 Discuz 应用：完整 class_core 初始化在 CLI 下可能静默退出，迁移只需要 DB 与表前缀。
+   *
+   * @return void
+   */
+  protected function bootstrapDatabase()
+  {
+    if (!empty(Connections::getDrivers()) || defined("DISCUZ_ROOT")) {
+      return;
+    }
+
+    $projectRoot = dirname(Path::kernel(), 3);
+    $configFile = $projectRoot . "/config/config_global.php";
+    if (!is_file($configFile)) {
+      return;
+    }
+
+    $_config = [];
+    include $configFile;
+
+    $db = $_config["db"][1] ?? null;
+    if (!is_array($db) || empty($db["dbhost"]) || empty($db["dbname"])) {
+      return;
+    }
+
+    $host = (string) $db["dbhost"];
+    $port = 3306;
+    if (strpos($host, ":") !== false) {
+      [$host, $port] = explode(":", $host, 2);
+    }
+
+    try {
+      Connections::addDriver(new MysqliDriver(
+        $host,
+        (string) ($db["dbuser"] ?? ""),
+        (string) ($db["dbpw"] ?? ""),
+        (string) $db["dbname"],
+        (int) $port,
+        (string) ($db["dbcharset"] ?? "utf8mb4")
+      ), "default", true);
+    } catch (\Throwable $th) {
+      fwrite(STDERR, "Database bootstrap failed: " . $th->getMessage() . PHP_EOL);
+      return;
+    }
+
+    if (!defined("IN_DISCUZ")) {
+      define("IN_DISCUZ", true);
+    }
+    if (!defined("DISCUZ_ROOT")) {
+      define("DISCUZ_ROOT", rtrim($projectRoot, "/\\") . "/");
+    }
+    if (!class_exists("DB", false)) {
+      class_alias(DiscuzCliDatabase::class, "DB");
+    }
+    DiscuzCliDatabase::setTablepre((string) ($db["tablepre"] ?? "pre_"));
+
+    //* 目标运行时是 PHP 8.0，8.4 的隐式 nullable 等弃用提示不阻断迁移
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
   }
 
   /**

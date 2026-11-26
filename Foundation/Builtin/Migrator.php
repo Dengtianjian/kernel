@@ -174,7 +174,11 @@ class Migrator
       try {
         $migration["object"]->up();
       } catch (\Throwable $th) {
-        throw new Error("迁移 {$id} 失败", 500, 500, $th->getMessage());
+        $detail = $th instanceof Error && $th->errorDetails ? $th->errorDetails : $th->getMessage();
+        if (!is_scalar($detail)) {
+          $detail = json_encode($detail, JSON_UNESCAPED_UNICODE);
+        }
+        throw new Error("迁移 {$id} 失败: {$detail}", 500, 500, $th->getMessage());
       }
 
       $ledger["applied"][$id] = [
@@ -232,7 +236,11 @@ class Migrator
       try {
         $migrations[$id]["object"]->down();
       } catch (\Throwable $th) {
-        throw new Error("迁移 {$id} 回滚失败", 500, 500, $th->getMessage());
+        $detail = $th instanceof Error && $th->errorDetails ? $th->errorDetails : $th->getMessage();
+        if (!is_scalar($detail)) {
+          $detail = json_encode($detail, JSON_UNESCAPED_UNICODE);
+        }
+        throw new Error("迁移 {$id} 回滚失败: {$detail}", 500, 500, $th->getMessage());
       }
 
       unset($ledger["applied"][$id]);
