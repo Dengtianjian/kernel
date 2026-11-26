@@ -11,19 +11,21 @@ use kernel\Foundation\Object\AbilityBaseObject;
 /**
  * 应用部署编排器：安装 / 更新 / 卸载（含回滚）
  *
- * 名字对应各应用根目录的 `Deployment/` 目录 —— 其中的升级脚本（`Upgrades/`）由本类扫描执行；
- * 安装 / 卸载用到的 SQL 与钩子由各应用自己的部署类组织（如 `AppDeployment` 覆写 install / uninstall）。
- * 本类顺带管理 `.version`、`install.lock`、`install.key`；**Discuz 下这三者都不参与流程**：
+ * 名字对应各应用根目录的 `Deployment/` 目录 —— 其中的迁移文件（`Migrations/`）由本类执行；
+ * 安装 / 卸载用到的表、种子数据与钩子由各应用自己的部署类组织（如 `AppDeployment` 覆写 install / uninstall）。
+ * 本类顺带管理 `.version`、`install.lock`、`install.key`；**Discuz 下 `.version` 不参与流程**：
  * 版本基线取自插件设置（`setting.plugins.version.{appId}`），安装状态由 Discuz 自己维护。
  *
- * 升级机制：
- * - 扫描 upgradesDir 目录下 Upgrade_x_y_z.php 文件，从文件名提取版本号按序执行
- * - 每个升级文件定义一个同名类，类有 upgrade() 方法则调用，否则构造器即升级逻辑
- * - 类可选定义 rollback() 方法以支持回滚
+ * 迁移机制：
+ * - 扫描 migrationsDir 下的所有 PHP 文件，文件名不限
+ * - 每个文件 return 一个实现 {@see Migration} 的对象，提供 id() / version() / up() / down()
+ * - 执行状态写入 `Data/migrations.json`，不建数据库迁移表
+ * - 首次没有记录文件时，按当前插件版本把历史迁移标记为已执行
+ * - 升级调用 up()，回滚调用 down()
  *
  * 版本管理：
  * - .version 文件存储完整版本号（如 2.2.0.20260721.1746）
- * - 对比时自动提取前三段基础版本号（2.2.0）与升级脚本版本号做比较
+ * - 对比时自动提取前三段基础版本号（2.2.0）做迁移基线与目标版本判断
  *
  * 安装辅助：
  * - install() / lockInstall() / installLocked()：创建数据/存储目录、写入并检测安装锁文件（install.lock）
@@ -33,19 +35,17 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * 查询与状态（只读，不执行升级/回滚）：
  * - parseSemver() / compare()：提取三段基础版本号、按基础版本号比较两个版本
- * - getPendingUpgrades()：列出待升级版本（过滤条件与 upgrade() 一致）
- * - getStatus()：返回 app_id / current_version / latest_version / upgrade_dir / data_dir 快照
+ * - getPendingMigrations()：列出待执行迁移 ID
+ * - getStatus()：返回 app_id / current_version / latest_version / migrations_dir / data_dir 快照
  *
- * 升级脚本文件格式：
+ * 迁移文件格式：
  * ```php
- * // 基础写法：构造器即升级逻辑
- * class Upgrade_1_1_0 { public function __construct() { ... } }
- *
- * // 推荐写法：显式 upgrade/rollback 方法
- * class Upgrade_1_1_0 {
- *     public function upgrade()  { ... }
- *     public function rollback() { ... }
- * }
+ * return new class implements Migration {
+ *     public function id()      { return '202611260001_add_user_profile'; }
+ *     public function version() { return '1.4.0'; }
+ *     public function up()      { ... }
+ *     public function down()    { ... }
+ * };
  * ```
  *
  * 使用示例：
@@ -58,8 +58,8 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * // 回滚到指定版本（每次回滚后自动持久化 .version）
  * $p->rollback('1.0.0');
  *
- * // 查看待升级版本
- * $pending = $p->getPendingUpgrades('2.0.0');
+ * // 查看待执行迁移
+ * $pending = $p->getPendingMigrations('2.0.0');
  *
  * // 查询当前状态
  * $status = $p->getStatus();
@@ -74,35 +74,32 @@ class Deployment extends AbilityBaseObject
   protected $latestVersion = null;
 
   /**
-   * 从完整版本号中提取的三段基础版本号（如 2.2.0），用于与升级脚本版本号做 version_compare
+   * 从完整版本号中提取的三段基础版本号（如 2.2.0），用于迁移基线与目标版本判断
    * @var string
    */
   protected $currentSemver = '0.0.0';
 
   /**
-   * 升级脚本目录（null 时默认为 {Path::root()}/Upgrades）
-   *
-   * 原为「构造器属性提升」（PHP 7.4/8.0 语法），已改为显式属性声明 + 构造赋值，以兼容 PHP 7。
+   * 迁移目录（null 时默认为 {插件目录}/Deployment/Migrations）
    *
    * @var string|null
    */
-  protected $upgradesDir = null;
+  protected $migrationsDir = null;
 
   /**
-   * @param string|null $upgradesDir 升级脚本目录，null 时默认为 {Path::root()}/Upgrades；
-   *                                 Discuz 下默认为 `{插件目录}/Deployment/Upgrades`
+   * @param string|null $migrationsDir 迁移目录，null 时默认为 `{插件目录}/Deployment/Migrations`
    */
-  public function __construct($upgradesDir = null)
+  public function __construct($migrationsDir = null)
   {
     if (DiscuzApp::exists()) {
       $app = Applications::default();
 
-      //* 插件布局：升级脚本在插件目录下；版本真源是 Discuz 的插件设置，不读 `.version`
-      $this->upgradesDir = $upgradesDir ?? Path::join(Path::root(), "Deployment", "Upgrades");
+      //* 插件布局：迁移文件在插件目录下；版本真源是 Discuz 的插件设置，不读 `.version`
+      $this->migrationsDir = $migrationsDir ?? Path::join(Path::root(), "Deployment", "Migrations");
       $this->latestVersion = $app ? \getglobal("setting/plugins/version/" . $app->id()) : null;
       $this->currentSemver = self::parseSemver((string) $this->latestVersion);
 
-      //* 后台升级会带上当前版本，比插件设置更权威（换机、手工改版本号后仍能正确计算增量）
+      //* 后台升级会带上当前版本，比插件设置更权威（换机、手工改版本号后仍能正确建立基线）
       if ($app && $app->request()->query->has("fromversion")) {
         $this->currentSemver = self::parseSemver($app->request()->query->get("fromversion"));
       }
@@ -110,7 +107,7 @@ class Deployment extends AbilityBaseObject
       return;
     }
 
-    $this->upgradesDir = $upgradesDir;
+    $this->migrationsDir = $migrationsDir ?? Path::join(Path::root(), "Deployment", "Migrations");
 
     $versionFile = Path::join(Path::data(), ".version");
     if (file_exists($versionFile)) {
@@ -223,51 +220,25 @@ class Deployment extends AbilityBaseObject
     return file_put_contents(Path::join(Path::data(), "install.key"), bin2hex(\random_bytes(16)));
   }
   /**
-   * 执行增量升级
+   * 执行迁移
    *
-   * 扫描 upgradesDir 目录下的 Upgrade_x_y_z.php 文件，从文件名提取版本号
-   * （如 Upgrade_1_2_3.php → 1.2.3），过滤出 > currentSemver 且 ≤ targetVersion
-   * 的脚本，按版本升序逐个执行。
+   * 扫描 migrationsDir，执行 Data/migrations.json 中尚未记录的迁移。
+   * 首次没有记录文件时，按当前插件版本把历史迁移标记为已执行，避免重复跑。
    *
-   * 每个升级脚本是一个类，执行逻辑：
-   * 1. include 文件，从文件路径推导完全限定类名并实例化
-   * 2. 若类有 upgrade() 方法则调用之，否则构造器本身即升级逻辑（向后兼容）
-   *
-   * @param string|null $targetVersion 目标版本号，null 表示升级到最新
+   * @param string|null $targetVersion 目标版本号，null 表示执行全部待执行迁移
    * @return bool true=升级完成，false=升级失败，有错误
    */
   public function upgrade($targetVersion = null)
   {
-    $upgradeList = $this->scanUpgradeFiles();
-    if (empty($upgradeList)) {
-      return true;
+    try {
+      $this->migrator()->run($targetVersion);
+    } catch (\Throwable $th) {
+      return $this->break(500, 500, "升级失败: " . $th->getMessage(), $th);
     }
 
-    $targetVersion = $this::parseSemver($targetVersion);
-    $currentVersion = $this->currentSemver;
-
-    if (!array_key_exists($targetVersion, $upgradeList)) {
-      $upgradeList[$targetVersion] = null;
-    }
-
-    ksort($upgradeList);
-
-    foreach ($upgradeList as $version => $filePath) {
-      if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
-        break;
-      }
-      if (version_compare($currentVersion, $version, ">=") === true) {
-        continue;
-      }
-
-      if ($filePath) {
-        if (!$this->runUpgrade($filePath, $version)) {
-          return $this->forwardBreak();
-        }
-      }
-
-      $currentVersion = $version;
-      $this->persistVersion($currentVersion);
+    $version = $targetVersion ?: ($this->app() ? $this->app()->config()->get("version") : null);
+    if ($version) {
+      $this->persistVersion($version);
     }
 
     return true;
@@ -297,167 +268,66 @@ class Deployment extends AbilityBaseObject
   }
 
   /**
-   * 执行增量回滚
+   * 执行迁移回滚
    *
-   * 从当前版本降级到 $targetVersion，按版本降序执行回滚脚本。
-   * 过滤出 ≤ currentSemver 且 > targetVersion 的脚本，逐个执行 rollback()。
-   * 仅定义了 rollback() 方法的升级类参与回滚，无该方法则跳过。
+   * 传 targetVersion 时回滚版本高于目标的迁移；不传时回滚最后一个 batch。
    *
-   * @param string $targetVersion 回滚目标版本号
+   * @param string|null $targetVersion 回滚目标版本号；null 表示回滚最后一个 batch
    * @return bool true=回滚完成，false=回滚失败，有错误
    */
-  public function rollback($targetVersion)
+  public function rollback($targetVersion = null)
   {
-    $upgradeList = $this->scanUpgradeFiles();
-    if (empty($upgradeList)) {
-      return true;
+    try {
+      $this->migrator()->rollback($targetVersion);
+    } catch (\Throwable $th) {
+      return $this->break(500, 500, "回滚失败: " . $th->getMessage(), $th);
     }
 
-    $targetVersion = $this::parseSemver($targetVersion);
-    $currentVersion = $this->currentSemver;
-
-    if (!array_key_exists($targetVersion, $upgradeList)) {
-      $upgradeList[$targetVersion] = null;
-    }
-
-    // 降序：从高版本向低版本回滚
-    krsort($upgradeList);
-
-    foreach ($upgradeList as $version => $filePath) {
-      // 不高于目标版本，后续版本均不高于目标，无需继续
-      if (version_compare($version, $targetVersion, "<=") === true) {
-        break;
-      }
-      // 高于当前版本，无对应回滚脚本
-      if (version_compare($version, $currentVersion, ">") === true) {
-        continue;
-      }
-
-      if ($filePath) {
-        if (!$this->runRollback($filePath, $version)) {
-          return $this->forwardBreak();
-        }
-      }
-
-      $currentVersion = $version;
-      $this->persistVersion($version);
+    if ($targetVersion) {
+      $this->persistVersion($targetVersion);
     }
 
     return true;
   }
 
   /**
-   * 获取升级脚本目录路径
+   * 迁移执行器
    *
-   * 未通过构造参数指定时返回默认路径 {Path::root()}/Upgrades。
-   *
-   * @return string 升级脚本目录（绝对路径）
+   * @return Migrator
    */
-  private function upgradesDir(): string
+  private function migrator()
   {
-    return $this->upgradesDir ?? Path::join(Path::root(), "Upgrades");
+    return new Migrator(
+      $this->migrationsDir(),
+      Path::join(Path::data(), "migrations.json"),
+      $this->currentSemver
+    );
   }
 
   /**
-   * 扫描 upgradesDir 目录，匹配 Upgrade_x_y_z.php 文件并提取版本号
+   * 安装完成后把当前迁移标记为已执行
    *
-   * @return array<string, string> 关联数组 [version => filePath]，如 ['1.1.0' => '/path/to/Upgrade_1_1_0.php']
+   * 新装环境直接按当前模型建表，无需再跑历史迁移；已有记录时不覆盖。
+   *
+   * @return bool
    */
-  private function scanUpgradeFiles(): array
+  public function markMigrationsApplied()
   {
-    $upgradesDir = $this->upgradesDir();
-    if (!is_dir($upgradesDir)) {
-      return [];
-    }
-
-    $upgradeList = [];
-    $files = scandir($upgradesDir);
-
-    foreach ($files as $file) {
-      if (!preg_match('/^Upgrade_(\d+_\d+_\d+)\.php$/', $file, $matches)) {
-        continue;
-      }
-
-      $version = str_replace('_', '.', $matches[1]);
-      $upgradeList[$version] = Path::join($upgradesDir, $file);
-    }
-
-    return $upgradeList;
-  }
-
-  /**
-   * 从升级目录路径和文件名构建类的完全限定名
-   *
-   * 推导逻辑：取 upgradesDir 相对 Path::root() 的路径 → 目录分隔符转命名空间分隔符
-   * → 以默认应用 ID 为根命名空间拼接类短名。
-   * 例：默认应用 ID=myapp，upgradesDir={root}/Deployment/Upgrades，file=Upgrade_1_1_0.php
-   *     → myapp\Deployment\Upgrades\Upgrade_1_1_0
-   *
-   * @param string $filePath 升级脚本完整路径
-   * @return string 完全限定类名
-   */
-  private function buildUpgradeClassName($filePath)
-  {
-    $shortName = pathinfo($filePath, PATHINFO_FILENAME);
-    $relativePath = ltrim(str_replace(Path::root(), '', $this->upgradesDir()), '/');
-    $namespace = str_replace('/', '\\', $relativePath);
-    return Applications::defaultId() . '\\' . $namespace . '\\' . $shortName;
-  }
-
-  /**
-   * 执行单个升级脚本
-   *
-   * include 脚本文件 → 实例化类 → 若类定义了 upgrade() 方法则调用，
-   * 否则仅实例化（构造器包含升级逻辑，向后兼容）。
-   *
-   * @param string $filePath 升级脚本文件路径
-   * @param string $version  对应版本号
-   */
-  private function runUpgrade($filePath, $version)
-  {
-    include($filePath);
-    $className = $this->buildUpgradeClassName($filePath);
-
-    if (!class_exists($className)) {
-      return $this->break(500, 500, "升级到 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
-    }
-
     try {
-      $instance = new $className();
-      if (method_exists($instance, 'upgrade')) {
-        $instance->upgrade();
-      }
+      return $this->migrator()->markAllApplied();
     } catch (\Throwable $th) {
-      return $this->break(500, 500, "升级到 {$version} 失败: " . $th->getMessage(), $th);
+      return $this->break(500, 500, "写入迁移基线失败: " . $th->getMessage(), $th);
     }
   }
 
   /**
-   * 执行单个回滚脚本
+   * 获取迁移目录路径
    *
-   * include 脚本文件 → 实例化类 → 调用 rollback() 方法。
-   * 若类未定义 rollback() 方法则跳过（不抛异常）。
-   *
-   * @param string $filePath 升级脚本文件路径
-   * @param string $version  对应版本号
+   * @return string 迁移目录（绝对路径）
    */
-  private function runRollback($filePath, $version)
+  private function migrationsDir(): string
   {
-    include($filePath);
-    $className = $this->buildUpgradeClassName($filePath);
-
-    if (!class_exists($className)) {
-      return $this->break(500, 500, "回滚 {$version} 失败: 类 {$className} 不存在，请检查 {($filePath)} 中的命名空间和类名是否正确");
-    }
-
-    try {
-      $instance = new $className();
-      if (method_exists($instance, 'rollback')) {
-        $instance->rollback();
-      }
-    } catch (\Throwable $th) {
-      return $this->break(500, 500, "回滚 {$version} 失败: " . $th->getMessage(), $th);
-    }
+    return $this->migrationsDir ?? Path::join(Path::root(), "Deployment", "Migrations");
   }
   /**
    * 持久化当前版本号到 .version 文件
@@ -495,7 +365,7 @@ class Deployment extends AbilityBaseObject
   /**
    * 获取应用当前状态快照
    *
-   * @return array{app_id: string|null, current_version: string, latest_version: string|null, upgrade_dir: string, data_dir: string|null}
+   * @return array{app_id: string|null, current_version: string, latest_version: string|null, migrations_dir: string, data_dir: string|null}
    */
   public function getStatus(): array
   {
@@ -503,36 +373,31 @@ class Deployment extends AbilityBaseObject
       'app_id' => Applications::defaultId(),
       'current_version' => $this->currentSemver,
       'latest_version' => $this->latestVersion,
-      'upgrade_dir' => $this->upgradesDir(),
+      'migrations_dir' => $this->migrationsDir(),
       'data_dir' => Path::data(),
     ];
   }
 
   /**
-   * 获取待升级的版本列表
+   * 获取待执行迁移 ID
    *
    * @param string|null $targetVersion 目标版本
-   * @return array 待升级的版本号列表，按升序排列
+   * @return array 迁移 ID，按升序排列
+   */
+  public function getPendingMigrations($targetVersion = null): array
+  {
+    return $this->migrator()->pending($targetVersion);
+  }
+
+  /**
+   * getPendingMigrations() 的兼容别名
+   *
+   * @param string|null $targetVersion 目标版本
+   * @return array
    */
   public function getPendingUpgrades($targetVersion = null): array
   {
-    $upgradeList = $this->scanUpgradeFiles();
-    if (empty($upgradeList)) {
-      return [];
-    }
-    ksort($upgradeList);
-
-    $pending = [];
-    foreach ($upgradeList as $version => $_) {
-      if ($targetVersion && version_compare($version, $targetVersion, ">") === true) {
-        break;
-      }
-      if (version_compare($this->currentSemver, $version, ">=") === true) {
-        continue;
-      }
-      $pending[] = $version;
-    }
-    return $pending;
+    return $this->getPendingMigrations($targetVersion);
   }
 
   /**

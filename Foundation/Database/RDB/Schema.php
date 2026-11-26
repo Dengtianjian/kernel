@@ -514,6 +514,53 @@ class Schema
     return $this->indexName ?: "idx_{$this->name}";
   }
   /**
+   * 是否允许 NULL
+   *
+   * @return bool
+   */
+  function isNullable()
+  {
+    return $this->nullable;
+  }
+  /**
+   * 是否显式设置过默认值
+   *
+   * 用于区分「DEFAULT NULL」与「不设 DEFAULT」。
+   *
+   * @return bool
+   */
+  function hasDefault()
+  {
+    return $this->hasDefault;
+  }
+  /**
+   * 获取默认值
+   *
+   * @return mixed
+   */
+  function getDefault()
+  {
+    return $this->default;
+  }
+  /**
+   * 获取字段注释
+   *
+   * @return string
+   */
+  function getComment()
+  {
+    return $this->comment;
+  }
+  /**
+   * 是否无符号
+   *
+   * @return bool
+   */
+  function isUnsigned()
+  {
+    return $this->unsigned;
+  }
+  /**
    * 获取字段对应的 PHP 类型
    *
    * 映射规则：
@@ -547,17 +594,14 @@ class Schema
   // ─── 生成 ──────────────────────────────────────
 
   /**
-   * 生成字段定义 SQL（单列）
+   * 生成字段类型 SQL
    *
-   * 例如：`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键'
+   * 只包含类型与无符号修饰，例如 `VARCHAR(64)`、`INT UNSIGNED`。
    *
    * @return string
    */
-  function toSQL()
+  function getTypeSQL()
   {
-    $parts = ["`{$this->name}`"];
-
-    // 类型 + 长度
     $typeSQL = $this->type;
     if ($this->type === 'TIMESTAMP_MS') {
       $typeSQL = 'VARCHAR';
@@ -581,29 +625,50 @@ class Schema
     if ($this->unsigned && in_array($this->type, ['INT', 'BIGINT', 'TINYINT', 'SMALLINT', 'MEDIUMINT', 'FLOAT', 'DOUBLE', 'DECIMAL', 'UNIXTIME', 'UNIXTIME_MS'])) {
       $typeSQL .= ' UNSIGNED';
     }
-    $parts[] = $typeSQL;
 
-    // NOT NULL / NULL
+    return $typeSQL;
+  }
+
+  /**
+   * 生成不含字段名的列定义
+   *
+   * 例如：`VARCHAR(64) NOT NULL COMMENT 'token哈希'`
+   *
+   * @return string
+   */
+  function definitionSQL()
+  {
+    $parts = [$this->getTypeSQL()];
+
     if (!$this->nullable) {
       $parts[] = 'NOT NULL';
     }
 
-    // AUTO_INCREMENT
     if ($this->autoIncrement) {
       $parts[] = 'AUTO_INCREMENT';
     }
 
-    // DEFAULT
     if ($this->hasDefault) {
       $parts[] = 'DEFAULT ' . Statement::format($this->default, "'");
     }
 
-    // COMMENT
     if ($this->comment) {
       $parts[] = 'COMMENT ' . Statement::format($this->comment, "'");
     }
 
     return implode(' ', $parts);
+  }
+
+  /**
+   * 生成字段定义 SQL（单列）
+   *
+   * 例如：`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键'
+   *
+   * @return string
+   */
+  function toSQL()
+  {
+    return "`{$this->name}` " . $this->definitionSQL();
   }
 
   /**

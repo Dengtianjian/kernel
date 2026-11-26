@@ -14,6 +14,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  * ## 职责范围
  *
  * - **DDL 操作**：`create()` / `drop()` / `truncate()` / `rename()` / `copy()`（统一返回 bool）
+ * - **表结构变更**：`alter()` 返回 {@see TableBuilder}，在闭包或链式调用中修改表
  * - **建表 SQL 生成**：`buildCreateSQL()` 基于 $schema 生成 CREATE TABLE SQL（不执行）
  * - **信息查询**：`tableExists()` / `getCreateSQL()` / `getColumns()` / `getIndexes()` / `getStatus()` / `optimize()`
  * - **表名管理**：`prefix()` 设定全局前缀，`applyPrefix()` 为表名补前缀，`prefixReplaces` 支持前缀占位替换
@@ -332,6 +333,41 @@ class Table extends AbilityBaseObject
     }
 
     return true;
+  }
+
+  // ===================================================================
+  // 表结构变更
+  // ===================================================================
+
+  /**
+   * 修改表结构
+   *
+   * 传闭包时，回调内声明变更，方法结束时自动执行；不传时返回 Builder 供链式调用。
+   *
+   * ```php
+   * UserModel::alter(function (TableBuilder $table) {
+   *   $table->string('name', 64)->nullable()->change();
+   * });
+   *
+   * UserModel::alter()
+   *   ->string('name', 64)->nullable()->change()
+   *   ->sync();
+   * ```
+   *
+   * @param callable|null $callback 接收 {@see TableBuilder} 的闭包
+   * @return TableBuilder 已传闭包时返回已执行的 Builder；否则返回待执行 Builder
+   */
+  public static function alter($callback = null)
+  {
+    $builder = new TableBuilder(new static());
+    if ($callback !== null) {
+      $callback($builder);
+      if ($builder->hasPendingChanges()) {
+        $builder->sync();
+      }
+    }
+
+    return $builder;
   }
 
   // ===================================================================
