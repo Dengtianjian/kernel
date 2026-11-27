@@ -124,27 +124,39 @@ class StorageModule extends AbilityBaseObject
   protected $dataSave = false;
 
   /**
+   * 签名密钥
+   *
+   * 构造传入时直接使用；为空时首次签名通过应用缓存读取/生成。
+   *
+   * @var string|null
+   */
+  protected $signatureKey = null;
+
+  /**
    * 构造文件存储
    *
-   * 依次完成：按**归属应用**初始化签名器 → 记录磁盘池 → 取磁盘池**第一块**磁盘作为
-   * 当前使用磁盘（赋给 `$useDisk`）→ 基础访问地址取自应用基础 URL。
+   * 依次完成：记录签名密钥 → 记录磁盘池 → 取磁盘池**第一块**磁盘作为当前使用磁盘
+   * （赋给 `$useDisk`）→ 基础访问地址取自应用基础 URL。
    *
-   * 「归属应用」决定三件事：签名器的密钥种子、文件元信息表的表名前缀、签出 URL 的归属。
-   * 子系统（download）要用主系统（super_app）的文件中心时，不重新装配，直接复用那份实例；
-   * 需要指定归属时在登记前调父类的 {@see \kernel\Foundation\Object\BaseObject::bindApp()}。
+   * 「归属应用」决定文件元信息表的表名前缀与签出 URL 的归属；子系统（download）要用
+   * 主系统（super_app）的文件中心时，不重新装配，直接复用那份实例。
    *
    * 构造**不接收 app、也不登记任何全局单例**：实例归应用容器所有，归属由
-   * `instance()` / `register()` 登记时绑定，构造期只做与归属无关的初始化
-   * （签名器因依赖 appId，延迟到首次使用）。
+   * `instance()` / `register()` 登记时绑定；签名器延迟到首次使用。
+   *
+   * 签名密钥可选：传了就用传入值；为空时在首次签名时从应用缓存
+   * `storage_signature_key` 读取，缺失则生成随机密钥并写回缓存。
    *
    * 磁盘池为空时 `$useDisk` 保持 null，后续 {@see get()} / {@see put()} 等磁盘操作均不可用。
    *
    * @param array<string,AbstractStorage> $disks 磁盘驱动表（磁盘名 => 磁盘实例）
+   * @param string|null $signatureKey 签名密钥；为空时使用应用缓存中的密钥
    * @return void
    */
-  public function __construct($disks)
+  public function __construct($disks, $signatureKey = null)
   {
     $this->disks = $disks;
+    $this->signatureKey = is_string($signatureKey) && $signatureKey !== "" ? $signatureKey : null;
 
     if ($disks) {
       $this->useDisk = array_values($disks)[0];
@@ -154,17 +166,39 @@ class StorageModule extends AbilityBaseObject
   }
 
   /**
+   * 读取或生成签名密钥
+   *
+   * 缓存命中直接复用；未命中生成 32 字节随机密钥并写入应用缓存（永不过期）。
+   *
+   * @return string
+   */
+  private function resolveSignatureKey()
+  {
+    if ($this->signatureKey !== null) {
+      return $this->signatureKey;
+    }
+
+    $key = $this->app()->cache()->remember("storage_signature_key", function () {
+      return bin2hex(random_bytes(32));
+    }, null);
+    if (!is_string($key) || $key === "") {
+      throw new Error("存储签名密钥不可用", 500, 500);
+    }
+
+    return $this->signatureKey = $key;
+  }
+
+  /**
    * 文件访问签名器（懒建）
    *
-   * 构造期还没有归属应用（容器是构造后才 `bindApp()`），因此密钥种子按首次使用时的
-   * `$this->app()->appId()` 生成；登记到哪个应用，签的就是哪个应用的密钥。
+   * 密钥来自构造参数或应用缓存，首次签名时解析。
    *
    * @return StorageSignature
    */
   protected function signature()
   {
     if ($this->signature === null) {
-      $this->signature = new StorageSignature($this->app()->appId());
+      $this->signature = new StorageSignature($this->resolveSignatureKey());
     }
 
     return $this->signature;
@@ -383,7 +417,8 @@ class StorageModule extends AbilityBaseObject
    */
   public function disk($name = null)
   {
-    if ($name) return $this->disks[$name];
+    if ($name)
+      return $this->disks[$name];
 
     return $this->useDisk ?: $this->defaultDisk;
   }
@@ -528,12 +563,15 @@ class StorageModule extends AbilityBaseObject
   public function get($fileKey)
   {
     $result = $this->useDisk->get($fileKey);
-    if ($this->useDisk->error) return $this->useDisk->forwardBreak();
+    if ($this->useDisk->error)
+      return $this->useDisk->forwardBreak();
     //* 文件不存在时驱动返回 false：对 false 调 toArray() 会 fatal，转为 404 错误态（F3）
-    if (!$result) return $this->break(404, "getFileFailed:404", "文件不存在");
+    if (!$result)
+      return $this->break(404, "getFileFailed:404", "文件不存在");
 
     $file = $result->toArray();
-    if (!$file) return $this->break(500, 500, "获取文件信息失败");
+    if (!$file)
+      return $this->break(500, 500, "获取文件信息失败");
 
     return $file;
   }
@@ -583,7 +621,7 @@ class StorageModule extends AbilityBaseObject
       "path" => $pathInfo['dirname'],
       "filePath" => $fileInfo->filePath,
       "width" => $fileInfo->width,
-      "height" =>  $fileInfo->height,
+      "height" => $fileInfo->height,
       "extension" => $pathInfo['extension'],
       "access_control" => self::PUBLIC_READ
     ]);
@@ -638,7 +676,8 @@ class StorageModule extends AbilityBaseObject
     }
 
     $fileInfo = $this->put($file, $fileKey);
-    if ($this->error) return $this->forwardBreak();
+    if ($this->error)
+      return $this->forwardBreak();
 
     $fileInfo->ref = $ref ?? null;
     $fileInfo->type = $type ?? null;
@@ -776,7 +815,8 @@ class StorageModule extends AbilityBaseObject
     }
 
     $this->useDisk->delete($key);
-    if ($this->useDisk->error) return false;
+    if ($this->useDisk->error)
+      return false;
 
     return true;
   }
@@ -793,7 +833,8 @@ class StorageModule extends AbilityBaseObject
   {
     if ($this->dataSave()) {
       $databaseExists = $this->files()->where("key", $key)->exists();
-      if (!$databaseExists) return false;
+      if (!$databaseExists)
+        return false;
     }
 
     return $this->useDisk->exists($key);
@@ -913,7 +954,8 @@ class StorageModule extends AbilityBaseObject
   public function verifySignature($fileKey, $rawURLParams, $rawHeaders = [], $httpMethod = "get", $action = null)
   {
     $signParamKeys = ["sign-algorithm", "sign-time", "key-time", "header-list", "signature", "url-param-list"];
-    if (!is_null($action)) $signParamKeys[] = "action";
+    if (!is_null($action))
+      $signParamKeys[] = "action";
 
     foreach ($signParamKeys as $key) {
       if (!array_key_exists($key, $rawURLParams)) {
@@ -943,19 +985,26 @@ class StorageModule extends AbilityBaseObject
       }
     }
 
-    if ($signAlgorithm !== StorageSignature::getSignAlgorithm()) return $this->break(403, "verifyAuth:403002", "参数错误");
-    if (strpos($signTime, ";") === false || strpos($keyTime, ";") === false) return $this->break(403, "verifyAuth:403003", "参数错误");
-    if ($signTime !== $keyTime) return $this->break(403, "verifyAuth:403004", "参数错误");
+    if ($signAlgorithm !== StorageSignature::getSignAlgorithm())
+      return $this->break(403, "verifyAuth:403002", "参数错误");
+    if (strpos($signTime, ";") === false || strpos($keyTime, ";") === false)
+      return $this->break(403, "verifyAuth:403003", "参数错误");
+    if ($signTime !== $keyTime)
+      return $this->break(403, "verifyAuth:403004", "参数错误");
     list($startTime, $endTime) = explode(";", $signTime);
     list($keyStartTime, $keyEndTime) = explode(";", $keyTime);
     $startTime = intval($startTime);
     $endTime = intval($endTime);
     $keyStartTime = intval($keyStartTime);
     $keyEndTime = intval($keyEndTime);
-    if ($endTime < $startTime) return $this->break(403, "verifyAuth:403005", "验证信息已过期");
-    if ($endTime < time()) return $this->break(403, "verifyAuth:403006", "验证信息已过期");
-    if ($keyEndTime < $keyStartTime) return $this->break(403, "verifyAuth:403007", "验证信息已过期");
-    if ($keyEndTime < time()) return $this->break(403, "verifyAuth:403008", "验证信息已过期");
+    if ($endTime < $startTime)
+      return $this->break(403, "verifyAuth:403005", "验证信息已过期");
+    if ($endTime < time())
+      return $this->break(403, "verifyAuth:403006", "验证信息已过期");
+    if ($keyEndTime < $keyStartTime)
+      return $this->break(403, "verifyAuth:403007", "验证信息已过期");
+    if ($keyEndTime < time())
+      return $this->break(403, "verifyAuth:403008", "验证信息已过期");
 
     $headers = [];
     if ($headerList) {
@@ -1010,7 +1059,8 @@ class StorageModule extends AbilityBaseObject
    */
   public function verifyRequestSignature($key, $silent = false, $action = null)
   {
-    if (!$this->authEnabled) return true;
+    if (!$this->authEnabled)
+      return true;
 
     $request = Applications::default()->request();
     $urlParams = $request->query->some();
@@ -1048,21 +1098,25 @@ class StorageModule extends AbilityBaseObject
     if ($this->dataSave) {
       $file = $this->files()->addSelect("owner_id", "access_control")->where("key", $fileKey)->first();
 
-      if (!$file) return $this->break(404, 404, "文件不存在");
+      if (!$file)
+        return $this->break(404, 404, "文件不存在");
 
       if ($this->accessControlEnabled()) {
         if (!$this->accessControlAuthId() || !$file['owner_id'] || $this->accessControlAuthId() !== $file['owner_id']) {
           if ($this->checkAccessControl($fileKey, $file['access_control'], $file['owner_id'], $operation, $action) === false) {
-            if ($this->app()->isDevelopment() && $this->getError()) return $this->forwardBreak();
+            if ($this->app()->isDevelopment() && $this->getError())
+              return $this->forwardBreak();
             return $this->break(403, 403001, "抱歉，您无权操作/获取该文件");
           }
         }
       } else if ($this->verifyRequestSignature($fileKey, false, $action) === false) {
-        if ($this->app()->isDevelopment()) return $this->forwardBreak();
+        if ($this->app()->isDevelopment())
+          return $this->forwardBreak();
         return $this->break(403, 403002, "抱歉，您无权操作/获取该文件");
       }
     } else if ($this->verifyRequestSignature($fileKey, false, $action) === false) {
-      if ($this->app()->isDevelopment()) return $this->forwardBreak();
+      if ($this->app()->isDevelopment())
+        return $this->forwardBreak();
       return $this->break(403, 403003, "抱歉，您无权操作/获取该文件");
     }
 
@@ -1088,10 +1142,12 @@ class StorageModule extends AbilityBaseObject
    */
   public function checkAccessControl($fileKey, $authTag, $ownerId, $operation = "read", $action = null)
   {
-    if (!$this->dataSave || !$this->accessControlEnabled) return true;
+    if (!$this->dataSave || !$this->accessControlEnabled)
+      return true;
 
     //* 相同的 id 说明拥有人和当前登录的用户是同一个人，直接返回 true
-    if ($ownerId == $this->accessControlAuthId()) return true;
+    if ($ownerId == $this->accessControlAuthId())
+      return true;
 
     //* 后面就是不相同的 ID，说明拥有人和当前登录的用户不是同一个人
 
@@ -1099,19 +1155,23 @@ class StorageModule extends AbilityBaseObject
 
     if ($authTag === self::PRIVATE) {
       return false;
-    } else if (in_array($authTag, [
-      self::AUTHENTICATED_READ_WRITE,
-      self::AUTHENTICATED_READ
-    ])) {
+    } else if (
+      in_array($authTag, [
+        self::AUTHENTICATED_READ_WRITE,
+        self::AUTHENTICATED_READ
+      ])
+    ) {
       if ($authTag === self::AUTHENTICATED_READ && $operation !== "read") {
         return false;
       }
       $verified = $this->verifyRequestSignature($fileKey, true, $action);
       return is_numeric($verified) || $verified === false ? false : true;
-    } else if (in_array($authTag, [
-      self::PUBLIC_READ,
-      self::PUBLIC_READ_WRITE
-    ])) {
+    } else if (
+      in_array($authTag, [
+        self::PUBLIC_READ,
+        self::PUBLIC_READ_WRITE
+      ])
+    ) {
       if ($authTag === self::PUBLIC_READ && $operation !== "read") {
         return false;
       }

@@ -8,9 +8,8 @@ use kernel\Foundation\Object\BaseObject;
  * 文件访问签名器（仿腾讯云 COS 签名 v2 算法）
  *
  * 为私有文件 URL 提供「时效 + 防篡改」的授权能力，整体流程对齐 COS 的签名方案：
- * - 以密钥对 `KeyTime`（起始;结束）做 HMAC 得到 SignKey；
  * - 将 URL 参数 / 请求头按键名排序、编码后各自拼成字符串（url-param-list / header-list）；
- * - 以 `HTTP方法\n文件路径\n参数串\n头串[\naction]` 做 SHA1 得到 HttpString，再组装 StringToSign 做最终 HMAC 得到 Signature。
+ * - 以 `HTTP方法\n文件路径\n参数串\n头串[\naction]` 做 SHA1 得到 HttpString，再组装 StringToSign 做最终 HMAC-SHA1 得到 Signature。
  *
  * 对外暴露两个入口：
  * - {@see createAuthorization()}：签发方调用，生成授权参数字典（sign-algorithm / sign-time / key-time / header-list / signature / url-param-list，**带 action 时额外多一个同级参数 action**），由 Storage 拼到 URL 上；
@@ -19,8 +18,8 @@ use kernel\Foundation\Object\BaseObject;
  * 关于 `action`（动作限定）：
  * - 它是一个与 `sign-algorithm` **同级**的授权参数，用于把签名限定到具体动作（如 preview / download / info），
  *   避免"同一文件、同一 HTTP 方法"的签名被拿到别的端点复用；
- * - **只有签发与验签双方都带 action 时它才参与签名计算** —— 不带 action 时载荷与旧版逐字节一致，
- *   历史签名继续有效；带上 action 的签名则会多一行，因此有/无 action 的签名互不通用；
+ * - **只有签发与验签双方都带 action 时它才参与签名计算** —— 不带 action 时载荷不含 action 行；
+ *   带上 action 的签名会多一行，因此有/无 action 的签名互不通用；
  * - 验签侧 {@see matchAction()} 支持传**字符串**（精确匹配，忽略大小写）或**数组**（允许集合，命中其一即可）。
  *
  * 注意：本类为通用 HMAC-SHA1 签名实现，本身不绑定具体云厂商；子类（如 QCloudCosSignture）可在其基础上补充 host / token 等字段。
@@ -30,7 +29,7 @@ use kernel\Foundation\Object\BaseObject;
 class StorageSignature extends BaseObject
 {
   /**
-   * @var string|null 签名密钥（HMAC 加盐用），由构造传入
+   * @var string 签名密钥（HMAC 用）
    */
   protected $signatureKey = null;
 
@@ -71,7 +70,7 @@ class StorageSignature extends BaseObject
   /**
    * 构造签名器
    *
-   * @param string $signatureKey 签名密钥，用于 HMAC 加盐
+   * @param string $signatureKey 签名密钥，用于 HMAC
    */
   public function __construct($signatureKey)
   {
@@ -226,13 +225,13 @@ class StorageSignature extends BaseObject
    * 生成签名（核心算法）
    *
    * 依据密钥、有效期、URL 参数、请求头、HTTP 方法与 action 计算最终 HMAC-SHA1 签名串：
-   * 1. KeyTime = "起始;结束"，SignKey = HMAC-SHA1(KeyTime, 密钥)；
+   * 1. KeyTime = "起始;结束"，作为待签内容的一部分参与签名；
    * 2. 将 URL 参数 / 请求头经 {@see object2List()} 排序编码为参数串 / 头串；
    * 3. HttpString = "方法\n路径\n参数串\n头串[\naction]"，StringToSign = "算法\nKeyTime\nSHA1(HttpString)"；
-   * 4. 返回 HMAC-SHA1(StringToSign, SignKey)。
+   * 4. 返回 HMAC-SHA1(StringToSign, 密钥)。
    *
-   * 其中 action 那一行**仅在 $action 非空时**追加 —— 保证不带 action 时的载荷与旧版逐字节一致
-   * （历史签名继续可用），而带 action 的签名与不带 action 的互不通用。
+   * 其中 action 那一行**仅在 $action 非空时**追加 —— 不带 action 的签名不含 action 行，
+   * 带 action 的签名与不带 action 的互不通用。
    *
    * @param string $fileKey 文件键（路径）
    * @param int $startTime 签名有效期起始时间（Unix 时间戳）
@@ -248,7 +247,6 @@ class StorageSignature extends BaseObject
     $httpMethod = strtolower($httpMethod);
 
     $keyTime = implode(";", [$startTime, $endTime]);
-    $signKey = hash_hmac("sha256", $keyTime, $this->signatureKey);
 
     $urlParamList = $this->object2List($urlParams);
     $urlParameterString = implode("&", array_values($urlParamList));
@@ -279,7 +277,7 @@ class StorageSignature extends BaseObject
       ""
     ]);
 
-    return hash_hmac("sha1", $stringToSign, $signKey);
+    return hash_hmac("sha1", $stringToSign, $this->signatureKey);
   }
   /**
    * 制作授权信息（签发）
@@ -308,7 +306,6 @@ class StorageSignature extends BaseObject
     $endTime = $startTime + $expires;
 
     $keyTime = implode(";", [$startTime, $endTime]);
-    $signKey = hash_hmac("sha1", $keyTime, $this->signatureKey);
 
     $urlParamList = $this->object2List($urlParams);
     $urlParamKeys = $this->getObjectKeys($urlParams);
