@@ -144,25 +144,52 @@ class Applications
   }
 
   /**
-   * 判断指定应用是否已登记
+   * 应用ID归一化
    *
-   * @param string $id 应用ID
+   * Discuz 环境下应用目录统一带 `gstudio_` 前缀；调用方写短名（如 `super_app`）时，
+   * 若注册表里没有该短名、但存在 `gstudio_` + 短名的应用，则按后者解析。
+   * 精确 ID 优先，非 Discuz 环境不做任何前缀处理。
+   *
+   * @param string $id 应用ID（完整 ID 或短名）
+   * @return string 归一化后的应用ID
+   */
+  protected static function resolveId($id): string
+  {
+    $id = (string) $id;
+    if ($id === "" || isset(self::$applications[$id])) {
+      return $id;
+    }
+
+    if (defined("IN_DISCUZ") && !str_starts_with($id, "gstudio_")) {
+      $alias = "gstudio_" . $id;
+      if (isset(self::$applications[$alias])) {
+        return $alias;
+      }
+    }
+
+    return $id;
+  }
+
+  /**
+   * 是否已登记指定应用
+   *
+   * @param string $id 应用ID（Discuz 下可省略 `gstudio_` 前缀）
    * @return boolean
    */
   public static function has($id): bool
   {
-    return isset(self::$applications[$id]);
+    return isset(self::$applications[self::resolveId($id)]);
   }
 
   /**
    * 按应用ID获取实例
    *
-   * @param string $id 应用ID
+   * @param string $id 应用ID（Discuz 下可省略 `gstudio_` 前缀）
    * @return Application|null 未登记时返回 null
    */
   public static function get($id): ?Application
   {
-    return self::$applications[$id] ?? null;
+    return self::$applications[self::resolveId($id)] ?? null;
   }
 
   /**
@@ -256,10 +283,11 @@ class Applications
       return true;
     }
 
-    if (!isset(self::$applications[$idOrApp])) {
+    $id = self::resolveId($idOrApp);
+    if (!isset(self::$applications[$id])) {
       return false;
     }
-    self::$defaultId = $idOrApp;
+    self::$defaultId = $id;
 
     return true;
   }
