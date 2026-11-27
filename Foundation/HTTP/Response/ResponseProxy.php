@@ -317,14 +317,11 @@ class ResponseProxy extends Response
    */
   protected static function detectMimeType($sample)
   {
-    if ($sample !== "" && function_exists("finfo_open")) {
-      $finfo = finfo_open(FILEINFO_MIME_TYPE);
-      if ($finfo !== false) {
-        $mimeType = finfo_buffer($finfo, $sample);
-        finfo_close($finfo);
-        if (is_string($mimeType) && $mimeType !== "" && $mimeType !== "application/octet-stream") {
-          return strtolower(trim(explode(";", $mimeType)[0]));
-        }
+    if ($sample !== "" && class_exists("finfo")) {
+      //* PHP 8.5 起 finfo_close() 已弃用，改用对象析构自动释放
+      $mimeType = (new \finfo(\FILEINFO_MIME_TYPE))->buffer($sample);
+      if (is_string($mimeType) && $mimeType !== "" && $mimeType !== "application/octet-stream") {
+        return strtolower(trim(explode(";", $mimeType)[0]));
       }
     }
 
