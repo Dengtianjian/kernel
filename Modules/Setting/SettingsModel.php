@@ -15,7 +15,7 @@ use kernel\Foundation\Database\RDB\Schema;
  * 已抽取到 {@see SettingService}，本模型只负责数据存取，不承载业务方法。
  *
  * 表名归属由构造参数决定：`$app->make(SettingsModel::class)` 时容器按类型注入应用，
- * 读写该应用的设置表；直接 `new` 且不传则回落默认应用。
+ * 读写该应用的设置表；直接 `new` 且不传则回落当前应用。
  * {@see SettingService} 通过容器取用，归属不必手传。
  *
  * 查询统一走 Model 的查询构建器（scopedBuilder 代理）：first()/get()/exists()/

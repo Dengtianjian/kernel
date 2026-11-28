@@ -18,7 +18,7 @@ use kernel\Commands\UnpackCommand;
  * 内核 CLI 装配类
  *
  * 在 kernel/console 入口通过 `new Console(Bootstrap::class)` 装配。
- * 构造不接收 Console 实例：Console 就是当前默认应用，用继承的 app() 回落取到，
+ * 构造不接收 Console 实例：Console 就是当前应用，用继承的 app() 回落取到，
  * 再调用其 addCommand() 注册内核命令。
  */
 class Bootstrap extends AbilityBaseObject

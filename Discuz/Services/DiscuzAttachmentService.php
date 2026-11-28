@@ -38,11 +38,11 @@ class DiscuzAttachmentService extends AbilityBaseObject
     if (isset($files['name']) && is_string($files['name']) && FileHelper::hasDangerousExtension($files['name'])) {
       return new Result(false, 400, "Attachment:400002", "文件类型不允许");
     }
-    //* static 方法内不能取 $this（原实现 $this->app() 一调用即 fatal），改经 Applications 取默认应用
-    $DefaultApp = Applications::default();
-    $savePath = $DefaultApp ? $DefaultApp->config()->get("attachmentPath") : "";
+    //* static 方法内不能取 $this（原实现 $this->app() 一调用即 fatal），改经 Applications 取当前应用
+    $CurrentApp = Applications::current();
+    $savePath = $CurrentApp ? $CurrentApp->config()->get("attachmentPath") : "";
     if (!$savePath) {
-      $savePath = Path::join("data", "plugindata", Applications::defaultId(), "attachments", $saveDir);
+      $savePath = Path::join("data", "plugindata", Applications::currentId(), "attachments", $saveDir);
       if (!is_dir($savePath)) {
         mkdir($savePath, 0755, true);
       }

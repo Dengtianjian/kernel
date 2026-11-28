@@ -44,7 +44,7 @@ final class FileSystem
    *
    * 路径一律取自 {@see Path::data()} / {@see Path::storage()}，因此与平台布局一致：
    * Discuz 下落在站点 `data/plugindata/{appId}`，独立部署下落在应用目录内。
-   * 未实例化 App（Applications::defaultId() 为 null）时路径不可推导，直接跳过。
+   * 未实例化 App（Applications::currentId() 为 null）时路径不可推导，直接跳过。
    */
   private static function ensureDirectories()
   {

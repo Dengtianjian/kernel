@@ -113,7 +113,7 @@ class App extends Application
       }
 
       //* 构造期间压入装配上下文：Bootstrap 里 $this->app() 拿到的是本应用，
-      //* 而不是默认应用（子系统回落到默认应用会把 import 绑定写进别的应用的容器）。
+      //* 而不是当前应用（子系统回落到当前应用会把 import 绑定写进别的应用的容器）。
       Applications::enterSetup($this);
       try {
         new $call();

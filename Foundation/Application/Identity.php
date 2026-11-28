@@ -29,7 +29,7 @@ class Identity
    * - `gstudio_super_app\Models\SuperAppFilesModel`  → `gstudio_super_app`
    * - `kernel\Foundation\...`                        → `kernel`（由 Discuz 环境补前缀）
    *
-   * 用途：子系统复用主系统的类时，kernel 内部需要按「某个类所属的应用」而非「默认应用」
+   * 用途：子系统复用主系统的类时，kernel 内部需要按「某个类所属的应用」而非「当前应用」
    * 来决定表名前缀、签名密钥、URL 的 id 参数等。
    *
    * @param object|string $class 对象、完整类名或命名空间字符串

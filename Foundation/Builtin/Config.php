@@ -14,7 +14,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * 归属由容器注入（{@see AbilityBaseObject::app()}），本类不持有也不推断应用 ID：
  * - 无构造参数，归属只来自容器——容器构造完实例才 `bindApp()`，所以配置在**首次访问**时
- *   才读文件（{@see ensureLoaded()}），构造期读会落到默认应用；
+ *   才读文件（{@see ensureLoaded()}），构造期读会落到当前应用；
  * - 配置读哪个目录，只由「哪个应用的容器构造了它」决定；
  * - 跨应用读配置必须显式走对方应用的容器：`App::of("gstudio_super_app")->config()`；
  * - 没有静态入口 `Config::of()`——组件一律从容器取，否则各组件都能自己造一个「访问别人」的口子。
@@ -52,7 +52,7 @@ class Config extends AbilityBaseObject
   /**
    * 确保配置已从文件读入（首次访问时触发）
    *
-   * 不能放在构造函数里：容器是先 `new` 再 `bindApp()`，构造期 `app()` 只能回落到默认应用，
+   * 不能放在构造函数里：容器是先 `new` 再 `bindApp()`，构造期 `app()` 只能回落到当前应用，
    * 会读错应用的 `Configs/`。推迟到第一次访问，归属已就位。
    *
    * @return void

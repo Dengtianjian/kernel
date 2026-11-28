@@ -58,13 +58,13 @@ class Auth extends Facade
   /**
    * 兜底实例：当前应用容器里的认证模块
    *
-   * 走 `Applications::default()` 而不是 `setUpApp()`：门面在请求期被调用，
-   * 那时装配上下文早已出栈；默认应用就是这个进程正在服务的应用。
+   * 走 `Applications::current()` 而不是 `setUpApp()`：门面在请求期被调用，
+   * 那时装配上下文早已出栈；当前应用就是这个进程正在服务的应用。
    *
    * @return AuthModule
    */
   protected static function resolve()
   {
-    return Applications::default()->auth();
+    return Applications::current()->auth();
   }
 }

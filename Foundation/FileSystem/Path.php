@@ -14,13 +14,13 @@ use kernel\Foundation\Application\Applications;
  * 路径 getter：
  *   kernel        = 本类文件所在目录（内核目录，永远正确，无需任何外部输入）
  *   project       = Discuz 平台取 DISCUZ_ROOT（去尾斜杠），否则为 kernel 的上级目录
- *   root          = kernel 同级目录下的 {appId}，不传取默认应用
+ *   root          = kernel 同级目录下的 {appId}，不传取当前应用
  *   data          = Discuz 下为 {project}/data/plugindata/{appId}，否则 root/Data
  *   storage       = Discuz 下为 data/Storage，否则 root/Storage
  *   kernelDir/dir = kernel/root 相对 project 的路径
  *
- * 依赖默认应用 ID 的 getter（root/data/storage/dir）在尚未登记任何 App
- * （Applications::defaultId() 为 null）时返回 null。
+ * 依赖当前应用 ID 的 getter（root/data/storage/dir）在尚未登记任何 App
+ * （Applications::currentId() 为 null）时返回 null。
  *
  * 非 final，可被继承扩展；getter 均为 public static，便于子类重写。
  */
@@ -59,14 +59,14 @@ class Path
    * 应用根目录（绝对路径），默认 {kernel 同级目录}/{appId}
    *
    * 多应用共存时必须显式传 `$app->appId()` 才能拿到调用方自己那份（配置目录、数据目录
-   * 都靠它定位）；不传则取默认应用。
+   * 都靠它定位）；不传则取当前应用。
    *
-   * @param string|null $appId 应用 ID，不传取默认应用
+   * @param string|null $appId 应用 ID，不传取当前应用
    * @return string|null 应用尚未创建时返回 null
    */
   public static function root($appId = null)
   {
-    $appId = $appId ?? Applications::defaultId();
+    $appId = $appId ?? Applications::currentId();
     if ($appId === null || $appId === "") {
       return null;
     }
@@ -77,7 +77,7 @@ class Path
   /**
    * 指定应用的配置目录（绝对路径），即 appRoot/Configs
    *
-   * @param string|null $appId 应用 ID，不传取默认应用
+   * @param string|null $appId 应用 ID，不传取当前应用
    * @return string|null
    */
   public static function configs($appId = null)
@@ -95,14 +95,14 @@ class Path
    * 插件升级 / 重装不会覆盖；{@see storage()} 即它的 `Storage` 子目录。
    *
    * 与 {@see configs()} / {@see storage()} 一样支持指定应用：多应用同进程时
-   * 传 `$app->appId()` 才能拿到调用方自己那份，不传永远取默认应用。
+   * 传 `$app->appId()` 才能拿到调用方自己那份，不传永远取当前应用。
    *
-   * @param string|null $appId 应用 ID，不传取默认应用
+   * @param string|null $appId 应用 ID，不传取当前应用
    * @return string|null
    */
   public static function data($appId = null)
   {
-    $appId = $appId ?? Applications::defaultId();
+    $appId = $appId ?? Applications::currentId();
     if ($appId === null || $appId === "") {
       return null;
     }
@@ -157,7 +157,7 @@ class Path
    * 独立部署返回 `{appId}`；Discuz 插件布局返回 `source/plugin/{appId}`。
    * 固定用 `/` 分隔，既可拼文件系统路径（PHP 两种分隔符都认），也可直接拼 URL。
    *
-   * @param string|null $appId 应用 ID，不传取默认应用
+   * @param string|null $appId 应用 ID，不传取当前应用
    * @return string|null
    */
   public static function dir($appId = null)

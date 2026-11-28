@@ -11,7 +11,7 @@ use kernel\Foundation\Object\AbilityBaseObject;
  *
  * 全部是实例方法：缓存目录跟着应用走，进程内已读表也是每个应用一份。
  * 归属由容器绑定（`bindApp()`），本类没有构造参数：`$app->cache()` /
- * `register(Cache::class)` 造出来的一定属于那个应用；容器外 `new` 时回落到默认应用。
+ * `register(Cache::class)` 造出来的一定属于那个应用；容器外 `new` 时回落到当前应用。
  * 静态入口请用门面 {@see \kernel\Facades\Cache}；动态 KEY（静态资源版本号）
  * 也在这里，随实例生成一次。
  *

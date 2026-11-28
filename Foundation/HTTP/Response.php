@@ -457,17 +457,17 @@ class Response
     // 控制器未显式设置时，依据请求头 Content-Type / Accept 推断
     $outputType = $this->outputType;
     if (!$outputType) {
-      $outputType = Applications::default()->request()->preferredOutputType();
+      $outputType = Applications::current()->request()->preferredOutputType();
     }
 
     switch ($outputType) {
       case "json":
         header("Content-type:application/json", true);
 
-        $body['version'] = Applications::default()->config()->get("version");
+        $body['version'] = Applications::current()->config()->get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = ($endTime - (Applications::default()->startTime() ?? $endTime)) . " ms";
+        $body['requiredTime'] = ($endTime - (Applications::current()->startTime() ?? $endTime)) . " ms";
 
         echo json_encode($body, JSON_UNESCAPED_UNICODE);
         break;

@@ -78,7 +78,7 @@ use kernel\\Foundation\\Object\\AbilityBaseObject;
  *   new App(\\{$AppId}\\Setup\\Bootstrap::class, "{$AppId}");
  * 构造末尾立即执行本构造方法（无参构造）：
  * - 应用实例不传参、不手动 \$this->app = \$app：继承自 BaseObject 的 \$this->app()
- *   会回落默认应用（构造时已把当前应用登记为默认）
+ *   会回落当前应用（构造时已把自己登记为当前应用）
  * - Config：不用手动 new，\$this->app()->config() 首次访问时自动读 Configs/ 目录
  * - new FileSystem：创建 Data/、Storage/ 等目录
  * - 缓存：不是每个应用都需要，要用就自己登记一行

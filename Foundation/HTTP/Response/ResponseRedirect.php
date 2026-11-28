@@ -257,7 +257,7 @@ class ResponseRedirect extends Response
       return $path;
     }
 
-    $request = Applications::default()->request();
+    $request = Applications::current()->request();
     $host = $request->host();
     $protocol = $secure ? "https" : ($request->isSecure() ? "https" : "http");
     $pathName = $path !== "" && $path[0] !== "/" ? "/" . $path : $path;

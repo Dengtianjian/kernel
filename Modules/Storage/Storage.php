@@ -42,6 +42,6 @@ class Storage extends Facade
    */
   protected static function resolve()
   {
-    return Applications::default()->storage();
+    return Applications::current()->storage();
   }
 }

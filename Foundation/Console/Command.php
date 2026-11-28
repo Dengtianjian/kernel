@@ -31,7 +31,7 @@ class Command
   private $env = [];
   /** @var array proc_open 的 options 参数（bypass_shell、suppress_errors 等） */
   private $options = [];
-  /** @var string 当前工作目录，默认应用根目录 Path::root() */
+  /** @var string 当前工作目录，当前应用根目录 Path::root() */
   private $cwd = "";
   /** @var string 初始化命令（shell 路径），exec() 执行的命令基于它运行 */
   private $initCommand = "";

@@ -84,7 +84,7 @@ abstract class Application
     $this->id = $id;
     $this->kernelId = $kernelId;
 
-    //* 登记到应用管理器：首个注册者自动成为默认应用
+    //* 登记到应用管理器：首个注册者自动成为当前应用
     Applications::register($this, $id);
 
     include_once(Path::join(Path::kernel() . "/Foundation/Common.php"));
@@ -106,7 +106,7 @@ abstract class Application
    * 本实例的应用 ID
    *
    * 回答「我这个应用是谁」——多应用共存时只有它是可靠的。静态上下文中要取
-   * 「当前默认应用是谁」请用 {@see Applications::defaultId()}。
+   * 「当前主运行应用是谁」请用 {@see Applications::currentId()}。
    *
    * 服务 / 上下文里要记「这条数据属于哪个应用」，一律用本方法，不要用静态的。
    *
@@ -144,7 +144,7 @@ abstract class Application
   /**
    * 获取当前运行模式（mode）
    *
-   * 读取默认应用配置的 "mode" 键（`$app->config()->get("mode", "production")`），未配置时默认 "production"。
+   * 读取当前应用配置的 "mode" 键（`$app->config()->get("mode", "production")`），未配置时默认 "production"。
    * 替代原 F_APP_MODE 常量，无需提前定义，随时可安全调用。
    *
    * 静态上下文用本方法；手上已有应用实例时用 {@see isDevelopment()} / {@see isProduction()}，
@@ -158,7 +158,7 @@ abstract class Application
     //* 只读**已经加载过**的配置，不在这里触发加载：自动加载是每条 include 都会走的热路径，
     //* 让它去读磁盘（甚至 include 带平台守卫的配置文件）会把 CLI 直接带崩。
     //* 配置还没加载时按 production 处理——保守取向，与「配置缺失」一致。
-    $app = Applications::default();
+    $app = Applications::current();
     $config = $app === null ? null : $app->resolvedConfig();
 
     return $config === null ? "production" : $config->get("mode", "production");
@@ -401,8 +401,8 @@ abstract class Application
    * 本实例的内核 ID（KernelId），即内核目录文件夹名称
    *
    * 就是构造时传入的第二个参数（默认取内核目录名，即 `kernel`）。
-   * 多应用共存时只有它是可靠的——静态语境要取「默认应用的内核 ID」，
-   * 请写 `Applications::default()->kernelId()`，不要用静态的。
+   * 多应用共存时只有它是可靠的——静态语境要取「当前主运行应用的内核 ID」，
+   * 请写 `Applications::current()->kernelId()`，不要用静态的。
    *
    * @return string|null
    */
@@ -436,13 +436,13 @@ abstract class Application
 
     $app = Applications::get($appId);
     if ($app === null) {
-      //* 懒装配：按默认应用的实际类现建一个（走完整构造，与先建的那个同类）。
+      //* 懒装配：按当前主运行应用的实际类现建一个（走完整构造，与先建的那个同类）。
       //* 构造只登记基础组件，业务组件在装配类里注册——所以懒装配出来的应用只有骨架，
       //* 跨应用要取业务能力，得由使用方自己 register() 或 make() 多例。
       $class = static::instanceClass();
-      $default = Applications::default();
+      $current = Applications::current();
       //* 第一个参数恒为装配（null = 只建骨架），appId / kernelId 排在其后
-      new $class(null, $appId, $default === null ? null : $default->kernelId());
+      new $class(null, $appId, $current === null ? null : $current->kernelId());
       $app = Applications::get($appId);
     }
 
@@ -456,16 +456,16 @@ abstract class Application
   /**
    * 懒装配新应用时使用的类
    *
-   * 取当前默认应用的实际类，保证懒装配出来的应用与先建的那个同类；
+   * 取当前主运行应用的实际类，保证懒装配出来的应用与先建的那个同类；
    * 进程里一个应用都没有时退回本类。
    *
    * @return class-string<Application>
    */
   protected static function instanceClass()
   {
-    $default = Applications::default();
+    $current = Applications::current();
 
-    return $default === null ? static::class : get_class($default);
+    return $current === null ? static::class : get_class($current);
   }
 
   /**

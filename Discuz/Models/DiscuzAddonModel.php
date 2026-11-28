@@ -18,7 +18,7 @@ use kernel\Foundation\Application\Applications;
  *   public $tableName = "addons";   // → gstudio_devaddon_addons
  * }
  * ```
- * 应用 id 取自 {@see \kernel\Foundation\Application\Applications::defaultId()}（经 {@see Applications::default()}），因此本类要求
+ * 应用 id 取自 {@see \kernel\Foundation\Application\Applications::currentId()}（经 {@see Applications::current()}），因此本类要求
  * 当前应用已启动。
  *
  * 与 {@see DiscuzSystemModel} 的分工：

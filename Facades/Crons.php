@@ -37,7 +37,7 @@ class Crons extends Facade
   protected static function resolve()
   {
     $manager = new CronsManager();
-    $app = Applications::default();
+    $app = Applications::current();
     if ($app) {
       $manager->discover(Path::root() . "/Crons", $app->id() . "\\Crons");
     }

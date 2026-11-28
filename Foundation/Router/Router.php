@@ -24,7 +24,7 @@ class Router
   /**
    * 构造：加载路由
    *
-   * 由 App 实例化并持有（`App::$router`）。匹配所需的请求实例通过 `Applications::default()->request()`
+   * 由 App 实例化并持有（`App::$router`）。匹配所需的请求实例通过 `Applications::current()->request()`
    * 获取，无需在构造时传入。
    */
   public function __construct()
@@ -76,7 +76,7 @@ class Router
    */
   public function route()
   {
-    $request = Applications::default()->request();
+    $request = Applications::current()->request();
 
     $uri = $request->uri();
     if ($uri !== "/") {

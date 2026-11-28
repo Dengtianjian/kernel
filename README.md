@@ -98,10 +98,10 @@ $App->run();
 |------|------|
 | `Path::project()` | 项目根目录路径（Discuz 平台取 `DISCUZ_ROOT`） |
 | `Path::kernel()` | 本基础插件目录路径（自动计算的静态 getter） |
-| `Path::root()` | 业务应用根目录路径（按默认应用 ID 推导） |
+| `Path::root()` | 业务应用根目录路径（按当前应用 ID 推导） |
 | `Path::data()` | 业务应用数据目录路径 |
 | `Path::storage()` | 业务应用存储目录路径 |
-| `$app->appId()` | 当前应用标识（实例方法；静态上下文用 `Applications::defaultId()`） |
+| `$app->appId()` | 当前应用标识（实例方法；静态上下文用 `Applications::currentId()`） |
 
 ## 运行模式
 

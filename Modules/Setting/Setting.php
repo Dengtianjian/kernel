@@ -10,6 +10,6 @@ class Setting extends Facade
 {
   protected static function resolve()
   {
-    return Applications::default()->setting();
+    return Applications::current()->setting();
   }
 }

@@ -92,7 +92,7 @@ class Deployment extends AbilityBaseObject
   public function __construct($migrationsDir = null)
   {
     if (DiscuzApp::exists()) {
-      $app = Applications::default();
+      $app = Applications::current();
 
       //* 插件布局：迁移文件在插件目录下；版本真源是 Discuz 的插件设置，不读 `.version`
       $this->migrationsDir = $migrationsDir ?? Path::join(Path::root(), "Deployment", "Migrations");
@@ -370,7 +370,7 @@ class Deployment extends AbilityBaseObject
   public function getStatus(): array
   {
     return [
-      'app_id' => Applications::defaultId(),
+      'app_id' => Applications::currentId(),
       'current_version' => $this->currentSemver,
       'latest_version' => $this->latestVersion,
       'migrations_dir' => $this->migrationsDir(),

@@ -74,7 +74,7 @@ class Console extends App
 
     $this->argv = isset($GLOBALS['argv']) ? array_slice($GLOBALS['argv'], 1) : [];
 
-    //* Applications::default() 在父类 App 构造时已注册当前实例
+    //* Applications::current() 在父类 App 构造时已注册当前实例
 
     //* CLI 环境覆盖异常处理：直接输出到 stderr 并以非 0 退出
     \set_exception_handler(function ($exception) {

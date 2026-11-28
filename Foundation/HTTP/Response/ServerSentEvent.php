@@ -188,17 +188,17 @@ class ServerSentEvent extends Response
     $data = $this->getData();
 
     if ($this->outputType === "json") {
-      $body['version'] = Applications::default()->config()->get("version");
+      $body['version'] = Applications::current()->config()->get("version");
     }
 
     $content = null;
     switch ($this->outputType) {
       case "json":
 
-        $body['version'] = Applications::default()->config()->get("version");
+        $body['version'] = Applications::current()->config()->get("version");
 
         $endTime = Date::milliseconds();
-        $body['requiredTime'] = ($endTime - (Applications::default()->startTime() ?? $endTime)) . " ms";
+        $body['requiredTime'] = ($endTime - (Applications::current()->startTime() ?? $endTime)) . " ms";
 
         $content = json_encode($body, JSON_UNESCAPED_UNICODE);
         break;

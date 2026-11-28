@@ -294,7 +294,7 @@ class StorageURL extends URL
 
     if (DiscuzApp::exists()) {
       $this->pathName = "plugin.php";
-      $queryParams["id"] = Applications::default()->appId();
+      $queryParams["id"] = Applications::current()->appId();
       $queryParams["uri"] = $pathName;
     } else {
       $this->pathName = $pathName;

@@ -2,6 +2,8 @@
 
 namespace kernel\Foundation\Object;
 
+use kernel\Foundation\Application\Applications;
+
 /**
  * 基对象，提供通用的实例化与单例能力
  *
@@ -21,7 +23,7 @@ class BaseObject
    * 本对象所属的应用
    *
    * 由构造期注入（{@see resolveApp()}），不做事后推断：对象一旦创建，归属就固定，
-   * 不会因为「现在哪个应用在跑」而变。未注入时由 {@see app()} 回落到默认应用。
+   * 不会因为「现在哪个应用在跑」而变。未注入时由 {@see app()} 回落到当前应用。
    *
    * 注意：`Modules\WechatPay\V3\WechatPayV3` 已有同名 `app()`（返回 APP 支付产品），
    * 它会覆盖本方法——那个类不参与应用归属解析。新增子类时请避免再用 `app` 作为方法名。
@@ -158,7 +160,7 @@ class BaseObject
   /**
    * 本对象所属的应用
    *
-   * 优先返回构造期注入的实例；未注入时回落到默认应用（= 当前请求的应用）。
+   * 优先返回构造期注入的实例；未注入时回落到当前应用（= 当前请求的应用）。
    * 两者都没有说明引导阶段就有对象在算表名 / 路径，属于装配错误——直接抛错，
    * 让问题在 `new` 的那一刻暴露，而不是把表名拼成 `_files` 这种错得无声无息的结果。
    *
@@ -168,8 +170,8 @@ class BaseObject
   public function app()
   {
     $app = $this->app
-      ?: \kernel\Foundation\Application\Applications::setUpApp()
-      ?: \kernel\Foundation\Application\Applications::default();
+      ?: Applications::setUpApp()
+      ?: Applications::current();
 
     if ($app === null) {
       throw new \kernel\Foundation\Exception\Error(
@@ -192,7 +194,7 @@ class BaseObject
    *
    * @internal 仅供 {@see \kernel\Foundation\Application\Container::bindApp()} 在
    *           构造完对象后调用；业务代码请勿使用（改归属会造出「半个对象属于上一个应用」的东西）
-   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给默认应用
+   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给当前应用
    * @return $this
    */
   public function bindApp($app)
@@ -208,7 +210,7 @@ class BaseObject
   /**
    * 归属绑定完成的钩子
    *
-   * 容器是「先构造、后补归属」，构造期只能按默认应用推导的东西（典型如表名前缀）
+   * 容器是「先构造、后补归属」，构造期只能按当前应用推导的东西（典型如表名前缀）
    * 需要在归属就位后重算。默认空实现，需要重算的子类覆盖本方法。
    *
    * 只在 `bindApp()` 真正赋值时触发一次；对象已有归属时不会再调。
@@ -226,7 +228,7 @@ class BaseObject
    * 事后改只会造出「半个对象属于上一个应用」的东西。
    *
    * @internal 仅供构造链调用
-   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给默认应用
+   * @param \kernel\Foundation\App|null $app 所属应用；null 表示交给当前应用
    * @return void
    */
   protected function resolveApp($app = null)

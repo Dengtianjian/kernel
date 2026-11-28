@@ -34,6 +34,6 @@ class Log extends Facade
    */
   protected static function resolve()
   {
-    return Applications::default()->log();
+    return Applications::current()->log();
   }
 }

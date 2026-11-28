@@ -264,7 +264,7 @@ class Container
 
     $class = ltrim($name, "\\");
     if (class_exists($class)) {
-      //* 兜底构造也要绑归属：否则对象 app() 会落到默认应用，表名/路径跟着错
+      //* 兜底构造也要绑归属：否则对象 app() 会落到当前应用，表名/路径跟着错
       return $this->bindApp($this->buildClass($class, $params));
     }
 

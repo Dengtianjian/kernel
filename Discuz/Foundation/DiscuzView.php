@@ -49,7 +49,7 @@ class DiscuzView extends ResponseView
     $dir = $viewFileDir ?: Path::dir();
     if (strpos($viewFile, ".") === false) {
       return template($viewFile, implode("_", [
-        Applications::defaultId(),
+        Applications::currentId(),
         $templateId
       ]), Path::join($dir, $viewFileDirBaseProject));
     } else {
@@ -97,7 +97,7 @@ class DiscuzView extends ResponseView
 
     $this->templateId = $templateId;
     $this->viewFilePath = template($layout, implode("_", [
-      Applications::defaultId(),
+      Applications::currentId(),
       $templateId
     ]), Path::join(Path::dir(), $fileBaseDir));
 

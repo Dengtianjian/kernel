@@ -34,13 +34,13 @@ class Aliyun extends Facade
   /**
    * 兜底实例：当前应用容器里的阿里云账号
    *
-   * 走 `Applications::default()` 而不是 `setUpApp()`：门面在请求期被调用，
-   * 那时装配上下文早已出栈；默认应用就是这个进程正在服务的应用。
+   * 走 `Applications::current()` 而不是 `setUpApp()`：门面在请求期被调用，
+   * 那时装配上下文早已出栈；当前应用就是这个进程正在服务的应用。
    *
    * @return AliyunAccount
    */
   protected static function resolve()
   {
-    return Applications::default()->aliyun();
+    return Applications::current()->aliyun();
   }
 }

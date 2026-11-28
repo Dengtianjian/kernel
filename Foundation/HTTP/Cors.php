@@ -53,7 +53,7 @@ class Cors
    */
   public static function config(string $key)
   {
-    return Applications::default()->config()->get("cors/" . $key, self::DEFAULTS[$key] ?? null);
+    return Applications::current()->config()->get("cors/" . $key, self::DEFAULTS[$key] ?? null);
   }
 
   /**
@@ -272,7 +272,7 @@ class Cors
   public static function isDevelopment(): bool
   {
     try {
-      return Applications::default()->isDevelopment();
+      return Applications::current()->isDevelopment();
     } catch (\Throwable $e) {
       return false;
     }

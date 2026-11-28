@@ -98,7 +98,7 @@ class Lifecycle extends AbilityBaseObject
   public function onBootUp($callback = null)
   {
     if ($callback === null) {
-      $callback = Applications::default()->appId() . "\\Setup\\Bootup";
+      $callback = Applications::current()->appId() . "\\Setup\\Bootup";
     }
 
     if (is_string($callback)) {
@@ -116,7 +116,7 @@ class Lifecycle extends AbilityBaseObject
 
     //* 启动阶段已触发后（run() 已进入业务阶段）注册的启动回调：立即执行，避免注册后永不执行
     if ($this->bootupFired) {
-      $callback(Applications::default()->request());
+      $callback(Applications::current()->request());
       return $this;
     }
 
@@ -191,9 +191,9 @@ class Lifecycle extends AbilityBaseObject
       $this->bootupFired = true;
       foreach ($this->bootUpHooks as $item) {
         if (is_callable($item)) {
-          $item(Applications::default()->request());
+          $item(Applications::current()->request());
         } else {
-          new $item(Applications::default()->request());
+          new $item(Applications::current()->request());
         }
       }
     }

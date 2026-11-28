@@ -47,7 +47,7 @@ class Cache extends Facade
    */
   protected static function resolve()
   {
-    return Applications::default()->cache();
+    return Applications::current()->cache();
   }
 
   /**
@@ -59,6 +59,6 @@ class Cache extends Facade
    */
   public static function key(): string
   {
-    return Applications::default()->cache()->key();
+    return Applications::current()->cache()->key();
   }
 }

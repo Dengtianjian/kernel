@@ -1062,7 +1062,7 @@ class StorageModule extends AbilityBaseObject
     if (!$this->authEnabled)
       return true;
 
-    $request = Applications::default()->request();
+    $request = Applications::current()->request();
     $urlParams = $request->query->some();
 
     $requestHeaders = $request->header->some();

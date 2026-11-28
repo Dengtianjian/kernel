@@ -138,7 +138,7 @@ class ExceptionHandler
       // 4. 致命分支：客户端期望 JSON 则输出 JSON；否则渲染错误视图；最后 exit
       // 期望类型取自 Request::preferredOutputType()（依据 Content-Type / Accept，返回 json|xml|html|text|null），
       // 探测失败（App 未实例化、Request 取用异常）时按「非 JSON」处理，保证任何情况下都有兜底输出
-      $app = Applications::default();
+      $app = Applications::current();
       $expectsJson = false;
       if ($app) {
         try {
@@ -218,7 +218,7 @@ class ExceptionHandler
   /**
    * 安全获取运行模式，配置未装配/读取失败时按 production 处理
    *
-   * 读默认应用的 `mode`；读取失败（应用还没建好、配置损坏等）时按 production
+   * 读当前应用的 `mode`；读取失败（应用还没建好、配置损坏等）时按 production
    * 兜底——与 {@see \kernel\Foundation\Application\Application::mode()} 的保守
    * 取向一致：配置缺失即按生产处理，不向响应暴露调试详情。开发期需要完整
    * 详情时，在配置里显式写 `"mode" => "development"`（走正常读取路径）。

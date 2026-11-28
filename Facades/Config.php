@@ -15,7 +15,7 @@ use kernel\Foundation\Application\Applications;
  * 跨应用读配置必须显式走对方应用的容器：`App::of("gstudio_super_app")->config()`。
  *
  * 没有任何应用登记时调用会抛错，而配置恰恰在早期阶段（异常输出、CLI 命令）常被读取。
- * 需要「没有应用就返回默认值」的场景请自行兜底：`Applications::default() === null`
+ * 需要「没有应用就返回默认值」的场景请自行兜底：`Applications::current() === null`
  * 或 `try/catch`。
  *
  * 取用方式（调用点写法不变，只换 use）：
@@ -45,6 +45,6 @@ class Config extends Facade
    */
   protected static function resolve()
   {
-    return Applications::default()->config();
+    return Applications::current()->config();
   }
 }

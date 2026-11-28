@@ -277,7 +277,7 @@ class ResponseProxy extends Response
   protected static function config($key, $default)
   {
     try {
-      return Applications::default()->config()->get("storage/" . $key, $default);
+      return Applications::current()->config()->get("storage/" . $key, $default);
     } catch (\Throwable $e) {
       return $default;
     }

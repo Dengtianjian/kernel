@@ -21,7 +21,7 @@ use kernel\Support\Result;
  *
  * 注意：中间件是 `new $class($request, $controller)` 直接实例化的（见
  * {@see \kernel\Foundation\Middleware\Middleware::executeMiddleware()}），不走容器注入，
- * 因此这里用 `Applications::default()` 取当前应用，再取上下文 / 服务。
+ * 因此这里用 `Applications::current()` 取当前应用，再取上下文 / 服务。
  */
 class GlobalAuthMiddleware extends MiddlewareBase
 {
@@ -39,7 +39,7 @@ class GlobalAuthMiddleware extends MiddlewareBase
    */
   protected function app()
   {
-    return Applications::default();
+    return Applications::current();
   }
 
   /**

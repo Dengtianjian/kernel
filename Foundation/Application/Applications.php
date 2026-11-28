@@ -7,20 +7,15 @@ use kernel\Foundation\Exception\Error;
 /**
  * 应用（App）实例管理器
  *
- * 统一登记同一进程内创建的全部 App 实例，并维护一个「默认应用」指针：
- * - **第一个注册的应用自动成为默认应用**（`$makeDefault` 未显式指定时）；
- * - 也可以**显式指定**默认应用：注册时传 `$makeDefault = true`，或事后调用 {@see setDefault()}。
+ * 统一登记同一进程内创建的全部 App 实例，并维护「当前主运行应用」指针：
+ * - 每个请求/命令只有一个入口应用，**第一个注册的应用成为当前应用**；
+ * - 其它应用通过 {@see get()} 取用（借能力），不会覆盖当前应用；
+ * - 不设主从层级，所有应用在注册表里平行。
  *
- * 默认应用是 {@see default()} / {@see defaultId()} / `$app->kernelId()` 的数据来源，
- * 因此「谁被登记为默认」直接决定基础插件各处取到的是哪个应用。
+ * 当前应用是 {@see current()} / {@see currentId()} 的数据来源，也是 kernel 各门面在
+ * 「没有对象上下文」时的解析目标。业务对象自身的归属一律用 `$this->app()->appId()`。
  *
- * 典型场景与顺序：
- * - 常规应用：`new App(Bootstrap::class, "app")` 构造时自动注册，因是第一个注册者，自动成为默认；
- * - 多应用共存：App 构造时传 `$makeDefault = true`，显式接管默认位置；
- * - 测试/常驻进程：可用 {@see clear()} 重置注册表，或用 {@see setDefault()} 在多个实例间切换。
- *
- * 注意：注册表以「应用 ID」为键，重复注册同一 ID 会覆盖前者（实例替换，默认指针不变 ——
- * 若被覆盖的正是默认应用，仍指向该 ID，取用时会拿到新实例）。
+ * 注意：注册表以「应用 ID」为键，重复注册同一 ID 会覆盖前者（实例替换，当前指针不变）。
  *
  * 类型上只认 {@see Application}：具体的 Web 应用 / 未来的 console 应用都是它的子类，
  * 管理器不需要知道是哪种。
@@ -36,21 +31,21 @@ class Applications
    */
   protected static $applications = [];
   /**
-   * 默认应用的应用ID
+   * 当前主运行应用的应用ID
    *
-   * 为 null 表示尚未登记任何应用。
+   * 为 null 表示尚未登记任何应用。只由首个注册的应用设置，后续 get() 取用不覆盖。
    *
    * @var string|null
    */
-  protected static $defaultId = null;
+  protected static $currentId = null;
   /**
    * 装配上下文栈
    *
    * `App::setup()` 构造 Bootstrap 期间，把「正在装配的那个应用」压在这里。
    * 这样 Bootstrap 及其构造链上新建的对象（它们没被注入 app）调用 `app()` 时，
-   * 拿到的是**正在装配的应用**，而不是「第一个登记成默认的应用」。
+   * 拿到的是**正在装配的应用**，而不是「第一个登记成当前的应用」。
    *
-   * 子系统（如 download）尤其需要：它的 Bootstrap 一旦回落到默认应用（super_app），
+   * 子系统（如 download）尤其需要：它的 Bootstrap 一旦回落到当前应用（super_app），
    * `import()` 就会把绑定写进 super_app 的容器，把 super_app 自己的服务改成
    * 「去 super_app 取」——解析时自引用，无限递归。
    *
@@ -63,17 +58,16 @@ class Applications
   /**
    * 登记一个应用实例
    *
-   * - 注册表里尚无默认应用时，本次注册的应用自动成为默认；
-   * - `$makeDefault = true` 时**强制**把该应用设为默认（覆盖已有的默认应用）；
-   * - 重复注册同一 ID 会替换实例，默认指针保持不变。
+   * - 注册表里还没有当前应用时，本次注册的应用成为当前应用；
+   * - 已有当前应用时不覆盖（其它应用通过 get() 取用，不改变当前）；
+   * - 重复注册同一 ID 会替换实例，当前指针保持不变。
    *
    * @param Application $app 应用实例
    * @param string $id 应用ID（与项目目录同名）；空字符串会抛异常
-   * @param boolean $makeDefault 是否强制指定为默认应用，默认 false（仅在还没有默认应用时自动成为默认）
    * @return Application 返回传入的应用实例，便于链式使用
    * @throws Error 应用ID为空时抛出
    */
-  public static function register(Application $app, $id, $makeDefault = false): Application
+  public static function register(Application $app, $id): Application
   {
     if (!is_string($id) || $id === "") {
       throw new Error("注册应用失败：应用ID不能为空", 500, "500:InvalidAppId");
@@ -81,9 +75,9 @@ class Applications
 
     self::$applications[$id] = $app;
 
-    //* 第一个注册者成为默认；或调用方显式要求抢占默认位置
-    if ($makeDefault || self::$defaultId === null) {
-      self::$defaultId = $id;
+    //* 首个注册者成为当前应用；已有当前应用时不覆盖
+    if (self::$currentId === null) {
+      self::$currentId = $id;
     }
 
     return $app;
@@ -228,7 +222,7 @@ class Applications
    * 取当前装配 / 构造上下文里的应用
    *
    * 既不在装配期也不在构造期时返回 null——调用方（{@see \kernel\Foundation\Object\BaseObject::app()}）
-   * 再回落到默认应用。
+   * 再回落到当前应用。
    *
    * @return Application|null 当前上下文的应用；都没有时返回 null
    */
@@ -240,63 +234,34 @@ class Applications
   }
 
   /**
-   * 获取默认应用实例
+   * 获取当前主运行应用实例
    *
    * @return Application|null 尚未登记任何应用时返回 null
    */
-  public static function default(): ?Application
+  public static function current(): ?Application
   {
-    if (self::$defaultId === null) {
+    if (self::$currentId === null) {
       return null;
     }
 
-    return self::$applications[self::$defaultId] ?? null;
+    return self::$applications[self::$currentId] ?? null;
   }
 
   /**
-   * 获取默认应用的应用ID
+   * 获取当前主运行应用的应用ID
    *
    * @return string|null 尚未登记任何应用时返回 null
    */
-  public static function defaultId(): ?string
+  public static function currentId(): ?string
   {
-    return self::$defaultId;
-  }
-
-  /**
-   * 切换默认应用
-   *
-   * 只接受**已登记**的应用，登记表本身不会被修改。
-   *
-   * @param string|Application $idOrApp 应用ID，或已登记的 Application 实例
-   * @return boolean 指定成功返回 true；实例未登记 / ID 不存在返回 false
-   */
-  public static function setDefault($idOrApp): bool
-  {
-    if ($idOrApp instanceof Application) {
-      $id = array_search($idOrApp, self::$applications, true);
-      if ($id === false) {
-        return false;
-      }
-      self::$defaultId = $id;
-
-      return true;
-    }
-
-    $id = self::resolveId($idOrApp);
-    if (!isset(self::$applications[$id])) {
-      return false;
-    }
-    self::$defaultId = $id;
-
-    return true;
+    return self::$currentId;
   }
 
   /**
    * 移除一个已登记的应用
    *
-   * 若移除的正是默认应用，则把默认指针交给**剩余应用中的第一个**（保持「总有一个默认」）；
-   * 注册表被清空后默认指针归 null。
+   * 若移除的正是当前应用，则把当前指针交给**剩余应用中的第一个**（保持「总有一个当前」）；
+   * 注册表被清空后当前指针归 null。
    *
    * @param string $id 应用ID
    * @return Application|null 被移除的实例；未登记时返回 null
@@ -310,25 +275,25 @@ class Applications
     $removed = self::$applications[$id];
     unset(self::$applications[$id]);
 
-    if (self::$defaultId === $id) {
+    if (self::$currentId === $id) {
       $remainingIds = array_keys(self::$applications);
-      self::$defaultId = $remainingIds ? $remainingIds[0] : null;
+      self::$currentId = $remainingIds ? $remainingIds[0] : null;
     }
 
     return $removed;
   }
 
   /**
-   * 清空注册表（含默认应用）
+   * 清空注册表（含当前应用）
    *
-   * 仅供测试或常驻进程重置使用；清空后 Applications::default() 返回 null。
+   * 仅供测试或常驻进程重置使用；清空后 Applications::current() 返回 null。
    *
    * @return void
    */
   public static function clear(): void
   {
     self::$applications = [];
-    self::$defaultId = null;
+    self::$currentId = null;
     self::$setupStack = [];
   }
 }

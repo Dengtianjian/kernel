@@ -127,10 +127,10 @@ class Middleware
     array_push($params, $next);
 
     if (is_string($middleware['target'])) {
-      $middlewareInstance = new $middleware['target'](Applications::default()->request(), $controller);
+      $middlewareInstance = new $middleware['target'](Applications::current()->request(), $controller);
       $executedResponse = $middlewareInstance->handle(...$params);
     } else {
-      array_unshift($params, Applications::default()->request());
+      array_unshift($params, Applications::current()->request());
       $executedResponse = $middleware['target'](...$params);
     }
 
